@@ -1,0 +1,14 @@
+admin:
+  MessageNotify: 消息通知
+  MessageNotifyFields:
+    title: 通知標題
+    content: 通知內容
+    type: 通知類型
+    typeGlobal: 全局
+    typePersonal: 個人
+    user_id: 用戶ID全局通知為null
+    notify_type: 通知分類
+    notifyTypeSystem: 系統通知
+    notifyTypeBusiness: 業務通知
+    notifyTypeOther: 其他
+    link: 跳轉鏈接

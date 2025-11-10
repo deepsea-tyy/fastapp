@@ -1,0 +1,49 @@
+@php use Hyperf\Stringable\Str;@endphp
+@php
+    // 文件头部
+    echo '<?php' . PHP_EOL . PHP_EOL;
+    echo 'declare(strict_types=1);' . PHP_EOL;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $target = $codeGenerator['target'] ?? 'admin';
+    $serviceName = $table['pascalCase'] ?? '';
+    
+    // 模块命名空间处理
+    $moduleNamespace = ucwords($module);
+    if (str_contains($module, '/')) {
+        $parts = explode('/', $module);
+        $moduleNamespace = implode('\\', array_map([Str::class, 'studly'], $parts));
+    }
+    
+    // 插件命名空间处理
+    $pluginNamespace = '';
+    if (!empty($plugin)) {
+        $pluginParts = explode('/', $plugin);
+        $pluginNamespace = implode('\\', array_map([Str::class, 'studly'], $pluginParts));
+    }
+    
+    // 命名空间和Repository导入生成
+    $httpType = $target === 'api' ? 'Api' : 'Admin';
+    if ($pluginNamespace) {
+        $namespace = "Plugin\\{$pluginNamespace}\\Http\\{$httpType}\\Service";
+        $repositoryNamespace = "Plugin\\{$pluginNamespace}\\Repository\\{$serviceName}Repository";
+    } else {
+        $namespace = "App\\Http\\{$httpType}\\Service\\{$moduleNamespace}";
+        $repositoryNamespace = "App\\Repository\\{$moduleNamespace}\\{$serviceName}Repository";
+    }
+    
+    // 输出命名空间和use语句
+    echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
+    echo 'use App\Common\IService;' . PHP_EOL;
+    echo "use {$repositoryNamespace} as Repository;" . PHP_EOL;
+@endphp
+
+class {{$serviceName}}Service extends IService
+{
+    public function __construct(
+        protected readonly Repository $repository
+    ) {}
+}

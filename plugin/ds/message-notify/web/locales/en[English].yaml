@@ -1,0 +1,14 @@
+admin:
+  MessageNotify: Message Notify
+  MessageNotifyFields:
+    title: Title
+    content: Content
+    type: Type
+    typeGlobal: Global
+    typePersonal: Personal
+    user_id: User ID (null for global notification)
+    notify_type: Notify Type
+    notifyTypeSystem: System Notification
+    notifyTypeBusiness: Business Notification
+    notifyTypeOther: Other
+    link: Link

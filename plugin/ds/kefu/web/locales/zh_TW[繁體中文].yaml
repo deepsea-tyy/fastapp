@@ -1,0 +1,79 @@
+# 客服模組 - 繁體中文翻譯配置
+kefu:
+  KefuManager: 客服管理
+  Kefu: 客服列表
+  KefuChat: 客服窗口
+  KefuConversation: 會話列表
+
+  KefuChatFields:
+    selectUser: 請選擇用戶開始聊天
+    inputPlaceholder: 輸入消息內容（Ctrl+Enter 發送）
+    wsConnected: 已連接
+    wsDisconnected: 未連接
+    reconnect: 重新連接
+    loading: 加載中...
+    noMoreMessages: 沒有更多消息了
+    endConversation: 結束會話
+    endConversationConfirm: 確定要結束當前會話嗎？
+    endConversationTitle: 提示
+    send: 發送
+    adminUserConversation: 管理員用戶會話列表
+    visitorConversation: 遊客會話列表
+
+  # 客服管理相關
+  KefuFields:
+    title: 客服管理
+    nickname: 暱稱
+    avatar: 頭像
+    status: 狀態
+    maxConcurrent: 最大會話數
+    currentConcurrent: 當前會話數
+    noLimit: 不限
+
+  # 客服會話相關
+  KefuConversationFields:
+    title: 客服會話
+    id: ID
+    userId: 用戶ID
+    visitorId: 遊客ID
+    user: 用戶
+    status: 會話狀態
+    lastMessageAt: 最後消息時間
+    unreadCount: 用戶未讀數
+    kefuUnreadCount: 客服未讀數
+    createdAt: 創建時間
+    updatedAt: 更新時間
+    detail:
+      title: 會話消息詳情
+
+  # 客服消息相關
+  KefuMessageFields:
+    id: ID
+    senderType: 發送者類型
+    messageType: 消息類型
+    content: 消息內容
+    fileUrl: 文件URL
+    isRead: 是否已讀
+    readAt: 閱讀時間
+    createdAt: 創建時間
+    read: 已讀
+    unread: 未讀
+
+  # 通用翻譯配置
+  common:
+    # 會話狀態
+    conversationStatus:
+      ongoing: 進行中
+      ended: 已結束
+      closed: 已關閉
+    senderType:
+      user: 用戶
+      kefu: 客服
+    messageType:
+      text: 文本
+      image: 圖片
+      file: 文件
+    labels:
+      visitor: 遊客
+      admin: 管理員
+      uid: UID

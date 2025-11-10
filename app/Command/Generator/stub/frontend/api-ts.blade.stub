@@ -1,0 +1,63 @@
+@php
+    use Hyperf\Stringable\Str;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $componentName = $table['pascalCase'] ?? '';
+    $snakeTableName = Str::snake($componentName);
+    $menuName = str_replace('表', '', $table['comment'] ?? '');
+    $isPluginMode = !empty($plugin);
+    $packageName = strtolower($module);
+    
+    // API路径前缀生成
+    if ($isPluginMode) {
+        $pluginParts = explode('/', $plugin);
+        $pluginPath = implode('/', array_map([Str::class, 'lower'], $pluginParts));
+        $apiPrefix = "/admin/{$pluginPath}/{$snakeTableName}";
+    } else {
+        // 处理模块名中的斜杠
+        if (str_contains($packageName, '/')) {
+            $parts = explode('/', $packageName);
+            $studlyParts = array_map([Str::class, 'studly'], $parts);
+            $packageName = Str::snake(end($studlyParts));
+        }
+        $apiPrefix = "/admin/{$packageName}/{$snakeTableName}";
+    }
+    
+    // TypeScript类型映射
+    $numberTypes = ['int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'decimal', 'float', 'double'];
+@endphp
+import type { ResponseStruct } from '#/global'
+
+export interface {{ $componentName }}Vo {
+  {{ $table['primaryKey'] }}: number
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $tsType = in_array($field['dbType'] ?? '', $numberTypes, true) ? 'number' : 'string';
+@endphp
+  // {{$field['label'] ?? ''}}
+  {{ $field['field'] }}: {{ $tsType }}
+@endforeach
+}
+
+// {{$menuName}}查询
+export function page(params: {{ $componentName }}Vo): Promise<ResponseStruct<{{$componentName}}Vo[]>> {
+  return useHttp().get('{{$apiPrefix}}/list', { params })
+}
+
+// {{$menuName}}新增
+export function create(data: {{ $componentName }}Vo): Promise<ResponseStruct<null>> {
+  return useHttp().post('{{$apiPrefix}}/create', data)
+}
+
+// {{$menuName}}编辑
+export function save(id: number, data: {{ $componentName }}Vo): Promise<ResponseStruct<null>> {
+  return useHttp().put(`{{$apiPrefix}}/save/${id}`, data)
+}
+
+// {{$menuName}}删除
+export function deleteByIds(ids: number[]): Promise<ResponseStruct<null>> {
+  return useHttp().delete('{{$apiPrefix}}/delete', { data: ids })
+}

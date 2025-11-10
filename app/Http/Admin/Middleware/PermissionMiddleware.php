@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+
+namespace App\Http\Admin\Middleware;
+
+use App\Http\Admin\Permission;
+use App\Common\ResultCode;
+use App\Exception\BusinessException;
+use App\Http\CurrentUser;
+use App\Model\Enums\User\Status;
+use Hyperf\Collection\Arr;
+use Hyperf\Di\Annotation\AnnotationCollector;
+use Hyperf\HttpServer\Router\Dispatched;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+
+final class PermissionMiddleware implements MiddlewareInterface
+{
+    use ParserRouterTrait;
+
+    public function __construct(
+        private readonly CurrentUser $currentUser,
+    )
+    {
+    }
+
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        $user = $this->currentUser->adminUser();
+        if ($user->status == Status::DISABLE) {
+            throw new BusinessException(code: ResultCode::DISABLED, message: trans('user.disable'));
+        }
+        if ($user->isSuperAdmin()) {
+            return $handler->handle($request);
+        }
+        $this->check($request->getAttribute(Dispatched::class));
+        return $handler->handle($request);
+    }
+
+    private function check(Dispatched $dispatched): bool
+    {
+        $parseResult = $this->parse($dispatched->handler->callback);
+        if (!$parseResult) {
+            return true;
+        }
+        [$controller, $method] = $parseResult;
+        $annotations = AnnotationCollector::getClassMethodAnnotation($controller, $method);
+        $classAnnotation = AnnotationCollector::getClassAnnotation($controller, Permission::class);
+        /**
+         * @var Permission[] $permissions
+         */
+        $permissions = [];
+        $classAnnotation && $permissions[] = $classAnnotation;
+        $methodPermission = Arr::get($annotations, Permission::class);
+        $methodPermission && $permissions[] = $methodPermission;
+        foreach ($permissions as $permission) {
+            $this->handlePermission($permission);
+        }
+        return true;
+    }
+
+    private function handlePermission(Permission $permission): void
+    {
+        $operation = $permission->getOperation();
+        $codes = $permission->getCode();
+        foreach ($codes as $code) {
+            $isMenu = $this->currentUser->adminUser()->hasPermission($code);
+            if ($operation === Permission::OPERATION_AND && !$isMenu) {
+                throw new BusinessException(code: ResultCode::FORBIDDEN);
+            }
+            if ($operation === Permission::OPERATION_OR && $isMenu) {
+                return;
+            }
+        }
+        if ($operation === Permission::OPERATION_OR) {
+            throw new BusinessException(code: ResultCode::FORBIDDEN);
+        }
+    }
+}

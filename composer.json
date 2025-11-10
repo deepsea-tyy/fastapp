@@ -1,0 +1,158 @@
+{
+  "name": "ds/fastapp",
+  "type": "project",
+  "description": "FastApp - Enterprise application framework based on Hyperf 3.1 with AI template development, RBAC, JWT, code generator, WebSocket, and plugin system",
+  "keywords": [
+    "hyperf",
+    "swoole",
+    "php-framework",
+    "backend-framework",
+    "admin-system",
+    "ai-code-generation",
+    "ai-template",
+    "ai-development",
+    "ai-assistant",
+    "ai-programming",
+    "intelligent-code-generation",
+    "ai-code-generator",
+    "ai-powered-framework",
+    "rbac",
+    "jwt",
+    "websocket",
+    "code-generator",
+    "crud-generator",
+    "plugin-system",
+    "permission-management",
+    "api-framework",
+    "enterprise-framework",
+    "fastapp",
+    "hyperf3",
+    "vue3",
+    "typescript",
+    "element-plus"
+  ],
+  "license": "Apache-2.0",
+  "require": {
+    "php": ">=8.1",
+    "ext-fileinfo": "*",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-redis": "*",
+    "ext-swoole": ">=5.0",
+    "ext-zip": "*",
+    "bacon/bacon-qr-code": "^3.0",
+    "brick/math": "0.13",
+    "friendsofhyperf/tinker": "^3.1",
+    "hyperf/async-queue": "3.1.*",
+    "hyperf/cache": "3.1.*",
+    "hyperf/carbon": "^3.1",
+    "hyperf/command": "3.1.*",
+    "hyperf/config": "3.1.*",
+    "hyperf/constants": "3.1.*",
+    "hyperf/context": "3.1.*",
+    "hyperf/contract": "3.1.*",
+    "hyperf/coroutine": "3.1.*",
+    "hyperf/crontab": "~3.1",
+    "hyperf/database": "3.1.*",
+    "hyperf/database-pgsql": "*",
+    "hyperf/db-connection": "3.1.*",
+    "hyperf/di": "3.1.*",
+    "hyperf/dispatcher": "3.1.*",
+    "hyperf/engine": "^2.0",
+    "hyperf/event": "3.1.*",
+    "hyperf/exception-handler": "3.1.*",
+    "hyperf/filesystem": "^3.1",
+    "hyperf/framework": "3.1.*",
+    "hyperf/guzzle": "^3.1",
+    "hyperf/helper": "~3.1",
+    "hyperf/http-server": "3.1.*",
+    "hyperf/logger": "3.1.*",
+    "hyperf/model-cache": "3.1.*",
+    "hyperf/paginator": "~3.1",
+    "hyperf/polyfill-coroutine": "3.1.*",
+    "hyperf/pool": "3.1.*",
+    "hyperf/process": "3.1.*",
+    "hyperf/redis": "3.1.*",
+    "hyperf/server": "3.1.*",
+    "hyperf/swagger": "^3.1",
+    "hyperf/task": "^3.1",
+    "hyperf/utils": "3.1.*",
+    "hyperf/validation": "~3.1",
+    "hyperf/view-engine": "^3.1",
+    "hyperf/websocket-server": "^3.1",
+    "lcobucci/jwt": "^5.3",
+    "nette/utils": "^4.0",
+    "overtrue/easy-sms": "^3.2",
+    "phpoffice/phpspreadsheet": "^5.1",
+    "pragmarx/google2fa": "^9.0",
+    "ramsey/uuid": "^4.9",
+    "w7corp/easywechat": "^6.18",
+    "yansongda/pay": "^3.7"
+  },
+  "require-dev": {
+    "doctrine/dbal": "^3.6",
+    "fakerphp/faker": "^1.23",
+    "friendsofphp/php-cs-fixer": "^3.0",
+    "hyperf/devtool": "3.1.*",
+    "hyperf/ide-helper": "3.1.*",
+    "hyperf/testing": "3.1.*",
+    "hyperf/watcher": "3.1.*",
+    "mockery/mockery": "^1.0",
+    "phpstan/phpstan": "^2.1",
+    "swoole/ide-helper": "^6.0",
+    "zircote/swagger-php": "4.10.6"
+  },
+  "suggest": {
+    "ext-openssl": "Required to use HTTPS.",
+    "ext-json": "Required to use JSON.",
+    "ext-pdo": "Required to use MySQL Client.",
+    "ext-pdo_mysql": "Required to use MySQL Client.",
+    "ext-redis": "Required to use Redis Client."
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "3.0-dev"
+    }
+  },
+  "scripts": {
+    "post-root-package-install": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
+    "post-autoload-dump": [
+      "rm -rf runtime/container"
+    ],
+    "test": [
+      "co-phpunit --prepend tests/bootstrap.php --group=migrations --colors=always",
+      "co-phpunit --prepend tests/bootstrap.php --exclude-group=migrations"
+    ],
+    "coverage": [
+      "co-phpunit --prepend tests/bootstrap.php --group=migrations --colors=always --coverage-xml tests/coverage",
+      "co-phpunit --prepend tests/bootstrap.php --exclude-group=migrations --colors=always --coverage-xml tests/coverage"
+    ],
+    "cs-fix": "php-cs-fixer fix $1",
+    "analyse": "phpstan analyse --memory-limit 500M -l 5 -c phpstan.neon.dist ./app ./config",
+    "start": [
+      "Composer\\Config::disableProcessTimeout",
+      "rm -rf runtime/container",
+      "php bin/hyperf.php start"
+    ],
+    "dev": [
+      "Composer\\Config::disableProcessTimeout",
+      "rm -rf runtime/container",
+      "php bin/hyperf.php server:watch"
+    ]
+  }
+}

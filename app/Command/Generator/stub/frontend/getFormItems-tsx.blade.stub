@@ -1,0 +1,175 @@
+@php
+    use Hyperf\Stringable\Str;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $componentName = $table['pascalCase'] ?? '';
+    $camelCaseName = $table['camelCase'] ?? '';
+    $packageName = strtolower($module);
+    $isPluginMode = !empty($plugin);
+    // 表单字段过滤列表（不参与表单生成）
+    $formFl = $codeGenerator['formFl'] ?? [];
+    // 翻译字段列表（使用全局翻译 crud.field）
+    $transFl = $codeGenerator['transFl'] ?? [];
+    $numberTypes = ['int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'decimal', 'float', 'double'];
+    
+    // API路径生成
+    if ($isPluginMode) {
+        $pluginParts = explode('/', $plugin);
+        $pluginPath = implode('/', array_map([Str::class, 'lower'], $pluginParts));
+        $apiPath = "\$/{$pluginPath}/api/{$camelCaseName}.ts";
+    } else {
+        $apiPath = "~/{$packageName}/api/{$camelCaseName}.ts";
+    }
+    
+    // 组件映射
+    $componentMap = [
+        'el-switch' => 'ma-dict-select',
+        'el-select' => 'ma-dict-select',
+        'el-editor' => 'el-input',
+    ];
+@endphp
+import type { MaFormItem } from '@/components/ma-form'
+import type { {{$componentName}}Vo } from '{{$apiPath}}'
+
+export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, model: {{$componentName}}Vo): MaFormItem[] {
+  // 新增默认值
+  if (formType === 'add') {
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    // 使用表单字段过滤列表
+    if (in_array($fieldName, $formFl, true)) {
+        continue;
+    }
+@endphp
+@if(isset($field['default']))
+@php
+    $isNumber = in_array($field['dbType'] ?? '', $numberTypes, true);
+    
+    // 跳过数据库函数和特殊值
+    $skipValues = ['CURRENT_TIMESTAMP', 'NULL', 'null', ''];
+    if (in_array(strtoupper($field['default']), array_map('strtoupper', $skipValues), true)) {
+        continue;
+    }
+    
+    // 处理默认值
+    if ($isNumber) {
+        // 数字类型直接输出数字
+        $value = $field['default'] ?(float)$field['default']: 0;
+    } else {
+        // 字符串类型，转义单引号
+        $value = $field['default'];
+    }
+@endphp
+@if($isNumber)
+    model.{{$field['field']}} = {{$value}}
+@else
+    model.{{$field['field']}} = "{{$value}}"
+@endif
+
+@endif
+@endforeach
+  }
+
+  // 编辑默认值
+  if (formType === 'edit') {
+    // todo...
+  }
+
+  return [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    // 使用表单字段过滤列表
+    if (in_array($fieldName, $formFl, true)) {
+        continue;
+    }
+@endphp
+@if($field['is_form'] ?? false)
+@php
+    // 处理标签
+    $label = $field['label'] ?? '';
+    if (str_contains($label, ':')) {
+        $label = trim(explode(':', $label, 2)[0]);
+    }
+    
+    // 组件映射
+    $originalComponent = $field['component'] ?? 'el-input';
+    $renderComponent = $componentMap[$originalComponent] ?? $originalComponent;
+    
+    // 翻译键生成
+    // 将字段名转换为驼峰格式用于匹配
+    $camelField = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $field['field']))));
+    // 如果字段在翻译字段列表中，使用全局翻译 crud.field，否则使用模块翻译
+    if (in_array($camelField, $transFl, true)) {
+        $transKey = "crud.{$camelField}";
+    } else {
+        $transKey = "{$packageName}.{$componentName}Fields.{$field['field']}";
+    }
+    
+    // 是否必填
+    $isRequired = ($field['required'] ?? false) || str_contains($field['field'], 'name');
+@endphp
+    {
+      label: () => t('{{$transKey}}'), // '{{$label}}'
+      prop: '{{$field['field']}}',
+      render: () => <{{$renderComponent}} />,
+@if(isset($field['renderProps']) && !empty($field['renderProps']))
+      renderProps: {
+@php
+        $first = true;
+        foreach ($field['renderProps'] as $key => $val) {
+            if (!$first) {
+                echo "\n        ";
+            }
+            $first = false;
+            
+            // 键名格式化
+            $formattedKey = preg_match('/^[a-zA-Z_$][a-zA-Z0-9_$]*$/', $key) ? $key : "'{$key}'";
+            echo "{$formattedKey}: ";
+            
+            // 值处理
+            if (is_string($val) && (str_starts_with($val, "t('") || str_starts_with($val, 't("'))) {
+                // 翻译函数调用
+                if ((str_contains($val, 'pleaseInput') || str_contains($val, 'pleaseSelect'))) {
+                    echo "t('{$transKey}')";
+                } else {
+                    echo $val;
+                }
+            } elseif (is_bool($val)) {
+                // 布尔值直接输出
+                echo $val ? 'true' : 'false';
+            } elseif (is_string($val) && in_array(strtolower($val), ['true', 'false', '1', '0', 'yes', 'no'], true)) {
+                // 字符串形式的布尔值
+                $boolVal = in_array(strtolower($val), ['true', '1', 'yes'], true);
+                echo $boolVal ? 'true' : 'false';
+            } elseif (is_null($val)) {
+                echo 'null';
+            } elseif (is_numeric($val)) {
+                echo $val;
+            } elseif (is_array($val)) {
+                // 数组/对象使用 json_encode
+                echo json_encode($val, JSON_UNESCAPED_UNICODE);
+            } else {
+                // 字符串值，转义单引号
+                echo "'" . str_replace("'", "\\'", $val) . "'";
+            }
+            echo ",";
+        }
+        echo "\n      ";
+@endphp
+      },
+@endif
+@if($isRequired)
+      itemProps: {
+        rules: [{ required: true, message: t('form.pleaseInput', { msg: t('{{$transKey}}') }) }],
+      },
+@endif
+    },
+@endif
+@endforeach
+  ]
+}

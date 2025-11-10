@@ -1,0 +1,23 @@
+{
+  "name": "ds/system-config",
+  "version": "1.0.6",
+  "type": "mixed",
+  "description": "系统配置插件",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\SystemConfig\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\SystemConfig\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\SystemConfig\\UninstallScript",
+    "config": "Plugin\\Ds\\SystemConfig\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

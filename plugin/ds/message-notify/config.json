@@ -1,0 +1,23 @@
+{
+  "name": "ds/message-notify",
+  "version": "1.0.0",
+  "type": "mixed",
+  "description": "多语言消息通知",
+  "author": [
+    {
+      "name": "deepsea"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\MessageNotify\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\MessageNotify\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\MessageNotify\\UninstallScript",
+    "config": "Plugin\\Ds\\MessageNotify\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

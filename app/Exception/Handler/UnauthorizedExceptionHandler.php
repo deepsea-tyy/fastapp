@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+
+namespace App\Exception\Handler;
+
+use App\Common\Result;
+use App\Common\ResultCode;
+use Hyperf\Validation\UnauthorizedException;
+
+final class UnauthorizedExceptionHandler extends AbstractHandler
+{
+    public function handleResponse(\Throwable $throwable): Result
+    {
+        return new Result(
+            ResultCode::FORBIDDEN,
+        );
+    }
+
+    public function isValid(\Throwable $throwable): bool
+    {
+        return $throwable instanceof UnauthorizedException;
+    }
+}

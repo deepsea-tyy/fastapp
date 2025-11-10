@@ -1,0 +1,24 @@
+{
+  "name": "ds/kefu",
+  "version": "1.0.0",
+  "type": "mixed",
+  "description": "客服系统插件",
+  "homepage": "",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\Kefu\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\Kefu\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\Kefu\\UninstallScript",
+    "config": "Plugin\\Ds\\Kefu\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

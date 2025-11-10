@@ -1,0 +1,122 @@
+@php use Hyperf\Stringable\Str;@endphp
+@php
+    // 文件头部
+    echo '<?php' . PHP_EOL . PHP_EOL;
+    echo 'declare(strict_types=1);' . PHP_EOL;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $repositoryName = $table['pascalCase'] ?? '';
+    
+    // 模块命名空间处理
+    $moduleNamespace = ucwords($module);
+    if (str_contains($module, '/')) {
+        $parts = explode('/', $module);
+        $moduleNamespace = implode('\\', array_map([Str::class, 'studly'], $parts));
+    }
+    
+    // 插件命名空间处理
+    $pluginNamespace = '';
+    if (!empty($plugin)) {
+        $pluginParts = explode('/', $plugin);
+        $pluginNamespace = implode('\\', array_map([Str::class, 'studly'], $pluginParts));
+    }
+    
+    // 命名空间和Model导入生成
+    if ($pluginNamespace) {
+        $namespace = "Plugin\\{$pluginNamespace}\\Repository";
+        $modelNamespace = "Plugin\\{$pluginNamespace}\\Model\\{$repositoryName}";
+    } else {
+        $namespace = "App\\Repository\\{$moduleNamespace}";
+        $modelNamespace = "App\\Model\\{$moduleNamespace}\\{$repositoryName}";
+    }
+    
+    // 检查是否包含 created_by 字段
+    $hasCreatedBy = false;
+    foreach ($codeGenerator['formFields'] ?? [] as $field) {
+        if (($field['field'] ?? '') === 'created_by') {
+            $hasCreatedBy = true;
+            break;
+        }
+    }
+    
+    // 输出命名空间和use语句
+    echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
+    echo "use {$modelNamespace} as Model;" . PHP_EOL;
+    echo 'use App\Repository\IRepository;' . PHP_EOL;
+    echo 'use Hyperf\Collection\Arr;' . PHP_EOL;
+    echo 'use Hyperf\Database\Model\Builder;' . PHP_EOL;
+    if ($hasCreatedBy) {
+        echo 'use App\Http\Admin\Service\Permission\DataScopeTool;' . PHP_EOL;
+    }
+@endphp
+
+class {{$repositoryName}}Repository extends IRepository
+{
+    public function __construct(protected readonly Model $model) {}
+
+    public function handleSearch(Builder $query, array $params): Builder
+    {
+@if($hasCreatedBy)
+        // 应用数据权限过滤
+        DataScopeTool::applyUserDataScope($params['created_by'], $query);
+@endif
+        return $query
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    // 跳过不需要搜索的字段
+    $fieldName = $field['field'] ?? '';
+    $dbType = $field['dbType'] ?? '';
+    
+    // 跳过密码、时间戳等字段
+    if (in_array($fieldName, ['password', 'pass', 'updated_at', 'deleted_at', 'created_at'], true)) {
+        continue;
+    }
+    
+    // 跳过大文本和decimal字段
+    if (in_array($dbType, ['text', 'mediumtext', 'longtext', 'decimal'], true)) {
+        continue;
+    }
+    
+    // 跳过包含特定关键词的字段
+    $skipKeywords = ['image', 'file', 'cover', 'avatar', 'photo', 'content'];
+    if (array_filter($skipKeywords, fn($keyword) => str_contains($fieldName, $keyword))) {
+        continue;
+    }
+    
+    // 确定查询类型
+    $isStringType = in_array($dbType, ['char', 'varchar'], true);
+    $isIntType = in_array($dbType, ['int', 'tinyint', 'smallint', 'mediumint', 'bigint'], true);
+    $isDateType = str_ends_with($fieldName, '_at') || in_array($dbType, ['date', 'datetime', 'timestamp'], true);
+@endphp
+@if($isStringType)
+            ->when(Arr::get($params, '{{$fieldName}}'), static function (Builder $query, $value) {
+                $query->where('{{$fieldName}}', 'like', '%' . $value . '%');
+            })
+@elseif($isIntType)
+            ->when(Arr::get($params, '{{$fieldName}}'), static function (Builder $query, $value) {
+                if (\is_array($value)) {
+                    $query->whereIn('{{$fieldName}}', $value);
+                } else {
+                    $query->where('{{$fieldName}}', $value);
+                }
+            })
+@elseif($isDateType)
+            ->when(Arr::get($params, '{{$fieldName}}'), static function (Builder $query, $value) {
+                if (\is_array($value)) {
+                    $query->whereBetween('{{$fieldName}}', $value);
+                } else {
+                    $query->where('{{$fieldName}}', $value);
+                }
+            })
+@else
+            ->when(Arr::get($params, '{{$fieldName}}'), static function (Builder $query, $value) {
+                $query->where('{{$fieldName}}', $value);
+            })
+@endif
+@endforeach
+        ;
+    }
+}

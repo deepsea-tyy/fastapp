@@ -1,0 +1,102 @@
+@php
+    use Hyperf\Stringable\Str;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $componentName = $table['pascalCase'] ?? '';
+    $packageName = strtolower($module);
+    // 表格字段过滤列表（不参与表格显示，搜索字段也使用此过滤列表）
+    $tableFl = $codeGenerator['tableFl'] ?? [];
+    // 翻译字段列表（使用全局翻译 crud.field）
+    $transFl = $codeGenerator['transFl'] ?? [];
+    
+    // 组件映射
+    $componentMap = [
+        'el-switch' => 'ma-dict-select',
+        'el-select' => 'ma-dict-select',
+    ];
+@endphp
+import type { MaSearchItem } from '@/components/ma-search'
+
+export default function getSearchItems(t: any): MaSearchItem[] {
+  return [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    if (in_array($fieldName, $tableFl, true)) {
+        continue;
+    }
+@endphp
+@if($field['is_query'] ?? false)
+@php
+    // 处理标签
+    $label = $field['label'] ?? '';
+    if (str_contains($label, ':')) {
+        $label = trim(explode(':', $label, 2)[0]);
+    }
+    
+    // 组件映射
+    $originalComponent = $field['component'] ?? 'el-input';
+    $renderComponent = $componentMap[$originalComponent] ?? $originalComponent;
+    
+    // 翻译键生成
+    // 将字段名转换为驼峰格式用于匹配
+    $camelField = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $field['field']))));
+    // 如果字段在翻译字段列表中，使用全局翻译 crud.field，否则使用模块翻译
+    if (in_array($camelField, $transFl, true)) {
+        $transKey = "crud.{$camelField}";
+    } else {
+        $transKey = "{$packageName}.{$componentName}Fields.{$field['field']}";
+    }
+@endphp
+    {
+      label: () => t('{{$transKey}}'), // '{{$label}}'
+      prop: '{{$field['field']}}',
+      render: () => <{{$renderComponent}} />,
+@if(isset($field['renderProps']) && !empty($field['renderProps']))
+      renderProps: {
+@php
+        $first = true;
+        foreach ($field['renderProps'] as $key => $val) {
+            if (!$first) {
+                echo "\n        ";
+            }
+            $first = false;
+            
+            // 键名格式化
+            $formattedKey = preg_match('/^[a-zA-Z_$][a-zA-Z0-9_$]*$/', $key) ? $key : "'{$key}'";
+            echo "{$formattedKey}: ";
+
+            // 值处理
+            if (is_string($val) && (str_starts_with($val, "t('") || str_starts_with($val, 't("'))) {
+                // 翻译函数调用
+                if ((str_contains($val, 'pleaseInput') || str_contains($val, 'pleaseSelect'))) {
+                    echo "t('{$transKey}')";
+                } else {
+                    echo $val;
+                }
+            } elseif (is_null($val)) {
+                echo 'null';
+            } elseif (is_bool($val)) {
+                echo $val ? 'true' : 'false';
+            } elseif (is_numeric($val)) {
+                echo $val;
+            } elseif (is_array($val)) {
+                // 数组/对象使用 json_encode
+                echo json_encode($val, JSON_UNESCAPED_UNICODE);
+            } else {
+                // 字符串值，转义单引号
+                echo "'" . str_replace("'", "\\'", $val) . "'";
+            }
+            echo ",";
+        }
+        echo "\n      ";
+@endphp
+      },
+@endif
+    },
+@endif
+@endforeach
+  ]
+}

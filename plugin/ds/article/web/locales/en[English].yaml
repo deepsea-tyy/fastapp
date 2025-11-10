@@ -1,0 +1,25 @@
+article:
+  Article: Article List
+  ArticleManager: Article Manager
+  ArticleFields:
+    title: Title
+    subtitle: Subtitle
+    author: Author
+    cover: Cover
+    video: Video
+    release_at: ReleaseAt
+    brief: Brief
+    content: Content
+    comment: Comment
+    views: Views
+    like: Like
+    code: Code
+    name: Name
+    icon: Icon
+    parent_id: ParentId
+  Category: Category List
+  CategoryFields:
+    name: Name
+    icon: Icon
+    parent_id: ParentId
+    code: Code

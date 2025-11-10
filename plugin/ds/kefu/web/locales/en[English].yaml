@@ -1,0 +1,79 @@
+# Customer Service Module - English Translation Configuration
+kefu:
+  KefuManager: Customer Service Management
+  Kefu: Customer Service List
+  KefuChat: Customer Service Window
+  KefuConversation: Conversation List
+
+  KefuChatFields:
+    selectUser: Please select a user to start chatting
+    inputPlaceholder: Enter message content (Ctrl+Enter to send)
+    wsConnected: Connected
+    wsDisconnected: Disconnected
+    reconnect: Reconnect
+    loading: Loading...
+    noMoreMessages: No more messages
+    endConversation: End Conversation
+    endConversationConfirm: Are you sure you want to end this conversation?
+    endConversationTitle: Tip
+    send: Send
+    adminUserConversation: Admin User Conversation List
+    visitorConversation: Visitor Conversation List
+
+  # Customer Service Management
+  KefuFields:
+    title: Customer Service Management
+    nickname: Nickname
+    avatar: Avatar
+    status: Status
+    maxConcurrent: Max Concurrent Sessions
+    currentConcurrent: Current Concurrent Sessions
+    noLimit: Unlimited
+
+  # Customer Service Conversations
+  KefuConversationFields:
+    title: Customer Service Conversations
+    id: ID
+    userId: User ID
+    visitorId: Visitor ID
+    user: User
+    status: Conversation Status
+    lastMessageAt: Last Message Time
+    unreadCount: User Unread Count
+    kefuUnreadCount: Customer Service Unread Count
+    createdAt: Created At
+    updatedAt: Updated At
+    detail:
+      title: Conversation Messages Detail
+
+  # Customer Service Messages
+  KefuMessageFields:
+    id: ID
+    senderType: Sender Type
+    messageType: Message Type
+    content: Message Content
+    fileUrl: File URL
+    isRead: Is Read
+    readAt: Read At
+    createdAt: Created At
+    read: Read
+    unread: Unread
+
+  # Common translations
+  common:
+    # Conversation Status
+    conversationStatus:
+      ongoing: Ongoing
+      ended: Ended
+      closed: Closed
+    senderType:
+      user: User
+      kefu: Customer Service
+    messageType:
+      text: Text
+      image: Image
+      file: File
+    labels:
+      visitor: Visitor
+      admin: Admin
+      uid: UID

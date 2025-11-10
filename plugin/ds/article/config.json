@@ -1,0 +1,24 @@
+{
+  "name": "ds/article",
+  "version": "1.0.6",
+  "type": "mixed",
+  "description": "文章管理插件",
+  "homepage": "",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\Article\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\Article\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\Article\\UninstallScript",
+    "config": "Plugin\\Ds\\Article\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

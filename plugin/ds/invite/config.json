@@ -1,0 +1,1 @@
+{"name":"邀请插件","version":"1.0.0","type":"mixed","description":"用户邀请及上下级关系","author":[{"name":"deepsea"}],"composer":{"require":[],"psr-4":{"Plugin\\Ds\\Invite\\":"src"},"installScript":"Plugin\\Ds\\Invite\\InstallScript","uninstallScript":"Plugin\\Ds\\Invite\\UninstallScript","config":"Plugin\\Ds\\Invite\\ConfigProvider"},"package":{"dependencies":[]}}

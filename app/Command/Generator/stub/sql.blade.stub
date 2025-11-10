@@ -1,0 +1,80 @@
+@php
+    use Hyperf\Stringable\Str;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $modelName = $table['pascalCase'] ?? '';
+    $camelCaseName = $table['camelCase'] ?? '';
+    $snakeModelName = Str::snake($modelName);
+    $menuName = str_replace('表', '', $table['comment'] ?? $modelName);
+    $pid = $table['pid'] ?? 0;
+    $packageName = strtolower($module);
+    $isPluginMode = !empty($plugin);
+    $time = date('Y-m-d H:i:s');
+    $dbPrefix = env('DB_PREFIX');
+    
+    // 权限名称和路径生成
+    if ($isPluginMode) {
+        $pluginParts = explode('/', $plugin);
+        $permissionPrefix = implode(':', array_map([Str::class, 'lower'], $pluginParts));
+        $permissionName = "{$permissionPrefix}:{$snakeModelName}";
+        $path = "{$plugin}/{$packageName}/{$camelCaseName}";
+        $componentPath = "{$plugin}/views/{$camelCaseName}/index";
+        $componentPathPrefix = 'plugins/';
+    } else {
+        $permissionName = "{$packageName}:{$snakeModelName}";
+        $path = "{$packageName}/{$camelCaseName}";
+        $componentPath = "{$packageName}/views/{$camelCaseName}/index";
+        $componentPathPrefix = 'modules/';
+    }
+    
+    // 主菜单meta JSON
+    $mainMenuMeta = json_encode([
+        'title' => $menuName,
+        'i18n' => "{$packageName}.{$modelName}",
+        'icon' => 'mdi:menu',
+        'type' => 'M',
+        'hidden' => false,
+        'componentPath' => $componentPathPrefix,
+        'componentSuffix' => '.vue',
+        'breadcrumbEnable' => true,
+        'copyright' => true,
+        'cache' => true,
+        'affix' => false,
+    ], JSON_UNESCAPED_UNICODE);
+    
+    // 权限菜单配置
+    $permissionMenus = [
+        ['action' => 'list', 'title' => 'List', 'i18n' => 'crud.list'],
+        ['action' => 'create', 'title' => 'Add', 'i18n' => 'crud.add'],
+        ['action' => 'save', 'title' => 'Edit', 'i18n' => 'crud.edit'],
+        ['action' => 'delete', 'title' => 'Delete', 'i18n' => 'crud.delete'],
+    ];
+@endphp
+
+-- 主菜单
+INSERT INTO `{{$dbPrefix}}menu`
+(`name`, `path`, `component`, `redirect`, `created_by`, `updated_by`, `remark`, `meta`, `parent_id`, `updated_at`, `created_at`)
+VALUES ('{{$permissionName}}', '/{{$path}}', '{{$componentPath}}', '', '0', '0', '', '{{$mainMenuMeta}}', {{$pid}}, '{{$time}}', '{{$time}}');
+
+SET @LastInsertId := LAST_INSERT_ID();
+
+-- 权限菜单
+@foreach($permissionMenus as $menu)
+@php
+    $menuMeta = json_encode([
+        'title' => $menu['title'],
+        'type' => 'B',
+        'i18n' => $menu['i18n'],
+    ], JSON_UNESCAPED_UNICODE);
+@endphp
+INSERT INTO `{{$dbPrefix}}menu` (`name`, `meta`, `parent_id`, `updated_at`, `created_at`) VALUES (
+    '{{$permissionName}}:{{$menu['action']}}',
+    '{{$menuMeta}}',
+    @LastInsertId,
+    '{{$time}}',
+    '{{$time}}'
+);
+@endforeach

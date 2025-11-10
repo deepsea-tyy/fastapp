@@ -1,0 +1,80 @@
+# 客服模块 - 简体中文翻译配置
+kefu:
+  KefuManager: 客服管理
+  Kefu: 客服列表
+  KefuChat: 客服窗口
+  KefuConversation: 会话列表
+
+  KefuChatFields:
+    selectUser: 请选择用户开始聊天
+    inputPlaceholder: 输入消息内容（Ctrl+Enter 发送）
+    wsConnected: 已连接
+    wsDisconnected: 未连接
+    reconnect: 重新连接
+    loading: 加载中...
+    noMoreMessages: 没有更多消息了
+    endConversation: 结束会话
+    endConversationConfirm: 确定要结束当前会话吗？
+    endConversationTitle: 提示
+    send: 发送
+    adminUserConversation: 管理员用户会话列表
+    visitorConversation: 游客会话列表
+
+  # 客服管理相关
+  KefuFields:
+    title: 客服管理
+    nickname: 昵称
+    avatar: 头像
+    status: 状态
+    maxConcurrent: 最大会话数
+    currentConcurrent: 当前会话数
+    noLimit: 不限
+
+  # 客服会话相关
+  KefuConversationFields:
+    title: 客服会话
+    id: ID
+    userId: 用户ID
+    visitorId: 游客ID
+    user: 用户
+    status: 会话状态
+    lastMessageAt: 最后消息时间
+    unreadCount: 用户未读数
+    kefuUnreadCount: 客服未读数
+    createdAt: 创建时间
+    updatedAt: 更新时间
+    detail:
+      title: 会话消息详情
+
+  # 客服消息相关
+  KefuMessageFields:
+    id: ID
+    senderType: 发送者类型
+    messageType: 消息类型
+    content: 消息内容
+    fileUrl: 文件URL
+    isRead: 是否已读
+    readAt: 阅读时间
+    createdAt: 创建时间
+    read: 已读
+    unread: 未读
+
+  # 通用翻译配置
+  common:
+    # 会话状态
+    conversationStatus:
+      ongoing: 进行中
+      ended: 已结束
+      closed: 已关闭
+    senderType:
+      user: 用户
+      kefu: 客服
+    messageType:
+      text: 文本
+      image: 图片
+      file: 文件
+    labels:
+      visitor: 游客
+      admin: 管理员
+      uid: UID
+

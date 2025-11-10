@@ -1,0 +1,102 @@
+@php use Hyperf\Stringable\Str;@endphp
+@php
+    // 文件头部
+    echo '<?php' . PHP_EOL . PHP_EOL;
+    echo 'declare(strict_types=1);' . PHP_EOL;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $tableName = $table['name'] ?? '';
+    $modelName = $table['pascalCase'] ?? '';
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    
+    // 模块命名空间处理
+    $moduleNamespace = ucwords($module);
+    if (str_contains($module, '/')) {
+        $parts = explode('/', $module);
+        $moduleNamespace = implode('\\', array_map([Str::class, 'studly'], $parts));
+    }
+    
+    // 插件命名空间处理
+    $pluginNamespace = '';
+    if (!empty($plugin)) {
+        $pluginParts = explode('/', $plugin);
+        $pluginNamespace = implode('\\', array_map([Str::class, 'studly'], $pluginParts));
+    }
+    
+    // 命名空间生成
+    $namespace = $pluginNamespace
+        ? "Plugin\\{$pluginNamespace}\\Model"
+        : ($moduleNamespace ? "App\\Model\\{$moduleNamespace}" : "App\\Model");
+    
+    // 收集需要隐藏的字段（密码相关）
+    $hiddenFields = [];
+    foreach ($codeGenerator['formFields'] ?? [] as $field) {
+        $fieldName = $field['field'] ?? '';
+        if (in_array($fieldName, ['password', 'passwd', 'secret', 'google2fa', 'trans_password'], true)) {
+            $hiddenFields[] = $fieldName;
+        }
+    }
+    
+    // 输出命名空间和use语句
+    echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
+    echo 'use Hyperf\DbConnection\Model\Model;' . PHP_EOL;
+@endphp
+
+/**
+ * {{$table['comment'] ?? $table['name'] ?? ''}}模型
+ *
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    // PHP类型映射
+    $dbType = $field['dbType'] ?? '';
+    $phpType = match(true) {
+        in_array($dbType, ['int', 'tinyint', 'smallint', 'mediumint', 'bigint'], true) => 'int',
+        in_array($dbType, ['decimal', 'float', 'double'], true) => 'float',
+        in_array($dbType, ['json', 'array'], true) => 'array',
+        in_array($dbType, ['datetime', 'timestamp', 'date'], true) => '\Carbon\Carbon',
+        default => 'string'
+    };
+@endphp
+ * @property {{$phpType}} ${{$field['field']}} {{$field['label'] ?? ''}}
+@endforeach
+ */
+class {{$modelName}} extends Model
+{
+    protected ?string $table = '{{$tableName}}';
+
+    protected array $fillable = [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+        '{{$field['field']}}',
+@endforeach
+    ];
+
+    protected array $casts = [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    // Cast类型映射
+    $dbType = $field['dbType'] ?? '';
+    $castType = match(true) {
+        in_array($dbType, ['int', 'tinyint', 'smallint', 'bigint'], true) => 'integer',
+        in_array($dbType, ['float', 'double'], true) => 'float',
+        $dbType === 'decimal' => 'decimal:2',
+        in_array($dbType, ['json', 'array'], true) => 'array',
+        in_array($dbType, ['datetime', 'timestamp'], true) => 'datetime',
+        $dbType === 'date' => 'date',
+        default => 'string'
+    };
+@endphp
+        '{{$field['field']}}' => '{{$castType}}',
+@endforeach
+    ];
+@if(!empty($hiddenFields))
+    protected array $hidden = [
+@foreach($hiddenFields as $field)
+        '{{$field}}',
+@endforeach
+    ];
+@else
+    protected array $hidden = [];
+@endif
+}

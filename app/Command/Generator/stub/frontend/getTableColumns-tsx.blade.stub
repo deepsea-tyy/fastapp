@@ -1,0 +1,145 @@
+@php
+    use Hyperf\Stringable\Str;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $componentName = $table['pascalCase'] ?? '';
+    $camelCaseName = $table['camelCase'] ?? '';
+    $snakeComponentName = Str::snake($componentName);
+    $packageName = strtolower($module);
+    $isPluginMode = !empty($plugin);
+    // 表格字段过滤列表（不参与表格显示）
+    $tableFl = $codeGenerator['tableFl'] ?? [];
+    // 翻译字段列表（使用全局翻译 crud.field）
+    $transFl = $codeGenerator['transFl'] ?? [];
+    
+    // API路径和权限前缀生成
+    if ($isPluginMode) {
+        $pluginParts = explode('/', $plugin);
+        $pluginPath = implode('/', array_map([Str::class, 'lower'], $pluginParts));
+        $apiPath = "\$/{$pluginPath}/api/{$camelCaseName}.ts";
+        $permissionPrefix = str_replace('/', ':', $pluginPath);
+    } else {
+        $apiPath = "~/{$packageName}/api/{$camelCaseName}.ts";
+        $permissionPrefix = $packageName;
+    }
+@endphp
+import type { MaProTableColumns, MaProTableExpose } from '@/components/ma-pro-table'
+import type { {{$componentName}}Vo } from '{{$apiPath}}'
+import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
+
+import { useMessage } from '@/hooks/useMessage.ts'
+import { deleteByIds } from '{{$apiPath}}'
+import { ResultCode } from '@/utils/ResultCode.ts'
+import hasAuth from '@/utils/permission/hasAuth.ts'
+import { ElTag } from 'element-plus'
+
+export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
+  const dictStore = useDictStore()
+  const msg = useMessage()
+
+  const showBtn = (auth: string | string[], row: {{$componentName}}Vo) => {
+    return hasAuth(auth)
+  }
+
+  return [
+    // 多选列
+    { type: 'selection', showOverflowTooltip: false, label: () => t('crud.selection') },
+    // 索引序号列
+    { type: 'index' },
+    // 普通列
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    if (in_array($fieldName, $tableFl, true)) {
+        continue;
+    }
+@endphp
+@if($field['is_list'] ?? false)
+@php
+    // 处理标签
+    $label = $field['label'] ?? '';
+    if (str_contains($label, ':')) {
+        $label = trim(explode(':', $label, 2)[0]);
+    }
+    
+    // 翻译键生成
+    // 将字段名转换为驼峰格式用于匹配
+    $camelField = lcfirst(str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $field['field']))));
+    // 如果字段在翻译字段列表中，使用全局翻译 crud.field，否则使用模块翻译
+    if (in_array($camelField, $transFl, true)) {
+        $transKey = "crud.{$camelField}";
+    } else {
+        $transKey = "{$packageName}.{$componentName}Fields.{$field['field']}";
+    }
+    
+    $component = $field['component'] ?? '';
+@endphp
+    {
+      label: () => t('{{$transKey}}'), // '{{$label}}'
+      minWidth: 120,
+      prop: '{{$field['field']}}',
+@if($field['sortable'] ?? false)
+      sortable: 'custom',
+@endif
+@if($component === 'el-switch')
+      cellRender: ({ row }) => (
+        <ElTag type={row.{{$field['field']}} == 1 ? 'success' : 'danger'}>
+          {row.{{$field['field']}}}
+        </ElTag>
+      ),
+@elseif($component === 'el-select')
+      cellRender: ({ row }) => row.{{$field['field']}},
+@elseif($component === 'ma-upload-image')
+      cellRender: ({ row }) => (
+        <div class="flex-center">
+          <el-image class="max-w-32" src={(row.{{$field['field']}} === '' || !row.{{$field['field']}}) ? '' : row.{{$field['field']}}} alt="" />
+        </div>
+      ),
+@endif
+    },
+@endif
+@endforeach
+    // 操作列
+    {
+      type: 'operation',
+      label: () => t('crud.operation'),
+      fixed: 'right',
+      width: '260px',
+      operationConfigure: {
+        type: 'tile',
+        actions: [
+          {
+            name: 'edit',
+            icon: 'i-heroicons:pencil',
+            show: ({ row }) => showBtn('{{$permissionPrefix}}:{{$snakeComponentName}}:save', row),
+            text: () => t('crud.edit'),
+            linkProps: { type: 'primary' },
+            onClick: ({ row }) => {
+              dialog.setTitle(t('crud.edit'))
+              dialog.open({ formType: 'edit', data: row })
+            },
+          },
+          {
+            name: 'del',
+            show: ({ row }) => showBtn('{{$permissionPrefix}}:{{$snakeComponentName}}:delete', row),
+            icon: 'i-heroicons:trash',
+            text: () => t('crud.delete'),
+            linkProps: { type: 'danger' },
+            onClick: ({ row }, proxy: MaProTableExpose) => {
+              msg.delConfirm(t('crud.delDataMessage')).then(async () => {
+                const response = await deleteByIds([row.id])
+                if (response.code === ResultCode.SUCCESS) {
+                  msg.success(t('crud.delSuccess'))
+                  await proxy.refresh()
+                }
+              })
+            },
+          },
+        ],
+      },
+    },
+  ]
+}

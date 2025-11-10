@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .messages {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background-color: white;
+        }
+
+        .error {
+            border-left-color: #dc3545;
+            background-color: #ffe6e6;
+        }
+
+        .success {
+            border-left-color: #28a745;
+            background-color: #e6ffe6;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin: 10px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+<h1>WebSocket 连接测试</h1>
+
+<div class="form-group">
+    <label>WebSocket 地址:</label>
+    <input type="text" id="wsUrl" value="ws://127.0.0.1:9502/ws" style="width: 100%;">
+</div>
+
+<div class="form-group">
+    <label>JWT Token:</label>
+    <input type="text" id="token" placeholder="请输入您的 JWT Token" value="" style="width: 100%;">
+</div>
+
+<div class="form-group">
+    <label>设备信息 (X-Device-Info):</label>
+    <input type="text" id="deviceInfo" placeholder="请输入设备信息" style="width: 100%;">
+</div>
+<div class="form-group">
+    <label>发送自定义 JSON 消息:</label>
+    <textarea id="jsonMessage"
+              placeholder='请输入 JSON 消息，例如：&#10;{&#10;  "action": "kefu_message_send",&#10;  "data": {&#10;    "conversation_id": 1,&#10;    "content": "测试消息",&#10;    "message_type": 1,&#10;    "sender_type": 1&#10;  }&#10;}'></textarea>
+</div>
+
+<div>
+    <button id="connectBtn" onclick="connect()">连接</button>
+    <button id="disconnectBtn" onclick="disconnect()" disabled>断开</button>
+    <button onclick="clearMessages()">清空消息</button>
+    <button onclick="sendAuth()" disabled id="authBtn">发送认证</button>
+    <button onclick="sendPing()" disabled id="pingBtn">发送心跳</button>
+</div>
+
+<div id="status" class="status disconnected">未连接</div>
+
+<h3>客服系统测试:</h3>
+<div>
+    <button onclick="sendKefuMessage()" disabled id="kefuSendBtn">发送客服消息</button>
+    <button onclick="kefuMessageRead()" disabled id="kefuReadBtn">标记消息已读</button>
+    <button onclick="kefuMessageEnd()" disabled id="kefuEndBtn">结束会话</button>
+</div>
+
+<h3>测试操作:</h3>
+<div>
+    <button onclick="sendCustomJson()" disabled id="sendJsonBtn">发送 JSON 消息</button>
+    <button onclick="formatJson()">格式化 JSON</button>
+</div>
+
+<h4>快速示例:</h4>
+<div style="margin-bottom: 10px;">
+    <strong>基础:</strong>
+    <button onclick="loadExample('auth')">认证</button>
+    <button onclick="loadExample('ping')">心跳</button>
+</div>
+<div style="margin-bottom: 10px;">
+    <strong>发送消息:</strong>
+    <button onclick="loadExample('kefu_send')">用户文本</button>
+    <button onclick="loadExample('kefu_send_kefu')">客服文本</button>
+    <button onclick="loadExample('kefu_send_image')">图片消息</button>
+    <button onclick="loadExample('kefu_send_file')">文件消息</button>
+</div>
+<div style="margin-bottom: 10px;">
+    <strong>标记已读:</strong>
+    <button onclick="loadExample('kefu_read')">用户已读(指定)</button>
+    <button onclick="loadExample('kefu_read_all')">用户已读(全部)</button>
+    <button onclick="loadExample('kefu_read_kefu')">客服已读</button>
+</div>
+<div style="margin-bottom: 10px;">
+    <strong>会话管理:</strong>
+    <button onclick="loadExample('kefu_end')">结束会话</button>
+</div>
+<div>
+    <strong>游客操作:</strong>
+    <button onclick="loadExample('visitor_bind')">绑定游客连接</button>
+</div>
+
+<h3>消息记录:</h3>
+<div id="messages" class="messages"></div>
+
+<script>
+    let ws = null;
+    let isAuthenticated = false;
+
+    function addMessage(message, type = 'info') {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        const timestamp = new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateStatus(status, className) {
+        const statusDiv = document.getElementById('status');
+        statusDiv.textContent = status;
+        statusDiv.className = `status ${className}`;
+    }
+
+    function connect() {
+        const url = document.getElementById('wsUrl').value;
+
+        if (!url) {
+            alert('请输入 WebSocket 地址');
+            return;
+        }
+
+        try {
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                updateStatus('已连接', 'connected');
+                addMessage('WebSocket 连接成功', 'success');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('authBtn').disabled = false;
+                document.getElementById('sendJsonBtn').disabled = false;
+                document.getElementById('kefuSendBtn').disabled = false;
+                document.getElementById('kefuReadBtn').disabled = false;
+                document.getElementById('kefuEndBtn').disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    addMessage(`收到消息: ${JSON.stringify(data, null, 2)}`, 'success');
+
+                    // 处理认证成功
+                    if (data.success === true && data.data && data.data.user_id) {
+                        isAuthenticated = true;
+                        addMessage('认证成功！', 'success');
+                        document.getElementById('pingBtn').disabled = false;
+                    }
+
+                    // 处理连接成功消息
+                    if (data.type === 'connected') {
+                        addMessage('服务器连接确认', 'success');
+                    }
+
+                    // 处理心跳响应
+                    if (data.type === 'pong') {
+                        addMessage('收到心跳响应', 'success');
+                    }
+
+                    // 处理客服消息推送
+                    if (data.action === 'kefu_message') {
+                        addMessage('收到客服消息推送', 'success');
+                    }
+
+                    // 处理客服会话结束推送
+                    if (data.action === 'kefu_conversation_end') {
+                        addMessage('收到客服会话结束推送', 'success');
+                    }
+
+                    // 处理游客绑定成功
+                    if (data.success === true && data.message && data.message.includes('Bind key successfully')) {
+                        addMessage('游客连接绑定成功！', 'success');
+                    }
+
+                    // 处理错误
+                    if (data.success === false) {
+                        addMessage(`错误: ${data.message}`, 'error');
+                    }
+                } catch (e) {
+                    addMessage(`收到非 JSON 消息: ${event.data}`, 'info');
+                }
+            };
+
+            ws.onerror = (error) => {
+                addMessage(`WebSocket 错误: ${error}`, 'error');
+                updateStatus('连接错误', 'disconnected');
+            };
+
+            ws.onclose = () => {
+                updateStatus('已断开', 'disconnected');
+                addMessage('WebSocket 连接已关闭', 'error');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                document.getElementById('authBtn').disabled = true;
+                document.getElementById('pingBtn').disabled = true;
+                document.getElementById('sendJsonBtn').disabled = true;
+                isAuthenticated = false;
+            };
+        } catch (error) {
+            addMessage(`连接失败: ${error.message}`, 'error');
+        }
+    }
+
+    function disconnect() {
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+    }
+
+    function sendMessage(data) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            alert('WebSocket 未连接');
+            return;
+        }
+
+        try {
+            const json = JSON.stringify(data);
+            ws.send(json);
+            addMessage(`发送消息: ${json}`, 'info');
+        } catch (error) {
+            addMessage(`发送失败: ${error.message}`, 'error');
+        }
+    }
+
+    function sendAuth() {
+        const token = document.getElementById('token').value;
+        const deviceInfo = document.getElementById('deviceInfo').value;
+
+        if (!token) {
+            alert('请输入 Token');
+            return;
+        }
+
+        sendMessage({
+            action: 'login',
+            data: {
+                token: token,
+                'device': deviceInfo
+            }
+        });
+    }
+
+    function sendPing() {
+        sendMessage({
+            type: 'ping'
+        });
+    }
+
+    function clearMessages() {
+        document.getElementById('messages').innerHTML = '';
+    }
+
+    function sendCustomJson() {
+        const jsonText = document.getElementById('jsonMessage').value.trim();
+
+        if (!jsonText) {
+            alert('请输入 JSON 消息内容');
+            return;
+        }
+
+        try {
+            // 验证 JSON 格式
+            const jsonData = JSON.parse(jsonText);
+
+            // 发送消息
+            sendMessage(jsonData);
+        } catch (error) {
+            addMessage(`JSON 格式错误: ${error.message}`, 'error');
+            alert(`JSON 格式错误: ${error.message}`);
+        }
+    }
+
+    function formatJson() {
+        const jsonText = document.getElementById('jsonMessage').value.trim();
+
+        if (!jsonText) {
+            return;
+        }
+
+        try {
+            const jsonData = JSON.parse(jsonText);
+            document.getElementById('jsonMessage').value = JSON.stringify(jsonData, null, 2);
+        } catch (error) {
+            alert(`JSON 格式错误: ${error.message}`);
+        }
+    }
+
+    function loadExample(type) {
+        const token = document.getElementById('token').value || 'your-token';
+        const deviceInfo = document.getElementById('deviceInfo').value || 'your-device-info';
+
+        let example = {};
+
+        switch (type) {
+            case 'auth':
+                example = {
+                    action: 'login',
+                    data: {
+                        token: token,
+                        device: deviceInfo
+                    }
+                };
+                break;
+
+            case 'kefu_send':
+                example = {
+                    action: 'kefu_message_send',
+                    data: {
+                        conversation_id: 1,
+                        content: '这是一条测试消息',
+                        message_type: 1,
+                        sender_type: 1
+                    }
+                };
+                break;
+
+            case 'kefu_read':
+                example = {
+                    action: 'kefu_message_read',
+                    data: {
+                        conversation_id: 1,
+                        message_ids: [1, 2, 3],
+                        sender_type: 1
+                    }
+                };
+                break;
+
+            case 'kefu_end':
+                example = {
+                    action: 'kefu_message_end',
+                    data: {
+                        conversation_id: 1
+                    }
+                };
+                break;
+
+            case 'visitor_bind':
+                const bindKey = 'visitor_123456';
+                example = {
+                    action: 'kefu_message_visitor_bind_fd',
+                    data: {
+                        bind_key: bindKey
+                    },
+                    op_id: 'bind_' + Date.now()
+                };
+                break;
+
+            default:
+                return;
+        }
+
+        document.getElementById('jsonMessage').value = JSON.stringify(example, null, 2);
+    }
+
+    // 允许使用 Enter+Ctrl/Cmd 发送消息
+    document.getElementById('jsonMessage').addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            sendCustomJson();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+article:
+  Article: 文章列表
+  ArticleManager: 文章管理
+  ArticleFields:
+    title: 标题
+    subtitle: 副标题
+    author: 作者
+    cover: 封面
+    video: 视频
+    release_at: 发布日期
+    brief: 摘要
+    content: 内容
+    comment: 评论数
+    views: 浏览数
+    like: 点赞数
+    code: 调用代码
+    name: 名称
+    icon: icon
+    parent_id: 上级
+  Category: 分类列表
+  CategoryFields:
+    name: 名称
+    icon: icon
+    parent_id: 上级
+    code: 调用代码

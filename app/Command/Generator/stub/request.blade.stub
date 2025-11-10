@@ -1,0 +1,130 @@
+@php use Hyperf\Stringable\Str;@endphp
+@php
+    // 文件头部
+    echo '<?php' . PHP_EOL . PHP_EOL;
+    echo 'declare(strict_types=1);' . PHP_EOL;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $tableName = $table['name'] ?? '';
+    $module = $codeGenerator['module'] ?? '';
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $target = $codeGenerator['target'] ?? 'admin';
+    $requestName = $table['pascalCase'] ?? '';
+    
+    // 模块命名空间处理
+    $moduleNamespace = ucwords($module);
+    if (str_contains($module, '/')) {
+        $parts = explode('/', $module);
+        $moduleNamespace = implode('\\', array_map([Str::class, 'studly'], $parts));
+    }
+    
+    // 插件命名空间处理
+    $pluginNamespace = '';
+    if (!empty($plugin)) {
+        $pluginParts = explode('/', $plugin);
+        $pluginNamespace = implode('\\', array_map([Str::class, 'studly'], $pluginParts));
+    }
+    
+    // 命名空间生成
+    $httpType = $target === 'api' ? 'Api' : 'Admin';
+    $namespace = $pluginNamespace
+        ? "Plugin\\{$pluginNamespace}\\Http\\{$httpType}\\Request"
+        : "App\\Http\\{$httpType}\\Request\\{$moduleNamespace}";
+    
+    // 需要跳过的字段（使用表单过滤列表）
+    $formFl = $codeGenerator['formFl'] ?? [];
+    
+    // 输出命名空间和use语句
+    echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
+    echo 'use App\Common\Request\Traits\ActionRulesTrait;' . PHP_EOL;
+    echo 'use Hyperf\Validation\Request\FormRequest;' . PHP_EOL;
+@endphp
+
+class {{$requestName}}Request extends FormRequest
+{
+    use ActionRulesTrait;
+
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 通用验证规则（所有方法都会应用）
+     */
+    public function commonRules(): array
+    {
+        return [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    if (in_array($fieldName, $formFl, true)) {
+        continue;
+    }
+    $requestRules = $field['requestRules'] ?? [];
+    $nullable = $field['nullable'] ?? false;
+    
+    // 如果字段可以为null且不是required，添加nullable规则
+    if ($nullable && !in_array('required', $requestRules, true)) {
+        if (!in_array('nullable', $requestRules, true)) {
+            $requestRules[] = 'nullable';
+        }
+    }
+    
+    $rulesStr = !empty($requestRules) ? implode('|', $requestRules) : 'sometimes';
+@endphp
+            '{{$fieldName}}' => '{{$rulesStr}}',
+@endforeach
+        ];
+    }
+
+    /**
+     * 自动匹配create方法验证
+     */
+    public function createRules(): array
+    {
+        return [];
+    }
+
+    /**
+     * 自动匹配save方法验证
+     */
+    public function saveRules(): array
+    {
+        return [];
+    }
+
+    /**
+     * 获取验证字段的自定义名称
+     */
+    public function attributes(): array
+    {
+        return [
+@foreach($codeGenerator['formFields'] ?? [] as $field)
+@php
+    $fieldName = $field['field'] ?? '';
+    if (in_array($fieldName, $formFl, true)) {
+        continue;
+    }
+    $label = $field['label'] ?? '';
+    // 处理标签中的格式为 "xxx: 1=yyy, 2=zzz" 的内容，只保留冒号前的部分
+    if (str_contains($label, ':')) {
+        $label = trim(explode(':', $label, 2)[0]);
+    }
+@endphp
+            '{{$fieldName}}' => trans('{{$tableName}}.{{$fieldName}}') ?: '{{$label}}',
+@endforeach
+        ];
+    }
+
+    /**
+     * 获取验证错误的自定义消息
+     */
+    public function messages(): array
+    {
+        return [
+            // 可以在这里添加自定义的错误消息
+        ];
+    }
+}

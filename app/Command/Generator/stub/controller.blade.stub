@@ -1,0 +1,236 @@
+@php use Hyperf\Stringable\Str;@endphp
+@php
+    // 文件头部
+    echo '<?php' . PHP_EOL . PHP_EOL;
+    echo 'declare(strict_types=1);' . PHP_EOL;
+    
+    // 基础配置
+    $table = $codeGenerator['table'] ?? [];
+    $plugin = $codeGenerator['plugin'] ?? '';
+    $target = $codeGenerator['target'] ?? 'admin';
+    $module = $codeGenerator['module'] ?? '';
+    $controllerName = $table['pascalCase'] ?? '';
+    $snakeControllerName = Str::snake($controllerName);
+    $menuName = str_replace('表', '', $table['comment'] ?? '');
+    
+    // 模式判断
+    $isPluginMode = !empty($plugin);
+    $isAdminTarget = $target === 'admin';
+    $httpType = $isAdminTarget ? 'Admin' : 'Api';
+    
+    // 插件相关配置
+    $pluginNamespace = '';
+    $pluginPath = '';
+    $permissionPrefix = [];
+    if ($isPluginMode) {
+        $pluginParts = explode('/', $plugin);
+        $pluginNamespace = implode('\\', array_map([Str::class, 'studly'], $pluginParts));
+        $pluginPath = implode('/', array_map([Str::class, 'lower'], $pluginParts));
+        $permissionPrefix = array_map([Str::class, 'lower'], $pluginParts);
+    }
+    
+    // 模块命名空间处理
+    $namespaceName = ucwords($module);
+    if (str_contains($module, '/')) {
+        $parts = explode('/', $module);
+        $namespaceName = implode('\\', array_map([Str::class, 'studly'], $parts));
+    }
+    
+    // 模块路径处理（用于 URL 路径）
+    $modulePath = strtolower($module);
+    if (str_contains($modulePath, '/')) {
+        $parts = explode('/', $modulePath);
+        $studlyParts = array_map([Str::class, 'studly'], $parts);
+        $modulePath = Str::snake(end($studlyParts));
+    }
+    
+    // 权限名称生成
+    $permissionName = $isAdminTarget
+        ? ($permissionPrefix ? implode(':', $permissionPrefix) . ':' : '') . Str::snake($controllerName)
+        : ($pluginNamespace ? implode('', array_map('ucwords', $permissionPrefix)) : '') . ucwords($module) . ucwords($controllerName);
+    
+    // URL路径生成
+    $routePrefix = $isAdminTarget ? 'admin' : 'api';
+    $urlPathPrefix = $isPluginMode
+        ? implode('/', [$routePrefix, $pluginPath, $snakeControllerName])
+        : implode('/', [$routePrefix, $modulePath, $snakeControllerName]);
+    
+    // 控制器和中间件配置
+    $baseController = $isAdminTarget
+        ? 'App\\Http\\Admin\\Controller\\AbstractController'
+        : 'App\\Common\\AbstractController';
+    
+    // 命名空间生成
+    $namespace = $isPluginMode
+        ? "Plugin\\{$pluginNamespace}\\Http\\{$httpType}\\Controller"
+        : "App\\Http\\{$httpType}\\Controller\\{$namespaceName}";
+    
+    // 请求和服务类命名空间
+    $requestNamespace = $isPluginMode
+        ? "Plugin\\{$pluginNamespace}\\Http\\{$httpType}\\Request"
+        : "App\\Http\\{$httpType}\\Request\\{$namespaceName}";
+    $serviceNamespace = $isPluginMode
+        ? "Plugin\\{$pluginNamespace}\\Http\\{$httpType}\\Service"
+        : "App\\Http\\{$httpType}\\Service\\{$namespaceName}";
+    
+    // 输出命名空间
+    echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
+    
+    // 输出use语句
+    $useStatements = [
+        $baseController,
+        'App\\Common\\Result',
+        'App\\Http\\CurrentUser',
+        "{$requestNamespace}\\{$controllerName}Request as Request",
+        "{$serviceNamespace}\\{$controllerName}Service as Service",
+    ];
+    
+    // 中间件use语句
+    if ($isAdminTarget) {
+        $useStatements = array_merge($useStatements, [
+            'App\\Http\\Admin\\Permission',
+            'App\\Http\\Admin\\Middleware\\PermissionMiddleware',
+            'App\\Common\\Middleware\\AccessTokenMiddleware',
+            'App\\Common\\Middleware\\OperationMiddleware',
+        ]);
+    } else {
+        $useStatements[] = 'App\\Common\\Middleware\\TokenMiddleware';
+    }
+    
+    // Swagger相关use语句
+    $useStatements = array_merge($useStatements, [
+        'Hyperf\\HttpServer\\Annotation\\Middleware',
+        'Hyperf\\Swagger\\Annotation as OA',
+        'Hyperf\\Swagger\\Annotation\\Delete',
+        'Hyperf\\Swagger\\Annotation\\Get',
+        'Hyperf\\Swagger\\Annotation\\Post',
+        'Hyperf\\Swagger\\Annotation\\Put',
+        'Hyperf\\Swagger\\Annotation\\RequestBody',
+        'Hyperf\\Swagger\\Annotation\\JsonContent',
+        'App\\Common\\Swagger\\ResultResponse',
+    ]);
+    
+    foreach ($useStatements as $use) {
+        echo "use {$use};" . PHP_EOL;
+    }
+    echo PHP_EOL . PHP_EOL;
+@endphp
+
+/**
+ * {{$menuName}}控制器
+ * 
+ * @author 代码生成器
+ * @date {{date('Y-m-d H:i:s')}}
+ */
+#[OA\Tag('{{$menuName}}')]
+#[OA\HyperfServer('http')]
+@if($isAdminTarget)
+#[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
+#[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
+#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+@else
+#[Middleware(middleware: TokenMiddleware::class)]
+@endif
+class {{$controllerName}}Controller extends AbstractController
+{
+    public function __construct(
+        private readonly Service $service,
+        private readonly CurrentUser $currentUser
+    ) {}
+
+    #[Get(
+        path: '/{{$urlPathPrefix}}/list',
+        operationId: '{{$permissionName}}:list',
+        summary: '{{$menuName}}列表',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['{{$menuName}}'],
+    )]
+@if($isAdminTarget)
+    #[Permission(code: '{{$permissionName}}:list')]
+@endif
+    #[ResultResponse(instance: new Result())]
+    public function pageList(): Result
+    {
+@if($isAdminTarget)
+        return $this->success(
+            $this->service->page(
+                array_merge($this->getRequestData(), [
+                    'created_by' => $this->currentUser->id(),
+                ]),
+                $this->getCurrentPage(),
+                $this->getPageSize()
+            )
+        );
+@else
+        return $this->success();
+@endif
+    }
+
+    #[Post(
+        path: '/{{$urlPathPrefix}}/create',
+        operationId: '{{$permissionName}}:create',
+        summary: '{{$menuName}}新增',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['{{$menuName}}'],
+    )]
+@if($isAdminTarget)
+    #[Permission(code: '{{$permissionName}}:create')]
+@endif
+    #[ResultResponse(instance: new Result())]
+    public function create(Request $request): Result
+    {
+@if($isAdminTarget)
+        $this->service->create(array_merge($this->getRequestData(), [
+            'created_by' => $this->currentUser->id(),
+        ]));
+@endif
+        return $this->success();
+    }
+
+    #[Put(
+        path: '/{{$urlPathPrefix}}/save/{id}',
+        operationId: '{{$permissionName}}:save',
+        summary: '{{$menuName}}保存',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['{{$menuName}}'],
+    )]
+@if($isAdminTarget)
+    #[Permission(code: '{{$permissionName}}:save')]
+@endif
+    #[ResultResponse(instance: new Result())]
+    public function save(int $id, Request $request): Result
+    {
+@if($isAdminTarget)
+        $this->service->updateById($id, array_merge($this->getRequestData(), [
+            'updated_by' => $this->currentUser->id(),
+        ]));
+@endif
+        return $this->success();
+    }
+
+    #[Delete(
+        path: '/{{$urlPathPrefix}}/delete',
+        operationId: '{{$permissionName}}:delete',
+        summary: '{{$menuName}}删除',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['{{$menuName}}'],
+    )]
+    #[RequestBody(
+        content: new JsonContent(
+            type: 'array',
+            items: new OA\Items(type: 'integer'),
+            example: '[1, 2, 3]'
+        )
+    )]
+    #[ResultResponse(instance: new Result())]
+@if($isAdminTarget)
+    #[Permission(code: '{{$permissionName}}:delete')]
+@endif
+    public function delete(): Result
+    {
+@if($isAdminTarget)
+        $this->service->deleteById($this->getRequestData(), []);
+@endif
+        return $this->success();
+    }
+}
