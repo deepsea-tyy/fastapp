@@ -16,15 +16,12 @@
 - 实时消息推送（WebSocket）
 - 消息记录
 
-# 下载安装
-
-- 后台应用市场下载插件
-- 命令安装，在后端根目录下执行命令：
+# 安装卸载
 ```sh
-php bin/hyperf.php plugin:download ds/kefu
+php bin/hyperf.php plugin:install ds/kefu  --yes
 ```
 ```sh
-php bin/hyperf.php plugin:install ds/kefu --yes
+php bin/hyperf.php plugin:uninstall ds/kefu --yes
 ```
 
 ## 功能模块

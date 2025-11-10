@@ -14,3 +14,4 @@ keyandcontent.json
 test*
 *code-generator.php
 .phpstorm*
+phpstan*

@@ -3,6 +3,7 @@
 import getFormItems from './data/getFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
+import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import { create, save } from '$/ds/kefu/api/kefu.ts'
 
@@ -24,9 +25,14 @@ useForm('formRef').then((form: MaFormExpose) => {
     })
   }
   form.setItems(getFormItems(formType, t, formData.value))
-  form.setOptions({
-    labelWidth: '100px',
-  })
+})
+
+// 响应式布局
+useFormResponsive(formRef, {
+  xsLabelPosition: 'top',
+  smLabelPosition: 'right',
+  lgLabelPosition: 'right',
+  lgLabelWidth: '100px',
 })
 
 // 创建操作

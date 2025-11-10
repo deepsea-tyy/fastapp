@@ -1,0 +1,207 @@
+// 颜色变量
+$primary-color: rgba(99, 102, 241, 0.6);
+$primary-color-light: rgba(99, 102, 241, 0.3);
+$primary-color-dark: rgba(99, 102, 241, 0.1);
+$bg-dark: rgba(15, 15, 25, 0.8);
+
+.login-container {
+  @apply relative w-full h-screen overflow-hidden;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+// 粒子背景效果
+.particles-background {
+  @apply absolute inset-0 pointer-events-none;
+  z-index: 1;
+}
+
+.particle {
+  @apply absolute rounded-full;
+  background: $primary-color;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.8), 0 0 20px rgba(99, 102, 241, 0.4);
+  animation: float infinite ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+// 网格背景
+.grid-background {
+  @apply absolute inset-0;
+  background-image: 
+    linear-gradient($primary-color-dark 1px, transparent 1px),
+    linear-gradient(90deg, $primary-color-dark 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: 1;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+// 主要内容区
+.login-content {
+  @apply relative z-10 flex flex-col items-center justify-center min-h-screen;
+  padding: 2rem;
+}
+
+// Logo区域
+.logo-section {
+  @apply flex flex-col items-center mb-8;
+}
+
+// 表单区域
+.form-section {
+  @apply w-full max-w-md;
+}
+
+.form-card {
+  @apply relative rounded-2xl p-8 overflow-hidden;
+  background: $bg-dark;
+  backdrop-filter: blur(10px);
+  border: 1px solid $primary-color-light;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  
+  .card-glow {
+    @apply absolute inset-0 opacity-0 pointer-events-none;
+    background: radial-gradient(circle at center, $primary-color-light 0%, transparent 70%);
+    animation: cardGlow 4s ease-in-out infinite;
+  }
+  
+  .card-content {
+    @apply relative z-10;
+  }
+  
+  .form-header {
+    @apply flex items-center justify-between mb-2;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  
+  .form-title {
+    @apply text-2xl font-bold text-white;
+    margin: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .language-select {
+    width: 100px;
+    flex-shrink: 0;
+    
+    :deep(.el-input__wrapper) {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid $primary-color-light;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+      
+      &:hover {
+        border-color: $primary-color;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+      }
+      
+      &.is-focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      }
+    }
+    
+    :deep(.el-input__inner) {
+      color: #fff;
+      font-size: 12px;
+    }
+    
+    :deep(.el-select__placeholder) {
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+  
+}
+
+@keyframes cardGlow {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+// 底部区域
+.footer-section {
+  @apply mt-8 text-center;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .login-content {
+    padding: 1rem;
+  }
+  
+  .form-card {
+    @apply p-6;
+  }
+  
+  .form-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .form-title {
+    @apply text-xl;
+  }
+  
+  .language-select {
+    width: 100px;
+  }
+}
+
+// 继承原有的登录表单样式
+.mine-login-form {
+  @apply flex flex-col gap-y-5 relative z-20 transition-all mt-5 w-full;
+
+  & .mine-login-form-item {
+    @apply flex flex-col gap-y-1.5;
+
+    & .mine-login-form-item-title {
+      @apply text-gray-300 text-sm;
+    }
+  }
+}
+
+// Element Plus Select 下拉选项样式
+:deep(.el-select-dropdown) {
+  background: $bg-dark !important;
+  border: 1px solid $primary-color-light !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.3) !important;
+  backdrop-filter: blur(10px);
+  
+  .el-select-dropdown__item {
+    color: rgba(255, 255, 255, 0.8);
+    
+    &:hover {
+      background: rgba(99, 102, 241, 0.2);
+      color: #fff;
+    }
+    
+    &.selected {
+      background: rgba(99, 102, 241, 0.3);
+      color: #fff;
+      font-weight: 500;
+    }
+  }
+}

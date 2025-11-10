@@ -27,7 +27,7 @@ const msg = useMessage()
 // 抽屉配置
 const maDrawer: UseDrawerExpose = useDrawer({
   // 设置抽屉的 size
-  size: '50%',
+
   closeOnClickModal: true,
   // 保存数据
   ok: ({ formType }, okLoadingState: (state: boolean) => void) => {

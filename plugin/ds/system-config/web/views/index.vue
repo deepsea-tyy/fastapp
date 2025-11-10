@@ -79,7 +79,7 @@ const buttons = [
 
 // 抽屉配置
 const maDrawer: UseDrawerExpose = useDrawer({
-  size: '50%',
+
   ok: () => {
     const elForm = drawerRef.value.settingFormRef?.maForm.getElFormRef()
     if (!elForm) {

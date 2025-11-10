@@ -28,8 +28,8 @@ class FileController extends AbstractController
     #[Get(
         path: '/api/file',
         operationId: 'GetStorageFile',
-        summary: '获取storage目录文件（测试阶段使用）',
-        tags: ['文件访问'],
+        summary: '文件访问（测试阶段使用）',
+        tags: ['文件管理'],
     )]
     #[QueryParameter(name: 'path', description: '文件路径，相对于storage目录', example: 'uploads/2025-10-29/example.jpg')]
     public function getFile(): ResponseInterface

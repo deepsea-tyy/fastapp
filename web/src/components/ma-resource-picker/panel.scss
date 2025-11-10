@@ -1,0 +1,158 @@
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ma-resource-panel{
+  @apply relative;
+  --resource-item-size:120px;
+
+  .ma-resource-dock {
+    @apply absolute bg-gray-2 dark-bg-dark-9
+    rounded-xl p-1 flex items-center justify-center gap-x-0.5
+    ;
+    height: 40px;
+    left: 50%;
+    transform: translate(-50%, 0%);
+    bottom: 0;
+
+    .res-app-container {
+      @apply relative h-40px flex items-center;
+    }
+
+    // 白色圆点
+    .activate::after {
+      content: "";
+      @apply block b-2 b-solid b-white rounded-full w-0 h-0 absolute bottom-2px left-50%;
+    }
+
+    .res-app {
+      @apply w-40px h-40px shadow-inset shadow-md rounded-10px transition-all duration-300 flex items-center justify-center
+      bg-gray-3 dark-bg-dark-4
+        dark-shadow-dark-9
+      ;
+    }
+
+    .res-app-icon {
+      @apply w-55px h-55px !text-2xl transform-all duration-300 text-dark-1 dark-text-gray-2 cursor-pointer
+      ;
+    }
+
+    // 主放大效果
+    .main-effect {
+      width: 80px;
+      height: 80px;
+      transform: translateY(-40px);
+    }
+
+    .main-effect .res-app-icon {
+      @apply w-80px h-80px !text-[60px];
+    }
+
+    // 次放大效果
+    .second-effect {
+      width: 60px;
+      height: 60px;
+      transform: translateY(-20px);
+    }
+
+    .second-effect .res-app-icon {
+      @apply w-60px h-60px !text-[40px];
+    }
+
+    // 最次放大效果
+    .third-effect {
+      width: 50px;
+      height: 50px;
+      transform: translateY(-10px);
+    }
+
+    .third-effect .res-app-icon {
+      @apply w-50px h-50px !text-[30px];
+    }
+  }
+}
+.resource-item{
+  animation: fadeIn 0.38s ease-out forwards;
+  --un-bg-opacity: 0.3;
+  @apply relative min-w-[var(--resource-item-size)] pb-[100%] rounded overflow-hidden border-box bg-gray-1  dark-bg-dark-3;
+}
+.resource-item__cover{
+  @apply absolute bottom-0 left-0 h-full w-full;
+}
+.resource-item__name{
+  @apply absolute bottom-0 left-0 h-24px w-[calc(100%-20px)] overflow-hidden bg-gray:60 px-10px text-12px leading-24px whitespace-nowrap text-ellipsis c-white;
+
+}
+.resource-item__selected{
+  @apply absolute top--30px right--30px w-40px h-40px;
+  //transition: all 0.1s ease-in-out;
+  background-image: linear-gradient(to top right, transparent 50%, rgb(var(--ui-primary)) 50%);
+}
+.resource-item__selected-icon{
+  @apply absolute top-0 right-0 p-2px c-white;
+}
+.resource-item.active .resource-item__selected{
+  @apply top-0 right-0;
+}
+
+.resource-placeholder{
+  @apply min-w-[var(--resource-item-size)] h-0 pointer-events-none p-0;
+}
+.resource-skeleton{
+  @apply min-w-[var(--resource-item-size)] pb-[100%];
+}
+
+.resource-item:hover,
+.resource-item.active {
+  @apply ring-2 ring-[rgb(var(--ui-primary))];
+}
+
+// 上传进度样式
+.upload-progress-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.upload-progress-content {
+  @apply bg-white dark:bg-dark-3 rounded-lg p-6 min-w-80 max-w-md shadow-xl;
+}
+
+.upload-progress-header {
+  @apply flex items-center text-lg mb-2;
+}
+
+.upload-progress-filename {
+  @apply text-sm text-gray-600 dark:text-gray-400 mb-4 truncate;
+}
+
+.upload-progress-bar {
+  @apply w-full h-2 bg-gray-200 dark:bg-dark-4 rounded-full overflow-hidden mb-2;
+}
+
+.upload-progress-fill {
+  @apply h-full bg-blue-500 transition-all duration-300 ease-out;
+}
+
+.upload-progress-percentage {
+  @apply text-sm text-center font-medium text-gray-700 dark:text-gray-300;
+}
+
+// 上传中状态
+.res-app.uploading {
+  @apply bg-blue-100 dark:bg-blue-900;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

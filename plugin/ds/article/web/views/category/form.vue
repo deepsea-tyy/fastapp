@@ -4,6 +4,7 @@ import { create, save } from '$/ds/article/api/category.ts'
 import getFormItems from './data/getFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
+import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 
 const { formType = 'add', data = null } = defineProps<{
@@ -22,9 +23,14 @@ useForm('maFormRef').then((form: MaFormExpose) => {
     })
   }
   form.setItems(getFormItems(formType, t, formModel.value))
-  form.setOptions({
-    labelWidth: '120px',
-  })
+})
+
+// 响应式布局
+useFormResponsive(maFormRef, {
+  xsLabelPosition: 'top',
+  smLabelPosition: 'right',
+  lgLabelPosition: 'right',
+  lgLabelWidth: '120px',
 })
 
 // 创建操作

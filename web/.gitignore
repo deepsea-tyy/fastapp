@@ -1,0 +1,13 @@
+node_modules
+.DS_Store
+dist*
+dist-ssr
+*.local
+.eslintcache
+.stylelintcache
+pnpm-lock.yaml
+.idea*
+types/auto-imports.d.ts
+types/components.d.ts
+.idea
+src/plugins/*

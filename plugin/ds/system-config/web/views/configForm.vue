@@ -5,6 +5,7 @@ import { create, save } from '$/ds/system-config/api/config.ts'
 import getSettingConfigFormItems from './data/getSysConfigFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
+import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 
 defineOptions({ name: 'system:group:form' })
@@ -24,9 +25,14 @@ useForm('defaultForm').then((form: MaFormExpose) => {
     defaultModel.value.group_code = data.code
   }
   form.setItems(getSettingConfigFormItems(formType, t, defaultModel.value))
-  form.setOptions({
-    labelWidth: '120px',
-  })
+})
+
+// 响应式布局
+useFormResponsive(defaultForm, {
+  xsLabelPosition: 'top',
+  smLabelPosition: 'right',
+  lgLabelPosition: 'right',
+  lgLabelWidth: '120px',
 })
 
 // 创建操作

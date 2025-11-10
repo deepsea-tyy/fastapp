@@ -16,14 +16,12 @@
 
 系统设置插件，提供设置持久化保存的功能，方便前端和其他业务调用静态数据
 
-# 下载安装
-- 后台应用市场下载插件
-- 命令安装，在后端根目录下执行命令：
+# 安装卸载
 ```sh
-php bin/hyperf.php plugin:download ds/system-config
+php bin/hyperf.php plugin:install ds/system-config  --yes
 ```
 ```sh
-php bin/hyperf.php plugin:install ds/system-config --yes
+php bin/hyperf.php plugin:uninstall ds/system-config --yes
 ```
 
 # 使用方法
@@ -36,8 +34,3 @@ php bin/hyperf.php plugin:install ds/system-config --yes
 // 获取某个配置所有信息
 \Plugin\Ds\SystemConfig\Helper\Helper::getSystemConfig('testType');
 ```
-
-# 界面预览
-<img src=https://pan.imgbed.link/file/243717 />
-<img src=https://pan.imgbed.link/file/243718 />
-<img src=https://pan.imgbed.link/file/243719 />

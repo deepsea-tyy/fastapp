@@ -5,6 +5,7 @@ import { create, save } from '$/ds/system-config/api/configGroup.ts'
 import getSysGroupFormItems from './data/getSysGroupFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
+import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 
 defineOptions({ name: 'system:group:form' })
@@ -25,9 +26,14 @@ useForm('defaultForm').then((form: MaFormExpose) => {
     })
   }
   form.setItems(getSysGroupFormItems(formType, t, defaultModel.value))
-  form.setOptions({
-    labelWidth: '120px',
-  })
+})
+
+// 响应式布局
+useFormResponsive(defaultForm, {
+  xsLabelPosition: 'top',
+  smLabelPosition: 'right',
+  lgLabelPosition: 'right',
+  lgLabelWidth: '120px',
 })
 
 // 创建操作
