@@ -103,7 +103,7 @@
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
 <div align="center">
-  <img src="pay.jpg" alt="给我一杯咖啡" width="300" />
+  <img src="./assets/wechat_qr.png" alt="微信收款码" width="300" />
 </div>
 
 ---
