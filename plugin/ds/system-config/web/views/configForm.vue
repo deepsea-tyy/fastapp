@@ -41,7 +41,7 @@ function add(): Promise<any> {
     create(defaultModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }
@@ -52,7 +52,7 @@ function edit(): Promise<any> {
     save(defaultModel.value.key, defaultModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

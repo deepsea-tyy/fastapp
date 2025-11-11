@@ -41,7 +41,7 @@ function add(): Promise<any> {
     create(formData.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }
@@ -51,7 +51,7 @@ function edit(): Promise<any> {
     save(formData.value.id as number, formData.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

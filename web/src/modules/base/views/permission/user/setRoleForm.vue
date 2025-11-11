@@ -61,7 +61,7 @@ function saveUserRole(): Promise<any> {
     setUserRole(userModel.value.id as number, userModel.value.roleCode as string[]).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

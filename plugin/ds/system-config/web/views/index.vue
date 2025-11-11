@@ -123,9 +123,9 @@ function handleCreateSuccess() {
 
 // 删除事件
 function handleDelete(item: ConfigGroupListVo) {
-  msg.confirm(t('systemMenu.confirmationMessages.deleteDataSource')).then(() => {
+  msg.confirm(t('systemMenu.confirmationMessages.delete')).then(() => {
     deleteByIds([item.id as number]).then((res: any) => {
-      res.code === ResultCode.SUCCESS ? msg.success(t('crud.deleteDataSource')) : msg.error(res.message)
+      res.code === ResultCode.SUCCESS ? msg.success(t('crud.delete')) : msg.error(res.message)
       getList()
     })
   })

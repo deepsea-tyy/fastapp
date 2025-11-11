@@ -43,7 +43,7 @@ function edit(): Promise<any> {
     batchUpdate(model.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

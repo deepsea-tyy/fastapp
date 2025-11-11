@@ -36,7 +36,7 @@ function add(): Promise<any> {
     create(userModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }
@@ -47,7 +47,7 @@ function edit(): Promise<any> {
     save(userModel.value.id as number, userModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

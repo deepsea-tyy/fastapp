@@ -39,7 +39,7 @@ function add(): Promise<any> {
     create(formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }
@@ -50,7 +50,7 @@ function edit(): Promise<any> {
     save(formModel.value.id as number, formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }
