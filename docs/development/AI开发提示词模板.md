@@ -23,15 +23,14 @@
 
 ## ⚡ AI 能力边界
 
-> 📖 **详细说明**：请查看 [AI辅助开发流程指南 - AI 能力边界](./AI辅助开发流程指南.md#ai-能力边界)
-
-**简要说明**：
-- ✅ AI 可以：判断、生成代码/命令/SQL、验证文件、执行后续操作
-- ❌ AI 不能：直接执行代码生成器命令、直接执行数据库 SQL
+**AI 可以做什么**：
+- ✅ 自动执行：代码生成器命令、数据库 SQL、菜单 SQL
+- ✅ 生成代码：PHP、SQL、配置文件等
+- ✅ 验证和优化：语法检查、规范验证、代码优化
 
 **AI 判断逻辑**：
-- ✅ 需要使用代码生成器：新数据库表 + 完整 CRUD
-- ❌ 不需要使用代码生成器：扩展已有功能、单个接口、WebSocket 等
+- ✅ 使用代码生成器：新数据库表 + 完整 CRUD
+- ❌ 不使用代码生成器：扩展已有功能、单个接口、WebSocket 等
 
 ## 📚 模板分类
 
@@ -56,15 +55,15 @@
 请先阅读以下文档，理解 FastApp 框架的开发规范：
 
 1. docs/README.md - 文档导航
-2. docs/项目结构.md - 项目结构
-3. docs/开发规范.md - 开发规范
-4. docs/快速开始.md - 快速开始指南
-5. docs/AI辅助开发流程指南.md - AI开发流程
+2. docs/getting-started/项目结构.md - 项目结构
+3. docs/development/开发规范.md - 开发规范
+4. docs/getting-started/快速开始.md - 快速开始指南
+5. docs/development/AI辅助开发流程指南.md - AI开发流程
 
-阅读完成后，请确认：
-- ✅ 理解了代码分层架构（Controller → Service → Repository → Model）
-- ✅ 理解了 Admin 模式和 API 模式的区别
-- ✅ 理解了代码生成器的使用方式
+阅读完成后，请确认已理解：
+- 代码分层架构（Controller → Service → Repository → Model）
+- Admin 模式和 API 模式的区别
+- 代码生成器的使用方式
 
 然后告诉我你已经准备好开始开发了。
 ```
@@ -84,8 +83,8 @@
    - 如果只是扩展已有功能 → ❌ 不使用代码生成器
 3. **如果需要代码生成器**：
    - 设计数据库表结构，生成 CREATE TABLE SQL
-   - 提示：请先执行 SQL 创建表，然后回复"表已创建"
-   - 生成代码生成器命令，提示执行
+   - 自动执行 SQL 创建表
+   - 自动执行代码生成器命令
    - 验证生成的文件，自动添加数据权限和业务逻辑
 4. **如果不需要代码生成器**：直接生成代码
 
@@ -113,20 +112,16 @@
 - 遵循 FastApp 开发规范
 
 **AI 处理流程：**
-1. 判断：需要新数据库表 + 完整 CRUD → ✅ 使用代码生成器
-2. 设计数据库表结构，生成 CREATE TABLE SQL
-   - 字段注释格式：`字段说明[required,search]`
-   - 枚举值格式：`状态 0=禁用,1=启用`
-3. 提示：请先执行 SQL 创建表，然后回复"表已创建"
-4. 生成代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --pid={pid}`
-5. 验证生成的文件完整性
-6. 自动在 Service 层添加数据权限逻辑（如需要）
-7. 提示执行菜单 SQL 文件（或使用 --sql=true）
+1. 设计数据库表结构（字段注释格式：`字段说明[required,search]`，枚举值：`状态 0=禁用,1=启用`）
+2. 自动执行 SQL 创建表
+3. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --pid={pid}`
+4. 验证生成的文件完整性
+5. 自动在 Service 层添加数据权限（`DataScopeTool::applyUserDataScope(0, $query)`）
+6. 自动执行菜单 SQL（或使用 `--sql=true`）
 
 **重要提示：**
 - 权限代码格式：`{module}:{table}:{action}`
-- 数据权限在 Service 层应用：`DataScopeTool::applyUserDataScope(0, $query)`
-- ⚠️ 代码生成器生成的 Service 默认不包含数据权限，需要手动添加
+- 数据权限在 Service 层应用，AI 会自动添加
 
 请按照流程执行。
 ```
@@ -152,15 +147,13 @@
 - 使用 `TokenMiddleware`
 
 **开发步骤：**
-1. 设计数据库表结构，生成 CREATE TABLE SQL
-2. **用户执行 SQL 创建表**
-3. 生成代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
-4. **用户执行代码生成器命令**
-5. 验证生成的文件完整性
+1. 设计数据库表结构并自动执行 SQL 创建表
+2. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
+3. 验证生成的文件完整性
 
 **重要提示：**
 - API 模式只生成后端代码，不生成前端代码和菜单 SQL
-- 路由路径格式：`/api/{module}/{table}/{action}`
+- 路由路径：`/api/{module}/{table}/{action}`
 ```
 
 ---
@@ -205,17 +198,12 @@
   - `backend` - 后端类型（仅后端代码）
 
 **开发步骤：**
-1. 执行插件创建命令：
-   ```bash
-   php bin/hyperf.php plugin:create {organization}/{plugin} --name="{插件名}" --type=mix --description="{描述}" --author="{作者}"
-   ```
-   ⚠️ **重要**：`--type` 参数必须使用枚举键名（`mix`、`frond`、`backend`），不是全称
-2. AI 验证插件目录结构
-3. AI 生成数据库迁移文件（如需要）
+1. 自动执行插件创建命令：`php bin/hyperf.php plugin:create {organization}/{plugin} --name="{插件名}" --type=mix --description="{描述}" --author="{作者}"`
+2. 验证插件目录结构
+3. 生成数据库迁移文件（如需要）
 
 **注意事项：**
-- 插件类型参数格式：使用 `mix` 而不是 `mixed`
-- 如果命令报错 "Plugin type is empty"，检查 `--type` 参数值是否正确
+- `--type` 参数值：`mix`（混合）、`frond`（前端）、`backend`（后端），必须使用枚举键名
 ```
 
 #### 模板 3.2：在插件中生成 CRUD
@@ -227,16 +215,14 @@
 {table_structure_sql}
 
 **开发步骤：**
-1. **用户执行 SQL 创建表**
-2. 生成代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --plugin={organization}/{plugin}`
-3. **用户执行代码生成器命令**
-4. AI 验证生成的文件完整性
-5. ⚠️ **重要**：AI 在 Service 层添加数据权限逻辑（代码生成器不会自动添加）
+1. 自动执行 SQL 创建表
+2. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --plugin={organization}/{plugin}`
+3. 验证生成的文件完整性
+4. 自动在 Service 层添加数据权限逻辑
 
 **重要提示：**
-- 插件模式权限代码格式：`{plugin_path}:{table_name}:{action}`（如 `ds/article` → `ds:article:article:list`）
-- 插件路径中的 `/` 会被转换为 `:`（如 `ds/gift-card` → `ds:gift-card`）
-- ⚠️ **代码生成器生成的 Service 默认不包含数据权限**，需要手动添加
+- 权限代码格式：`{plugin_path}:{table_name}:{action}`（如 `ds/article` → `ds:article:article:list`）
+- 插件路径中的 `/` 会被转换为 `:`
 ```
 
 ---
@@ -300,9 +286,9 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 ```
 
 **注意事项：**
-- ⚠️ 使用 `$this->repository->getQuery()` 而不是 `model()->newQuery()`
-- ⚠️ 使用 `perQuery()` 统一处理搜索和排序
-- ⚠️ 先应用数据权限，再应用搜索条件和排序
+- 使用 `$this->repository->getQuery()` 而不是 `model()->newQuery()`
+- 使用 `perQuery()` 统一处理搜索和排序
+- 先应用数据权限，再应用搜索条件和排序
 - 参数 `0` 表示使用当前登录用户
 
 请添加数据权限逻辑。
@@ -329,14 +315,11 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 - 数据权限（按部门）
 
 **执行步骤：**
-1. **用户执行 CREATE TABLE SQL 创建表**
-2. AI 生成代码生成器命令
-3. **用户执行代码生成器命令**
-4. AI 验证生成的文件完整性
-5. AI 在 Service 层添加数据权限（使用 `DataScopeTool::applyUserDataScope(0, $query)`）
-6. **用户执行菜单 SQL 文件**（或使用 `--sql=true`）
-
-请生成代码生成器命令和数据权限应用代码。
+1. 自动执行 CREATE TABLE SQL 创建表
+2. 自动执行代码生成器命令
+3. 验证生成的文件完整性
+4. 自动在 Service 层添加数据权限
+5. 自动执行菜单 SQL（或使用 `--sql=true`）
 ```
 
 #### 模板 10.2：快速 API
@@ -355,12 +338,9 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 - JWT 认证
 
 **执行步骤：**
-1. **用户执行 CREATE TABLE SQL 创建表**
-2. AI 生成代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
-3. **用户执行代码生成器命令**
-4. AI 验证生成的文件完整性
-
-请生成代码生成器命令。
+1. 自动执行 CREATE TABLE SQL 创建表
+2. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
+3. 验证生成的文件完整性
 ```
 
 ---
@@ -392,7 +372,7 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 | **前端类型** | `frond` | 仅前端代码 |
 | **后端类型** | `backend` | 仅后端代码 |
 
-⚠️ **重要**：必须使用枚举键名（`mix`、`frond`、`backend`），不是全称
+**重要**：必须使用枚举键名（`mix`、`frond`、`backend`），不是全称
 
 ### 数据权限实现
 
@@ -425,10 +405,10 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 | **如何快速开发 CRUD？** | 使用模板 10.1 或 10.2，提供表结构即可 |
 | **权限代码格式是什么？** | 普通模式：`{module}:{table}:{action}`，插件模式：`{plugin_path}:{table_name}:{action}` |
 | **数据权限在哪里应用？** | Service 层，使用 `DataScopeTool::applyUserDataScope(0, $query)` |
-| **代码生成器执行前需要做什么？** | 必须先执行 CREATE TABLE SQL 创建表 |
-| **菜单 SQL 会自动执行吗？** | 不会，需要手动执行或使用 `--sql=true` |
-| **代码生成器生成的 Service 是否包含数据权限？** | ⚠️ 不包含，必须手动添加 |
-| **AI 会自行调用代码生成器吗？** | 不会，AI 只能生成命令，需要用户执行或授权 |
+| **代码生成器执行前需要做什么？** | AI 会自动执行 CREATE TABLE SQL 创建表 |
+| **菜单 SQL 会自动执行吗？** | 会，AI 会自动执行菜单 SQL 或使用 `--sql=true` |
+| **代码生成器生成的 Service 是否包含数据权限？** | 不包含，AI 会自动添加 |
+| **AI 会自行调用代码生成器吗？** | 会，AI 会自动执行代码生成器命令 |
 
 ---
 

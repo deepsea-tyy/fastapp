@@ -428,5 +428,5 @@ Router::addServer('ws', function () {
 4. ✅ 响应格式：统一使用 `WsResponse` 返回响应
 5. ✅ Action 命名：使用模块前缀避免冲突
 
-更多文档请查看 [文档导航](./README.md)
+更多文档请查看 [文档导航](../README.md)
 

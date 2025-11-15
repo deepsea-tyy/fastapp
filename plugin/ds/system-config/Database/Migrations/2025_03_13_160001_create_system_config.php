@@ -36,8 +36,7 @@ return new class extends Migration {
             $table->bigInteger('created_by')->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->nullable()->comment('更新者');
             $table->timestamps();
-            $table->index('group_code');
-            $table->unique('key');
+            $table->unique(['group_code', 'key']);
         });
     }
 
