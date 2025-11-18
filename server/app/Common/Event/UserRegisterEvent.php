@@ -12,7 +12,7 @@ use App\Model\User;
 
 class UserRegisterEvent
 {
-    public function __construct(protected User $user)
+    public function __construct(protected User $user, public string $inviteCode = '')
     {
     }
 

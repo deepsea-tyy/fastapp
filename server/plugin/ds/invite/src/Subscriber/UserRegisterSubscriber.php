@@ -32,20 +32,17 @@ class UserRegisterSubscriber implements ListenerInterface
         Coroutine::create(static function () use ($event) {
             try {
                 $user = $event->getUser();
-                
-                // 获取用户的邀请码（从 user 对象的 invite_code 属性）
-                $inviteCode = $user->invite_code ?? null;
-                
-                if (empty($inviteCode)) {
+
+                if (empty($event->inviteCode)) {
                     return;
                 }
 
                 // 根据邀请码查找邀请人
                 $container = ApplicationContext::getContainer();
                 $inviteCodeRepository = $container->get(UserInviteCodeRepository::class);
-                
+
                 $inviteCodeModel = $inviteCodeRepository->getQuery()
-                    ->where('invite_code', $inviteCode)
+                    ->where('invite_code', $event->inviteCode)
                     ->first();
 
                 if (!$inviteCodeModel) {
@@ -75,12 +72,16 @@ class UserRegisterSubscriber implements ListenerInterface
                     ->first();
 
                 if ($parentRelation) {
+                    // 检查循环引用：如果新用户ID已经在父级路径中，说明存在循环，不建立关系
+                    if (str_contains($parentRelation->path, '/' . $newUserId . '/')) {
+                        return;
+                    }
                     // 父级有上级，新用户的层级是父级层级+1，路径是父级路径+新用户ID+/
                     $level = $parentRelation->level + 1;
                     $path = $parentRelation->path . $newUserId . '/';
                     $parentId = $parentUserId;
                 } else {
-                    // 父级没有上级，新用户的层级是1，路径是 /父级ID/新用户ID/
+                    // 父级没有上级关系记录，视为根节点，新用户的层级是1，路径是 /父级ID/新用户ID/
                     $level = 1;
                     $path = '/' . $parentUserId . '/' . $newUserId . '/';
                     $parentId = $parentUserId;
@@ -95,8 +96,9 @@ class UserRegisterSubscriber implements ListenerInterface
                 ];
                 UserRelation::query()->create($data);
             } catch (\Exception $exception) {
+                $logData = $data ?? ['user_id' => $newUserId ?? null, 'parent_id' => $parentUserId ?? null];
                 Tools::logAsync(
-                    implode('|', [$exception->getMessage(), $exception->getFile(), json_encode($data)]),
+                    implode('|', [$exception->getMessage(), $exception->getFile(), json_encode($logData)]),
                     'error',
                     'invite'
                 );

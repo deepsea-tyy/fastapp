@@ -103,7 +103,7 @@ class PassportService extends IService
                     ->orWhere('email', $username);
             })
             ->first();
-        
+
         if (!$user || !$user->verifyPassword($password)) {
             throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, trans('auth.password_error'));
         }
@@ -121,8 +121,7 @@ class PassportService extends IService
         if ($md->wasRecentlyCreated) {
             UserProfile::query()->create(['user_id' => $md->id]);
         }
-        if (!empty($data['invite_code'])) $md->invite_code = $data['invite_code'];
-        Tools::eventDispatcher(new UserRegisterEvent($md));
+        Tools::eventDispatcher(new UserRegisterEvent($md, $data['invite_code'] ?? ''));
         return $md;
     }
 
