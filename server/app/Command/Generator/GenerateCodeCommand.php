@@ -823,8 +823,12 @@ class GenerateCodeCommand extends Command
         $menuName = str_replace('表', '', $codeGenerator['table']['comment'] ?: $modelName);
 
         // 设置语言包目录
-        if ($plugin) $localesDir = BASE_PATH . '/plugin/' . $plugin . '/web/locales';
-        else $localesDir = BASE_PATH . '/web/src/modules/' . $moduleName . '/locales';
+        if ($plugin) {
+            $localesDir = BASE_PATH . '/plugin/' . $plugin . '/web/locales';
+        } else {
+            $frontendDir = \App\Command\Generator\GenRuleMap::getFrontendDirectory();
+            $localesDir = $frontendDir . '/src/modules/' . $moduleName . '/locales';
+        }
 
         // 创建locales目录
         if (!is_dir($localesDir)) {

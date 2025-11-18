@@ -7,10 +7,29 @@ use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token\RegisteredClaims;
 
+/**
+ * Get JWT key, automatically detect if it's base64 encoded or plain text
+ */
+function getJwtKey(?string $secret): InMemory
+{
+    if (empty($secret)) {
+        throw new \RuntimeException('JWT_SECRET or JWT_API_SECRET environment variable is required');
+    }
+
+    // Try to decode as base64, if successful and round-trip matches, use base64Encoded
+    $decoded = @base64_decode($secret, true);
+    if ($decoded !== false && $decoded !== '' && base64_encode($decoded) === $secret) {
+        // Valid base64 string
+        return InMemory::base64Encoded($secret);
+    }
+
+    // Plain text, use as is
+    return InMemory::plainText($secret);
+}
 return [
     'default' => [
         'driver' => Jwt::class,
-        'key' => InMemory::base64Encoded(env('JWT_SECRET')),
+        'key' => getJwtKey(env('JWT_SECRET')),
         'alg' => new Sha256(),
         'ttl' => (int) env('JWT_TTL', 3600),
         'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 7200),
@@ -28,7 +47,7 @@ return [
         // jwt 配置 https://lcobucci-jwt.readthedocs.io/en/latest/
         'driver' => Jwt::class,
         // jwt 签名key
-        'key' => InMemory::base64Encoded(env('JWT_API_SECRET')),
+        'key' => getJwtKey(env('JWT_API_SECRET')),
         // jwt 签名算法 可选 https://lcobucci-jwt.readthedocs.io/en/latest/supported-algorithms/
         'alg' => new Sha256(),
         // token过期时间，单位为秒

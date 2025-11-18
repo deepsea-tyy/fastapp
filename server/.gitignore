@@ -11,7 +11,6 @@ code-generator.php
 composer.phar
 swoole-cli
 keyandcontent.json
-test*
 *code-generator.php
 .phpstorm*
 phpstan*

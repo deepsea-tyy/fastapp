@@ -3,10 +3,39 @@ declare(strict_types=1);
 
 namespace App\Command\Generator;
 
+use App\Command\Plugin\Plugin;
 use Hyperf\Stringable\Str;
 
 class GenRuleMap
 {
+    /**
+     * 获取前端目录路径
+     */
+    public static function getFrontendDirectory(): string
+    {
+        // 尝试从配置读取
+        try {
+            $frontDirectory = Plugin::getConfig('front_directory');
+        } catch (\Throwable $e) {
+            $frontDirectory = null;
+        }
+        
+        // 如果配置不存在，使用默认值
+        if ($frontDirectory === null) {
+            $frontDirectory = dirname(BASE_PATH) . '/web';
+        }
+        
+        // 如果是绝对路径，直接返回
+        if (str_starts_with($frontDirectory, '/')) {
+            return rtrim($frontDirectory, '/');
+        }
+        
+        // 处理相对路径
+        $frontDirectory = ltrim($frontDirectory, './');
+        $frontDirectory = BASE_PATH . '/' . $frontDirectory;
+        
+        return rtrim($frontDirectory, '/');
+    }
     /**
      * 获取字段后缀到Element Plus组件的映射关系
      *
@@ -161,13 +190,14 @@ class GenRuleMap
         }
 
         // 默认模式
+        $frontendDir = self::getFrontendDirectory();
         return [
-            'api-ts' => BASE_PATH . '/web/src/modules/' . $module . '/api',
-            'form-vue' => BASE_PATH . '/web/src/modules/' . $module . '/views/' . $camelCaseName,
-            'index-vue' => BASE_PATH . '/web/src/modules/' . $module . '/views/' . $camelCaseName,
-            'getFormItems-tsx' => BASE_PATH . '/web/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
-            'getTableColumns-tsx' => BASE_PATH . '/web/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
-            'getSearchItems-tsx' => BASE_PATH . '/web/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
+            'api-ts' => $frontendDir . '/src/modules/' . $module . '/api',
+            'form-vue' => $frontendDir . '/src/modules/' . $module . '/views/' . $camelCaseName,
+            'index-vue' => $frontendDir . '/src/modules/' . $module . '/views/' . $camelCaseName,
+            'getFormItems-tsx' => $frontendDir . '/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
+            'getTableColumns-tsx' => $frontendDir . '/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
+            'getSearchItems-tsx' => $frontendDir . '/src/modules/' . $module . '/views/' . $camelCaseName . '/data',
             'model' => BASE_PATH . '/app/Model/' . Str::studly($module),
             'repository' => BASE_PATH . '/app/Repository/' . Str::studly($module),
             'controller' => $target === 'api'
