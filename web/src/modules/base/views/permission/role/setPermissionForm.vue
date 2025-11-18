@@ -161,7 +161,7 @@ function saveUserRole(): Promise<any> {
         reject(res)
       }
     }).catch((err) => {
-      reject(err)
+
     })
   })
 }

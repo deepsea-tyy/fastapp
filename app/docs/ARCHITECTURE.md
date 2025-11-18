@@ -1,0 +1,183 @@
+# 项目架构说明
+
+## 架构概述
+
+项目采用**分层架构（Clean Architecture）**设计，将代码分为三层：Presentation（界面层）、Domain（业务逻辑层）、Data（数据层）。
+
+## 目录结构
+
+```
+lib/
+├── main.dart                    # 应用入口
+│
+├── constants/                   # 应用常量
+│   ├── app_theme.dart          # 主题配置
+│   ├── assets.dart             # 资源路径
+│   ├── colors.dart             # 颜色常量
+│   ├── dimens.dart             # 尺寸常量
+│   ├── font_family.dart        # 字体配置
+│   └── strings.dart            # 字符串常量
+│
+├── core/                       # 核心功能模块（可复用组件）
+│   ├── data/                   # 核心数据层
+│   │   ├── local/              # 本地数据（加密、数据库）
+│   │   ├── network/            # 网络配置（Dio、拦截器）
+│   │   └── sharedpref/         # 共享偏好设置基类
+│   ├── domain/                 # 核心领域层
+│   │   ├── model/              # 核心模型
+│   │   └── usecase/            # 用例基类
+│   ├── stores/                 # 核心状态管理
+│   │   ├── error/              # 错误状态管理
+│   │   └── form/               # 表单状态管理
+│   ├── widgets/                # 通用 UI 组件
+│   └── extensions/             # 扩展方法
+│
+├── presentation/               # 🎨 界面代码层（主要开发区域）
+│   ├── my_app.dart             # 应用根组件
+│   ├── di/                     # 表现层依赖注入
+│   ├── store/                  # Store 状态管理
+│   │   └── app/                # 全局 Store
+│   │       ├── user_store.dart      # 用户状态
+│   │       ├── theme_store.dart     # 主题状态
+│   │       └── language_store.dart  # 语言状态
+│   ├── home/                   # 首页
+│   ├── login/                  # 登录页
+│   └── post/                   # 帖子列表
+│       └── store/
+│           └── post_store.dart  # 功能级 Store
+│
+├── domain/                     # 💼 业务逻辑层（接口定义）
+│   ├── entity/                 # 实体类（数据模型）
+│   ├── repository/             # 仓库接口
+│   └── usecase/                # 用例（业务逻辑）
+│
+├── data/                       # 💾 数据层实现
+│   ├── local/                  # 本地数据源
+│   ├── network/                # 网络数据源
+│   ├── repository/             # 仓库实现
+│   └── sharedpref/             # 共享偏好设置实现
+│
+├── utils/                      # 工具类
+│   ├── device/                 # 设备工具
+│   ├── dio/                    # Dio 工具
+│   ├── locale/                 # 本地化工具
+│   └── routes/                 # 路由配置
+│
+└── di/                         # 依赖注入配置
+    └── service_locator.dart    # 服务定位器（GetIt）
+```
+
+## 架构设计
+
+### 分层架构
+
+```
+┌─────────────────────────────────────┐
+│   Presentation Layer (界面层)        │
+│   - UI Widgets                      │
+│   - Store (状态管理)                 │
+└──────────────┬──────────────────────┘
+               │ 调用
+┌──────────────▼──────────────────────┐
+│   Domain Layer (业务逻辑层)          │
+│   - Entity (实体)                    │
+│   - Repository Interface             │
+│   - UseCase (用例)                   │
+└──────────────┬──────────────────────┘
+               │ 实现
+┌──────────────▼──────────────────────┐
+│   Data Layer (数据层)                │
+│   - Repository Implementation        │
+│   - DataSource (网络/本地)            │
+│   - API Client                       │
+└─────────────────────────────────────┘
+```
+
+### 各层职责
+
+**Presentation 层**：
+- 负责 UI 展示和用户交互
+- 使用 MobX Store 管理状态
+- 调用 Domain 层的 UseCase
+
+**Domain 层**：
+- 定义业务逻辑接口
+- 包含 Entity（实体）、Repository Interface（仓库接口）、UseCase（用例）
+- 不依赖具体实现，保持独立
+
+**Data 层**：
+- 实现 Domain 层的接口
+- 处理网络请求、数据库操作、本地缓存
+- 提供数据源实现
+
+### 依赖方向
+
+**依赖方向**：Presentation → Domain ← Data
+
+通过依赖注入（GetIt）解耦各层，实现：
+- ✅ 各层职责清晰，便于维护
+- ✅ 通过接口解耦，便于测试
+- ✅ 业务逻辑独立，不依赖 UI 和数据源
+- ✅ 易于扩展和替换实现
+
+## Store 分类
+
+### 全局 Store
+位置：`presentation/store/app/`
+- **UserStore**：用户登录状态、用户信息
+- **ThemeStore**：主题切换（深色/浅色）
+- **LanguageStore**：多语言切换
+
+### 功能级 Store
+位置：`presentation/{feature}/store/`
+- **PostStore**：帖子列表相关状态
+- 其他功能特定的状态管理
+
+### 使用原则
+- 全局 Store：多个页面共享的应用级状态
+- 功能级 Store：特定功能的状态管理
+- 页面级 Store：如果只在一个页面使用，可放在页面目录下
+
+## 依赖注入
+
+项目使用 **GetIt** 进行依赖注入，配置在 `lib/di/service_locator.dart`。
+
+**导入规范**：
+```dart
+// ✅ 正确：使用包路径
+import 'package:boilerplate/di/service_locator.dart';
+
+// ❌ 错误：避免相对路径
+import '../../../di/service_locator.dart';
+```
+
+**注册顺序**：
+1. Data Layer（数据层）
+2. Domain Layer（业务逻辑层）
+3. Presentation Layer（界面层）
+
+## 网络层
+
+统一使用 `core/data/network/dio/dio_client.dart` 作为网络客户端。
+
+**拦截器**：
+- **AuthInterceptor**：自动添加认证 Token
+- **ErrorInterceptor**：统一错误处理
+- **LoggingInterceptor**：请求日志记录
+
+## 核心组件
+
+### 状态管理
+- **MobX**：响应式状态管理
+- **Provider**：依赖注入和状态共享
+
+### 网络请求
+- **Dio**：HTTP 客户端
+- 支持拦截器、错误处理、重试机制
+
+### 本地存储
+- **Sembast**：NoSQL 数据库
+- **SharedPreferences**：键值对存储
+
+### 依赖注入
+- **GetIt**：服务定位器模式
