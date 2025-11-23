@@ -14,13 +14,14 @@ use App\Common\Tools;
 use Hyperf\Contract\OnCloseInterface;
 use Hyperf\Contract\OnMessageInterface;
 use Hyperf\Contract\OnOpenInterface;
+use Hyperf\Context\ApplicationContext;
+use Hyperf\Redis\Redis;
 use Hyperf\WebSocketServer\Sender;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
 use Swoole\Coroutine;
-use Swoole\Coroutine\Channel;
 
 class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterface
 {
@@ -30,32 +31,37 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
      */
     public static array $actionHandle = [];
 
-    /**
-     * Fd到用户ID的映射
-     * fd => user_id
-     */
-    public static array $fdUser = [];
-
-    /**
-     * 用户ID到Fd列表的映射（支持多设备）
-     * user_id => [fd1, fd2, ...]
-     */
-    public static array $userFds = [];
-
-    /**
-     * 是否已初始化
-     */
     private static bool $initialized = false;
 
     /**
-     * 协程锁，用于保护连接映射的并发操作
+     * 存储每个fd对应的锁值，用于安全释放锁
+     * fd => lock_value
      */
-    private static ?Channel $lock = null;
+    private static array $lockValues = [];
 
     /**
-     * 锁初始化标志（使用原子操作避免竞态）
+     * Redis key: ws:fd:user:{fd}
+     * 存储格式: String
+     * 值: user_id (字符串)
+     * 说明: fd 到用户ID的映射
      */
-    private static bool $lockInitialized = false;
+    private const REDIS_KEY_FD_USER = 'ws:fd:user:';
+
+    /**
+     * Redis key: ws:user:fds:{user_id}
+     * 存储格式: Set
+     * 值: [fd1, fd2, ...] (字符串集合)
+     * 说明: 用户ID到Fd列表的映射，支持多设备登录
+     */
+    private const REDIS_KEY_USER_FDS = 'ws:user:fds:';
+
+    /**
+     * Redis key: ws:lock:fd:{fd}
+     * 存储格式: String
+     * 值: lock_value (唯一标识符)
+     * 说明: 分布式锁，用于保护fd的并发操作，过期时间5秒
+     */
+    private const REDIS_KEY_LOCK = 'ws:lock:fd:';
 
     public function __construct(
         protected Sender     $sender,
@@ -66,25 +72,70 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
             $this->registerPluginHandlers();
             self::$initialized = true;
         }
+    }
 
-        // 初始化协程锁（每个worker进程一个）
-        self::initLock();
+    private static function getRedis(): Redis
+    {
+        return ApplicationContext::getContainer()->get(Redis::class);
     }
 
     /**
-     * 初始化锁（确保线程安全）
+     * 获取分布式锁（基于 Redis SETNX）
+     * @param int $fd 文件描述符
+     * @return bool 是否获取到锁
      */
-    private static function initLock(): void
+    private function acquireLock(int $fd): bool
     {
-        if (self::$lock !== null) {
+        $redis = self::getRedis();
+        $lockKey = self::REDIS_KEY_LOCK . $fd;
+        $lockValue = uniqid(gethostname() . '_', true);
+        $endTime = time() + 5;
+
+        while (time() < $endTime) {
+            if ($redis->set($lockKey, $lockValue, ['nx', 'ex' => 5])) {
+                self::$lockValues[$fd] = $lockValue;
+                return true;
+            }
+            Coroutine::sleep(1);
+        }
+
+        return false;
+    }
+
+    /**
+     * 安全释放分布式锁（使用 Lua 脚本保证原子性，避免误删其他进程的锁）
+     */
+    private function releaseLock(int $fd): void
+    {
+        if (!isset(self::$lockValues[$fd])) {
             return;
         }
 
-        // 使用双重检查锁定模式
-        if (!self::$lockInitialized) {
-            self::$lock = new Channel(1);
-            self::$lock->push(true); // 初始化一个令牌
-            self::$lockInitialized = true;
+        $redis = self::getRedis();
+        $lockKey = self::REDIS_KEY_LOCK . $fd;
+        $lockValue = self::$lockValues[$fd];
+
+        // 使用 Lua 脚本原子性地验证并删除锁
+        // 只有当锁的值匹配时才删除，避免误删其他进程的锁
+        $luaScript = <<<LUA
+if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+else
+    return 0
+end
+LUA;
+
+        try {
+            $redis->eval($luaScript, [$lockKey, $lockValue], 1);
+        } catch (\Throwable $e) {
+            // 如果 Lua 脚本执行失败，尝试直接删除（降级处理）
+            try {
+                $redis->del($lockKey);
+            } catch (\Throwable) {
+                // 忽略删除失败
+            }
+        } finally {
+            unset(self::$lockValues[$fd]);
         }
     }
 
@@ -124,7 +175,7 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
                 $this->sendResponse($frame->fd, $response->withOpId($opId));
                 return;
             }
-            $userId = self::$fdUser[$frame->fd] ?? null;
+            $userId = $this->getUserIdByFd($frame->fd);
 
             if ($userId === null) {
                 $this->sendResponse($frame->fd, WsResponse::error('Please login first', $params['op_id'] ?? ''));
@@ -192,7 +243,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
                 throw new \Exception('Invalid user ID from token');
             }
         } catch (\Throwable $e) {
-            // 登录失败时清理可能存在的连接映射
             $this->removeConnection($fd);
             $errorMessage = $e->getMessage();
             $response = WsResponse::error('Token Auth fail: ' . $errorMessage, $params['op_id'] ?? '');
@@ -302,7 +352,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
                     if (!method_exists($instance, $method)) {
                         continue;
                     }
-                    // 如果 action 已存在，记录警告
                     if (isset(self::$actionHandle[$actionName])) {
                         Tools::logAsync(
                             "Action {$actionName} is already registered by " . self::$actionHandle[$actionName]['class'] . ", will be overridden by {$className}",
@@ -347,9 +396,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
         return $namespace . '\\' . $className;
     }
 
-    /**
-     * 发送响应消息
-     */
     private function sendResponse(int $fd, WsResponse $response): void
     {
         try {
@@ -360,102 +406,115 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
     }
 
     /**
-     * 添加连接映射
+     * 添加连接映射（使用分布式锁保证原子性）
      */
     private function addConnection(int $fd, int|string $userId): void
     {
-        // 确保锁已初始化
-        self::initLock();
+        if (!$this->acquireLock($fd)) {
+            return;
+        }
 
-        // 获取锁
-        self::$lock->pop();
         try {
-            // 如果 fd 已经存在，先清理旧连接（处理重复登录情况）
-            if (isset(self::$fdUser[$fd])) {
-                $oldUserId = self::$fdUser[$fd];
-                if ($oldUserId !== $userId) {
-                    // fd 被分配给不同的用户，先清理旧用户的连接
-                    $this->removeConnectionInternal($fd);
+            $redis = self::getRedis();
+            $fdKey = self::REDIS_KEY_FD_USER . $fd;
+            $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+
+            $oldUserId = $redis->get($fdKey);
+            if ($oldUserId !== false) {
+                $oldUserId = (string)$oldUserId;
+                if ($oldUserId !== (string)$userId) {
+                    $oldUserFdsKey = self::REDIS_KEY_USER_FDS . $oldUserId;
+                    $redis->sRem($oldUserFdsKey, (string)$fd);
+                    $oldUserFdsCount = $redis->sCard($oldUserFdsKey);
+                    if ($oldUserFdsCount === 0) {
+                        $redis->del($oldUserFdsKey);
+                        Tools::eventDispatcher(new WsCloseEvent((int)$oldUserId));
+                    }
                 } else {
-                    // 同一用户重复登录，无需重复添加
+                    $redis->sAdd($userFdsKey, (string)$fd);
                     return;
                 }
             }
 
-            self::$fdUser[$fd] = $userId;
-
-            if (!isset(self::$userFds[$userId])) {
-                self::$userFds[$userId] = [];
-            }
-
-            if (!in_array($fd, self::$userFds[$userId], true)) {
-                self::$userFds[$userId][] = $fd;
-            }
+            $redis->set($fdKey, (string)$userId);
+            $redis->sAdd($userFdsKey, (string)$fd);
         } finally {
-            // 释放锁
-            self::$lock->push(true);
+            $this->releaseLock($fd);
         }
     }
 
     /**
-     * 移除连接映射（带锁保护）
+     * 移除连接映射（使用分布式锁保证原子性）
      */
     private function removeConnection(int $fd): void
     {
-        // 确保锁已初始化
-        self::initLock();
+        if (!$this->acquireLock($fd)) {
+            return;
+        }
 
-        // 获取锁
-        self::$lock->pop();
         try {
-            $this->removeConnectionInternal($fd);
+            $this->removeConnectionInternalUnlocked($fd);
         } finally {
-            // 释放锁
-            self::$lock->push(true);
+            $this->releaseLock($fd);
         }
     }
 
     /**
      * 移除连接映射（内部实现，需要调用者持有锁）
      */
-    private function removeConnectionInternal(int $fd): void
+    private function removeConnectionInternalUnlocked(int $fd): void
     {
-        if (!isset(self::$fdUser[$fd])) {
+        $redis = self::getRedis();
+        $fdKey = self::REDIS_KEY_FD_USER . $fd;
+
+        $userId = $redis->get($fdKey);
+        if ($userId === false) {
             return;
         }
 
-        $userId = self::$fdUser[$fd];
-        unset(self::$fdUser[$fd]);
+        $userId = (string)$userId;
+        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
 
-        if (isset(self::$userFds[$userId])) {
-            $key = array_search($fd, self::$userFds[$userId], true);
-            if ($key !== false) {
-                unset(self::$userFds[$userId][$key]);
-                self::$userFds[$userId] = array_values(self::$userFds[$userId]);
-            }
+        $redis->sRem($userFdsKey, (string)$fd);
+        $redis->del($fdKey);
 
-            // 如果用户没有连接了，清理数组
-            if (empty(self::$userFds[$userId])) {
-                unset(self::$userFds[$userId]);
-                Tools::eventDispatcher(new WsCloseEvent($userId));
-            }
+        $fdsCount = $redis->sCard($userFdsKey);
+        if ($fdsCount === 0) {
+            $redis->del($userFdsKey);
+            Tools::eventDispatcher(new WsCloseEvent((int)$userId));
         }
     }
 
     /**
-     * 获取用户的所有连接Fd（读取操作，允许轻微不一致）
+     * 获取用户的所有连接Fd
      */
     public static function getUserFds(int|string $userId): array
     {
-        return self::$userFds[$userId] ?? [];
+        $redis = self::getRedis();
+        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+        $fds = $redis->sMembers($userFdsKey);
+        return $fds ? array_map('intval', $fds) : [];
     }
 
     /**
-     * 检查用户是否在线（读取操作，允许轻微不一致）
+     * 检查用户是否在线
      */
     public static function isUserOnline(int $userId): bool
     {
-        return isset(self::$userFds[$userId]) && !empty(self::$userFds[$userId]);
+        $redis = self::getRedis();
+        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+        return $redis->sCard($userFdsKey) > 0;
+    }
+
+    /**
+     * 根据 fd 获取用户ID
+     */
+    private function getUserIdByFd(int $fd): ?int
+    {
+        $redis = self::getRedis();
+        $fdKey = self::REDIS_KEY_FD_USER . $fd;
+        $userId = $redis->get($fdKey);
+        return $userId !== false ? (int)$userId : null;
     }
 
 }
