@@ -8,25 +8,20 @@ namespace App\Http\Admin\Controller\Permission;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
 use App\Common\Result;
-use App\Common\Swagger\PageResponse;
-use App\Common\Swagger\ResultResponse;
 use App\Http\Admin\Controller\AbstractController;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\Admin\Permission;
 use App\Http\Admin\Request\Permission\MenuRequest;
 use App\Http\Admin\Service\Permission\MenuService;
 use App\Http\CurrentUser;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
 use Hyperf\HttpServer\Contract\RequestInterface;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\JsonContent;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\Put;
-use Hyperf\Swagger\Annotation\RequestBody;
-
-#[HyperfServer(name: 'http')]
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
@@ -37,15 +32,8 @@ final class MenuController extends AbstractController
         private readonly CurrentUser $user
     ) {}
 
-    #[Get(
-        path: '/admin/menu/list',
-        operationId: 'menuList',
-        summary: '菜单列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['菜单管理']
-    )]
+    #[GetMapping(path: '/admin/menu/list')]
     #[Permission(code: 'permission:menu:index')]
-    #[ResultResponse(instance: new Result())]
     public function pageList(RequestInterface $request): Result
     {
         return $this->success(data: $this->service->getRepository()->list([
@@ -54,17 +42,7 @@ final class MenuController extends AbstractController
         ]));
     }
 
-    #[Post(
-        path: '/admin/menu',
-        operationId: 'menuCreate',
-        summary: '创建菜单',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['菜单管理']
-    )]
-    #[RequestBody(
-        content: new JsonContent(ref: MenuRequest::class, title: '创建菜单')
-    )]
-    #[PageResponse(instance: new Result())]
+    #[PostMapping(path: '/admin/menu')]
     #[Permission(code: 'permission:menu:create')]
     public function create(MenuRequest $request): Result
     {
@@ -74,17 +52,7 @@ final class MenuController extends AbstractController
         return $this->success();
     }
 
-    #[Put(
-        path: '/admin/menu/{id}',
-        operationId: 'menuEdit',
-        summary: '编辑菜单',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['菜单管理']
-    )]
-    #[RequestBody(
-        content: new JsonContent(ref: MenuRequest::class, title: '编辑菜单')
-    )]
-    #[PageResponse(instance: new Result())]
+    #[PutMapping(path: '/admin/menu/{id}')]
     #[Permission(code: 'permission:menu:save')]
     public function save(int $id, MenuRequest $request): Result
     {
@@ -94,14 +62,7 @@ final class MenuController extends AbstractController
         return $this->success();
     }
 
-    #[Delete(
-        path: '/admin/menu',
-        operationId: 'menuDelete',
-        summary: '删除菜单',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['菜单管理']
-    )]
-    #[PageResponse(instance: new Result())]
+    #[DeleteMapping(path: '/admin/menu')]
     #[Permission(code: 'permission:menu:delete')]
     public function delete(): Result
     {

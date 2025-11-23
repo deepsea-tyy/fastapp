@@ -76,44 +76,48 @@
     // 输出命名空间
     echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
     
-    // 输出use语句
+    // 构建use语句
     $useStatements = [
-        $baseController,
+        $isAdminTarget ? 'App\\Http\\Admin\\Controller\\AbstractController' : 'App\\Common\\AbstractController',
         'App\\Common\\Result',
         'App\\Http\\CurrentUser',
         "{$requestNamespace}\\{$controllerName}Request as Request",
         "{$serviceNamespace}\\{$controllerName}Service as Service",
+        'Hyperf\\HttpServer\\Annotation\\Middleware',
     ];
     
-    // 中间件use语句
+    // 根据模式添加不同的use语句
     if ($isAdminTarget) {
         $useStatements = array_merge($useStatements, [
             'App\\Http\\Admin\\Permission',
             'App\\Http\\Admin\\Middleware\\PermissionMiddleware',
             'App\\Common\\Middleware\\AccessTokenMiddleware',
             'App\\Common\\Middleware\\OperationMiddleware',
+            'Hyperf\\HttpServer\\Annotation\\Controller',
+            'Hyperf\\HttpServer\\Annotation\\GetMapping',
+            'Hyperf\\HttpServer\\Annotation\\PostMapping',
+            'Hyperf\\HttpServer\\Annotation\\PutMapping',
+            'Hyperf\\HttpServer\\Annotation\\DeleteMapping',
         ]);
     } else {
-        $useStatements[] = 'App\\Common\\Middleware\\TokenMiddleware';
+        $useStatements = array_merge($useStatements, [
+            'App\\Common\\Middleware\\TokenMiddleware',
+            'Hyperf\\Swagger\\Annotation as OA',
+            'Hyperf\\Swagger\\Annotation\\Delete',
+            'Hyperf\\Swagger\\Annotation\\Get',
+            'Hyperf\\Swagger\\Annotation\\Post',
+            'Hyperf\\Swagger\\Annotation\\Put',
+            'Hyperf\\Swagger\\Annotation\\RequestBody',
+            'Hyperf\\Swagger\\Annotation\\JsonContent',
+            'App\\Common\\Swagger\\ResultResponse',
+        ]);
     }
     
-    // Swagger相关use语句
-    $useStatements = array_merge($useStatements, [
-        'Hyperf\\HttpServer\\Annotation\\Middleware',
-        'Hyperf\\Swagger\\Annotation as OA',
-        'Hyperf\\Swagger\\Annotation\\Delete',
-        'Hyperf\\Swagger\\Annotation\\Get',
-        'Hyperf\\Swagger\\Annotation\\Post',
-        'Hyperf\\Swagger\\Annotation\\Put',
-        'Hyperf\\Swagger\\Annotation\\RequestBody',
-        'Hyperf\\Swagger\\Annotation\\JsonContent',
-        'App\\Common\\Swagger\\ResultResponse',
-    ]);
-    
+    // 输出use语句
     foreach ($useStatements as $use) {
         echo "use {$use};" . PHP_EOL;
     }
-    echo PHP_EOL . PHP_EOL;
+    echo PHP_EOL;
 @endphp
 
 /**
@@ -122,13 +126,14 @@
  * @author 代码生成器
  * @date {{date('Y-m-d H:i:s')}}
  */
-#[OA\Tag('{{$menuName}}')]
-#[OA\HyperfServer('http')]
 @if($isAdminTarget)
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
+#[OA\Tag('{{$menuName}}')]
+#[OA\HyperfServer('http')]
 #[Middleware(middleware: TokenMiddleware::class)]
 @endif
 class {{$controllerName}}Controller extends AbstractController
@@ -138,17 +143,13 @@ class {{$controllerName}}Controller extends AbstractController
         private readonly CurrentUser $currentUser
     ) {}
 
-    #[Get(
-        path: '/{{$urlPathPrefix}}/list',
-        operationId: '{{$permissionName}}:list',
-        summary: '{{$menuName}}列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['{{$menuName}}'],
-    )]
 @if($isAdminTarget)
+    #[GetMapping(path: '/{{$urlPathPrefix}}/list')]
     #[Permission(code: '{{$permissionName}}:list')]
-@endif
+@else
+    #[Get(path: '/{{$urlPathPrefix}}/list', operationId: '{{$permissionName}}:list', summary: '{{$menuName}}列表', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
+@endif
     public function pageList(): Result
     {
 @if($isAdminTarget)
@@ -166,17 +167,13 @@ class {{$controllerName}}Controller extends AbstractController
 @endif
     }
 
-    #[Post(
-        path: '/{{$urlPathPrefix}}/create',
-        operationId: '{{$permissionName}}:create',
-        summary: '{{$menuName}}新增',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['{{$menuName}}'],
-    )]
 @if($isAdminTarget)
+    #[PostMapping(path: '/{{$urlPathPrefix}}/create')]
     #[Permission(code: '{{$permissionName}}:create')]
-@endif
+@else
+    #[Post(path: '/{{$urlPathPrefix}}/create', operationId: '{{$permissionName}}:create', summary: '{{$menuName}}新增', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
+@endif
     public function create(Request $request): Result
     {
 @if($isAdminTarget)
@@ -187,17 +184,13 @@ class {{$controllerName}}Controller extends AbstractController
         return $this->success();
     }
 
-    #[Put(
-        path: '/{{$urlPathPrefix}}/save/{id}',
-        operationId: '{{$permissionName}}:save',
-        summary: '{{$menuName}}保存',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['{{$menuName}}'],
-    )]
 @if($isAdminTarget)
+    #[PutMapping(path: '/{{$urlPathPrefix}}/save/{id}')]
     #[Permission(code: '{{$permissionName}}:save')]
-@endif
+@else
+    #[Put(path: '/{{$urlPathPrefix}}/save/{id}', operationId: '{{$permissionName}}:save', summary: '{{$menuName}}保存', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
+@endif
     public function save(int $id, Request $request): Result
     {
 @if($isAdminTarget)
@@ -208,23 +201,13 @@ class {{$controllerName}}Controller extends AbstractController
         return $this->success();
     }
 
-    #[Delete(
-        path: '/{{$urlPathPrefix}}/delete',
-        operationId: '{{$permissionName}}:delete',
-        summary: '{{$menuName}}删除',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['{{$menuName}}'],
-    )]
-    #[RequestBody(
-        content: new JsonContent(
-            type: 'array',
-            items: new OA\Items(type: 'integer'),
-            example: '[1, 2, 3]'
-        )
-    )]
-    #[ResultResponse(instance: new Result())]
 @if($isAdminTarget)
+    #[DeleteMapping(path: '/{{$urlPathPrefix}}/delete')]
     #[Permission(code: '{{$permissionName}}:delete')]
+@else
+    #[Delete(path: '/{{$urlPathPrefix}}/delete', operationId: '{{$permissionName}}:delete', summary: '{{$menuName}}删除', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
+    #[RequestBody(content: new JsonContent(type: 'array', items: new OA\Items(type: 'integer'), example: '[1, 2, 3]'))]
+    #[ResultResponse(instance: new Result())]
 @endif
     public function delete(): Result
     {

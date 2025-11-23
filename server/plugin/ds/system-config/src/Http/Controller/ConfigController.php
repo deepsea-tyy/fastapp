@@ -9,21 +9,19 @@ use App\Http\Admin\Permission;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
 use App\Common\Result;
-use App\Common\Swagger\ResultResponse;
 use App\Http\Admin\Controller\AbstractController;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\CurrentUser;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation as OA;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\Put;
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
 use Plugin\Ds\SystemConfig\Http\Request\ConfigRequest as Request;
 use Plugin\Ds\SystemConfig\Service\ConfigService as Service;
 
-#[OA\Tag('System/Config')]
-#[OA\HyperfServer('http')]
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
@@ -34,13 +32,7 @@ class ConfigController extends AbstractController
         private readonly CurrentUser $currentUser
     ) {}
 
-    #[Get(
-        path: '/system/Config/list',
-        operationId: 'configList',
-        summary: 'System/Config列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置列表'],
-    )]
+    #[GetMapping(path: '/system/Config/list')]
     #[Permission(code: 'plugin:ds:config:list')]
     public function pageList(): Result
     {
@@ -53,15 +45,8 @@ class ConfigController extends AbstractController
         );
     }
 
-    #[Get(
-        path: '/system/Config/Details/{code}',
-        operationId: 'Details',
-        summary: 'System/Details详情',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置详情'],
-    )]
+    #[GetMapping(path: '/system/Config/Details/{code}')]
     #[Permission(code: 'plugin:ds:config:details')]
-    #[ResultResponse(instance: new Result())]
     public function details(string $code): Result
     {
         return $this->success(
@@ -69,15 +54,8 @@ class ConfigController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/system/Config',
-        operationId: 'configCreate',
-        summary: '新增System/Config',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置创建'],
-    )]
+    #[PostMapping(path: '/system/Config')]
     #[Permission(code: 'plugin:ds:config:create')]
-    #[ResultResponse(instance: new Result())]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -86,15 +64,8 @@ class ConfigController extends AbstractController
         return $this->success();
     }
 
-    #[Put(
-        path: '/system/Config/{id}',
-        operationId: 'configUpdate',
-        summary: '保存System/Config',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置更新'],
-    )]
+    #[PutMapping(path: '/system/Config/{id}')]
     #[Permission(code: 'plugin:ds:config:update')]
-    #[ResultResponse(instance: new Result())]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->validated(), [
@@ -103,14 +74,7 @@ class ConfigController extends AbstractController
         return $this->success();
     }
 
-    #[Delete(
-        path: '/system/Config',
-        operationId: 'configDelete',
-        summary: '删除System/Config',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置删除'],
-    )]
-    #[ResultResponse(new Result())]
+    #[DeleteMapping(path: '/system/Config')]
     #[Permission(code: 'plugin:ds:config:delete')]
     public function delete(): Result
     {
@@ -118,14 +82,7 @@ class ConfigController extends AbstractController
         return $this->success();
     }
 
-    #[Post(
-        path: '/system/Config/batchUpdate',
-        operationId: 'configBatchUpdate',
-        summary: '批量更新',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统配置批量更新'],
-    )]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/system/Config/batchUpdate')]
     #[Permission(code: 'plugin:ds:config:batchUpdate')]
     public function batchUpdate(): Result
     {

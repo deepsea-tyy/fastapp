@@ -7,20 +7,17 @@ namespace App\Http\Admin\Controller\Logstash;
 
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Result;
-use App\Common\Swagger\PageResponse;
 use App\Http\Admin\Controller\AbstractController;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\Admin\Permission;
 use App\Http\Admin\Service\Logstash\UserAdminLoginLogService;
 use App\Http\CurrentUser;
-use App\Schema\UserAdminLoginLogSchema;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Contract\RequestInterface;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\HyperfServer;
-
-#[HyperfServer(name: 'http')]
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 final class UserAdminLoginLogController extends AbstractController
@@ -30,15 +27,8 @@ final class UserAdminLoginLogController extends AbstractController
         protected readonly CurrentUser              $currentUser
     ) {}
 
-    #[Get(
-        path: '/admin/user-login-log/list',
-        operationId: 'UserLoginLogList',
-        summary: '用户登录日志列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统管理'],
-    )]
+    #[GetMapping(path: '/admin/user-login-log/list')]
     #[Permission(code: 'log:userLogin:list')]
-    #[PageResponse(instance: UserAdminLoginLogSchema::class)]
     public function page(): Result
     {
         return $this->success(
@@ -50,13 +40,7 @@ final class UserAdminLoginLogController extends AbstractController
         );
     }
 
-    #[Delete(
-        path: '/admin/user-login-log',
-        operationId: 'UserLoginLogDelete',
-        summary: '删除用户登录日志',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['系统管理'],
-    )]
+    #[DeleteMapping(path: '/admin/user-login-log')]
     #[Permission(code: 'log:userLogin:delete')]
     public function delete(RequestInterface $request): Result
     {

@@ -8,22 +8,19 @@ use App\Http\Admin\Permission;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
 use App\Common\Result;
-use App\Common\Swagger\ResultResponse;
 use App\Http\Admin\Controller\AbstractController;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\CurrentUser;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation as OA;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\Put;
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
 use Plugin\Ds\Article\Http\Request\ArticleRequest as Request;
 use Plugin\Ds\Article\Service\ArticleService as Service;
 
-
-#[OA\Tag('文章')]
-#[OA\HyperfServer('http')]
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
@@ -34,15 +31,8 @@ class ArticleController extends AbstractController
         private readonly CurrentUser $currentUser
     ) {}
 
-    #[Get(
-        path: '/admin/article/article/list',
-        operationId: 'article:article:list',
-        summary: '文章列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['文章'],
-    )]
+    #[GetMapping(path: '/admin/article/article/list')]
     #[Permission(code: 'article:article:list')]
-    #[ResultResponse(instance: new Result())]
     public function pageList(): Result
     {
         return $this->success(
@@ -54,15 +44,8 @@ class ArticleController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/admin/article/article/create',
-        operationId: 'article:article:create',
-        summary: '文章新增',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['文章'],
-    )]
+    #[PostMapping(path: '/admin/article/article/create')]
     #[Permission(code: 'article:article:create')]
-    #[ResultResponse(instance: new Result())]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -71,15 +54,8 @@ class ArticleController extends AbstractController
         return $this->success();
     }
 
-    #[Put(
-        path: '/admin/article/article/save/{id}',
-        operationId: 'article:article:save',
-        summary: '文章保存',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['文章'],
-    )]
+    #[PutMapping(path: '/admin/article/article/save/{id}')]
     #[Permission(code: 'article:article:save')]
-    #[ResultResponse(instance: new Result())]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->all(), [
@@ -88,14 +64,7 @@ class ArticleController extends AbstractController
         return $this->success();
     }
 
-    #[Delete(
-        path: '/admin/article/article/delete',
-        operationId: 'article:article:delete',
-        summary: '文章删除',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['文章'],
-    )]
-    #[ResultResponse(instance: new Result())]
+    #[DeleteMapping(path: '/admin/article/article/delete')]
     #[Permission(code: 'article:article:delete')]
     public function delete(): Result
     {

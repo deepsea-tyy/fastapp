@@ -10,24 +10,21 @@ use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\RefreshTokenMiddleware;
 use App\Common\Result;
 use App\Common\ResultCode;
-use App\Common\Swagger\ResultResponse;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\PassportLoginRequest;
-use App\Http\Admin\Vo\PassportLoginVo;
 use App\Http\CurrentUser;
 use App\Http\PassportService;
-use App\Schema\UserSchema;
 use Hyperf\Collection\Arr;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
+use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\Redis\Redis;
-use Hyperf\Swagger\Annotation as OA;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
 use PragmaRX\Google2FA\Google2FA;
 
-#[OA\HyperfServer(name: 'http')]
+#[Controller]
 final class PassportController extends AbstractController
 {
 
@@ -38,24 +35,7 @@ final class PassportController extends AbstractController
     {
     }
 
-    #[Post(
-        path: '/admin/passport/login',
-        operationId: 'passportLogin',
-        summary: '系统登录',
-        tags: ['admin:passport']
-    )]
-    #[ResultResponse(
-        instance: new Result(data: new PassportLoginVo()),
-        title: '登录成功',
-        description: '登录成功返回对象',
-        example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAiOi","expire_at":300}}'
-    )]
-    #[OA\RequestBody(content: new OA\JsonContent(
-        ref: PassportLoginRequest::class,
-        title: '登录请求参数',
-        required: ['username', 'password'],
-        example: '{"username":"admin","password":"123456"}'
-    ))]
+    #[PostMapping(path: '/admin/passport/login')]
     public function login(PassportLoginRequest $request): Result
     {
         $validated = $request->validated();
@@ -112,14 +92,7 @@ final class PassportController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/admin/passport/logout',
-        operationId: 'passportLogout',
-        summary: '退出',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['admin:passport']
-    )]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":[]}')]
+    #[PostMapping(path: '/admin/passport/logout')]
     #[Middleware(AccessTokenMiddleware::class)]
     public function logout(): Result
     {
@@ -127,17 +100,8 @@ final class PassportController extends AbstractController
         return $this->success();
     }
 
-    #[OA\Get(
-        path: '/admin/passport/getInfo',
-        operationId: 'getInfo',
-        summary: '获取用户信息',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['admin:passport']
-    )]
+    #[GetMapping(path: '/admin/passport/getInfo')]
     #[Middleware(AccessTokenMiddleware::class)]
-    #[ResultResponse(
-        instance: new Result(data: UserSchema::class),
-    )]
     public function getInfo(): Result
     {
         return $this->success(
@@ -148,29 +112,14 @@ final class PassportController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/admin/passport/refresh',
-        operationId: 'refresh',
-        summary: '刷新token',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['admin:passport']
-    )]
+    #[PostMapping(path: '/admin/passport/refresh')]
     #[Middleware(RefreshTokenMiddleware::class)]
-    #[ResultResponse(
-        instance: new Result(data: new PassportLoginVo())
-    )]
     public function refresh(CurrentUser $user): Result
     {
         return $this->success($user->refresh());
     }
 
-    #[Get(
-        path: '/admin/passport/captcha',
-        operationId: 'getCaptcha',
-        summary: '获取平台验证码图片',
-        tags: ['admin:passport']
-    )]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"code":"abcd","image":"data:image/png;base64,..."}}')]
+    #[GetMapping(path: '/admin/passport/captcha')]
     public function captcha(): Result
     {
         // 生成验证码

@@ -13,15 +13,12 @@ use App\Http\Admin\Permission;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation as OA;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\Put;
-use App\Common\Swagger\ResultResponse;
-
-
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
 
 /**
  * 消息通知控制器
@@ -29,8 +26,7 @@ use App\Common\Swagger\ResultResponse;
  * @author 代码生成器
  * @date 2025-11-06 10:28:18
  */
-#[OA\Tag('消息通知')]
-#[OA\HyperfServer('http')]
+#[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
@@ -41,15 +37,8 @@ class MessageNotifyController extends AbstractController
         private readonly CurrentUser $currentUser
     ) {}
 
-    #[Get(
-        path: '/admin/ds/message-notify/message_notify/list',
-        operationId: 'ds:message-notify:admin:message_notify:list',
-        summary: '消息通知列表',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['消息通知'],
-    )]
+    #[GetMapping(path: '/admin/ds/message-notify/message_notify/list')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:list')]
-    #[ResultResponse(instance: new Result())]
     public function pageList(): Result
     {
         return $this->success(
@@ -61,15 +50,8 @@ class MessageNotifyController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/admin/ds/message-notify/message_notify/create',
-        operationId: 'ds:message-notify:admin:message_notify:create',
-        summary: '消息通知新增',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['消息通知'],
-    )]
+    #[PostMapping(path: '/admin/ds/message-notify/message_notify/create')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:create')]
-    #[ResultResponse(instance: new Result())]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -78,15 +60,8 @@ class MessageNotifyController extends AbstractController
         return $this->success();
     }
 
-    #[Put(
-        path: '/admin/ds/message-notify/message_notify/save/{id}',
-        operationId: 'ds:message-notify:admin:message_notify:save',
-        summary: '消息通知保存',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['消息通知'],
-    )]
+    #[PutMapping(path: '/admin/ds/message-notify/message_notify/save/{id}')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:save')]
-    #[ResultResponse(instance: new Result())]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->all(), [
@@ -95,14 +70,7 @@ class MessageNotifyController extends AbstractController
         return $this->success();
     }
 
-    #[Delete(
-        path: '/admin/ds/message-notify/message_notify/delete',
-        operationId: 'ds:message-notify:admin:message_notify:delete',
-        summary: '消息通知删除',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['消息通知'],
-    )]
-    #[ResultResponse(instance: new Result())]
+    #[DeleteMapping(path: '/admin/ds/message-notify/message_notify/delete')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:delete')]
     public function delete(): Result
     {

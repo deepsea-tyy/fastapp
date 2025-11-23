@@ -9,8 +9,6 @@ use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Result;
 use App\Common\ResultCode;
-use App\Common\Swagger\PageResponse;
-use App\Common\Swagger\ResultResponse;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\Permission\PermissionRequest;
 use App\Http\Admin\Service\Permission\UserService;
@@ -18,16 +16,13 @@ use App\Http\CurrentUser;
 use App\Model\Enums\User\Status;
 use App\Repository\Permission\MenuRepository;
 use App\Repository\Permission\RoleRepository;
-use App\Schema\MenuSchema;
-use App\Schema\RoleSchema;
 use Hyperf\Collection\Arr;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\Post;
+use Hyperf\HttpServer\Annotation\PostMapping;
 use Psr\SimpleCache\CacheInterface;
-
-#[HyperfServer(name: 'http')]
+#[Controller]
 #[Middleware(AccessTokenMiddleware::class)]
 final class PermissionController extends AbstractController
 {
@@ -38,17 +33,7 @@ final class PermissionController extends AbstractController
         private readonly UserService $userService
     ) {}
 
-    #[Get(
-        path: '/admin/permission/menus',
-        operationId: 'PermissionMenus',
-        summary: '获取当前用户菜单',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['权限']
-    )]
-    #[PageResponse(
-        instance: MenuSchema::class,
-        example: '{"code":200,"message":"成功","data":[]}'
-    )]
+    #[GetMapping(path: '/admin/permission/menus')]
     public function menus(): Result
     {
         return $this->success(
@@ -62,17 +47,7 @@ final class PermissionController extends AbstractController
         );
     }
 
-    #[Get(
-        path: '/admin/permission/roles',
-        operationId: 'PermissionRoles',
-        summary: '获取当前用户角色',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['权限']
-    )]
-    #[PageResponse(
-        instance: RoleSchema::class,
-        example: '{"code":200,"message":"成功","data":[]}'
-    )]
+    #[GetMapping(path: '/admin/permission/roles')]
     public function roles(): Result
     {
         return $this->success(
@@ -82,14 +57,7 @@ final class PermissionController extends AbstractController
         );
     }
 
-    #[Post(
-        path: '/admin/permission/update',
-        operationId: 'updateInfo',
-        summary: '更新用户信息',
-        security: [['Bearer' => [], 'ApiKey' => []]],
-        tags: ['权限'],
-    )]
-    #[ResultResponse(new Result())]
+    #[PostMapping(path: '/admin/permission/update')]
     public function update(PermissionRequest $request, CacheInterface $cache): Result
     {
         $data = $request->validated();
