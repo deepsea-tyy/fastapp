@@ -14,7 +14,7 @@ use App\Common\Result;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use App\Common\Swagger\ResultResponse;
-use OpenApi\Attributes\QueryParameter;
+use Hyperf\Swagger\Annotation\QueryParameter;
 use Plugin\Ds\SystemConfig\Helper\CacheConfig;
 
 #[HyperfServer(name: 'http')]
@@ -28,7 +28,7 @@ class SystemController extends AbstractController
         tags: ['全局接口'],
     )]
     #[ResultResponse(instance: new Result())]
-    #[QueryParameter(name: 'code')]
+    #[QueryParameter(name: 'code', description: '配置分组代码', required: true, example: 'system')]
     public function config(Request $request): Result
     {
         return $this->success(CacheConfig::getConfigByGroupKey($request->query('code')));

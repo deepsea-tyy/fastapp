@@ -15,6 +15,9 @@ use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
+use Hyperf\Swagger\Annotation\RequestBody;
+use Hyperf\Swagger\Annotation\JsonContent;
+use Hyperf\Swagger\Annotation as OA;
 use Plugin\Ds\MessageNotify\Http\Api\Service\MessageNotifyService;
 
 /**
@@ -49,8 +52,8 @@ class MessageNotifyController extends AbstractController
         tags: ['消息通知'],
     )]
     #[QueryParameter(name: 'notify_type', description: '通知分类:1-系统通知,2-业务通知,3-其他', required: false)]
-    #[QueryParameter(name: 'page', description: '页码', required: false)]
-    #[QueryParameter(name: 'page_size', description: '每页数量', required: false)]
+    #[QueryParameter(name: 'page', description: '页码', required: false, example: 1)]
+    #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: self::DEFAULT_PAGE_SIZE)]
     #[ResultResponse(instance: new Result())]
     public function list(Request $request): Result
     {
@@ -83,6 +86,15 @@ class MessageNotifyController extends AbstractController
         summary: '更新已读状态',
         security: [['Bearer' => [], 'ApiKey' => []]],
         tags: ['消息通知'],
+    )]
+    #[RequestBody(
+        content: new JsonContent(
+            properties: [
+                new OA\Property(property: 'notify_type', description: '通知分类:1-系统通知,2-业务通知,3-其他', type: 'integer', example: 1),
+                new OA\Property(property: 'notify_id', description: '通知id', type: 'integer', example: 1),
+            ],
+            example: '{"notify_type": 1, "notify_id": 1}'
+        )
     )]
     #[ResultResponse(instance: new Result())]
     public function read(Request $request): Result
