@@ -30,22 +30,21 @@ final class MenuRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        $whereInName = static function (Builder $query, array|string $code) {
-            $query->whereIn('name', Arr::wrap($code));
-        };
-        return $query
-            ->when(Arr::get($params, 'sortable'), static function (Builder $query, array $sortable) {
-                $query->orderBy(key($sortable), current($sortable));
-            })
-            ->when(Arr::get($params, 'code'), $whereInName)
-            ->when(Arr::get($params, 'name'), $whereInName)
-            ->when(Arr::get($params, 'children'), static function (Builder $query) {
-                $query->with(['children']);
-            })->when(Arr::get($params, 'status'), static function (Builder $query, Status $status) {
-                $query->where('status', $status);
-            })
-            ->when(Arr::has($params, 'parent_id'), static function (Builder $query) use ($params) {
-                $query->where('parent_id', Arr::get($params, 'parent_id'));
-            });
+        if (Arr::has($params, 'code')) {
+            $query->whereIn('code', Arr::wrap($params['code']));
+            unset($params['code']);
+        }
+        
+        if (Arr::has($params, 'name')) {
+            $query->whereIn('name', Arr::wrap($params['name']));
+            unset($params['name']);
+        }
+        
+        if (Arr::has($params, 'children')) {
+            $query->with(['children']);
+            unset($params['children']);
+        }
+        
+        return parent::handleSearch($query, $params);
     }
 }

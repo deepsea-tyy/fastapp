@@ -23,7 +23,6 @@ use Plugin\Ds\Article\Service\CategoryService as Service;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 class CategoryController extends AbstractController
 {
     public function __construct(
@@ -52,6 +51,7 @@ class CategoryController extends AbstractController
 
     #[PostMapping(path: '/admin/article/category/create')]
     #[Permission(code: 'article:category:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -62,6 +62,7 @@ class CategoryController extends AbstractController
 
     #[PutMapping(path: '/admin/article/category/save/{id}')]
     #[Permission(code: 'article:category:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->all(), [
@@ -72,6 +73,7 @@ class CategoryController extends AbstractController
 
     #[DeleteMapping(path: '/admin/article/category/delete')]
     #[Permission(code: 'article:category:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

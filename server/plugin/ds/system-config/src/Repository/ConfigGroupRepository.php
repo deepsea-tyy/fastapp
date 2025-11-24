@@ -21,12 +21,9 @@ class ConfigGroupRepository extends IRepository
     {
     }
 
-    /**
-     * 搜索处理器.
-     */
     public function handleSearch(Builder $query, array $params): Builder
     {
         $query->with('info');
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 }

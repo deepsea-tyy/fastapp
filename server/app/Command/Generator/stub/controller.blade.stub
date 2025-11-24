@@ -130,7 +130,6 @@
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
 #[OA\Tag('{{$menuName}}')]
 #[OA\HyperfServer('http')]
@@ -170,6 +169,7 @@ class {{$controllerName}}Controller extends AbstractController
 @if($isAdminTarget)
     #[PostMapping(path: '/{{$urlPathPrefix}}/create')]
     #[Permission(code: '{{$permissionName}}:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
     #[Post(path: '/{{$urlPathPrefix}}/create', operationId: '{{$permissionName}}:create', summary: '{{$menuName}}新增', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
@@ -187,6 +187,7 @@ class {{$controllerName}}Controller extends AbstractController
 @if($isAdminTarget)
     #[PutMapping(path: '/{{$urlPathPrefix}}/save/{id}')]
     #[Permission(code: '{{$permissionName}}:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
     #[Put(path: '/{{$urlPathPrefix}}/save/{id}', operationId: '{{$permissionName}}:save', summary: '{{$menuName}}保存', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
@@ -204,6 +205,7 @@ class {{$controllerName}}Controller extends AbstractController
 @if($isAdminTarget)
     #[DeleteMapping(path: '/{{$urlPathPrefix}}/delete')]
     #[Permission(code: '{{$permissionName}}:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
     #[Delete(path: '/{{$urlPathPrefix}}/delete', operationId: '{{$permissionName}}:delete', summary: '{{$menuName}}删除', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[RequestBody(content: new JsonContent(type: 'array', items: new OA\Items(type: 'integer'), example: '[1, 2, 3]'))]

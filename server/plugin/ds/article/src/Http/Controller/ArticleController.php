@@ -23,7 +23,6 @@ use Plugin\Ds\Article\Service\ArticleService as Service;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 class ArticleController extends AbstractController
 {
     public function __construct(
@@ -46,6 +45,7 @@ class ArticleController extends AbstractController
 
     #[PostMapping(path: '/admin/article/article/create')]
     #[Permission(code: 'article:article:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -56,6 +56,7 @@ class ArticleController extends AbstractController
 
     #[PutMapping(path: '/admin/article/article/save/{id}')]
     #[Permission(code: 'article:article:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->all(), [
@@ -66,6 +67,7 @@ class ArticleController extends AbstractController
 
     #[DeleteMapping(path: '/admin/article/article/delete')]
     #[Permission(code: 'article:article:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

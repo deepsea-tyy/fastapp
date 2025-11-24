@@ -20,25 +20,13 @@ class ArticleRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (Arr::has($params, 'status')) {
-            if (\is_array($params['status'])) {
-                $query->whereIn('status', $params['status']);
-            } else {
-                $query->where('status', $params['status']);
-            }
-        }
         if (Arr::has($params, 'category_id')) {
             $in = CategoryCorrelation::query()->where(['category_id' => $params['category_id']])->pluck('data_id');
             $query->whereIn('id', $in);
+            unset($params['category_id']);
         }
-        if (Arr::has($params, 'created_at')) {
-            if (\is_array($params['created_at'])) {
-                $query->whereBetween('created_at', $params['created_at']);
-            } else {
-                $query->where('created_at', $params['created_at']);
-            }
-        }
-        return $query->with(['categories']);
+        $query->with(['categories']);
+        return parent::handleSearch($query, $params);
     }
 
     public function handleItems(Collection $items): Collection

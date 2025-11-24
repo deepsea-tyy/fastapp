@@ -20,20 +20,8 @@ class KefuRepository extends IRepository
     {
     }
 
-    /**
-     * 搜索处理器
-     * @param Builder $query
-     * @param array $params
-     * @return Builder
-     */
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (isset($params['status'])) {
-            $query->where('status', $params['status']);
-        }
-        if (isset($params['created_by'])) {
-            $query->where('created_by', $params['created_by']);
-        }
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 }

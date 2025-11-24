@@ -44,9 +44,6 @@ final class PassportController extends AbstractController
 
         // 查找用户
         $user = $this->passportService->findUsernamePassword($username, $password, 100);
-        if (!$user) {
-            throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '用户名或密码错误');
-        }
 
         // 开发环境无需验证
         $isDev = config('env') === 'dev';

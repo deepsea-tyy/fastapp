@@ -89,6 +89,10 @@ const options = ref<MaProTableOptions>({
     on: {
       // 表格选择事件
       onSelectionChange: (selection: any[]) => selections.value = selection,
+      // 表格排序事件
+      onSortChange: (sort: any) => {
+        proTableRef.value.setRequestParams({ order_by: sort.prop, order_by_direction: sort.order === 'ascending' ? 'asc' : 'desc' }, true)
+      },
     },
   },
   // 搜索参数

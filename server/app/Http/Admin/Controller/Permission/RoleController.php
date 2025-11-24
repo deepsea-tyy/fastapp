@@ -29,7 +29,6 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class RoleController extends AbstractController
 {
     public function __construct(
@@ -52,6 +51,7 @@ final class RoleController extends AbstractController
 
     #[PostMapping(path: '/admin/role')]
     #[Permission(code: 'permission:role:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(RoleRequest $request): Result
     {
         $validated = $request->validated();
@@ -70,6 +70,7 @@ final class RoleController extends AbstractController
 
     #[PutMapping(path: '/admin/role/{id}')]
     #[Permission(code: 'permission:role:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, RoleRequest $request): Result
     {
         $validated = $request->validated();
@@ -88,6 +89,7 @@ final class RoleController extends AbstractController
 
     #[DeleteMapping(path: '/admin/role')]
     #[Permission(code: 'permission:role:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());
@@ -105,6 +107,7 @@ final class RoleController extends AbstractController
 
     #[PutMapping(path: '/admin/role/{id}/permissions')]
     #[Permission(code: 'permission:role:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function batchGrantPermissionsForRole(int $id, BatchGrantPermissionsForRoleRequest $request): Result
     {
         if (! $this->service->existsById($id)) {

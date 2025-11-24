@@ -28,7 +28,6 @@ use Plugin\Ds\SystemConfig\Service\ConfigGroupService as Service;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class ConfigGroupController extends AbstractController
 {
     /**
@@ -49,6 +48,7 @@ final class ConfigGroupController extends AbstractController
 
     #[PostMapping(path: '/system/ConfigGroup')]
     #[Permission(code: 'plugin:ds:configGroup:index:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->post(), [
@@ -59,6 +59,7 @@ final class ConfigGroupController extends AbstractController
 
     #[PutMapping(path: '/system/ConfigGroup/{id}')]
     #[Permission(code: 'plugin:ds:configGroup:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->validated(), [
@@ -69,6 +70,7 @@ final class ConfigGroupController extends AbstractController
 
     #[DeleteMapping(path: '/system/ConfigGroup')]
     #[Permission(code: 'plugin:ds:configGroup:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

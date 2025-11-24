@@ -24,7 +24,6 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class MenuController extends AbstractController
 {
     public function __construct(
@@ -44,6 +43,7 @@ final class MenuController extends AbstractController
 
     #[PostMapping(path: '/admin/menu')]
     #[Permission(code: 'permission:menu:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(MenuRequest $request): Result
     {
         $this->service->create(array_merge($request->validated(), [
@@ -54,6 +54,7 @@ final class MenuController extends AbstractController
 
     #[PutMapping(path: '/admin/menu/{id}')]
     #[Permission(code: 'permission:menu:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, MenuRequest $request): Result
     {
         $this->service->updateById($id, array_merge($request->validated(), [
@@ -64,6 +65,7 @@ final class MenuController extends AbstractController
 
     #[DeleteMapping(path: '/admin/menu')]
     #[Permission(code: 'permission:menu:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

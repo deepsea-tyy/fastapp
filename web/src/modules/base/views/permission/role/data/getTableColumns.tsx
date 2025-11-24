@@ -26,9 +26,10 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
     // 索引序号列
     { type: 'index' },
     // 普通列
-    { label: () => t('baseRoleManage.name'), prop: 'name' },
-    { label: () => t('baseRoleManage.code'), prop: 'code' },
+    { label: () => t('baseRoleManage.name'), prop: 'name', sortable: 'custom' },
+    { label: () => t('baseRoleManage.code'), prop: 'code', sortable: 'custom' },
     { label: () => t('baseRoleManage.dataScope'), prop: 'data_scope',
+      sortable: 'custom',
       cellRender: ({ row }) => {
         const i18nKey = dictStore.t('role-dataScope', row.data_scope, 'i18n')
         return (
@@ -39,6 +40,7 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
       },
     },
     { label: () => t('crud.status'), prop: 'status',
+      sortable: 'custom',
       cellRender: ({ row }) => {
         const i18nKey = dictStore.t('system-status', row.status, 'i18n')
         return (

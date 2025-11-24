@@ -24,48 +24,27 @@ final class UserRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        DataScopeTool::applyUserDataScope($params['created_by'], $query);
-
-        return $query
-            ->when(Arr::get($params, 'unique_username'), static function (Builder $query, $uniqueUsername) {
-                $query->where('username', $uniqueUsername);
-            })
-            ->when(Arr::get($params, 'username'), static function (Builder $query, $username) {
-                $query->where('username', 'like', '%' . $username . '%');
-            })
-            ->when(Arr::get($params, 'phone'), static function (Builder $query, $phone) {
-                $query->whereHas('adminSetting', static function (Builder $q) use ($phone) {
-                    $q->where('phone', $phone);
-                });
-            })
-            ->when(Arr::get($params, 'email'), static function (Builder $query, $email) {
-                $query->where('email', $email);
-            })
-            ->when(Arr::exists($params, 'status'), static function (Builder $query) use ($params) {
-                $query->where('status', Arr::get($params, 'status'));
-            })
-            ->when(Arr::exists($params, 'user_type'), static function (Builder $query) use ($params) {
-                $query->where('user_type', Arr::get($params, 'user_type'));
-            })
-            ->when(Arr::exists($params, 'nickname'), static function (Builder $query) use ($params) {
-                $query->whereHas('profile', static function (Builder $q) use ($params) {
-                    $q->where('nickname', 'like', '%' . Arr::get($params, 'nickname') . '%');
-                });
-            })
-            ->when(Arr::exists($params, 'created_at'), static function (Builder $query) use ($params) {
-                $query->whereBetween('created_at', [
-                    Arr::get($params, 'created_at')[0] . ' 00:00:00',
-                    Arr::get($params, 'created_at')[1] . ' 23:59:59',
-                ]);
-            })
-            ->when(Arr::get($params, 'user_ids'), static function (Builder $query, $userIds) {
-                $query->whereIn('id', $userIds);
-            })
-            ->when(Arr::get($params, 'role_id'), static function (Builder $query, $roleId) {
-                $query->whereHas('roles', static function (Builder $query) use ($roleId) {
-                    $query->where('role_id', $roleId);
-                });
-            })->with(['profile', 'adminSetting']);
+        if (Arr::has($params, 'created_by')) {
+            DataScopeTool::applyUserDataScope($params['created_by'], $query);
+            unset($params['created_by']);
+        }
+        
+        if (Arr::has($params, 'phone')) {
+            $query->whereHas('adminSetting', static function (Builder $q) use ($params) {
+                $q->where('phone', 'like', Arr::get($params, 'phone') . '%');
+            });
+            unset($params['phone']);
+        }
+        
+        if (Arr::has($params, 'nickname')) {
+            $query->whereHas('profile', static function (Builder $q) use ($params) {
+                $q->where('nickname', 'like', '%' . Arr::get($params, 'nickname') . '%');
+            });
+            unset($params['nickname']);
+        }
+        
+        $query->with(['profile', 'adminSetting']);
+        return parent::handleSearch($query, $params);
     }
 
     public function handleItems(Collection $items): Collection

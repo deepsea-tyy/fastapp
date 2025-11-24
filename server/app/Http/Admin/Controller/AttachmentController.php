@@ -24,7 +24,6 @@ use Hyperf\HttpServer\Annotation\PostMapping;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 class AttachmentController extends AbstractController
 {
     use AttachmentControllerTrait;
@@ -43,6 +42,7 @@ class AttachmentController extends AbstractController
 
     #[PostMapping(path: '/attachment/upload')]
     #[Permission(code: 'dataCenter:attachment:upload')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function upload(UploadRequest $request): Result
     {
         return $this->handleUpload($request);
@@ -50,6 +50,7 @@ class AttachmentController extends AbstractController
 
     #[DeleteMapping(path: '/attachment/{id}')]
     #[Permission(code: 'dataCenter:attachment:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(int $id): Result
     {
         return $this->handleDelete($id);
@@ -64,6 +65,7 @@ class AttachmentController extends AbstractController
 
     #[PostMapping(path: '/attachment/chunk-merge')]
     #[Permission(code: 'dataCenter:attachment:upload')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function mergeChunk(ChunkMergeRequest $request): Result
     {
         return $this->handleMergeChunk($request);

@@ -29,7 +29,6 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 class MessageNotifyController extends AbstractController
 {
     public function __construct(
@@ -52,6 +51,7 @@ class MessageNotifyController extends AbstractController
 
     #[PostMapping(path: '/admin/ds/message-notify/message_notify/create')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -62,6 +62,7 @@ class MessageNotifyController extends AbstractController
 
     #[PutMapping(path: '/admin/ds/message-notify/message_notify/save/{id}')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->all(), [
@@ -72,6 +73,7 @@ class MessageNotifyController extends AbstractController
 
     #[DeleteMapping(path: '/admin/ds/message-notify/message_notify/delete')]
     #[Permission(code: 'ds:message-notify:admin:message_notify:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

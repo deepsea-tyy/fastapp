@@ -28,7 +28,6 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class UserController extends AbstractController
 {
     public function __construct(
@@ -64,6 +63,7 @@ final class UserController extends AbstractController
 
     #[PutMapping(path: '/admin/user')]
     #[Permission(code: 'permission:user:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function updateInfo(UserRequest $request): Result
     {
         $this->userService->updateById($this->currentUser->id(), Arr::except($request->validated(), ['password']));
@@ -72,6 +72,7 @@ final class UserController extends AbstractController
 
     #[PutMapping(path: '/admin/user/password')]
     #[Permission(code: 'permission:user:password')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function resetPassword(): Result
     {
         return $this->userService->resetPassword($this->getRequest()->input('id'))
@@ -81,6 +82,7 @@ final class UserController extends AbstractController
 
     #[PostMapping(path: '/admin/user')]
     #[Permission(code: 'permission:user:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(UserRequest $request): Result
     {
         $this->userService->create(array_merge($request->validated(), [
@@ -91,6 +93,7 @@ final class UserController extends AbstractController
 
     #[DeleteMapping(path: '/admin/user')]
     #[Permission(code: 'permission:user:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->userService->deleteById($this->getRequestData());
@@ -99,6 +102,7 @@ final class UserController extends AbstractController
 
     #[PutMapping(path: '/admin/user/{userId}')]
     #[Permission(code: 'permission:user:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $userId, UserRequest $request): Result
     {
         $this->userService->updateById($userId, array_merge($request->validated(), [
@@ -120,6 +124,7 @@ final class UserController extends AbstractController
 
     #[PutMapping(path: '/admin/user/{userId}/roles')]
     #[Permission(code: 'permission:user:setRole')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function batchGrantRolesForUser(int $userId, BatchGrantRolesForUserRequest $request): Result
     {
         $this->userService->batchGrantRoleForUser($userId, $request->input('role_codes'));

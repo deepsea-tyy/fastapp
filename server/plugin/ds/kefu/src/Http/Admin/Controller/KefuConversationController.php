@@ -15,7 +15,6 @@ use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Plugin\Ds\Kefu\Schema\KefuConversationSchema;
 use Plugin\Ds\Kefu\Service\KefuConversationService;
 
 /**
@@ -24,7 +23,6 @@ use Plugin\Ds\Kefu\Service\KefuConversationService;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class KefuConversationController extends AbstractController
 {
     public function __construct(
@@ -45,6 +43,7 @@ final class KefuConversationController extends AbstractController
 
     #[DeleteMapping(path: '/admin/kefu/kefuConversation')]
     #[Permission(code: 'kefu:kefuConversation:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());

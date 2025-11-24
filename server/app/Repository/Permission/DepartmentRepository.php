@@ -20,27 +20,10 @@ final class DepartmentRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        return $query
-            ->when(Arr::get($params, 'name'), static function (Builder $query, $name) {
-                $query->where('name', 'like', '%' . $name . '%');
-            })
-            ->when(Arr::get($params, 'code'), static function (Builder $query, $code) {
-                $query->where('code', $code);
-            })
-            ->when(Arr::has($params, 'status'), static function (Builder $query) use ($params) {
-                $query->where('status', Arr::get($params, 'status'));
-            })
-            ->when(Arr::has($params, 'parent_id'), static function (Builder $query) use ($params) {
-                $query->where('parent_id', Arr::get($params, 'parent_id'));
-            })
-            ->when(Arr::has($params, 'created_at'), static function (Builder $query) use ($params) {
-                $query->whereBetween('created_at', [
-                    Arr::get($params, 'created_at')[0] . ' 00:00:00',
-                    Arr::get($params, 'created_at')[1] . ' 23:59:59',
-                ]);
-            })->with(['children' => function ($query) {
-                $query->where('status', 1)->orderByDesc('sort');
-            }])->where('parent_id', 0);
+        $query->with(['children' => function ($query) {
+            $query->where('status', 1)->orderByDesc('sort');
+        }])->where('parent_id', 0);
+        return parent::handleSearch($query, $params);
     }
 
     public function selectDept(): array

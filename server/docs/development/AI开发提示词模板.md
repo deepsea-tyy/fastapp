@@ -24,13 +24,13 @@
 ## ⚡ AI 能力边界
 
 **AI 可以做什么**：
-- ✅ 自动执行：代码生成器命令、数据库 SQL、菜单 SQL
-- ✅ 生成代码：PHP、SQL、配置文件等
-- ✅ 验证和优化：语法检查、规范验证、代码优化
+- ✅ 自动执行代码生成器命令、数据库 SQL、菜单 SQL
+- ✅ 生成代码（PHP、SQL、配置文件等）
+- ✅ 验证和优化（语法检查、规范验证）
 
-**AI 判断逻辑**：
-- ✅ 使用代码生成器：新数据库表 + 完整 CRUD
-- ❌ 不使用代码生成器：扩展已有功能、单个接口、WebSocket 等
+**判断是否使用代码生成器**：
+- ✅ 使用：新数据库表 + 完整 CRUD
+- ❌ 不使用：扩展已有功能、单个接口、WebSocket 等
 
 ## 📚 模板分类
 
@@ -112,15 +112,13 @@
 - 遵循 FastApp 开发规范
 
 **AI 处理流程：**
-1. 设计数据库表结构（字段注释格式：`字段说明[required,search]`，枚举值：`状态 0=禁用,1=启用`）
+1. 设计数据库表结构（字段注释：`字段说明[required,search]`，枚举：`状态 0=禁用,1=启用`）
 2. 自动执行 SQL 创建表
-3. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --pid={pid}`
-4. 验证生成的文件完整性
-5. 自动在 Service 层添加数据权限（`DataScopeTool::applyUserDataScope(0, $query)`）
-6. 自动执行菜单 SQL（或使用 `--sql=true`）
+3. 自动执行代码生成器：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --pid={pid}`
+4. 验证生成的文件，自动添加数据权限和菜单 SQL
 
 **重要提示：**
-- 权限代码格式：`{module}:{table}:{action}`
+- 权限代码：`{module}:{table}:{action}`
 - 数据权限在 Service 层应用，AI 会自动添加
 
 请按照流程执行。
@@ -241,7 +239,7 @@
 - 返回：{返回数据说明}
 
 **开发步骤：**
-1. 阅读 docs/WebSocket开发文档.md
+1. 阅读 docs/features/WebSocket开发文档.md
 2. 创建 WebSocket 消息处理器类
 3. 实现 WsMessageHandlerInterface 接口
 4. 实现处理方法（使用 protected 访问修饰符）
@@ -264,23 +262,19 @@
 
 **实现方式（推荐）：**
 ```php
+use App\Http\Admin\Service\Permission\DataScopeTool;
+use App\Repository\IRepository;
+
 public function page(array $params, int $page = 1, int $pageSize = 10): array
 {
     $query = $this->repository->getQuery();
-    
-    // 应用数据权限过滤（按部门）
     DataScopeTool::applyUserDataScope(0, $query);
-    
-    // 应用搜索条件和排序
     $query = $this->repository->perQuery($query, $params);
-    
-    // 分页查询
     $result = $query->paginate(
         perPage: $pageSize,
-        pageName: 'per_page',
+        pageName: IRepository::PER_PAGE_PARAM_NAME,
         page: $page,
     );
-    
     return $this->repository->handlePage($result);
 }
 ```
@@ -315,11 +309,9 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 - 数据权限（按部门）
 
 **执行步骤：**
-1. 自动执行 CREATE TABLE SQL 创建表
+1. 自动执行 SQL 创建表
 2. 自动执行代码生成器命令
-3. 验证生成的文件完整性
-4. 自动在 Service 层添加数据权限
-5. 自动执行菜单 SQL（或使用 `--sql=true`）
+3. 验证文件并自动添加数据权限和菜单 SQL
 ```
 
 #### 模板 10.2：快速 API
@@ -338,9 +330,9 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 - JWT 认证
 
 **执行步骤：**
-1. 自动执行 CREATE TABLE SQL 创建表
-2. 自动执行代码生成器命令：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
-3. 验证生成的文件完整性
+1. 自动执行 SQL 创建表
+2. 自动执行代码生成器：`php bin/hyperf.php ds:generate-crud --table={table} --module={module} --target=api`
+3. 验证生成的文件
 ```
 
 ---
@@ -376,24 +368,27 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 
 ### 数据权限实现
 
+**Service 层（推荐）**：
 ```php
-// ✅ 正确方式
-public function page(array $params, int $page = 1, int $pageSize = 10): array
-{
-    $query = $this->repository->getQuery();
-    DataScopeTool::applyUserDataScope(0, $query);
-    $query = $this->repository->perQuery($query, $params);
-    // ...
-}
-
-// ❌ 错误方式
-public function page(array $params, int $page = 1, int $pageSize = 10): array
-{
-    $query = $this->repository->model()->newQuery(); // ❌ 错误
-    $query = $this->repository->handleSearch($query, $params); // ❌ 错误
-    // ...
-}
+$query = $this->repository->getQuery();
+DataScopeTool::applyUserDataScope(0, $query);
+$query = $this->repository->perQuery($query, $params);
+// ... 分页和返回
 ```
+
+**Repository 的 handleSearch**：
+```php
+if (Arr::has($params, 'created_by')) {
+    DataScopeTool::applyUserDataScope($params['created_by'], $query);
+    unset($params['created_by']); // ⚠️ 必须移除
+}
+return parent::handleSearch($query, $params); // ⚠️ 必须调用父类
+```
+
+**常见错误**：
+- ❌ 使用 `$this->repository->model->newQuery()` → ✅ 使用 `getQuery()`
+- ❌ 手动调用 `handleSearch()` → ✅ 使用 `perQuery()`
+- ❌ 未 `unset` 参数或未调用 `parent::handleSearch()`
 
 ---
 
@@ -401,14 +396,12 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 
 | 问题 | 答案 |
 |------|------|
-| **如何让 AI 理解项目结构？** | 使用模板 1.1，让 AI 先阅读文档 |
-| **如何快速开发 CRUD？** | 使用模板 10.1 或 10.2，提供表结构即可 |
-| **权限代码格式是什么？** | 普通模式：`{module}:{table}:{action}`，插件模式：`{plugin_path}:{table_name}:{action}` |
-| **数据权限在哪里应用？** | Service 层，使用 `DataScopeTool::applyUserDataScope(0, $query)` |
-| **代码生成器执行前需要做什么？** | AI 会自动执行 CREATE TABLE SQL 创建表 |
-| **菜单 SQL 会自动执行吗？** | 会，AI 会自动执行菜单 SQL 或使用 `--sql=true` |
-| **代码生成器生成的 Service 是否包含数据权限？** | 不包含，AI 会自动添加 |
-| **AI 会自行调用代码生成器吗？** | 会，AI 会自动执行代码生成器命令 |
+| **如何让 AI 理解项目？** | 使用模板 1.1 |
+| **如何快速开发 CRUD？** | 使用模板 10.1 或 10.2，提供表结构 |
+| **权限代码格式？** | 普通：`{module}:{table}:{action}`，插件：`{plugin_path}:{table_name}:{action}` |
+| **数据权限在哪里应用？** | Service 层，AI 会自动添加 |
+| **代码生成器执行前需要做什么？** | AI 会自动执行 SQL 创建表 |
+| **菜单 SQL 会自动执行吗？** | 会，AI 自动执行或使用 `--sql=true` |
 
 ---
 

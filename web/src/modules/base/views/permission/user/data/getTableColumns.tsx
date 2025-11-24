@@ -38,6 +38,7 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
     { label: () => t('baseUserManage.username'), prop: 'username' },
     { label: () => t('baseUserManage.nickname'), prop: 'nickname' },
     { label: () => t('baseUserManage.userType'), prop: 'user_type',
+      sortable: 'custom',
       cellRender: ({ row }) => (
         <ElTag type={dictStore.t('base-userType', row.user_type, 'color')}>
           {t(dictStore.t('base-userType', row.user_type, 'i18n'))}
@@ -45,8 +46,9 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
       ),
     },
     { label: () => t('baseUserManage.phone'), prop: 'phone' },
-    { label: () => t('baseUserManage.email'), prop: 'email' },
+    { label: () => t('baseUserManage.email'), prop: 'email', sortable: 'custom' },
     { label: () => t('crud.status'), prop: 'status',
+      sortable: 'custom',
       cellRender: ({ row }) => (
         <ElTag type={dictStore.t('system-status', row.status, 'color')}>
           {t(dictStore.t('system-status', row.status, 'i18n'))}

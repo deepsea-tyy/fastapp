@@ -5,8 +5,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Repository\Traits\BootTrait;
-use App\Repository\Traits\RepositoryOrderByTrait;
 use Hyperf\Collection\Collection;
 use Hyperf\Contract\LengthAwarePaginatorInterface;
 use Hyperf\Database\Model\Builder;
@@ -20,15 +18,123 @@ use Hyperf\Paginator\AbstractPaginator;
  */
 abstract class IRepository
 {
-    use BootTrait;
     use HasContainer;
-    use RepositoryOrderByTrait;
 
     public const PER_PAGE_PARAM_NAME = 'per_page';
+    
+    private const SKIP_PARAMS = ['page', 'per_page', 'order_by', 'order_by_direction', 'order', 'sort'];
+    private const INTEGER_TYPES = ['integer', 'int', 'bigint', 'smallint', 'tinyint', 'mediumint'];
+    private const FLOAT_TYPES = ['float', 'double', 'decimal', 'numeric'];
+    private const DATETIME_TYPES = ['datetime', 'timestamp'];
+    private const JSON_TYPES = ['json', 'jsonb'];
+    private const BOOLEAN_TYPES = ['boolean', 'bool', 'bit'];
 
     public function handleSearch(Builder $query, array $params): Builder
     {
+        $tableColumns = $this->getTableColumns();
+        $casts = $this->model->getCasts();
+        
+        foreach ($params as $key => $value) {
+            if (in_array($key, self::SKIP_PARAMS, true) 
+                || !isset($tableColumns[$key]) 
+                || ($value === null || $value === '')) {
+                continue;
+            }
+            
+            $this->applyWhereByType(
+                $query, 
+                $key, 
+                $value, 
+                $casts[$key] ?? null, 
+                $tableColumns[$key]['type'] ?? null
+            );
+        }
+        
         return $query;
+    }
+    
+    protected function getTableColumns(): array
+    {
+        static $cache = [];
+        $tableName = $this->model->getTable();
+        
+        if (isset($cache[$tableName])) {
+            return $cache[$tableName];
+        }
+        
+        try {
+            $tableDetails = $this->model->getConnection()
+                ->getDoctrineSchemaManager()
+                ->listTableDetails($tableName);
+            
+            foreach ($tableDetails->getColumns() as $column) {
+                $cache[$tableName][$column->getName()] = [
+                    'type' => $column->getType()->getName(),
+                ];
+            }
+        } catch (\Exception $e) {
+            foreach ($this->model->getFillable() as $field) {
+                $cache[$tableName][$field] = ['type' => null];
+            }
+        }
+        
+        return $cache[$tableName];
+    }
+    
+    protected function applyWhereByType(Builder $query, string $field, mixed $value, ?string $castType, ?string $dbType = null): void
+    {
+        $type = $dbType ?? $this->normalizeCastType($castType) ?? 'string';
+        
+        // 日期时间类型且值为数组时，使用范围查询
+        if (is_array($value) && (in_array($type, self::DATETIME_TYPES, true) || $type === 'date')) {
+            $this->handleDateRangeWhere($query, $field, $value);
+            return;
+        }
+        
+        if (is_array($value)) {
+            $query->whereIn($field, $value);
+            return;
+        }
+        
+        match (true) {
+            in_array($type, self::INTEGER_TYPES, true) => $query->where($field, (int)$value),
+            in_array($type, self::FLOAT_TYPES, true) => $query->where($field, (float)$value),
+            in_array($type, self::DATETIME_TYPES, true) || $type === 'date' => $this->handleDateRangeWhere($query, $field, $value),
+            in_array($type, self::JSON_TYPES, true) || $type === 'array' => $query->whereJsonContains($field, $value),
+            in_array($type, self::BOOLEAN_TYPES, true) => $query->where($field, (bool)$value),
+            default => $query->where($field, 'like', "%{$value}%"),
+        };
+    }
+    
+    private function normalizeCastType(?string $castType): ?string
+    {
+        return match (true) {
+            $castType === null => null,
+            str_contains($castType, 'int') => 'integer',
+            str_contains($castType, 'float') || str_contains($castType, 'decimal') => 'float',
+            str_contains($castType, 'datetime') || str_contains($castType, 'timestamp') => 'datetime',
+            str_contains($castType, 'date') => 'date',
+            str_contains($castType, 'json') || str_contains($castType, 'array') => 'json',
+            str_contains($castType, 'bool') => 'boolean',
+            default => 'string',
+        };
+    }
+    
+    protected function handleDateRangeWhere(Builder $query, string $field, mixed $value): void
+    {
+        if (is_array($value) && count($value) === 2) {
+            $query->whereBetween($field, [
+                $value[0] . ' 00:00:00',
+                $value[1] . ' 23:59:59',
+            ]);
+        } elseif (is_string($value) && preg_match('/^(.+?)[~-](.+)$/', $value, $matches)) {
+            $query->whereBetween($field, [
+                trim($matches[1]) . ' 00:00:00',
+                trim($matches[2]) . ' 23:59:59',
+            ]);
+        } else {
+            $query->where($field, $value);
+        }
     }
 
     public function handleItems(Collection $items): Collection
@@ -81,11 +187,7 @@ abstract class IRepository
     public function saveById(mixed $id, array $data): mixed
     {
         $model = $this->getQuery()->whereKey($id)->first();
-        if ($model) {
-            $model->fill($data)->save();
-            return $model;
-        }
-        return null;
+        return $model && $model->fill($data)->save() ? $model : null;
     }
 
     public function deleteById(mixed $id, array $where = []): int
@@ -122,8 +224,33 @@ abstract class IRepository
 
     public function perQuery(Builder $query, array $params): Builder
     {
-        $this->startBoot($query, $params);
-        return $this->handleSearch($query, $params);
+        return $this->handleSearch($this->handleOrderBy($query, $params), $params);
+    }
+    
+    public function handleOrderBy(Builder $query, array $params): Builder
+    {
+        if ($this->enablePageOrderBy()) {
+            $query->orderBy(
+                $params[$this->getOrderByParamName()] ?? $query->getModel()->getKeyName(),
+                $params[$this->getOrderByDirectionParamName()] ?? 'desc'
+            );
+        }
+        return $query;
+    }
+    
+    protected function enablePageOrderBy(): bool
+    {
+        return true;
+    }
+    
+    protected function getOrderByParamName(): string
+    {
+        return 'order_by';
+    }
+    
+    protected function getOrderByDirectionParamName(): string
+    {
+        return 'order_by_direction';
     }
 
     public function getQuery(): Builder

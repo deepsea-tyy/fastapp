@@ -19,26 +19,9 @@ class KefuConversationRepository extends IRepository
     ) {
     }
 
-    /**
-     * 搜索处理器
-     * @param Builder $query
-     * @param array $params
-     * @return Builder
-     */
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (isset($params['kefu_id'])) {
-            $query->where('kefu_id', '=', $params['kefu_id']);
-        }
-
-        if (isset($params['user_id'])) {
-            $query->where('user_id', '=', $params['user_id']);
-        }
-
-        if (isset($params['status'])) {
-            $query->where('status', '=', $params['status']);
-        }
-
-        return $query->with(['profile:user_id,avatar,nickname', 'kefu:id,avatar,nickname']);
+        $query->with(['profile:user_id,avatar,nickname', 'kefu:id,avatar,nickname']);
+        return parent::handleSearch($query, $params);
     }
 }

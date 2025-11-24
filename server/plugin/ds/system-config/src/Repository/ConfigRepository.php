@@ -20,15 +20,8 @@ class ConfigRepository extends IRepository
     {
     }
 
-    /**
-     * 搜索处理器.
-     */
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (isset($params['group_code'])) {
-            $query->where('group_code', '=', $params['group_code']);
-        }
-
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 }

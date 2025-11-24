@@ -24,7 +24,6 @@ use Plugin\Ds\SystemConfig\Service\ConfigService as Service;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 class ConfigController extends AbstractController
 {
     public function __construct(
@@ -56,6 +55,7 @@ class ConfigController extends AbstractController
 
     #[PostMapping(path: '/system/Config')]
     #[Permission(code: 'plugin:ds:config:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($request->all(), [
@@ -66,6 +66,7 @@ class ConfigController extends AbstractController
 
     #[PutMapping(path: '/system/Config/{id}')]
     #[Permission(code: 'plugin:ds:config:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, Request $request): Result
     {
         $this->service->updateById($id, array_merge($request->validated(), [
@@ -76,6 +77,7 @@ class ConfigController extends AbstractController
 
     #[DeleteMapping(path: '/system/Config')]
     #[Permission(code: 'plugin:ds:config:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteByKey($this->getRequestData());

@@ -23,7 +23,6 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
-#[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 final class DepartmentController extends AbstractController
 {
     public function __construct(
@@ -53,6 +52,7 @@ final class DepartmentController extends AbstractController
 
     #[PostMapping(path: '/admin/department')]
     #[Permission(code: 'permission:department:save')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(DepartmentRequest $request): Result
     {
         $this->service->create(array_merge($request->validated(), [
@@ -63,6 +63,7 @@ final class DepartmentController extends AbstractController
 
     #[PutMapping(path: '/admin/department/{id}')]
     #[Permission(code: 'permission:department:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $id, DepartmentRequest $request): Result
     {
         $this->service->updateById($id, array_merge($request->validated(), [
@@ -73,6 +74,7 @@ final class DepartmentController extends AbstractController
 
     #[DeleteMapping(path: '/admin/department')]
     #[Permission(code: 'permission:department:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData());
