@@ -83,7 +83,7 @@ final class User extends Model
 
     public function deleted(Deleted $event): void
     {
-        $this->getRoles()->detach();
+        $this->getRoles()?->detach();
         $this->adminSetting?->delete();
         $this->profile?->delete();
     }
@@ -110,14 +110,14 @@ final class User extends Model
         $this->password = 123456;
     }
 
-    public function isSuperAdmin(): bool
+    public function isSuperAdmin(): ?bool
     {
-        return  $this->getRoles()->contains('code', 'SuperAdmin');
+        return $this->getRoles()?->contains('code', 'SuperAdmin');
     }
 
-    public function getRoles(): Collection
+    public function getRoles(): ?Collection
     {
-        return DataScopeTool::getCurrentUser($this->id)->roles;
+        return DataScopeTool::getCurrentUser($this->id)?->roles;
     }
 
     /**
@@ -125,7 +125,7 @@ final class User extends Model
      */
     public function getPermissions(): Collection
     {
-        return $this->getRoles()
+        return $this->roles()
             ->where('status', Status::Normal)
             ->with('menus')
             ->orderBy('sort')
@@ -136,8 +136,8 @@ final class User extends Model
             ->values();
     }
 
-    public function hasPermission(string $permission): bool
+    public function hasPermission(string $permission): ?bool
     {
-        return $this->getRoles()->whereRelation('menus', 'name', $permission)->exists();
+        return $this->getRoles()?->whereRelation('menus', 'name', $permission)->exists();
     }
 }

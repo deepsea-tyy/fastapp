@@ -9,7 +9,7 @@ use App\Model\User;
 use Hyperf\Database\Seeders\Seeder;
 use Hyperf\DbConnection\Db;
 
-class Init20251017 extends Seeder
+class MenuInit20251017 extends Seeder
 {
     public const BASE_DATA = [
         'name' => '',
@@ -66,6 +66,7 @@ class Init20251017 extends Seeder
             [
                 'name' => 'permission',
                 'path' => '/permission',
+                'sort' => 99,
                 'meta' => new Meta([
                     'title' => '权限管理',
                     'i18n' => 'baseMenu.permission.index',
@@ -333,6 +334,7 @@ class Init20251017 extends Seeder
             [
                 'name' => 'log',
                 'path' => '/log',
+                'sort' => 100,
                 'meta' => new Meta([
                     'title' => '日志管理',
                     'i18n' => 'baseMenu.log.index',
@@ -425,6 +427,7 @@ class Init20251017 extends Seeder
             [
                 'name' => 'dataCenter',
                 'path' => '/dataCenter',
+                'sort' => 101,
                 'meta' => new Meta([
                     'title' => '数据中心',
                     'i18n' => 'baseMenu.dataCenter.index',

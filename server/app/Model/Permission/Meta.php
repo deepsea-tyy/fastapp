@@ -28,6 +28,11 @@ use Hyperf\DbConnection\Model\Model;
  */
 final class Meta extends Model
 {
+    public function toJson($options = 0): string
+    {
+        return json_encode($this->jsonSerialize(), JSON_UNESCAPED_UNICODE);
+    }
+
     public bool $incrementing = false;
 
     protected array $fillable = [

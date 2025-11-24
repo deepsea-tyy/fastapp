@@ -31,8 +31,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
      */
     public static array $actionHandle = [];
 
-    private static bool $initialized = false;
-
     /**
      * 存储每个fd对应的锁值，用于安全释放锁
      * fd => lock_value
@@ -68,10 +66,7 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
         protected JwtFactory $jwtFactory,
     )
     {
-        if (!self::$initialized) {
-            $this->registerPluginHandlers();
-            self::$initialized = true;
-        }
+        $this->registerPluginHandlers();
     }
 
     private static function getRedis(): Redis
@@ -90,13 +85,16 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
         $lockKey = self::REDIS_KEY_LOCK . $fd;
         $lockValue = uniqid(gethostname() . '_', true);
         $endTime = time() + 5;
+        $retryCount = 0;
+        $maxRetries = 5;
 
-        while (time() < $endTime) {
+        while (time() < $endTime && $retryCount < $maxRetries) {
             if ($redis->set($lockKey, $lockValue, ['nx', 'ex' => 5])) {
                 self::$lockValues[$fd] = $lockValue;
                 return true;
             }
-            Coroutine::sleep(1);
+            $retryCount++;
+            Coroutine::sleep(0.1);
         }
 
         return false;
@@ -167,8 +165,16 @@ LUA;
             $opId = $params['op_id'] ?? '';
             if (str_contains($params['action'], 'visitor')) {
                 if (str_contains($params['action'], 'bind_fd')) {
-                    $this->addConnection($frame->fd, $params['data']['bind_key']);
-                    $response = WsResponse::success(null, 'Bind key successfully');
+                    $bindKey = $params['data']['bind_key'] ?? '';
+                    if (empty($bindKey) || !is_string($bindKey)) {
+                        $this->sendResponse($frame->fd, WsResponse::error('bind_key is required and must be a non-empty string', $opId));
+                        return;
+                    }
+                    if ($this->addConnection($frame->fd, $bindKey)) {
+                        $response = WsResponse::success(null, 'Bind key successfully');
+                    } else {
+                        $response = WsResponse::error('Failed to bind connection', $opId);
+                    }
                 } else {
                     $response = $this->handleMessageAction($frame->fd, $params['action'], $params['data'] ?? []);
                 }
@@ -211,50 +217,37 @@ LUA;
     public function login($server, int $fd, array $params): void
     {
         $tokenString = $params['data']['token'] ?? '';
-        try {
-            if (empty($tokenString)) {
-                throw new \Exception('Token is required');
-            }
-
-            $scenes = ['default', 'api'];
-            $token = null;
-            $lastException = null;
-
-            foreach ($scenes as $tryScene) {
-                try {
-                    $jwt = $this->jwtFactory->get($tryScene);
-                    $token = $jwt->parserAccessToken($tokenString);
-                    break;
-                } catch (\Throwable $e) {
-                    $lastException = $e;
-                    continue;
-                }
-            }
-
-            if (!$token) {
-                throw $lastException ?? new \Exception('Failed to parse token');
-            }
-            $userId = (int)$token->claims()->get(RegisteredClaims::ID);
-
-            if ($userId) {
-                $this->addConnection($fd, $userId);
-                $response = WsResponse::success(null, 'Auth successfully', $params['op_id'] ?? '');
-            } else {
-                throw new \Exception('Invalid user ID from token');
-            }
-        } catch (\Throwable $e) {
-            $this->removeConnection($fd);
-            $errorMessage = $e->getMessage();
-            $response = WsResponse::error('Token Auth fail: ' . $errorMessage, $params['op_id'] ?? '');
-            Coroutine::create(static function () use ($server, $fd) {
-                Coroutine::sleep(3);
-                if ($server->exist($fd)) {
-                    $server->close($fd);
-                }
-            });
+        $responseFail = WsResponse::error('Failed to parse token', $params['op_id'] ?? '');
+        if (empty($tokenString)) {
+            $this->sendResponse($fd, $responseFail);
+            return;
         }
 
-        $this->sendResponse($fd, $response);
+        $scenes = ['default', 'api'];
+        $userId = 0;
+        foreach ($scenes as $tryScene) {
+            try {
+                $jwt = $this->jwtFactory->get($tryScene);
+                $token = $jwt->parserAccessToken($tokenString);
+                $userId = (int)$token->claims()->get(RegisteredClaims::ID);
+                break;
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        if ($userId && $this->addConnection($fd, $userId)) {
+            $response = WsResponse::success(null, 'Auth successfully', $params['op_id'] ?? '');
+            $this->sendResponse($fd, $response);
+            return;
+        }
+        $this->sendResponse($fd, $responseFail);
+        Coroutine::create(static function () use ($server, $fd) {
+            Coroutine::sleep(3);
+            if ($server->exist($fd)) {
+                $server->close($fd);
+            }
+        });
     }
 
     /**
@@ -407,11 +400,14 @@ LUA;
 
     /**
      * 添加连接映射（使用分布式锁保证原子性）
+     * @param int $fd 文件描述符
+     * @param int|string $userId 用户ID或visitor标识
+     * @return bool 是否成功添加连接
      */
-    private function addConnection(int $fd, int|string $userId): void
+    private function addConnection(int $fd, int|string $userId): bool
     {
         if (!$this->acquireLock($fd)) {
-            return;
+            return false;
         }
 
         try {
@@ -428,16 +424,27 @@ LUA;
                     $oldUserFdsCount = $redis->sCard($oldUserFdsKey);
                     if ($oldUserFdsCount === 0) {
                         $redis->del($oldUserFdsKey);
-                        Tools::eventDispatcher(new WsCloseEvent((int)$oldUserId));
+                        Tools::eventDispatcher(new WsCloseEvent($oldUserId));
                     }
                 } else {
+                    // 如果 oldUserId === userId，确保 fdKey 存在，并添加到 Set
+                    $redis->set($fdKey, (string)$userId);
                     $redis->sAdd($userFdsKey, (string)$fd);
-                    return;
+                    return true;
                 }
             }
 
             $redis->set($fdKey, (string)$userId);
             $redis->sAdd($userFdsKey, (string)$fd);
+            return true;
+        } catch (\Throwable $e) {
+            Tools::logAsync(
+                "Error adding connection for fd {$fd}, userId: {$userId}: " . $e->getMessage(),
+                'error',
+                'error',
+                'websocket'
+            );
+            return false;
         } finally {
             $this->releaseLock($fd);
         }
@@ -449,6 +456,11 @@ LUA;
     private function removeConnection(int $fd): void
     {
         if (!$this->acquireLock($fd)) {
+            // 即使获取锁失败，也尝试直接清理（降级处理）
+            try {
+                $this->removeConnectionInternalUnlocked($fd);
+            } catch (\Throwable $e) {
+            }
             return;
         }
 
@@ -481,7 +493,7 @@ LUA;
         $fdsCount = $redis->sCard($userFdsKey);
         if ($fdsCount === 0) {
             $redis->del($userFdsKey);
-            Tools::eventDispatcher(new WsCloseEvent((int)$userId));
+            Tools::eventDispatcher(new WsCloseEvent($userId));
         }
     }
 
@@ -507,7 +519,7 @@ LUA;
     }
 
     /**
-     * 根据 fd 获取用户ID
+     * 根据 fd 获取用户ID（仅限已登录用户，返回 int）
      */
     private function getUserIdByFd(int $fd): ?int
     {

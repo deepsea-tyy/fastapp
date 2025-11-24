@@ -95,9 +95,6 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
         multiple: true,
         placeholder: t('form.pleaseInput', { msg: t('permission.Department') }),
       },
-      itemProps: {
-        rules: [{ required: true, message: t('form.pleaseInput', { msg: t('permission.Department') }) }],
-      },
     },
     {
       label: () => t('crud.remark'),
