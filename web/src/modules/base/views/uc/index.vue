@@ -1,4 +1,3 @@
-
 <i18n lang="yaml">
 en:
   profile: Profile
@@ -60,19 +59,19 @@ zh_TW:
 </i18n>
 
 <script setup lang="ts">
-import { useLocalTrans } from '@/hooks/useLocalTrans'
+import {useLocalTrans} from '@/hooks/useLocalTrans'
 import UcContainer from './components/container.vue'
 import UcModifyInfo from './components/modify-info.vue'
 import UcTitle from './components/title.vue'
-import { useMessage } from '@/hooks/useMessage.ts'
-import {formatImagePath} from "@/utils/common.ts";
+import {useMessage} from '@/hooks/useMessage.ts'
+import {formatImagePath, processUrl} from "@/utils/common.ts";
 
 const modalRef = ref()
 const selected = ref('profile')
 const userStore = useUserStore()
 const tabOptions = reactive([
-  { label: useLocalTrans('profile'), value: 'profile' },
-  { label: useLocalTrans('setting'), value: 'setting' },
+  {label: useLocalTrans('profile'), value: 'profile'},
+  // {label: useLocalTrans('setting'), value: 'setting'},
 ])
 
 const msg = useMessage()
@@ -96,9 +95,9 @@ const showFields = reactive({
 })
 
 watch(avatar, async (val: string | undefined) => {
-  const response: any = await useHttp().post('/admin/permission/update', { avatar: val ?? '' })
+  const response: any = await useHttp().post('/admin/permission/update', {avatar: processUrl(val) ?? ''})
   if (response.code === 200) {
-    msg.success(globalTrans('crud.updateSuccess'))
+    msg.success(globalTrans('crud.success'))
     userStore.getUserInfo().avatar = val ?? ''
   }
 })
@@ -116,9 +115,9 @@ watch(avatar, async (val: string | undefined) => {
     <div class="mine-uc-layout-content">
       <div class="w-full">
         <m-tabs
-          v-model="selected"
-          class="text-sm lg:w-6/12"
-          :options="tabOptions"
+            v-model="selected"
+            class="text-sm lg:w-6/12"
+            :options="tabOptions"
         />
         <ul v-if="selected === 'profile'" class="info-list">
           <li class="!b-none">
@@ -127,7 +126,7 @@ watch(avatar, async (val: string | undefined) => {
                 {{ useLocalTrans('userinfo.avatar') }}
               </div>
               <div class="desc-value">
-                <ma-upload-image v-model="avatar" />
+                <ma-upload-image v-model="avatar"/>
               </div>
             </div>
           </li>
@@ -162,7 +161,7 @@ watch(avatar, async (val: string | undefined) => {
                 {{ useLocalTrans('whetherReceiveMsg') }}
               </div>
               <div class="desc-value">
-                <!--                <m-switch v-model="form.isReceiveMsg" /> -->
+                <m-switch v-model="form.isReceiveMsg"/>
               </div>
             </div>
           </li>
@@ -172,7 +171,7 @@ watch(avatar, async (val: string | undefined) => {
                 {{ useLocalTrans('whetherMultiDeviceLogin') }}
               </div>
               <div class="desc-value">
-                <!--                <m-switch v-model="form.multiDeviceLogin" /> -->
+                <m-switch v-model="form.multiDeviceLogin"/>
               </div>
             </div>
           </li>
@@ -180,7 +179,7 @@ watch(avatar, async (val: string | undefined) => {
       </div>
     </div>
 
-    <UcModifyInfo ref="modalRef" />
+    <UcModifyInfo ref="modalRef"/>
   </UcContainer>
 </template>
 

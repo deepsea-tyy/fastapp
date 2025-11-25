@@ -40,7 +40,7 @@ return new class extends Migration {
             $table->comment('分类表');
             $table->bigIncrements('id')->comment('ID');
             $table->json('name')->nullable()->comment('名称');
-            $table->char('icon', 64)->nullable()->comment('icon');
+            $table->string('icon')->nullable()->comment('icon');
             $table->integer('sort')->comment('排序')->default(100);
             $table->bigInteger('parent_id')->comment('上级')->default(0);
             $table->tinyInteger('status')->comment('1显示')->default(1);

@@ -7,7 +7,7 @@ import { deleteByIds } from '$/ds/article/api/category.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import hasAuth from '@/utils/permission/hasAuth.ts'
 import { ElTag } from 'element-plus'
-import {formatLang} from "@/utils/common.ts";
+import {formatImagePath, formatLang} from "@/utils/common.ts";
 
 export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
   const dictStore = useDictStore()
@@ -40,7 +40,7 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'icon',
       cellRender: ({ row }) => (
         <div class="flex-center">
-          <el-image class="max-w-32" src={(row.icon === '' || !row.icon) ? '' : row.icon} alt='' />
+          <el-image  src={row.icon ? formatImagePath(row.icon) : ''} alt='' style={{ height: '50px' }} />
         </div>
       ),
     },

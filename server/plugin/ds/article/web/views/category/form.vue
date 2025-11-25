@@ -6,6 +6,7 @@ import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
 import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
+import {processUrl} from "@/utils/common.ts";
 
 const { formType = 'add', data = null } = defineProps<{
   formType: 'add' | 'edit'
@@ -36,6 +37,7 @@ useFormResponsive(maFormRef, {
 // 创建操作
 function add(): Promise<any> {
   return new Promise((resolve, reject) => {
+    formModel.value.icon = processUrl(formModel.value.icon)
     create(formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
@@ -47,6 +49,7 @@ function add(): Promise<any> {
 // 更新操作
 function edit(): Promise<any> {
   return new Promise((resolve, reject) => {
+    formModel.value.icon = processUrl(formModel.value.icon)
     save(formModel.value.id as number, formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {

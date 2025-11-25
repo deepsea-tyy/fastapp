@@ -1,4 +1,3 @@
-// 常量定义
 const DEFAULT_IMAGE = '/404.png'
 const LANGUAGE_CODES = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'gm', 'ru', 'th', 'au'] as const
 
@@ -53,14 +52,11 @@ export function formatLang(obj: LangItem[] | any): string | any {
   if (typeof obj !== 'object' || !obj || !Array.isArray(obj)) {
     return obj
   }
-  
   if (obj.length === 0) {
     return ''
   }
-  
   const currentLang = getLocalLang()
   const currentLangItem = obj.find((item: LangItem) => item.lang === currentLang)
-  
   return currentLangItem?.text || obj[0]?.text || ''
 }
 
@@ -78,11 +74,9 @@ function formatSingleImagePath(path: string | null | undefined, baseUrl: string)
   if (!path || (typeof path === 'string' && !path.trim())) {
     return DEFAULT_IMAGE
   }
-  
   if (isFullUrl(path)) {
     return path
   }
-  
   return baseUrl + path
 }
 
@@ -93,24 +87,45 @@ function formatSingleImagePath(path: string | null | undefined, baseUrl: string)
  */
 export function formatImagePath(obj: string | string[] | { text?: string } | null | undefined): string | string[] {
   const baseUrl = import.meta.env.VITE_APP_FILE_BASEURL || ''
-  
+
   if (!obj) {
     return DEFAULT_IMAGE
   }
-  
+
   if (typeof obj === 'string') {
-    return formatSingleImagePath(obj, baseUrl)
+    return isFullUrl(obj) ? obj : formatSingleImagePath(obj, baseUrl)
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.length === 0 
+    return obj.length === 0
       ? [DEFAULT_IMAGE]
-      : obj.map(item => formatSingleImagePath(item, baseUrl))
+      : obj.map(item => isFullUrl(item) ? item : formatSingleImagePath(item, baseUrl))
   }
-  
+
   if (typeof obj === 'object' && obj !== null) {
-    return formatSingleImagePath(obj.text, baseUrl)
+    return obj.text && isFullUrl(obj.text) ? obj.text : formatSingleImagePath(obj.text, baseUrl)
   }
-  
+
   return DEFAULT_IMAGE
+}
+
+export function processUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return ''
+  }
+
+  const baseUrl = import.meta.env.VITE_APP_FILE_BASEURL || ''
+  if (!baseUrl) {
+    return url.trim()
+  }
+
+  if (url.startsWith(baseUrl)) {
+    return url.replace(baseUrl, '')
+  }
+
+  if (isFullUrl(url)) {
+    return url
+  }
+
+  return url.trim()
 }
