@@ -33,18 +33,22 @@ lib/
 │   └── extensions/             # 扩展方法
 │
 ├── presentation/               # 🎨 界面代码层（主要开发区域）
-│   ├── my_app.dart             # 应用根组件
+│   ├── app.dart                # 应用根组件
 │   ├── di/                     # 表现层依赖注入
 │   ├── store/                  # Store 状态管理
-│   │   └── app/                # 全局 Store
-│   │       ├── user_store.dart      # 用户状态
-│   │       ├── theme_store.dart     # 主题状态
-│   │       └── language_store.dart  # 语言状态
-│   ├── home/                   # 首页
-│   ├── login/                  # 登录页
-│   └── post/                   # 帖子列表
-│       └── store/
-│           └── post_store.dart  # 功能级 Store
+│   │   ├── app/                # 全局 Store
+│   │   │   ├── user_store.dart      # 用户状态
+│   │   │   ├── theme_store.dart     # 主题状态
+│   │   │   └── language_store.dart  # 语言状态
+│   │   ├── bitget/             # Bitget 功能 Store
+│   │   │   └── bitget_home_store.dart
+│   │   └── post/               # Post 功能 Store
+│   │       └── post_store.dart
+│   └── views/                  # 视图目录
+│       ├── home/               # 首页
+│       ├── login/              # 登录页
+│       ├── post/               # 帖子列表视图
+│       └── bitget/             # Bitget 相关视图
 │
 ├── domain/                     # 💼 业务逻辑层（接口定义）
 │   ├── entity/                 # 实体类（数据模型）
@@ -129,8 +133,9 @@ lib/
 - **LanguageStore**：多语言切换
 
 ### 功能级 Store
-位置：`presentation/{feature}/store/`
-- **PostStore**：帖子列表相关状态
+位置：`presentation/store/{feature}/`
+- **PostStore**：帖子列表相关状态（`store/post/`）
+- **BitgetHomeStore**：Bitget 首页状态（`store/bitget/`）
 - 其他功能特定的状态管理
 
 ### 使用原则

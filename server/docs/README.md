@@ -24,11 +24,11 @@
 - **[IP地理位置查询服务使用指南](./features/IP地理位置查询服务使用指南.md)** - IP地理位置查询服务，支持多语言，免费API集成
 
 ### 🔌 已有插件
-- **[文章管理插件 (ds/article)](../plugin/ds/article/README.md)** - 完整的文章和分类管理功能，支持文章发布、分类管理等
-- **[客服系统插件 (ds/kefu)](../plugin/ds/kefu/README.md)** - 完整的客服功能，包括客服管理、会话管理、实时消息推送（WebSocket）、消息记录
-- **[系统配置插件 (ds/system-config)](../plugin/ds/system-config/README.md)** - 系统配置管理，提供设置持久化保存功能，方便前端和其他业务调用静态数据
-- **[消息通知插件 (ds/message-notify)](../plugin/ds/message-notify)** - 多语言消息通知系统，支持消息推送和管理
-- **[邀请插件 (ds/invite)](../plugin/ds/invite)** - 用户邀请及上下级关系管理
+- **[文章管理插件 (ds/article)](../../server/plugin/ds/article/README.md)** - 完整的文章和分类管理功能，支持文章发布、分类管理等
+- **[客服系统插件 (ds/kefu)](../../server/plugin/ds/kefu/README.md)** - 完整的客服功能，包括客服管理、会话管理、实时消息推送（WebSocket）、消息记录
+- **[系统配置插件 (ds/system-config)](../../server/plugin/ds/system-config/README.md)** - 系统配置管理，提供设置持久化保存功能，方便前端和其他业务调用静态数据
+- **[消息通知插件 (ds/message-notify)](../../server/plugin/ds/message-notify)** - 多语言消息通知系统，支持消息推送和管理
+- **[邀请插件 (ds/invite)](../../server/plugin/ds/invite)** - 用户邀请及上下级关系管理
 
 ### 🔐 权限系统
 - **[权限系统使用文档](./permission/权限系统使用文档.md)** - 功能权限和数据权限完整文档（**主文档**）
@@ -63,9 +63,9 @@
 | [权限系统使用文档](./permission/权限系统使用文档.md) | 功能 | 权限系统完整文档 | 所有开发者 |
 | [用户部门与角色部门配合使用详解](./permission/用户部门与角色部门配合使用详解.md) | 补充 | 数据权限详细说明 | 权限系统开发者 |
 | [Casbin权限规则表说明](./permission/Casbin权限规则表说明.md) | 说明 | Casbin说明（未使用） | 参考文档 |
-| [文章管理插件](../plugin/ds/article/README.md) | 插件 | 文章和分类管理 | 内容管理 |
-| [客服系统插件](../plugin/ds/kefu/README.md) | 插件 | 客服管理、会话管理、实时消息 | 客服系统 |
-| [系统配置插件](../plugin/ds/system-config/README.md) | 插件 | 系统配置管理 | 系统配置 |
+| [文章管理插件](../../server/plugin/ds/article/README.md) | 插件 | 文章和分类管理 | 内容管理 |
+| [客服系统插件](../../server/plugin/ds/kefu/README.md) | 插件 | 客服管理、会话管理、实时消息 | 客服系统 |
+| [系统配置插件](../../server/plugin/ds/system-config/README.md) | 插件 | 系统配置管理 | 系统配置 |
 | [消息通知插件](../plugin/ds/message-notify) | 插件 | 多语言消息通知 | 消息推送 |
 | [邀请插件](../plugin/ds/invite) | 插件 | 用户邀请及上下级关系 | 用户关系 |
 
@@ -83,9 +83,9 @@
 | 开发WebSocket功能 | [WebSocket开发文档](./features/WebSocket开发文档.md) |
 | 了解权限系统 | [权限系统使用文档](./permission/权限系统使用文档.md) |
 | 了解核心功能 | [核心功能概览](./features/核心功能.md) |
-| 使用文章管理插件 | [文章管理插件](../plugin/ds/article/README.md) |
-| 使用客服系统插件 | [客服系统插件](../plugin/ds/kefu/README.md) |
-| 使用系统配置插件 | [系统配置插件](../plugin/ds/system-config/README.md) |
+| 使用文章管理插件 | [文章管理插件](../../server/plugin/ds/article/README.md) |
+| 使用客服系统插件 | [客服系统插件](../../server/plugin/ds/kefu/README.md) |
+| 使用系统配置插件 | [系统配置插件](../../server/plugin/ds/system-config/README.md) |
 
 ## 📝 文档更新说明
 
@@ -98,7 +98,7 @@
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
 <div align="center">
-  <img src="./assets/wechat_qr.png" alt="微信收款码" width="300" />
+  <img src="../../docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
 </div>
 
 ---

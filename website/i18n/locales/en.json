@@ -1,0 +1,134 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "products": "Products",
+    "contact": "Contact"
+  },
+  "home": {
+    "title": "FastApp",
+    "subtitle": "Enterprise Full-Stack Application Framework",
+    "description": "Complete solution including mobile, web, admin system, corporate website and backend services",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "features": "Core Features",
+    "techStack": "Tech Stack",
+    "highPerformance": "High Performance",
+    "highPerformanceDesc": "Based on Swoole coroutines, supports high concurrency to meet enterprise-level application performance requirements.",
+    "permission": "Permission Management",
+    "permissionDesc": "Complete RBAC permission system to ensure application security and data access control.",
+    "crossPlatform": "Cross Platform",
+    "crossPlatformDesc": "Flutter supports multi-platform deployment, one codebase runs on multiple platforms.",
+    "modernUI": "Modern UI",
+    "modernUIDesc": "Vue3 + Element Plus builds beautiful management interfaces to enhance user experience.",
+    "aiAssist": "AI Assistant",
+    "aiAssistDesc": "AI template development, intelligent code generation, improve development efficiency.",
+    "pluginSystem": "Plugin System",
+    "pluginSystemDesc": "Flexible plugin extension mechanism to meet different business scenario needs."
+  },
+  "about": {
+    "title": "About Us",
+    "intro1": "FastApp is an enterprise-level full-stack application framework dedicated to providing complete application development solutions for enterprises.",
+    "intro2": "We provide comprehensive technical support from mobile to web, from admin systems to corporate websites, from frontend to backend.",
+    "mission": "Our Mission",
+    "missionDesc": "Through advanced technology stack and best practices, help enterprises quickly build high-quality applications, reduce development costs, and improve development efficiency.",
+    "techAdvantage": "Technical Advantages",
+    "techAdvantage1": "High-performance backend services based on Swoole coroutines",
+    "techAdvantage2": "Flutter cross-platform mobile application development",
+    "techAdvantage3": "Vue3 + TypeScript modern frontend technology",
+    "techAdvantage4": "Nuxt.js 4.2 server-side rendered website",
+    "techAdvantage5": "Complete RBAC permission management system"
+  },
+  "products": {
+    "title": "Products & Services",
+    "mobile": "Mobile Application",
+    "mobileDesc": "Cross-platform mobile application developed based on Flutter, supporting Android, iOS, Web, Windows, macOS, Linux and other platforms.",
+    "admin": "Admin System",
+    "adminDesc": "Enterprise-level admin system frontend application built with Vue3 + TypeScript + Element Plus.",
+    "website": "Corporate Website",
+    "websiteDesc": "Corporate website built with Nuxt.js 4.2, supporting SSR/SSG, SEO optimization, internationalization and other features.",
+    "backend": "Backend Service",
+    "backendDesc": "High-performance backend service built with Hyperf 3.1 + Swoole, providing API interfaces, WebSocket services and other functions.",
+    "permission": "Permission Management",
+    "permissionDesc": "Complete RBAC permission system to ensure application security and data access control.",
+    "plugin": "Plugin System",
+    "pluginDesc": "Flexible plugin extension mechanism to meet different business scenario needs."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "contactInfo": "Contact Information",
+    "email": "Email",
+    "telegram": "Telegram",
+    "author": "Author",
+    "support": "Technical Support",
+    "supportDesc": "If you encounter any problems during use, please contact us through the above methods. We will provide technical support as soon as possible."
+  },
+  "footer": {
+    "description": "Enterprise full-stack application framework to help enterprises quickly build modern applications.",
+    "products": "Products",
+    "mobile": "Mobile Application",
+    "admin": "Admin System",
+    "backend": "Backend Service",
+    "resources": "Resources",
+    "docs": "Documentation",
+    "blog": "Blog",
+    "support": "Technical Support",
+    "contact": "Contact Us",
+    "copyright": "All Rights Reserved"
+  },
+  "docs": {
+    "comingSoon": "Documentation is being improved, please stay tuned...",
+    "sections": {
+      "backend": "Backend Service Documentation",
+      "admin": "Admin System Documentation",
+      "mobile": "Mobile Application Documentation"
+    },
+    "backendDesc": "Detailed documentation for Hyperf 3.1 + Swoole backend service development.",
+    "adminDesc": "Vue3 + TypeScript + Element Plus admin system usage guide.",
+    "mobileDesc": "Flutter cross-platform mobile application development documentation."
+  },
+  "blog": {
+    "comingSoon": "Blog content is coming soon, please stay tuned..."
+  },
+  "support": {
+    "title": "Technical Support",
+    "contact": "Contact Information",
+    "faq": "Frequently Asked Questions",
+    "faqDesc": "FAQ is being organized.",
+    "issues": "Issue Reporting",
+    "issuesDesc": "If you encounter any problems during use, please contact us through the contact information."
+  },
+  "customerService": {
+    "title": "Online Service",
+    "close": "Close",
+    "open": "Open Service",
+    "connecting": "Connecting...",
+    "consult": "Consult Now",
+    "send": "Send",
+    "sending": "Sending...",
+    "end": "End",
+    "inputPlaceholder": "Type a message, press Enter to send...",
+    "welcome": "Welcome, click \"Consult Now\" to start a conversation",
+    "allocating": "Assigning customer service for you",
+    "connected": "Customer service connected successfully",
+    "disconnected": "Disconnected",
+    "sessionEnded": "Session ended",
+    "pleaseConnect": "Please connect to customer service first",
+    "noContent": "No content",
+    "error": "Error",
+    "operationFailed": "Operation failed",
+    "getKefuFailed": "Failed to get customer service",
+    "unknownError": "Unknown error",
+    "configIncomplete": "Cannot connect: Customer service configuration is incomplete",
+    "getConfigFailed": "Cannot connect: Failed to get customer service configuration",
+    "connectFailed": "Connection failed",
+    "wsError": "Connection error",
+    "wsClosed": "Connection closed",
+    "bindFailed": "Binding failed: Visitor ID not configured",
+    "sendFailed": "Send failed",
+    "sendFailedConfig": "Send failed: Customer service configuration is incomplete, please reconnect",
+    "nonJsonMessage": "Received non-JSON message",
+    "kefu": "Service"
+  }
+}
+

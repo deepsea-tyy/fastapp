@@ -14,7 +14,7 @@
 - **开发效率提升**：通过 AI 模板开发，减少 70% 的重复编码工作
 - **智能提示**：AI 提供开发建议和最佳实践
 
-> 📖 详细使用指南：[AI辅助开发流程指南](docs/AI辅助开发流程指南.md)
+> 📖 详细使用指南：[AI辅助开发流程指南](development/AI辅助开发流程指南.md)
 
 ## 🔍 搜索关键词
 
@@ -26,12 +26,12 @@
 
 ## 📚 文档导航
 
-> 📖 **完整文档索引**：请查看 [文档导航](docs/README.md)
+> 📖 **完整文档索引**：请查看 [文档导航](README.md)
 
 **快速链接**：
-- 🚀 [快速开始](docs/快速开始.md) | 📖 [开发规范](docs/开发规范.md) | ⚙️ [核心功能](docs/核心功能.md)
-- 🔧 [代码生成器](docs/代码生成器.md) | 🔌 [插件系统](docs/插件系统使用指南.md) | 🌐 [WebSocket](docs/WebSocket开发文档.md)
-- 🔐 [权限系统](docs/权限系统使用文档.md) | 🤖 [AI辅助开发](docs/AI辅助开发流程指南.md)
+- 🚀 [快速开始](getting-started/快速开始.md) | 📖 [开发规范](development/开发规范.md) | ⚙️ [核心功能](features/核心功能.md)
+- 🔧 [代码生成器](features/代码生成器.md) | 🔌 [插件系统](features/插件系统使用指南.md) | 🌐 [WebSocket](features/WebSocket开发文档.md)
+- 🔐 [权限系统](permission/权限系统使用文档.md) | 🤖 [AI辅助开发](development/AI辅助开发流程指南.md)
 
 ## 主要特性
 
@@ -92,7 +92,7 @@ fastapp/
 └── docs/         # 文档目录
 ```
 
-> 💡 详细结构说明请查看 [项目结构文档](docs/项目结构.md)
+> 💡 详细结构说明请查看 [项目结构文档](getting-started/项目结构.md)
 
 ## 技术支持
 
@@ -105,5 +105,5 @@ fastapp/
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
 <div align="center">
-  <img src="docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
+  <img src="../assets/wechat_qr.png" alt="微信收款码" width="300" />
 </div>

@@ -78,7 +78,7 @@ flutter packages pub run build_runner watch
 
 1. 检查 `utils/routes/routes.dart` 中是否注册了路由
 2. 检查路由名称是否正确
-3. 确保在 `my_app.dart` 中配置了路由
+3. 确保在 `app.dart` 中配置了路由
 
 ## 构建问题
 

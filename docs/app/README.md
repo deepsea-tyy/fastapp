@@ -6,10 +6,10 @@
 
 ## 📚 文档导航
 
-- [项目架构说明](docs/ARCHITECTURE.md) - 架构设计、目录结构
-- [开发指南](docs/DEVELOPMENT.md) - 快速开始、添加功能、常用操作
-- [环境配置指南](docs/SETUP.md) - 环境要求、安装步骤
-- [问题排查指南](docs/TROUBLESHOOTING.md) - 常见问题解决方案
+- [项目架构说明](ARCHITECTURE.md) - 架构设计、目录结构
+- [开发指南](DEVELOPMENT.md) - 快速开始、添加功能、常用操作
+- [环境配置指南](SETUP.md) - 环境要求、安装步骤
+- [问题排查指南](TROUBLESHOOTING.md) - 常见问题解决方案
 
 ## 快速开始
 
@@ -68,7 +68,7 @@ lib/
 └── utils/           # 🛠️ 工具类
 ```
 
-详细说明请查看 [项目架构说明](docs/ARCHITECTURE.md)
+详细说明请查看 [项目架构说明](ARCHITECTURE.md)
 
 ## 总结
 

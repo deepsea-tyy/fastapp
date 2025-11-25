@@ -132,15 +132,15 @@ pnpm gen:icons    # 生成图标
 
 ## 开发文档
 
-- **[📖 文档导航](./docs/README.md)** - 完整文档索引
-- **[前端功能使用指南](./docs/前端功能使用指南.md)** - 组件使用、表格、表单、搜索等
-- **[图标使用指南](./docs/图标使用指南.md)** - 图标组件和选择器
-- **[图表使用指南](./docs/图表使用指南.md)** - ECharts 图表使用
+- **[📖 文档导航](README.md)** - 完整文档索引
+- **[前端功能使用指南](前端功能使用指南.md)** - 组件使用、表格、表单、搜索等
+- **[图标使用指南](图标使用指南.md)** - 图标组件和选择器
+- **[图表使用指南](图表使用指南.md)** - ECharts 图表使用
 
 ## 相关链接
 
 - [Vue 3](https://cn.vuejs.org/) | [Element Plus](https://element-plus.org/zh-CN/) | [Vite](https://cn.vitejs.dev/)
-- [后端文档](../server/docs/README.md) | [项目根目录](../README.md)
+- [后端文档](../server/server.md) | [项目根目录](../../README.md)
 
 ## 注意事项
 

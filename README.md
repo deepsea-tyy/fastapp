@@ -1,6 +1,6 @@
 # FastApp 项目说明
 
-FastApp 是一个企业级全栈应用框架，包含移动端、Web端、后台管理系统和后端服务。
+FastApp 是一个企业级全栈应用框架，包含移动端、Web端、后台管理系统、企业官网和后端服务。
 
 ## 目录结构
 
@@ -9,7 +9,7 @@ Flutter 移动端应用目录
 
 基于 Flutter 开发的跨平台移动应用，采用 MobX + Provider 状态管理，支持 Android、iOS、Web、Windows、macOS、Linux 等多平台。
 
-详细文档请查看：[app/README.md](app/README.md)
+详细文档请查看：[app 文档](docs/app/app.md)
 
 ### appweb
 Web 端应用目录
@@ -21,24 +21,27 @@ Web 端应用（当前目录为空）
 
 基于 Vue3 + TypeScript + Element Plus 构建的企业级后台管理系统前端应用。
 
-详细文档请查看：[web/README.md](web/README.md)
+详细文档请查看：[web 文档](docs/web/web.md)
 
 ### server
 后端服务目录
 
 基于 Hyperf 3.1 + Swoole 构建的高性能后端服务，提供 API 接口、WebSocket 服务、权限管理、代码生成等功能。
 
-详细文档请查看：[server/README.md](server/README.md)
+详细文档请查看：[server 文档](docs/server/server.md)
 
 ### website
-官网目录
+企业官网目录
 
-项目官网（当前目录为空）
+基于 Nuxt.js 4.2 构建的企业官网，支持 SSR/SSG、SEO 优化、国际化等功能。
+
+详细文档请查看：[website 文档](docs/website/website.md)
 
 ## 技术栈概览
 
 - **移动端**: Flutter + Dart + MobX + Provider
 - **后台管理**: Vue3 + TypeScript + Element Plus + Pinia
+- **企业官网**: Nuxt.js 4.2 + Vue3 + TypeScript
 - **后端服务**: Hyperf 3.1 + Swoole + PHP 8.1+
 - **数据库**: MySQL + Redis
 
@@ -69,6 +72,14 @@ flutter pub get
 flutter run
 ```
 
+### 企业官网
+
+```bash
+cd website
+pnpm install
+pnpm dev
+```
+
 ## 项目特点
 
 - 🚀 **高性能**: 基于 Swoole 协程，支持高并发
@@ -80,9 +91,10 @@ flutter run
 
 ## 相关文档
 
-- [后端服务文档](server/README.md)
-- [后台管理系统文档](web/README.md)
-- [移动端应用文档](app/README.md)
+- [后端服务文档](docs/server/server.md)
+- [后台管理系统文档](docs/web/web.md)
+- [移动端应用文档](docs/app/app.md)
+- [企业官网文档](docs/website/website.md)
 
 ## 技术支持
 
@@ -95,6 +107,6 @@ flutter run
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
 <div align="center">
-  <img src="server/docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
+  <img src="docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
 </div>
 

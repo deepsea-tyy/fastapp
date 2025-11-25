@@ -1,0 +1,134 @@
+{
+  "nav": {
+    "home": "首页",
+    "about": "关于我们",
+    "products": "产品",
+    "contact": "联系我们"
+  },
+  "home": {
+    "title": "FastApp",
+    "subtitle": "企业级全栈应用框架",
+    "description": "包含移动端、Web端、后台管理系统、企业官网和后端服务的完整解决方案",
+    "getStarted": "开始使用",
+    "learnMore": "了解更多",
+    "features": "核心特性",
+    "techStack": "技术栈",
+    "highPerformance": "高性能",
+    "highPerformanceDesc": "基于 Swoole 协程，支持高并发处理，满足企业级应用性能需求。",
+    "permission": "权限管理",
+    "permissionDesc": "完整的 RBAC 权限系统，保障应用安全性和数据访问控制。",
+    "crossPlatform": "跨平台",
+    "crossPlatformDesc": "Flutter 支持多平台部署，一套代码运行在多个平台。",
+    "modernUI": "现代化 UI",
+    "modernUIDesc": "Vue3 + Element Plus 构建美观的管理界面，提升用户体验。",
+    "aiAssist": "AI 辅助",
+    "aiAssistDesc": "AI 模板开发，智能代码生成，提高开发效率。",
+    "pluginSystem": "插件系统",
+    "pluginSystemDesc": "灵活的插件扩展机制，满足不同业务场景需求。"
+  },
+  "about": {
+    "title": "关于我们",
+    "intro1": "FastApp 是一个企业级全栈应用框架，致力于为企业提供完整的应用开发解决方案。",
+    "intro2": "我们提供从移动端到 Web 端，从后台管理到企业官网，从前端到后端的全方位技术支持。",
+    "mission": "我们的使命",
+    "missionDesc": "通过先进的技术栈和最佳实践，帮助企业快速构建高质量的应用，降低开发成本，提高开发效率。",
+    "techAdvantage": "技术优势",
+    "techAdvantage1": "基于 Swoole 协程的高性能后端服务",
+    "techAdvantage2": "Flutter 跨平台移动应用开发",
+    "techAdvantage3": "Vue3 + TypeScript 现代化前端技术",
+    "techAdvantage4": "Nuxt.js 4.2 服务端渲染官网",
+    "techAdvantage5": "完整的 RBAC 权限管理系统"
+  },
+  "products": {
+    "title": "产品与服务",
+    "mobile": "移动端应用",
+    "mobileDesc": "基于 Flutter 开发的跨平台移动应用，支持 Android、iOS、Web、Windows、macOS、Linux 等多平台。",
+    "admin": "后台管理系统",
+    "adminDesc": "基于 Vue3 + TypeScript + Element Plus 构建的企业级后台管理系统前端应用。",
+    "website": "企业官网",
+    "websiteDesc": "基于 Nuxt.js 4.2 构建的企业官网，支持 SSR/SSG、SEO 优化、国际化等功能。",
+    "backend": "后端服务",
+    "backendDesc": "基于 Hyperf 3.1 + Swoole 构建的高性能后端服务，提供 API 接口、WebSocket 服务等功能。",
+    "permission": "权限管理",
+    "permissionDesc": "完整的 RBAC 权限系统，保障应用安全性和数据访问控制。",
+    "plugin": "插件系统",
+    "pluginDesc": "灵活的插件扩展机制，满足不同业务场景需求。"
+  },
+  "contact": {
+    "title": "联系我们",
+    "contactInfo": "联系方式",
+    "email": "邮箱",
+    "telegram": "Telegram",
+    "author": "作者",
+    "support": "技术支持",
+    "supportDesc": "如果您在使用过程中遇到任何问题，欢迎通过以上方式联系我们。我们会尽快为您提供技术支持。"
+  },
+  "footer": {
+    "description": "企业级全栈应用框架，助力企业快速构建现代化应用。",
+    "products": "产品",
+    "mobile": "移动端应用",
+    "admin": "后台管理系统",
+    "backend": "后端服务",
+    "resources": "资源",
+    "docs": "文档",
+    "blog": "博客",
+    "support": "技术支持",
+    "contact": "联系我们",
+    "copyright": "版权所有"
+  },
+  "docs": {
+    "comingSoon": "文档正在完善中，敬请期待...",
+    "sections": {
+      "backend": "后端服务文档",
+      "admin": "后台管理系统文档",
+      "mobile": "移动端应用文档"
+    },
+    "backendDesc": "详细的 Hyperf 3.1 + Swoole 后端服务开发文档。",
+    "adminDesc": "Vue3 + TypeScript + Element Plus 后台管理系统使用指南。",
+    "mobileDesc": "Flutter 跨平台移动应用开发文档。"
+  },
+  "blog": {
+    "comingSoon": "博客内容即将上线，敬请期待..."
+  },
+  "support": {
+    "title": "技术支持",
+    "contact": "联系方式",
+    "faq": "常见问题",
+    "faqDesc": "常见问题解答正在整理中。",
+    "issues": "问题反馈",
+    "issuesDesc": "如果您在使用过程中遇到问题，请通过联系方式与我们联系。"
+  },
+  "customerService": {
+    "title": "在线客服",
+    "close": "关闭",
+    "open": "打开客服",
+    "connecting": "连接中...",
+    "consult": "立即咨询",
+    "send": "发送",
+    "sending": "发送中...",
+    "end": "结束",
+    "inputPlaceholder": "输入消息，按 Enter 发送...",
+    "welcome": "欢迎咨询,点击\"立即咨询\"开始对话",
+    "allocating": "正在为你分配客服",
+    "connected": "客服连接成功",
+    "disconnected": "已断开连接",
+    "sessionEnded": "会话已结束",
+    "pleaseConnect": "请先连接客服",
+    "noContent": "无内容",
+    "error": "错误",
+    "operationFailed": "操作失败",
+    "getKefuFailed": "获取客服失败",
+    "unknownError": "未知错误",
+    "configIncomplete": "无法连接：客服配置不完整",
+    "getConfigFailed": "无法连接：获取客服配置失败",
+    "connectFailed": "连接失败",
+    "wsError": "连接错误",
+    "wsClosed": "连接已关闭",
+    "bindFailed": "绑定失败：游客ID未配置",
+    "sendFailed": "发送失败",
+    "sendFailedConfig": "发送失败：客服配置不完整，请重新连接",
+    "nonJsonMessage": "收到非 JSON 消息",
+    "kefu": "客服"
+  }
+}
+

@@ -49,9 +49,9 @@ flutter build web         # Web
 
 **步骤**：
 
-1. 在 `presentation/` 下创建新目录：
+1. 在 `presentation/views/` 下创建新目录：
    ```
-   lib/presentation/new_feature/
+   lib/presentation/views/new_feature/
    ├── new_feature.dart        # UI 界面
    └── store/
        └── new_feature_store.dart  # 状态管理
@@ -229,8 +229,8 @@ Observer(
 
 ### Store 分类
 
-- **全局 Store**：放在 `presentation/store/app/`，如 UserStore、ThemeStore
-- **功能级 Store**：放在 `presentation/{feature}/store/`，如 PostStore
+- **全局 Store**：放在 `presentation/store/app/`，如 UserStore、ThemeStore、LanguageStore
+- **功能级 Store**：放在 `presentation/store/{feature}/`，如 PostStore（`store/post/`）、BitgetHomeStore（`store/bitget/`）
 - **页面级 Store**：如果只在一个页面使用，可放在页面目录下
 
 ## 网络请求

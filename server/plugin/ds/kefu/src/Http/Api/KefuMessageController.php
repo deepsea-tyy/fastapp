@@ -55,7 +55,7 @@ final class KefuMessageController extends AbstractController
     #[Get(
         path: '/api/kefu/message/getConversation',
         operationId: 'ApiKefuMessageGetConversation',
-        summary: '获取或创建会话',
+        summary: '用户获取或创建会话',
         security: [['Bearer' => [], 'ApiKey' => []]],
         tags: ['客服消息'],
     )]
@@ -73,8 +73,8 @@ final class KefuMessageController extends AbstractController
      */
     #[Get(
         path: '/api/kefu/message/getVisitorKefu',
-        operationId: 'ApiKefuMessageGetConversation',
-        summary: '获取或创建会话',
+        operationId: 'ApiKefuMessageGetVisitorKefu',
+        summary: '游客获取或创建会话',
         security: [['Bearer' => [], 'ApiKey' => []]],
         tags: ['客服消息'],
     )]
