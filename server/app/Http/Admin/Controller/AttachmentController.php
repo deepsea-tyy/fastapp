@@ -7,20 +7,19 @@ namespace App\Http\Admin\Controller;
 
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
+use App\Common\Result;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\Admin\Permission;
-use App\Http\Admin\Request\ChunkMergeRequest;
-use App\Http\Admin\Request\ChunkUploadRequest;
-use App\Http\Admin\Request\UploadRequest;
 use App\Http\Admin\Service\AttachmentService;
+use App\Http\Common\Request\UploadRequest;
 use App\Http\Common\Traits\AttachmentControllerTrait;
 use App\Http\CurrentUser;
-use App\Common\Result;
 use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
+
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
@@ -58,7 +57,7 @@ class AttachmentController extends AbstractController
 
     #[PostMapping(path: '/attachment/chunk-upload')]
     #[Permission(code: 'dataCenter:attachment:upload')]
-    public function uploadChunk(ChunkUploadRequest $request): Result
+    public function uploadChunk(UploadRequest $request): Result
     {
         return $this->handleUploadChunk($request);
     }
@@ -66,7 +65,7 @@ class AttachmentController extends AbstractController
     #[PostMapping(path: '/attachment/chunk-merge')]
     #[Permission(code: 'dataCenter:attachment:upload')]
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
-    public function mergeChunk(ChunkMergeRequest $request): Result
+    public function mergeChunk(UploadRequest $request): Result
     {
         return $this->handleMergeChunk($request);
     }

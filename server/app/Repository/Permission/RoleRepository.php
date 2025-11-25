@@ -7,7 +7,6 @@ namespace App\Repository\Permission;
 
 use App\Model\Permission\Role;
 use App\Repository\IRepository;
-use Hyperf\Collection\Arr;
 use Hyperf\Collection\Collection;
 use Hyperf\Database\Model\Builder;
 
@@ -21,10 +20,6 @@ final class RoleRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (Arr::has($params, 'code')) {
-            $query->whereIn('code', Arr::wrap($params['code']));
-            unset($params['code']);
-        }
         $query->with(['dept']);
         return parent::handleSearch($query, $params);
     }

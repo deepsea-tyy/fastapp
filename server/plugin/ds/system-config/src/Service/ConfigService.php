@@ -23,7 +23,7 @@ final class ConfigService extends IService
         // 获取查询构建器
         $query = $this->repository->getQuery();
         $query->where($params);
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('sort', 'desc');
         return $query->get();  // 执行查询并返回结果
     }
 

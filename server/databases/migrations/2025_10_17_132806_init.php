@@ -64,9 +64,9 @@ return new class extends Migration {
             $table->addColumn('string', 'router', ['length' => 500, 'comment' => '请求路由']);
             $table->addColumn('string', 'service_name', ['length' => 30, 'comment' => '业务名称']);
             $table->addColumn('ipAddress', 'ip', ['comment' => '请求IP地址'])->nullable();
+            $table->addColumn('json', 'request_params', ['comment' => '请求参数'])->nullable();
             $table->addColumn('timestamp', 'created_at', ['precision' => 0, 'comment' => '创建时间'])->nullable();
             $table->addColumn('timestamp', 'updated_at', ['precision' => 0, 'comment' => '更新时间'])->nullable();
-            $table->addColumn('string', 'remark', ['length' => 255, 'comment' => '备注'])->nullable();
             $table->index('username');
         });
         Schema::create('user_profile', static function (Blueprint $table) {
@@ -147,7 +147,6 @@ return new class extends Migration {
             $table->bigInteger('size_byte')->comment('字节数')->nullable();
             $table->string('size_info', 50)->comment('文件大小')->nullable();
             $table->string('url', 255)->comment('url地址')->nullable();
-            $table->string('target', 32)->comment('使用标记')->nullable();
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
             $table->timestamps();

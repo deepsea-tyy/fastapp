@@ -17,7 +17,7 @@ final class Upload
         private readonly string $storagePath,
         private readonly string $hash,
         private readonly string $suffix,
-        private readonly int $size,
+        private readonly int    $size,
         private readonly string $url
     ) {}
 
@@ -51,38 +51,44 @@ final class Upload
         return $this->suffix;
     }
 
-    public function getSize(): int
-    {
-        return $this->size;
-    }
-
     public function getSizeByte(): int
     {
         return $this->size;
     }
 
-    public function getSizeInfo(): int
+    public function getSizeInfo(): string
     {
-        return $this->size;
+        $size = $this->size;
+        $gb = 1024 ** 3;
+        $mb = 1024 ** 2;
+        $kb = 1024;
+
+        return match (true) {
+            $size >= $gb => round($size / $gb, 2) . 'G',
+            $size >= $mb => round($size / $mb, 2) . 'M',
+            default => round($size / $kb, 2) . 'K',
+        };
     }
 
     public function getUrl(): string
     {
-        return $this->url;
+        return $this->storageMode === 'local' 
+            ? parse_url($this->url, PHP_URL_PATH) 
+            : $this->url;
     }
 
     public function toArray(): array
     {
         return [
-            'storage_mode' => $this->storageMode,
-            'object_name' => $this->objectName,
-            'mime_type' => $this->mimeType,
-            'storage_path' => $this->storagePath,
-            'hash' => $this->hash,
-            'suffix' => $this->suffix,
-            'size_byte' => $this->size,
-            'size_info' => $this->size,
-            'url' => $this->url,
+            'storage_mode' => $this->getStorageMode(),
+            'object_name' => $this->getObjectName(),
+            'mime_type' => $this->getMimeType(),
+            'storage_path' => $this->getStoragePath(),
+            'hash' => $this->getHash(),
+            'suffix' => $this->getSuffix(),
+            'size_byte' => $this->getSizeByte(),
+            'size_info' => $this->getSizeInfo(),
+            'url' => $this->getUrl(),
         ];
     }
 }

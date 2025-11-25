@@ -58,7 +58,7 @@ final class User extends Model
     protected array $casts = [
         'id' => 'integer',
         'status' => 'integer',
-        'user_type' => 'integer',
+        'user_type' => 'string',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',

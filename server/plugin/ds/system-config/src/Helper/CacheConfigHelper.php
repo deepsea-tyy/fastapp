@@ -12,7 +12,7 @@ use Hyperf\Cache\Annotation\Cacheable;
 use Hyperf\Cache\Annotation\CacheEvict;
 use Hyperf\Collection\Collection;
 
-class CacheConfig
+class CacheConfigHelper
 {
     #[Cacheable(prefix: 'syscfg:group', value: '_#{key}')]
     public static function getConfigByGroupKey(string $key): Collection
@@ -21,7 +21,7 @@ class CacheConfig
     }
 
     #[Cacheable(prefix: 'syscfg:config', value: '_#{key}')]
-    public static function getDictByKey(string $key): ?array
+    public static function getConfigByKey(string $key): ?array
     {
         return Helper::getSystemConfig($key);
     }

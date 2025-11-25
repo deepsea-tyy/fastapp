@@ -91,6 +91,12 @@ abstract class IRepository
             return;
         }
         
+        // 整数类型且值为数组时，转换为整数数组后使用 whereIn
+        if (is_array($value) && in_array($type, self::INTEGER_TYPES, true)) {
+            $query->whereIn($field, array_map('intval', $value));
+            return;
+        }
+        
         if (is_array($value)) {
             $query->whereIn($field, $value);
             return;

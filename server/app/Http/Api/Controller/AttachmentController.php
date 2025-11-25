@@ -9,18 +9,16 @@ use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Swagger\PageResponse;
 use App\Common\Swagger\ResultResponse;
-use App\Http\Admin\Request\ChunkMergeRequest;
-use App\Http\Admin\Request\ChunkUploadRequest;
-use App\Http\Admin\Request\UploadRequest;
 use App\Http\Admin\Service\AttachmentService;
+use App\Http\Common\Request\UploadRequest;
 use App\Http\Common\Traits\AttachmentControllerTrait;
 use App\Http\CurrentUser;
 use App\Schema\AttachmentSchema;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Delete;
 use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\HyperfServer;
+use Hyperf\Swagger\Annotation\Post;
 
 #[HyperfServer(name: 'http')]
 #[Middleware(middleware: TokenMiddleware::class)]
@@ -56,7 +54,6 @@ class AttachmentController extends AbstractController
     #[ResultResponse(instance: new Result())]
     public function upload(UploadRequest $request): Result
     {
-        $request->scene('apiUpload')->validated();
         return $this->handleUpload($request);
     }
 
@@ -81,7 +78,7 @@ class AttachmentController extends AbstractController
         tags: ['文件管理'],
     )]
     #[ResultResponse(instance: new Result())]
-    public function uploadChunk(ChunkUploadRequest $request): Result
+    public function uploadChunk(UploadRequest $request): Result
     {
         return $this->handleUploadChunk($request);
     }
@@ -94,7 +91,7 @@ class AttachmentController extends AbstractController
         tags: ['文件管理'],
     )]
     #[ResultResponse(instance: new Result())]
-    public function mergeChunk(ChunkMergeRequest $request): Result
+    public function mergeChunk(UploadRequest $request): Result
     {
         return $this->handleMergeChunk($request);
     }

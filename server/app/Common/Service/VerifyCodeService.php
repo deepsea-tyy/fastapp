@@ -17,7 +17,7 @@ use Hyperf\Redis\Redis;
 use Overtrue\EasySms\EasySms;
 use Overtrue\EasySms\PhoneNumber;
 use Overtrue\EasySms\Strategies\OrderStrategy;
-use Plugin\Ds\SystemConfig\Helper\CacheConfig;
+use Plugin\Ds\SystemConfig\Helper\CacheConfigHelper;
 
 class VerifyCodeService
 {
@@ -233,7 +233,7 @@ class VerifyCodeService
     protected static function sendSms(string $mobile, string $code, int $countryCode = 86): bool
     {
         try {
-            $config = CacheConfig::getConfigByGroupKey('sms')->pluck('value', 'key');
+            $config = CacheConfigHelper::getConfigByGroupKey('sms')->pluck('value', 'key');
             $gateways = [
                 'errorlog' => [
                     'file' => BASE_PATH . '/runtime/sms.log',
@@ -292,7 +292,7 @@ class VerifyCodeService
             $content = self::getEmailContent($scene, $code);
 
             // 尝试从系统配置获取邮件配置
-            $emailConfig = CacheConfig::getConfigByGroupKey('email')->pluck('value', 'key') ?? [];
+            $emailConfig = CacheConfigHelper::getConfigByGroupKey('email')->pluck('value', 'key') ?? [];
 
             // 如果配置了邮件服务，使用配置的服务发送
             if (!empty($emailConfig['enabled']) && $emailConfig['enabled'] == '1') {

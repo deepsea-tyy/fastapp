@@ -9,7 +9,7 @@ use Hyperf\Database\Model\Events\Updated;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Event\Contract\ListenerInterface;
 use OpenApi\Attributes\Delete;
-use Plugin\Ds\SystemConfig\Helper\CacheConfig;
+use Plugin\Ds\SystemConfig\Helper\CacheConfigHelper;
 use Plugin\Ds\SystemConfig\Model\Config;
 use Psr\Container\ContainerInterface;
 
@@ -32,7 +32,7 @@ class SystemConfigListener implements ListenerInterface
     public function process(object $event): void
     {
         if ($event->getModel() instanceof Config) {
-            CacheConfig::clear();
+            CacheConfigHelper::clear();
         }
     }
 }

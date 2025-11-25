@@ -13,7 +13,7 @@ class RequestOperationEvent
         private readonly string $path,
         private readonly string $ip,
         private readonly string $method = 'GET',
-        private readonly string $remark = ''
+        private readonly array $requestParams = []
     ) {}
 
     public function getOperation(): string
@@ -36,13 +36,13 @@ class RequestOperationEvent
         return $this->path;
     }
 
-    public function getRemark(): string
-    {
-        return $this->remark;
-    }
-
     public function getMethod(): string
     {
         return $this->method;
+    }
+
+    public function getRequestParams(): array
+    {
+        return $this->requestParams;
     }
 }

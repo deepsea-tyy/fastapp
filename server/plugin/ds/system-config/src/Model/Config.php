@@ -55,6 +55,11 @@ class Config extends Model
         'updated_by' => 'integer',
     ];
 
+    public function toJson($options = 0): bool|string
+    {
+        return json_encode($this->jsonSerialize(), JSON_UNESCAPED_UNICODE | $options);
+    }
+
     // 反向关联配置组
     public function group(): BelongsTo
     {

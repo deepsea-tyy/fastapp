@@ -62,9 +62,9 @@ class UserSubscriber implements ListenerInterface
                         'username' => $user->username,
                         'method' => $event->getMethod(),
                         'router' => $event->getPath(),
-                        'remark' => $event->getRemark(),
                         'ip' => $event->getIp(),
                         'service_name' => $event->getOperation(),
+                        'request_params' => $event->getRequestParams(),
                     ]);
                 } else if ($event instanceof UserAdminLoginEvent) {
                     $user = $event->getUser();

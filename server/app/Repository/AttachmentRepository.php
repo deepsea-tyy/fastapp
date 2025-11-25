@@ -25,21 +25,6 @@ final class AttachmentRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        if (Arr::has($params, 'suffix')) {
-            $query->whereIn('suffix', Arr::wrap($params['suffix']));
-            unset($params['suffix']);
-        }
-        
-        if (Arr::has($params, 'mime_type')) {
-            $query->whereIn('mime_type', Arr::wrap($params['mime_type']));
-            unset($params['mime_type']);
-        }
-        
-        if (Arr::has($params, 'storage_mode')) {
-            $query->whereIn('storage_mode', Arr::wrap($params['storage_mode']));
-            unset($params['storage_mode']);
-        }
-        
         return parent::handleSearch($query, $params);
     }
 }

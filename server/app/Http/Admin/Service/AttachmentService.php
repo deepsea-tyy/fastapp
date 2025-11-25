@@ -30,12 +30,9 @@ final class AttachmentService extends IService
             return $attachment;
         }
         $upload = $this->upload->upload($uploadedFile);
-        $url = parse_url($upload->getUrl(), PHP_URL_PATH);
         return $this->repository->create(array_merge($upload->toArray(), [
             'created_by' => $userId,
             'origin_name' => $uploadedFile->getClientFilename(),
-            'storage_path' => $url,
-            'url' => $url,
         ]));
     }
 
@@ -57,12 +54,9 @@ final class AttachmentService extends IService
     public function mergeChunks(string $hash, string $filename, int $totalChunks, int $userId): Attachment
     {
         $upload = $this->upload->mergeChunks($hash, $filename, $totalChunks);
-        $url = parse_url($upload->getUrl(), PHP_URL_PATH);
         return $this->repository->create(array_merge($upload->toArray(), [
             'created_by' => $userId,
             'origin_name' => $filename,
-            'storage_path' => $url,
-            'url' => $url,
         ]));
     }
 

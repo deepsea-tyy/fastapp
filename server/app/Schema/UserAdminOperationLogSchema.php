@@ -54,9 +54,6 @@ class UserAdminOperationLogSchema implements \JsonSerializable
     #[Property(property: 'updated_at', title: '更新时间', type: 'mixed')]
     public mixed $updatedAt;
 
-    #[Property(property: 'remark', title: '备注', type: 'string')]
-    public ?string $remark;
-
     public function __construct(UserAdminOperationLog $model)
     {
         $this->id = $model->id;
@@ -73,11 +70,10 @@ class UserAdminOperationLogSchema implements \JsonSerializable
         $this->updatedBy = $model->updated_by;
         $this->createdAt = $model->created_at;
         $this->updatedAt = $model->updated_at;
-        $this->remark = $model->remark;
     }
 
     public function jsonSerialize(): mixed
     {
-        return ['id' => $this->id, 'username' => $this->username, 'method' => $this->method, 'router' => $this->router, 'service_name' => $this->serviceName, 'ip' => $this->ip, 'ip_location' => $this->ipLocation, 'request_data' => $this->requestData, 'response_code' => $this->responseCode, 'response_data' => $this->responseData, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt, 'remark' => $this->remark];
+        return ['id' => $this->id, 'username' => $this->username, 'method' => $this->method, 'router' => $this->router, 'service_name' => $this->serviceName, 'ip' => $this->ip, 'ip_location' => $this->ipLocation, 'request_data' => $this->requestData, 'response_code' => $this->responseCode, 'response_data' => $this->responseData, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt];
     }
 }

@@ -15,7 +15,7 @@ use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use App\Common\Swagger\ResultResponse;
 use Hyperf\Swagger\Annotation\QueryParameter;
-use Plugin\Ds\SystemConfig\Helper\CacheConfig;
+use Plugin\Ds\SystemConfig\Helper\CacheConfigHelper;
 
 #[HyperfServer(name: 'http')]
 class SystemController extends AbstractController
@@ -31,6 +31,6 @@ class SystemController extends AbstractController
     #[QueryParameter(name: 'code', description: '配置分组代码', required: true, example: 'system')]
     public function config(Request $request): Result
     {
-        return $this->success(CacheConfig::getConfigByGroupKey($request->query('code')));
+        return $this->success(CacheConfigHelper::getConfigByGroupKey($request->query('code')));
     }
 }
