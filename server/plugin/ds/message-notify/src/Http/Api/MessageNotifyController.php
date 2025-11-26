@@ -30,12 +30,6 @@ use Plugin\Ds\MessageNotify\Http\Api\Service\MessageNotifyService;
 #[Middleware(middleware: TokenMiddleware::class)]
 class MessageNotifyController extends AbstractController
 {
-    private const DEFAULT_PAGE = 1;
-    private const DEFAULT_PAGE_SIZE = 10;
-    private const MIN_PAGE = 1;
-    private const MIN_PAGE_SIZE = 1;
-    private const MAX_PAGE_SIZE = 100;
-
     public function __construct(
         private readonly MessageNotifyService $service,
         private readonly CurrentUser $currentUser
@@ -53,15 +47,15 @@ class MessageNotifyController extends AbstractController
     )]
     #[QueryParameter(name: 'notify_type', description: '通知分类:1-系统通知,2-业务通知,3-其他', required: false)]
     #[QueryParameter(name: 'page', description: '页码', required: false, example: 1)]
-    #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: self::DEFAULT_PAGE_SIZE)]
+    #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: 10)]
     #[ResultResponse(instance: new Result())]
     public function list(Request $request): Result
     {
         $userId = $this->currentUser->id();
         $params = $request->query();
 
-        $page = $this->validatePage($params['page'] ?? self::DEFAULT_PAGE);
-        $pageSize = $this->validatePageSize($params['page_size'] ?? self::DEFAULT_PAGE_SIZE);
+        $page = $this->getCurrentPage();
+        $pageSize = $this->getPageSize();
 
         // 验证 notify_type 参数
         if (isset($params['notify_type'])) {
@@ -139,29 +133,5 @@ class MessageNotifyController extends AbstractController
         $userId = $this->currentUser->id();
         $data = $this->service->getUnreadStatistics($userId);
         return $this->success($data);
-    }
-
-    /**
-     * 验证页码参数
-     *
-     * @param mixed $page
-     * @return int
-     */
-    private function validatePage($page): int
-    {
-        $page = (int) $page;
-        return max(self::MIN_PAGE, $page);
-    }
-
-    /**
-     * 验证每页数量参数
-     *
-     * @param mixed $pageSize
-     * @return int
-     */
-    private function validatePageSize($pageSize): int
-    {
-        $pageSize = (int) $pageSize;
-        return max(self::MIN_PAGE_SIZE, min(self::MAX_PAGE_SIZE, $pageSize));
     }
 }

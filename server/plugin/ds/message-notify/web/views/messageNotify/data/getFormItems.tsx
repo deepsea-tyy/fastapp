@@ -2,6 +2,9 @@ import type { MaFormItem } from '@/components/ma-form'
 import type { MessageNotifyVo } from '$/ds/message-notify/api/messageNotify.ts'
 import MaChildrenForm from '@/components/ma-children-form/index.vue'
 import { lang } from '@/utils/common.ts'
+import MaDictSelect from '@/components/ma-dict-picker/ma-dict-select.vue'
+import MaRemoteSearch from '@/components/ma-remote-search/index.vue'
+import { selectUser } from '~/base/api/user.ts'
 
 export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, model: MessageNotifyVo): MaFormItem[] {
   // 新增默认值
@@ -31,6 +34,48 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
 
 
   return [
+    {
+      label: () => t('admin.MessageNotifyFields.type'), // '通知类型'
+      prop: 'type',
+      render: () => MaDictSelect,
+      renderProps: {
+        placeholder: t('form.pleaseSelect', { msg: t('admin.MessageNotifyFields.type') }),
+        dictName: 'message-notify-type',
+        clearable: true,
+      },
+    },
+    {
+      label: () => t('common.user'),
+      prop: 'user_id',
+      render: () => MaRemoteSearch,
+      show: (_, model) => model.type === 2,
+      renderProps: {
+        placeholder: t('form.pleaseSelect', { msg: t('common.user') }),
+        api: (params: any) => selectUser({ ...params, page_size: 999 }),
+        searchKey: 'keyword',
+        searchPlaceholder: t('form.pleaseInput', { msg: t('common.user') }),
+        dataHandle: (response: any) => {
+          return response.data.list?.map((item: any) => {
+            return { label: `${item.nickname || item.username} (${item.username})`, value: item.id }
+          }) || []
+        },
+      },
+      itemProps: {
+        rules: [
+          {
+            required: true,
+            message: t('form.requiredSelect', { msg: t('common.user') }),
+            validator: (_rule: any, value: any, callback: any) => {
+              if (model.type === 2 && (!value || value === 0)) {
+                callback(new Error(t('form.requiredSelect', { msg: t('common.user') })))
+                return
+              }
+              callback()
+            },
+          },
+        ],
+      },
+    },
     {
       label: () => t('admin.MessageNotifyFields.title'), // '通知标题'
       prop: 'title',

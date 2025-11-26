@@ -97,10 +97,7 @@ const options = ref<MaProTableOptions>({
   searchFormOptions: { labelWidth: '90px' },
   // 请求配置
   requestOptions: {
-    api: page,
-    requestParams: computed(() => {
-      return { type: 1 }
-    })
+    api: page
   },
 })
 // 架构配置

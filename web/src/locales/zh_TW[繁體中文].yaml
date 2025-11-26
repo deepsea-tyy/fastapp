@@ -195,6 +195,7 @@ language:
 common:
   language: 语言
   content: 内容
+  user: 用戶
   resourcePicker: 资源选择器
   textPreview: 文本預覽
   loading: 載入中...

@@ -65,6 +65,21 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       },
     },
     {
+      label: () => t('admin.MessageNotifyFields.type') || '通知类型',
+      minWidth: 120,
+      prop: 'type',
+      sortable: 'custom',
+      cellRender: ({ row }) => {
+        const typeMap: Record<number, string> = {
+          1: t('admin.MessageNotifyFields.typeGlobal') || '全局',
+          2: t('admin.MessageNotifyFields.typePersonal') || '个人',
+        }
+        const typeText = typeMap[row.type]
+        const tagType = row.type === 1 ? 'success' : 'primary'
+        return <ElTag type={tagType}>{typeText || row.type}</ElTag>
+      },
+    },
+    {
       label: () => t('admin.MessageNotifyFields.link'), // '跳转链接'
       minWidth: 120,
       prop: 'link',

@@ -195,6 +195,7 @@ language:
 common:
   language: Language
   content: Content
+  user: User
   resourcePicker: Resource Picker
   textPreview: Text Preview
   loading: Loading...
