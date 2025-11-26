@@ -20,6 +20,9 @@
       name: 'FastApp 文档',
       repo: '',
       loadSidebar: true,
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
       subMaxLevel: 3,
       auto2top: true,
       homepage: 'README.md',
@@ -28,7 +31,8 @@
         paths: 'auto',
         placeholder: '搜索文档',
         noData: '找不到结果',
-        depth: 6
+        depth: 6,
+        namespace: 'fastapp-docs-v1'
       },
       coverpage: false,
       notFoundPage: true,

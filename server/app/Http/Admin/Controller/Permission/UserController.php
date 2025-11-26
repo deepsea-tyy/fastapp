@@ -15,7 +15,7 @@ use App\Http\Admin\Permission;
 use App\Http\Admin\Request\Permission\BatchGrantRolesForUserRequest;
 use App\Http\Admin\Request\Permission\UserRequest;
 use App\Http\Admin\Service\Permission\DataScopeTool;
-use App\Http\Admin\Service\Permission\UserService;
+use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Http\CurrentUser;
 use App\Model\Permission\Role;
 use Hyperf\Collection\Arr;
@@ -31,8 +31,8 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 final class UserController extends AbstractController
 {
     public function __construct(
-        private readonly UserService $userService,
-        private readonly CurrentUser $currentUser
+        private readonly AdminUserService $userService,
+        private readonly CurrentUser      $currentUser
     )
     {
     }

@@ -2,82 +2,98 @@
 
 FastApp 是一个企业级全栈应用框架，包含移动端、Web端、后台管理系统、企业官网和后端服务。
 
-## 目录结构
+## 项目结构
+
+```
+fastapp/
+├── server/          # 后端服务（Hyperf 3.1 + Swoole）
+├── web/             # 后台管理系统（Vue3 + TypeScript + Element Plus）
+├── app/             # 移动端应用（Flutter + Dart）
+├── website/         # 企业官网（Nuxt.js 4.2）
+└── docs/            # 项目文档
+```
+
+## 各模块说明
 
 ### app
-Flutter 移动端应用目录
+Flutter 移动端应用，采用 MobX + Provider 状态管理，支持多平台部署。
 
-基于 Flutter 开发的跨平台移动应用，采用 MobX + Provider 状态管理，支持 Android、iOS、Web、Windows、macOS、Linux 等多平台。
-
-详细文档请查看：[app 文档](docs/app/app.md)
-
-### appweb
-Web 端应用目录
-
-Web 端应用（当前目录为空）
+详细文档：[app 文档](docs/app/移动端应用.md)
 
 ### web
-后台管理系统目录
+后台管理系统前端应用，基于 Vue3 + TypeScript + Element Plus 构建。
 
-基于 Vue3 + TypeScript + Element Plus 构建的企业级后台管理系统前端应用。
-
-详细文档请查看：[web 文档](docs/web/web.md)
+详细文档：[web 文档](docs/web/开发指南.md)
 
 ### server
 后端服务目录
 
 基于 Hyperf 3.1 + Swoole 构建的高性能后端服务，提供 API 接口、WebSocket 服务、权限管理、代码生成等功能。
 
-详细文档请查看：[server 文档](docs/server/server.md)
+详细文档请查看：[server 文档](docs/server/getting-started/开发指南.md)
+
+#### 项目结构
+
+```
+fastapp/
+├── server/          # 后端服务
+│   ├── app/         # 应用代码（Controller、Service、Repository、Model）
+│   ├── config/      # 配置文件
+│   ├── databases/   # 数据库迁移和种子文件
+│   ├── plugin/      # 插件目录
+│   ├── runtime/     # 运行时文件（日志、缓存）
+│   └── storage/     # 存储目录（上传文件、多语言、Swagger）
+├── web/             # 前端代码
+├── app/             # Flutter移动端应用
+└── website/         # 企业官网
+```
+
+#### 代码架构
+
+采用分层架构设计：
+
+```
+Controller → Service → Repository → Model
+   HTTP      业务逻辑    数据操作   数据模型
+```
+
+**命名规范**：
+- 文件：`UserController.php`、`UserService.php`、`UserRepository.php`
+- 目录：使用 PascalCase，按业务模块划分
 
 ### website
-企业官网目录
+企业官网，基于 Nuxt.js 4.2 构建，支持 SSR/SSG、SEO 优化、国际化等功能。
 
-基于 Nuxt.js 4.2 构建的企业官网，支持 SSR/SSG、SEO 优化、国际化等功能。
+详细文档：[website 文档](docs/website/企业官网.md)
 
-详细文档请查看：[website 文档](docs/website/website.md)
+## 技术栈
 
-## 技术栈概览
-
+- **后端**: Hyperf 3.1 + Swoole + PHP 8.1+
+- **前端**: Vue3 + TypeScript + Element Plus + Pinia
 - **移动端**: Flutter + Dart + MobX + Provider
-- **后台管理**: Vue3 + TypeScript + Element Plus + Pinia
-- **企业官网**: Nuxt.js 4.2 + Vue3 + TypeScript
-- **后端服务**: Hyperf 3.1 + Swoole + PHP 8.1+
+- **官网**: Nuxt.js 4.2 + Vue3 + TypeScript
 - **数据库**: MySQL + Redis
 
 ## 快速开始
 
 ### 后端服务
-
 ```bash
-cd server
-composer install
-cp .env.example .env
-php bin/hyperf.php start
+cd server && composer install && cp .env.example .env && php bin/hyperf.php start
 ```
 
 ### 后台管理系统
-
 ```bash
-cd web
-pnpm install
-pnpm dev
+cd web && pnpm install && pnpm dev
 ```
 
 ### 移动端应用
-
 ```bash
-cd app
-flutter pub get
-flutter run
+cd app && flutter pub get && flutter run
 ```
 
 ### 企业官网
-
 ```bash
-cd website
-pnpm install
-pnpm dev
+cd website && pnpm install && pnpm dev
 ```
 
 ## 项目特点
@@ -91,10 +107,10 @@ pnpm dev
 
 ## 相关文档
 
-- [后端服务文档](docs/server/server.md)
-- [后台管理系统文档](docs/web/web.md)
-- [移动端应用文档](docs/app/app.md)
-- [企业官网文档](docs/website/website.md)
+- [后端服务文档](docs/server/getting-started/开发指南.md)
+- [后台管理系统文档](docs/web/开发指南.md)
+- [移动端应用文档](docs/app/移动端应用.md)
+- [企业官网文档](docs/website/企业官网.md)
 
 ## 技术支持
 

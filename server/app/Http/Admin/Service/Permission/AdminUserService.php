@@ -17,7 +17,7 @@ use Psr\SimpleCache\CacheInterface;
 /**
  * @extends IService<User>
  */
-final class UserService extends IService
+final class AdminUserService extends IService
 {
     public function __construct(
         protected readonly UserRepository $repository,

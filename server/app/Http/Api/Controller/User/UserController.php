@@ -19,7 +19,7 @@ use App\Common\Tools;
 use App\Exception\BusinessException;
 use App\Http\Api\Request\UserRequest;
 use App\Http\CurrentUser;
-use App\Http\PassportService;
+use App\Http\UserService;
 use App\Model\Enums\User\LoginType;
 use App\Model\Enums\User\Type;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -39,8 +39,8 @@ use PragmaRX\Google2FA\Google2FA;
 class UserController extends AbstractController
 {
     public function __construct(
-        private readonly PassportService $passportService,
-        private readonly CurrentUser     $currentUser,
+        private readonly UserService $userService,
+        private readonly CurrentUser $currentUser,
     )
     {
     }
@@ -65,9 +65,9 @@ class UserController extends AbstractController
         $validated['user_type'] = Type::USER;
         $user = '';
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value) {
-            $user = $this->passportService->findUser(['username' => $validated['username']]);
+            $user = $this->userService->findUser(['username' => $validated['username']]);
             if ($user) return $this->error(Tools::__('user.username_exist'));
-            $user = $this->passportService->create($validated);
+            $user = $this->userService->create($validated);
         }
         if ($validated['type'] == LoginType::MOBILE_CODE->value) {
             // 验证手机验证码
@@ -80,18 +80,18 @@ class UserController extends AbstractController
             )) {
                 throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误或已过期');
             }
-            $user = $this->passportService->create($validated);
+            $user = $this->userService->create($validated);
         }
         if ($validated['type'] == LoginType::WECHAT_MINI->value) {
             $validated['wxmini_openid'] = $request->post('openid');
-            $user = $this->passportService->create($validated);
+            $user = $this->userService->create($validated);
         }
         if ($validated['type'] == LoginType::WECHAT_OPEN->value) {
             $validated['wx_openid'] = $request->post('openid');
-            $user = $this->passportService->create($validated);
+            $user = $this->userService->create($validated);
         }
         if (!$user) throw new BusinessException(ResultCode::FAIL, trans('user.register_fail'));
-        return $this->success($this->passportService->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
+        return $this->success($this->userService->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
     }
 
     #[Get(
@@ -106,7 +106,7 @@ class UserController extends AbstractController
     #[QueryParameter(name: 'username', description: 'username')]
     public function isRegister(Request $request): Result
     {
-        return $this->success(['status' => $this->passportService->findUser($request->query()) ? 1 : 0]);
+        return $this->success(['status' => $this->userService->findUser($request->query()) ? 1 : 0]);
     }
 
     #[Get(
@@ -150,7 +150,7 @@ class UserController extends AbstractController
         $validated = $request->validated();
         $user = '';
         if ($validated['type'] == 1) {
-            $user = $this->passportService->findUsernamePassword($validated['username'], $validated['password']);
+            $user = $this->userService->findUsernamePassword($validated['username'], $validated['password']);
         }
         if ($validated['type'] == 2) {
             // 验证手机验证码
@@ -163,10 +163,10 @@ class UserController extends AbstractController
             )) {
                 throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误或已过期');
             }
-            $user = $this->passportService->findUser(['mobile' => $validated['mobile']]);
+            $user = $this->userService->findUser(['mobile' => $validated['mobile']]);
         }
         if (!$user) throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '用户不存在');
-        return $this->success($this->passportService->setScene('api')->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
+        return $this->success($this->userService->setScene('api')->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
     }
 
     #[Get(

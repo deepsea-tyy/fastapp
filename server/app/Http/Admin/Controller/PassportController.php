@@ -13,7 +13,7 @@ use App\Common\ResultCode;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\PassportLoginRequest;
 use App\Http\CurrentUser;
-use App\Http\PassportService;
+use App\Http\UserService;
 use Hyperf\Collection\Arr;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
@@ -29,8 +29,8 @@ final class PassportController extends AbstractController
 {
 
     public function __construct(
-        private readonly PassportService $passportService,
-        private readonly CurrentUser     $currentUser
+        private readonly UserService $passportService,
+        private readonly CurrentUser $currentUser
     )
     {
     }

@@ -1,9 +1,5 @@
 # AI 开发提示词模板
 
-> 📚 **快速导航**：[使用说明](#使用说明) | [模板分类](#模板分类) | [常见问题](#常见问题) | [快速参考](#快速参考表)
->
-> 📖 **相关文档**：[AI辅助开发流程指南](./AI辅助开发流程指南.md)
-
 本文档提供可直接使用的 AI 提示词模板。
 
 ## 📖 使用说明
@@ -54,11 +50,10 @@
 ```
 请先阅读以下文档，理解 FastApp 框架的开发规范：
 
-1. docs/README.md - 文档导航
-2. docs/getting-started/项目结构.md - 项目结构
-3. docs/development/开发规范.md - 开发规范
-4. docs/getting-started/快速开始.md - 快速开始指南
-5. docs/development/AI辅助开发流程指南.md - AI开发流程
+1. [项目根目录 README](../../../README.md) - 项目说明和项目结构
+2. [开发规范](./开发规范.md) - 开发规范
+3. [快速开始](../getting-started/快速开始.md) - 快速开始指南
+4. [AI辅助开发流程指南](./AI辅助开发流程指南.md) - AI开发流程
 
 阅读完成后，请确认已理解：
 - 代码分层架构（Controller → Service → Repository → Model）
@@ -239,7 +234,7 @@
 - 返回：{返回数据说明}
 
 **开发步骤：**
-1. 阅读 docs/features/WebSocket开发文档.md
+1. 阅读 [WebSocket开发文档](../features/WebSocket开发文档.md)
 2. 创建 WebSocket 消息处理器类
 3. 实现 WsMessageHandlerInterface 接口
 4. 实现处理方法（使用 protected 访问修饰符）
@@ -404,11 +399,3 @@ return parent::handleSearch($query, $params); // ⚠️ 必须调用父类
 | **菜单 SQL 会自动执行吗？** | 会，AI 自动执行或使用 `--sql=true` |
 
 ---
-
-## 📖 更多信息
-
-> 📚 **相关文档**：
-> - [AI辅助开发流程指南](./AI辅助开发流程指南.md) - 详细的开发流程和原理说明
-> - [最佳实践](./AI辅助开发流程指南.md#最佳实践) - 开发最佳实践
-> - [常见陷阱避免](./AI辅助开发流程指南.md#常见陷阱避免) - 常见错误和正确做法
-

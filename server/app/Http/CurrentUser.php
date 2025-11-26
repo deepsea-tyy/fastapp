@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Http\Admin\Service\Permission\MenuService;
-use App\Http\Admin\Service\Permission\UserService;
+use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Model\Enums\User\Status;
 use App\Model\User;
 use Hyperf\Context\RequestContext;
@@ -16,16 +16,16 @@ use Lcobucci\JWT\UnencryptedToken;
 final class CurrentUser
 {
     public function __construct(
-        private readonly PassportService $service,
-        private readonly UserService     $userService,
-        private readonly MenuService     $menuService
+        private readonly UserService      $service,
+        private readonly AdminUserService $adminUserService,
+        private readonly MenuService      $menuService
     )
     {
     }
 
     public function adminUser(): ?User
     {
-        return $this->userService->getInfo($this->id());
+        return $this->adminUserService->getInfo($this->id());
     }
 
     public function user(): ?User

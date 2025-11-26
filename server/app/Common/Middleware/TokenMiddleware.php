@@ -15,7 +15,7 @@ final class TokenMiddleware extends AccessTokenMiddleware
     {
         $token = $request->getHeaderLine('token');
         $pasToken = $this->jwtFactory->get('api')->parserAccessToken($token);
-        $this->checkToken->checkJwt($pasToken);
+        $this->service->checkJwt($pasToken);
         return $pasToken;
     }
 }

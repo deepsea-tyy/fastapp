@@ -23,7 +23,7 @@ use App\Repository\Permission\UserRepository;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\UnencryptedToken;
 
-class PassportService extends IService
+class UserService extends IService
 {
     /**
      * @var string jwt场景
@@ -45,8 +45,14 @@ class PassportService extends IService
         }
         if ($ip) {
             if ($this->scene == 'api') {
-                $info = array_merge($user->profile->toArray(), $user->makeHidden(['profile', 'updated_by', 'created_by'])->toArray());
-                Tools::setUserCache($user->id, $info);
+                Tools::setUserCache($user->id, [
+                    'email' => $user->email,
+                    'code' => $user->code,
+                    'mobile' => $user->mobile,
+                    'google2fa' => $user->google2fa ?: '',
+                    'lang' => $user->profile->lang,
+                    'trans_password' => $user->profile->trans_password ?: '',
+                ]);
                 Tools::eventDispatcher(new UserLoginEvent($user, $ip, $os, $browser));
             } else {
                 Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));

@@ -13,7 +13,7 @@ use App\Common\Service\IpLocationService;
 use App\Common\Tools;
 use App\Http\Admin\Service\Logstash\UserAdminLoginLogService;
 use App\Http\Admin\Service\Logstash\UserAdminOperationLogService;
-use App\Http\Admin\Service\Permission\UserService;
+use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Model\UserLoginLog;
 use Hyperf\Engine\Coroutine;
 use Hyperf\Event\Annotation\Listener;
@@ -25,7 +25,7 @@ class UserSubscriber implements ListenerInterface
     public function __construct(
         private readonly UserAdminLoginLogService     $adminLoginLogService,
         private readonly UserAdminOperationLogService $logService,
-        private readonly UserService                  $userService,
+        private readonly AdminUserService             $userService,
         private readonly IpLocationService            $ipLocationService
     )
     {

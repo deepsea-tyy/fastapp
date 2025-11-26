@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace App\Common\Middleware;
 
 use App\Common\Jwt\JwtFactory;
-use App\Http\PassportService;
+use App\Http\UserService;
 use Hyperf\Stringable\Str;
 use Lcobucci\JWT\UnencryptedToken;
 use Psr\Http\Message\ResponseInterface;
@@ -18,8 +18,8 @@ use function Hyperf\Support\value;
 class AccessTokenMiddleware
 {
     public function __construct(
-        protected readonly JwtFactory         $jwtFactory,
-        protected readonly PassportService $checkToken
+        protected readonly JwtFactory  $jwtFactory,
+        protected readonly UserService $service
     )
     {
     }
@@ -42,7 +42,7 @@ class AccessTokenMiddleware
     {
         $token = Str::replace('Bearer ', '', $request->getHeaderLine('Authorization'));
         $pasToken = $this->jwtFactory->get()->parserAccessToken($token);
-        $this->checkToken->checkJwt($pasToken);
+        $this->service->checkJwt($pasToken);
         return $pasToken;
     }
 }

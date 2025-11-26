@@ -11,7 +11,7 @@ use App\Common\Result;
 use App\Common\ResultCode;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\Permission\PermissionRequest;
-use App\Http\Admin\Service\Permission\UserService;
+use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Http\CurrentUser;
 use App\Model\Enums\User\Status;
 use App\Repository\Permission\MenuRepository;
@@ -30,7 +30,7 @@ final class PermissionController extends AbstractController
         private readonly CurrentUser $currentUser,
         private readonly MenuRepository $repository,
         private readonly RoleRepository $roleRepository,
-        private readonly UserService $userService
+        private readonly AdminUserService $userService
     ) {}
 
     #[GetMapping(path: '/admin/permission/menus')]

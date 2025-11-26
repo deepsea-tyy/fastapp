@@ -10,7 +10,7 @@ namespace App\Common\Middleware;
 
 use App\Common\Jwt\JwtFactory;
 use App\Common\Jwt\JwtInterface;
-use App\Http\PassportService;
+use App\Http\UserService;
 use Hyperf\Collection\Arr;
 use Hyperf\Stringable\Str;
 use Lcobucci\JWT\Token;
@@ -24,14 +24,16 @@ use function Hyperf\Support\value;
 abstract class AbstractTokenMiddleware
 {
     public function __construct(
-        protected readonly JwtFactory $jwtFactory,
-        protected readonly PassportService $checkToken
-    ) {}
+        protected readonly JwtFactory  $jwtFactory,
+        protected readonly UserService $service
+    )
+    {
+    }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $token = $this->parserToken($request);
-        $this->checkToken->checkJwt($token);
+        $this->service->checkJwt($token);
         return $handler->handle(
             value(
                 static function (ServerRequestPlusInterface $request, UnencryptedToken $token) {
