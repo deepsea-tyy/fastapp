@@ -1,18 +1,33 @@
 import 'dart:async';
 
-import 'package:boilerplate/core/stores/error/error_store.dart';
-import 'package:boilerplate/core/stores/form/form_store.dart';
-import 'package:boilerplate/domain/repository/setting/setting_repository.dart';
-import 'package:boilerplate/domain/usecase/post/get_post_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/is_logged_in_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/login_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/save_login_in_status_usecase.dart';
-import 'package:boilerplate/presentation/store/app/language_store.dart';
-import 'package:boilerplate/presentation/store/app/theme_store.dart';
-import 'package:boilerplate/presentation/store/app/user_store.dart';
-import 'package:boilerplate/presentation/post/store/post_store.dart';
+import 'package:fastapp/core/stores/error/error_store.dart';
+import 'package:fastapp/core/stores/form/form_store.dart';
+import 'package:fastapp/domain/repository/setting/setting_repository.dart';
+import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
+import 'package:fastapp/domain/usecase/user/login_usecase.dart';
+import 'package:fastapp/domain/usecase/user/save_login_in_status_usecase.dart';
+import 'package:fastapp/presentation/store/app/language_store.dart';
+import 'package:fastapp/presentation/store/app/theme_store.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/presentation/store/home/home_store.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/presentation/store/market/kline_store.dart';
+import 'package:fastapp/presentation/store/market/depth_store.dart';
+import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
+import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
+import 'package:fastapp/presentation/store/orders/order_store.dart';
+import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
+import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
+import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
+import 'package:fastapp/domain/usecase/trade/cancel_order_usecase.dart';
+import 'package:fastapp/domain/repository/futures_repository.dart';
 
-import 'package:boilerplate/di/service_locator.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 class StoreModule {
   static Future<void> configureStoreModuleInjection() async {
@@ -34,13 +49,6 @@ class StoreModule {
       ),
     );
 
-    getIt.registerSingleton<PostStore>(
-      PostStore(
-        getIt<GetPostUseCase>(),
-        getIt<ErrorStore>(),
-      ),
-    );
-
     getIt.registerSingleton<ThemeStore>(
       ThemeStore(
         getIt<SettingRepository>(),
@@ -51,6 +59,68 @@ class StoreModule {
     getIt.registerSingleton<LanguageStore>(
       LanguageStore(
         getIt<SettingRepository>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<HomeStore>(
+      HomeStore()..initData(),
+    );
+
+    getIt.registerSingleton<MarketStore>(
+      MarketStore(
+        getIt<GetTickerUseCase>(),
+        getIt<GetAllTickerUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<KlineStore>(
+      KlineStore(
+        getIt<GetKlineUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<DepthStore>(
+      DepthStore(
+        getIt<GetDepthUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<SpotTradeStore>(
+      SpotTradeStore(
+        getIt<PlaceOrderUseCase>(),
+        getIt<GetDepthUseCase>(),
+        getIt<GetBalanceUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<FuturesTradeStore>(
+      FuturesTradeStore(
+        getIt<PlaceOrderUseCase>(),
+        getIt<GetDepthUseCase>(),
+        getIt<GetBalanceUseCase>(),
+        getIt<FuturesRepository>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<WalletStore>(
+      WalletStore(
+        getIt<GetAssetUseCase>(),
+        getIt<GetBalanceUseCase>(),
+        getIt<GetTransactionsUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<OrderStore>(
+      OrderStore(
+        getIt<GetOrdersUseCase>(),
+        getIt<CancelOrderUseCase>(),
         getIt<ErrorStore>(),
       ),
     );

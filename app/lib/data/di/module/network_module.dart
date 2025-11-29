@@ -1,15 +1,20 @@
-import 'package:boilerplate/core/data/network/dio/configs/dio_configs.dart';
-import 'package:boilerplate/core/data/network/dio/dio_client.dart';
-import 'package:boilerplate/core/data/network/dio/interceptors/auth_interceptor.dart';
-import 'package:boilerplate/core/data/network/dio/interceptors/logging_interceptor.dart';
-import 'package:boilerplate/data/network/apis/posts/post_api.dart';
-import 'package:boilerplate/data/network/constants/endpoints.dart';
-import 'package:boilerplate/data/network/interceptors/error_interceptor.dart';
-import 'package:boilerplate/data/network/rest_client.dart';
-import 'package:boilerplate/data/sharedpref/shared_preference_helper.dart';
+import 'package:fastapp/core/data/network/dio/configs/dio_configs.dart';
+import 'package:fastapp/core/data/network/dio/dio_client.dart';
+import 'package:fastapp/core/data/network/dio/interceptors/auth_interceptor.dart';
+import 'package:fastapp/core/data/network/dio/interceptors/logging_interceptor.dart';
+import 'package:fastapp/data/network/apis/market/market_api.dart';
+import 'package:fastapp/data/network/apis/order/order_api.dart';
+import 'package:fastapp/data/network/apis/wallet/wallet_api.dart';
+import 'package:fastapp/data/network/apis/trade/trade_api.dart';
+import 'package:fastapp/data/network/apis/futures/futures_api.dart';
+import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/constants/endpoints.dart';
+import 'package:fastapp/data/network/interceptors/error_interceptor.dart';
+import 'package:fastapp/data/network/rest_client.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:event_bus/event_bus.dart';
 
-import 'package:boilerplate/di/service_locator.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 class NetworkModule {
   static Future<void> configureNetworkModuleInjection() async {
@@ -48,6 +53,13 @@ class NetworkModule {
     );
 
     // api's:-------------------------------------------------------------------
-    getIt.registerSingleton(PostApi(getIt<DioClient>(), getIt<RestClient>()));
+    getIt.registerSingleton(MarketApi());
+    getIt.registerSingleton(OrderApi());
+    getIt.registerSingleton(WalletApi());
+    getIt.registerSingleton(TradeApi());
+    getIt.registerSingleton(FuturesApi());
+
+    // websocket:---------------------------------------------------------------
+    getIt.registerSingleton(MarketWebSocket());
   }
 }

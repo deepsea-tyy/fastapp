@@ -1,16 +1,27 @@
 import 'dart:async';
 
-import 'package:boilerplate/data/local/datasources/post/post_datasource.dart';
-import 'package:boilerplate/data/network/apis/posts/post_api.dart';
-import 'package:boilerplate/data/repository/post/post_repository_impl.dart';
-import 'package:boilerplate/data/repository/setting/setting_repository_impl.dart';
-import 'package:boilerplate/data/repository/user/user_repository_impl.dart';
-import 'package:boilerplate/data/sharedpref/shared_preference_helper.dart';
-import 'package:boilerplate/domain/repository/post/post_repository.dart';
-import 'package:boilerplate/domain/repository/setting/setting_repository.dart';
-import 'package:boilerplate/domain/repository/user/user_repository.dart';
+import 'package:fastapp/data/network/apis/market/market_api.dart';
+import 'package:fastapp/data/network/apis/order/order_api.dart';
+import 'package:fastapp/data/network/apis/wallet/wallet_api.dart';
+import 'package:fastapp/data/network/apis/trade/trade_api.dart';
+import 'package:fastapp/data/network/apis/futures/futures_api.dart';
+import 'package:fastapp/data/repository/setting/setting_repository_impl.dart';
+import 'package:fastapp/data/repository/user/user_repository_impl.dart';
+import 'package:fastapp/data/repository/market/market_repository_impl.dart';
+import 'package:fastapp/data/repository/order/order_repository_impl.dart';
+import 'package:fastapp/data/repository/wallet/wallet_repository_impl.dart';
+import 'package:fastapp/data/repository/trade/trade_repository_impl.dart';
+import 'package:fastapp/data/repository/futures/futures_repository_impl.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
+import 'package:fastapp/domain/repository/setting/setting_repository.dart';
+import 'package:fastapp/domain/repository/user/user_repository.dart';
+import 'package:fastapp/domain/repository/market_repository.dart';
+import 'package:fastapp/domain/repository/order_repository.dart';
+import 'package:fastapp/domain/repository/wallet_repository.dart';
+import 'package:fastapp/domain/repository/trade_repository.dart';
+import 'package:fastapp/domain/repository/futures_repository.dart';
 
-import 'package:boilerplate/di/service_locator.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 class RepositoryModule {
   static Future<void> configureRepositoryModuleInjection() async {
@@ -23,9 +34,24 @@ class RepositoryModule {
       getIt<SharedPreferenceHelper>(),
     ));
 
-    getIt.registerSingleton<PostRepository>(PostRepositoryImpl(
-      getIt<PostApi>(),
-      getIt<PostDataSource>(),
+    getIt.registerSingleton<MarketRepository>(MarketRepositoryImpl(
+      getIt<MarketApi>(),
+    ));
+
+    getIt.registerSingleton<OrderRepository>(OrderRepositoryImpl(
+      getIt<OrderApi>(),
+    ));
+
+    getIt.registerSingleton<WalletRepository>(WalletRepositoryImpl(
+      getIt<WalletApi>(),
+    ));
+
+    getIt.registerSingleton<TradeRepository>(TradeRepositoryImpl(
+      getIt<TradeApi>(),
+    ));
+
+    getIt.registerSingleton<FuturesRepository>(FuturesRepositoryImpl(
+      getIt<FuturesApi>(),
     ));
   }
 }

@@ -1,0 +1,83 @@
+{
+  "app": {
+    "name": "fastapp",
+    "version": "1.0.0",
+    "buildNumber": 1,
+    "description": "A flutter boilerplate project created using MobX and Provider."
+  },
+  "android": {
+    "packageName": "com.iotecksolutions.todoapp",
+    "label": "fastapp"
+  },
+  "ios": {
+    "bundleId": "com.iotecksolutions.todoapp",
+    "displayName": "fastapp",
+    "bundleName": "fastapp"
+  },
+  "web": {
+    "title": "fastapp",
+    "shortName": "fastapp",
+    "themeColor": "#0175C2",
+    "backgroundColor": "#0175C2",
+    "icon": "assets/images/launch/logo.png"
+  },
+  "network": {
+    "apiBaseUrl": "http://jsonplaceholder.typicode.com",
+    "wsBaseUrl": "ws://127.0.0.1:9502/ws",
+    "connectionTimeout": 30000,
+    "receiveTimeout": 15000,
+    "endpoints": {
+      "market": {
+        "ticker": "/api/v1/market/ticker",
+        "kline": "/api/v1/market/kline",
+        "depth": "/api/v1/market/depth"
+      },
+      "trade": {
+        "placeOrder": "/api/v1/trade/order",
+        "cancelOrder": "/api/v1/trade/order/cancel"
+      },
+      "order": {
+        "list": "/api/v1/order/list",
+        "detail": "/api/v1/order/detail"
+      },
+      "wallet": {
+        "balance": "/api/v1/wallet/balance",
+        "transactions": "/api/v1/wallet/transactions"
+      },
+      "futures": {
+        "position": "/api/v1/futures/position",
+        "leverage": "/api/v1/futures/leverage",
+        "fundingRate": "/api/v1/futures/funding-rate"
+      }
+    }
+  },
+  "theme": {
+    "seedColor": "#2196F3"
+  },
+  "resources": {
+    "imageCdnBaseUrl": "https://static.bgbstatic.com"
+  },
+  "assets": {
+    "appLogo": "assets/images/launch/logo.png",
+    "carBackground": "assets/images/img_login.jpg"
+  },
+  "splash": {
+    "image": "assets/images/launch/light-background.png",
+    "backgroundColor": "#ffffff",
+    "web": {
+      "backgroundSize": "cover",
+      "fadeOutTime": 400,
+      "hideDelay": 500
+    }
+  },
+  "fonts": {
+    "productSans": "ProductSans",
+    "roboto": "Roboto"
+  },
+  "ui": {
+    "defaultHorizontalPadding": 12.0,
+    "defaultVerticalPadding": 12.0,
+    "defaultBorderRadius": 8.0
+  }
+}
+

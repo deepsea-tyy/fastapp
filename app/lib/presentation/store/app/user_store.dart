@@ -1,11 +1,11 @@
-import 'package:boilerplate/core/stores/error/error_store.dart';
-import 'package:boilerplate/core/stores/form/form_store.dart';
-import 'package:boilerplate/domain/usecase/user/is_logged_in_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/save_login_in_status_usecase.dart';
+import 'package:fastapp/core/stores/error/error_store.dart';
+import 'package:fastapp/core/stores/form/form_store.dart';
+import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
+import 'package:fastapp/domain/usecase/user/save_login_in_status_usecase.dart';
 import 'package:mobx/mobx.dart';
 
-import 'package:boilerplate/domain/entity/user/user.dart';
-import 'package:boilerplate/domain/usecase/user/login_usecase.dart';
+import 'package:fastapp/domain/entity/user/user.dart';
+import 'package:fastapp/domain/usecase/user/login_usecase.dart';
 
 part 'user_store.g.dart';
 
@@ -25,7 +25,7 @@ abstract class _UserStore with Store {
 
     // checking if user is logged in
     _isLoggedInUseCase.call(params: null).then((value) async {
-      isLoggedIn = value;
+      _setIsLoggedIn(value);
     });
   }
 
@@ -55,6 +55,7 @@ abstract class _UserStore with Store {
       ObservableFuture.value(null);
 
   // store variables:-----------------------------------------------------------
+  @observable
   bool isLoggedIn = false;
 
   @observable
@@ -77,19 +78,25 @@ abstract class _UserStore with Store {
     await future.then((value) async {
       if (value != null) {
         await _saveLoginStatusUseCase.call(params: true);
-        this.isLoggedIn = true;
-        this.success = true;
+        isLoggedIn = true;
+        success = true;
       }
     }).catchError((e) {
       print(e);
-      this.isLoggedIn = false;
-      this.success = false;
+      isLoggedIn = false;
+      success = false;
       throw e;
     });
   }
 
+  @action
+  void _setIsLoggedIn(bool value) {
+    isLoggedIn = value;
+  }
+
+  @action
   logout() async {
-    this.isLoggedIn = false;
+    isLoggedIn = false;
     await _saveLoginStatusUseCase.call(params: false);
   }
 

@@ -1,17 +1,23 @@
 import 'dart:async';
 
-import 'package:boilerplate/domain/repository/post/post_repository.dart';
-import 'package:boilerplate/domain/repository/user/user_repository.dart';
-import 'package:boilerplate/domain/usecase/post/delete_post_usecase.dart';
-import 'package:boilerplate/domain/usecase/post/find_post_by_id_usecase.dart';
-import 'package:boilerplate/domain/usecase/post/get_post_usecase.dart';
-import 'package:boilerplate/domain/usecase/post/insert_post_usecase.dart';
-import 'package:boilerplate/domain/usecase/post/udpate_post_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/is_logged_in_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/login_usecase.dart';
-import 'package:boilerplate/domain/usecase/user/save_login_in_status_usecase.dart';
+import 'package:fastapp/domain/repository/user/user_repository.dart';
+import 'package:fastapp/domain/repository/market_repository.dart';
+import 'package:fastapp/domain/repository/order_repository.dart';
+import 'package:fastapp/domain/repository/wallet_repository.dart';
+import 'package:fastapp/domain/repository/trade_repository.dart';
+import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
+import 'package:fastapp/domain/usecase/user/login_usecase.dart';
+import 'package:fastapp/domain/usecase/user/save_login_in_status_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
+import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
+import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
+import 'package:fastapp/domain/usecase/trade/cancel_order_usecase.dart';
 
-import 'package:boilerplate/di/service_locator.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 class UseCaseModule {
   static Future<void> configureUseCaseModuleInjection() async {
@@ -26,21 +32,45 @@ class UseCaseModule {
       LoginUseCase(getIt<UserRepository>()),
     );
 
-    // post:--------------------------------------------------------------------
-    getIt.registerSingleton<GetPostUseCase>(
-      GetPostUseCase(getIt<PostRepository>()),
+    // market:------------------------------------------------------------------
+    getIt.registerSingleton<GetKlineUseCase>(
+      GetKlineUseCase(getIt<MarketRepository>()),
     );
-    getIt.registerSingleton<FindPostByIdUseCase>(
-      FindPostByIdUseCase(getIt<PostRepository>()),
+    getIt.registerSingleton<GetDepthUseCase>(
+      GetDepthUseCase(getIt<MarketRepository>()),
     );
-    getIt.registerSingleton<InsertPostUseCase>(
-      InsertPostUseCase(getIt<PostRepository>()),
+    getIt.registerSingleton<GetTickerUseCase>(
+      GetTickerUseCase(getIt<MarketRepository>()),
     );
-    getIt.registerSingleton<UpdatePostUseCase>(
-      UpdatePostUseCase(getIt<PostRepository>()),
+    getIt.registerSingleton<GetAllTickerUseCase>(
+      GetAllTickerUseCase(getIt<MarketRepository>()),
     );
-    getIt.registerSingleton<DeletePostUseCase>(
-      DeletePostUseCase(getIt<PostRepository>()),
+
+    // order:-------------------------------------------------------------------
+    getIt.registerSingleton<GetOrdersUseCase>(
+      GetOrdersUseCase(getIt<OrderRepository>()),
+    );
+    getIt.registerSingleton<GetOrderDetailUseCase>(
+      GetOrderDetailUseCase(getIt<OrderRepository>()),
+    );
+    getIt.registerSingleton<CancelOrderUseCase>(
+      CancelOrderUseCase(getIt<OrderRepository>()),
+    );
+
+    // wallet:------------------------------------------------------------------
+    getIt.registerSingleton<GetAssetUseCase>(
+      GetAssetUseCase(getIt<WalletRepository>()),
+    );
+    getIt.registerSingleton<GetBalanceUseCase>(
+      GetBalanceUseCase(getIt<WalletRepository>()),
+    );
+    getIt.registerSingleton<GetTransactionsUseCase>(
+      GetTransactionsUseCase(getIt<WalletRepository>()),
+    );
+
+    // trade:-------------------------------------------------------------------
+    getIt.registerSingleton<PlaceOrderUseCase>(
+      PlaceOrderUseCase(getIt<TradeRepository>()),
     );
   }
 }

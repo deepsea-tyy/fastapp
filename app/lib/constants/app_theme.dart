@@ -1,108 +1,116 @@
-/// Creating custom color palettes is part of creating a custom app. The idea is to create
-/// your class of custom colors, in this case `CompanyColors` and then create a `ThemeData`
-/// object with those colors you just defined.
-///
-/// Resource:
-/// A good resource would be this website: http://mcg.mbitson.com/
-/// You simply need to put in the colour you wish to use, and it will generate all shades
-/// for you. Your primary colour will be the `500` value.
-///
-/// Colour Creation:
-/// In order to create the custom colours you need to create a `Map<int, Color>` object
-/// which will have all the shade values. `const Color(0xFF...)` will be how you create
-/// the colours. The six character hex code is what follows. If you wanted the colour
-/// #114488 or #D39090 as primary colours in your setting, then you would have
-/// `const Color(0x114488)` and `const Color(0xD39090)`, respectively.
-///
-/// Usage:
-/// In order to use this newly created setting or even the colours in it, you would just
-/// `import` this file in your project, anywhere you needed it.
-/// `import 'path/to/setting.dart';`
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:fastapp/constants/app_config.dart';
 
-class AppThemeData {
-  static const _lightFillColor = Colors.black;
-  static const _darkFillColor = Colors.white;
+/// 主题类型枚举
+enum AppThemeType {
+  /// 亮色主题
+  light,
+  
+  /// 暗色主题
+  dark;
+  
+  /// 获取主题名称
+  String get name {
+    switch (this) {
+      case AppThemeType.light:
+        return '亮色';
+      case AppThemeType.dark:
+        return '暗色';
+    }
+  }
+  
+  /// 获取对应的亮度
+  Brightness get brightness {
+    switch (this) {
+      case AppThemeType.light:
+        return Brightness.light;
+      case AppThemeType.dark:
+        return Brightness.dark;
+    }
+  }
+  
+  /// 切换主题（在亮色和暗色之间）
+  AppThemeType toggle() {
+    return this == AppThemeType.dark ? AppThemeType.light : AppThemeType.dark;
+  }
+}
 
-  static final Color _lightFocusColor = Colors.black.withOpacity(0.12);
-  static final Color _darkFocusColor = Colors.white.withOpacity(0.12);
+/// 主题配置提供者
+class AppTheme {
+  AppTheme._();
 
-  static ThemeData lightThemeData =
-  themeData(lightColorScheme, _lightFocusColor);
-  static ThemeData darkThemeData = themeData(darkColorScheme, _darkFocusColor);
+  // 主题缓存，避免重复创建
+  static final Map<AppThemeType, ThemeData> _themeCache = {};
 
-  static ThemeData themeData(ColorScheme colorScheme, Color focusColor) {
+  /// 获取指定主题的 ThemeData（带缓存）
+  static ThemeData getTheme(AppThemeType themeType) {
+    return _themeCache.putIfAbsent(
+      themeType,
+      () => _buildTheme(themeType),
+    );
+  }
+
+  /// 构建主题配置
+  static ThemeData _buildTheme(AppThemeType themeType) {
+    final brightness = themeType.brightness;
+    
+    // 将 hex 颜色字符串转换为 Color
+    final seedColor = _hexToColor(AppConfig.seedColor);
+    final borderRadius = AppConfig.defaultBorderRadius;
+    
     return ThemeData(
-      colorScheme: colorScheme,
-      textTheme: _textTheme,
-      // Matches manifest.json colors and background color.
-      primaryColor: const Color(0xFF030303),
-      appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        iconTheme: IconThemeData(color: colorScheme.primary),
+      brightness: brightness,
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: brightness,
       ),
-      iconTheme: IconThemeData(color: colorScheme.onPrimary),
-      canvasColor: colorScheme.surface,
-      scaffoldBackgroundColor: colorScheme.surface,
-      highlightColor: Colors.transparent,
-      focusColor: focusColor,
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Color.alphaBlend(
-          _lightFillColor.withOpacity(0.80),
-          _darkFillColor,
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
-        contentTextStyle: _textTheme.titleMedium!.apply(color: _darkFillColor),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+        ),
       ),
     );
   }
 
-  static const ColorScheme lightColorScheme = ColorScheme(
-    primary: Color(0xFFd21e1d),
-    primaryContainer: Color(0xFF9e1718),
-    secondary: Color(0xFFEFF3F3),
-    secondaryContainer: Color(0xFFFAFBFB),
-    surface: Color(0xFFFAFBFB),
-    error: _lightFillColor,
-    onError: _lightFillColor,
-    onPrimary: _lightFillColor,
-    onSecondary: Color(0xFF322942),
-    onSurface: Color(0xFF241E30),
-    brightness: Brightness.light,
-  );
+  /// 将 hex 颜色字符串转换为 Color
+  static Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
 
-  static const ColorScheme darkColorScheme = ColorScheme(
-    primary: Color(0xFFFF8383),
-    primaryContainer: Color(0xFF1CDEC9),
-    secondary: Color(0xFF4D1F7C),
-    secondaryContainer: Color(0xFF451B6F),
-    surface: Color(0xFF1F1929),
-    // White with 0.05 opacity
-    error: _darkFillColor,
-    onError: _darkFillColor,
-    onPrimary: _darkFillColor,
-    onSecondary: _darkFillColor,
-    onSurface: _darkFillColor,
-    brightness: Brightness.dark,
-  );
-
-  static const _regular = FontWeight.w400;
-  static const _medium = FontWeight.w500;
-  static const _semiBold = FontWeight.w600;
-  static const _bold = FontWeight.w700;
-
-  static final TextTheme _textTheme = TextTheme(
-    headlineMedium: GoogleFonts.montserrat(fontWeight: _bold, fontSize: 20.0),
-    bodySmall: GoogleFonts.oswald(fontWeight: _semiBold, fontSize: 16.0),
-    headlineSmall: GoogleFonts.oswald(fontWeight: _medium, fontSize: 16.0),
-    titleMedium: GoogleFonts.montserrat(fontWeight: _medium, fontSize: 16.0),
-    labelSmall: GoogleFonts.montserrat(fontWeight: _medium, fontSize: 12.0),
-    bodyLarge: GoogleFonts.montserrat(fontWeight: _regular, fontSize: 14.0),
-    titleSmall: GoogleFonts.montserrat(fontWeight: _medium, fontSize: 14.0),
-    bodyMedium: GoogleFonts.montserrat(fontWeight: _regular, fontSize: 16.0),
-    titleLarge: GoogleFonts.montserrat(fontWeight: _bold, fontSize: 16.0),
-    labelLarge: GoogleFonts.montserrat(fontWeight: _semiBold, fontSize: 14.0),
-  );
+  /// 清除主题缓存（用于动态更新主题时）
+  static void clearCache() {
+    _themeCache.clear();
+  }
 }
+

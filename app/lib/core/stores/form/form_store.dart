@@ -1,4 +1,4 @@
-import 'package:boilerplate/core/stores/error/error_store.dart';
+import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:mobx/mobx.dart';
 import 'package:validators/validators.dart';
 

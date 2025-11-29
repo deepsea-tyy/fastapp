@@ -1,4 +1,4 @@
-import 'package:boilerplate/core/data/local/encryption/xxtea.dart';
+import 'package:fastapp/core/data/local/encryption/xxtea.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sembast/sembast.dart';

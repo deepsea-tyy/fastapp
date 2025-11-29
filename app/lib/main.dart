@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:boilerplate/di/service_locator.dart';
-import 'package:boilerplate/presentation/my_app.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/presentation/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,7 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setPreferredOrientations();
   await ServiceLocator.configureDependencies();
-  runApp(MyApp());
+  runApp(App());
 }
 
 Future<void> setPreferredOrientations() {
