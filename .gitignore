@@ -1,3 +1,6 @@
 .playwright-mcp/*
 *chrome*
 test*
+
+# Cursor 自动保存的临时文件（仅根目录）
+/assets/*

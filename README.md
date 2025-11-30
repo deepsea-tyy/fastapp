@@ -1,5 +1,7 @@
 # FastApp 项目说明
 
+[![GitHub](https://img.shields.io/badge/GitHub-fastapp-blue?logo=github)](https://github.com/deepsea-tyy/fastapp)
+
 FastApp 是一个企业级全栈应用框架，包含移动端、Web端、后台管理系统、企业官网和后端服务。
 
 ## 项目结构
@@ -18,7 +20,7 @@ fastapp/
 ### app
 Flutter 移动端应用，采用 MobX + Provider 状态管理，支持多平台部署。
 
-详细文档：[app 文档](docs/app/移动端应用.md)
+详细文档：[app 文档](docs/app/开发指南.md)
 
 ### web
 后台管理系统前端应用，基于 Vue3 + TypeScript + Element Plus 构建。
@@ -109,7 +111,7 @@ cd website && pnpm install && pnpm dev
 
 - [后端服务文档](docs/server/getting-started/开发指南.md)
 - [后台管理系统文档](docs/web/开发指南.md)
-- [移动端应用文档](docs/app/移动端应用.md)
+- [移动端应用文档](docs/app/开发指南.md)
 - [企业官网文档](docs/website/企业官网.md)
 
 ## 技术支持
