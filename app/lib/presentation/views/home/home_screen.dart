@@ -15,13 +15,14 @@
 ///   home: HomeScreen(),
 /// )
 /// ```
-import 'package:fastapp/presentation/views/home/widgets/mobile_app_bar.dart';
+import 'package:fastapp/presentation/views/home/widgets/top_bar.dart';
 import 'package:fastapp/presentation/views/home/widgets/copy_trading_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/journey_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/mobile_crypto_list_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/trust_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/tologin_section.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -32,7 +33,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 /// 页面采用垂直滚动的单列布局，所有内容模块按顺序排列。
 ///
 /// 页面结构：
-/// 1. [MobileAppBar] - 顶部导航栏（Logo、搜索、菜单）
+/// 1. [TopBar] - 顶部导航栏（Logo、搜索、菜单）
 /// 2. [ToLoginSection] - 未登录时的欢迎区域（仅在未登录时显示）
 /// 3. [MobileCryptoListSection] - 加密货币行情列表
 /// 4. [JourneySection] - 开始您的加密货币之旅
@@ -50,11 +51,15 @@ class HomeScreen extends StatelessWidget {
     final userStore = getIt<UserStore>();
 
     return Scaffold(
-      // 使用 Bitget 品牌黑色作为背景色
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      // 使用浅灰色作为背景色
+      backgroundColor: Colors.grey[200],
       
       // 顶部导航栏
-      appBar: const MobileAppBar(),
+      appBar: TopBar(
+        onMenuPressed: () {
+          Navigator.of(context).pushNamed(Routes.userCenter);
+        },
+      ),
       
       // 页面主体内容，使用可滚动视图
       body: Observer(
@@ -67,19 +72,38 @@ class HomeScreen extends StatelessWidget {
               children: [
                 // 未登录时显示的内容
                 if (!isLoggedIn) ...[
-                  const ToLoginSection(),
+                  Container(
+                    color: Colors.white,
+                    child: const ToLoginSection(),
+                  ),
                   
                   // 加密货币行情区域：热门榜、涨幅榜、新币榜
-                  const MobileCryptoListSection(),
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const MobileCryptoListSection(),
+                  ),
                   
                   // 开始您的加密货币之旅：功能介绍
-                  const JourneySection(),
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const JourneySection(),
+                  ),
                   
                   // 交易"智"变跟单：跟单交易员展示
-                  const CopyTradingSection(),
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const CopyTradingSection(),
+                  ),
                   
                   // 值得您信赖的平台：安全特性
-                  const TrustSection(),
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const TrustSection(),
+                  ),
                 ],
               ],
             ),

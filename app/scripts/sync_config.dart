@@ -235,6 +235,9 @@ Future<bool> syncSplashScreen(Map<String, dynamic> config) async {
   final webFadeOutTime = web['fadeOutTime'] as int? ?? 400;
   final webHideDelay = web['hideDelay'] as int? ?? 500;
   
+  // 同步 Android 启动图资源
+  final androidImageCopied = await _copyAndroidSplashImage(image);
+  
   final results = await Future.wait([
     // 同步 Web 启动图
     _updateFile('web/index.html', (content) {
@@ -267,6 +270,25 @@ Future<bool> syncSplashScreen(Map<String, dynamic> config) async {
     }),
   ]);
   
-  return results.every((r) => r);
+  return results.every((r) => r) && androidImageCopied;
+}
+
+Future<bool> _copyAndroidSplashImage(String imagePath) async {
+  final sourceFile = File(imagePath);
+  if (!await sourceFile.exists()) {
+    print('⚠️  警告: 找不到启动图文件 $imagePath');
+    return false;
+  }
+  
+  final targetDir = Directory('android/app/src/main/res/drawable');
+  if (!await targetDir.exists()) {
+    print('⚠️  警告: 找不到 Android drawable 目录');
+    return false;
+  }
+  
+  final targetFile = File('${targetDir.path}/launch_background_image.png');
+  await sourceFile.copy(targetFile.path);
+  print('✅ 已同步 Android 启动图资源: ${targetFile.path}');
+  return true;
 }
 

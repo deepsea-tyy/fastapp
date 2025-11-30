@@ -6,6 +6,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final Widget? titleWidget;
   final PreferredSizeWidget? bottom;
+  final bool showMenuButton;
+  final GlobalKey<ScaffoldState>? scaffoldKey;
 
   const CommonAppBar({
     super.key,
@@ -13,10 +15,36 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.titleWidget,
     this.bottom,
+    this.showMenuButton = false,
+    this.scaffoldKey,
   });
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> finalActions = [];
+
+    // 如果显示菜单按钮，添加到 actions 最前面
+    if (showMenuButton) {
+      finalActions.add(
+        IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            if (scaffoldKey?.currentState != null) {
+              scaffoldKey!.currentState!.openEndDrawer();
+            } else {
+              Scaffold.of(context).openEndDrawer();
+            }
+          },
+          tooltip: '菜单',
+        ),
+      );
+    }
+
+    // 添加其他 actions
+    if (actions != null) {
+      finalActions.addAll(actions!);
+    }
+
     return AppBar(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
@@ -29,7 +57,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-      actions: actions,
+      actions: finalActions.isEmpty ? null : finalActions,
       bottom: bottom,
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/utils/routes/routes.dart';
 
 class JourneySection extends StatelessWidget {
   const JourneySection({super.key});
@@ -44,9 +45,23 @@ class JourneySection extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: 跳转到注册页面
+                Navigator.of(context).pushNamed(Routes.register);
               },
-              child: const Text('立即注册'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                '立即注册',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],

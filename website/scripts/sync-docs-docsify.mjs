@@ -27,7 +27,7 @@ const docSources = [
 const sortConfig = {
   directories: {
     server: ['getting-started', 'development', 'features', 'permission'],
-    app: ['开发指南.md', '移动端应用.md', '架构设计.md', '环境配置.md', '问题排查.md'],
+    app: ['开发指南.md', '架构设计.md', 'Xcode使用指南.md', '全局配置.md'],
     web: ['开发指南.md', '图标使用指南.md', '图表使用指南.md'],
     website: ['企业官网.md']
   },

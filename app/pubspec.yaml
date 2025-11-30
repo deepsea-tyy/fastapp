@@ -41,7 +41,7 @@ dependencies:
   # N
   # O
   # P
-  path_provider: ^2.0.14
+  path_provider: ^2.1.0
   # Q
   # R
   # S
@@ -72,6 +72,7 @@ dev_dependencies:
   mobx_codegen: ^2.2.0
   build_runner: ^2.3.3
   analyzer: ^5.10.0
+  image: ^4.1.7
 
 flutter_icons:
   image_path: "assets/icons/ic_launcher.png"
@@ -79,11 +80,11 @@ flutter_icons:
   ios: true
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/images/
     - assets/icons/
-    - assets/lang/
 
   fonts:
     - family: ProductSans

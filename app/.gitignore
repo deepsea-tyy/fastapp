@@ -4,11 +4,24 @@
 *.log
 *.pyc
 *.swp
+*.swo
+*~
+*.bak
+*.backup
+*.tmp
+*.orig
+*.rej
+*.cache
 .DS_Store
+**/.DS_Store
 .atom/
 .buildlog/
 .history
 .svn/
+Thumbs.db
+.env
+.env.local
+.env.*.local
 
 # IntelliJ IDEA / Android Studio
 *.iml
@@ -20,6 +33,13 @@
 # Visual Studio Code
 .vscode/
 *.code-workspace
+
+# Other IDEs
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -35,6 +55,9 @@ test/*
 *.g.dart
 *.freezed.dart
 *.mocks.dart
+
+# Flutter l10n generated files
+lib/l10n/app_localizations*.dart
 
 # Coverage
 coverage/
@@ -106,3 +129,4 @@ coverage/
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+android/app/src/main/res/drawable

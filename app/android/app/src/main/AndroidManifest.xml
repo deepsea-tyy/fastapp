@@ -43,6 +43,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- 修复 sqflite 在 Flutter 3.38.3 上的兼容性问题 -->
+        <meta-data
+            android:name="sqflite.enable_wal"
+            android:value="false" />
     </application>
     <meta-data
         android:name="flutterEmbedding"

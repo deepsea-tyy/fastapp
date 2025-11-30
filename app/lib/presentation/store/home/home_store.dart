@@ -8,10 +8,6 @@ part 'home_store.g.dart';
 class HomeStore = _HomeStore with _$HomeStore;
 
 abstract class _HomeStore with Store {
-  // App 下载横幅显示状态
-  @observable
-  bool showAppBanner = true;
-
   // 加密货币标签页索引 (0: 热门榜, 1: 涨幅榜, 2: 新币榜)
   @observable
   int cryptoTabIndex = 0;
@@ -33,11 +29,6 @@ abstract class _HomeStore with Store {
   int bottomNavIndex = 0;
 
   // Actions
-  @action
-  void hideAppBanner() {
-    showAppBanner = false;
-  }
-
   @action
   void setCryptoTabIndex(int index) {
     cryptoTabIndex = index;

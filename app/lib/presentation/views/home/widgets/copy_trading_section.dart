@@ -117,12 +117,13 @@ class CopyTradingSection extends StatelessWidget {
     return Container(
       width: 200,
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -148,6 +149,7 @@ class CopyTradingSection extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       trader.username,
@@ -156,6 +158,8 @@ class CopyTradingSection extends StatelessWidget {
                         fontSize: 14.0,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       '${trader.copyCount}/${trader.maxCopyCount}',
@@ -169,32 +173,40 @@ class CopyTradingSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '30日跟单者收益',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      fontSize: 10.0,
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '30日跟单者收益',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 10.0,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Text(
-                    '\$${trader.profit30Days.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.w600,
+                    Text(
+                      '\$${trader.profit30Days.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '${isPositive ? '+' : ''}${trader.roi30Days.toStringAsFixed(2)}%',
@@ -215,13 +227,19 @@ class CopyTradingSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
+            height: 36,
             child: ElevatedButton(
               onPressed: () {
                 // TODO: 跟单操作
               },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: const Text(
                 '跟单',
                 style: TextStyle(
