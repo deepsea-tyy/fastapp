@@ -73,7 +73,7 @@ class IpLocationListener implements ListenerInterface
             // 异步查询，不阻塞主流程
             Coroutine::create(function () use ($event) {
                 $ip = $event->getIp();
-                $lang = Tools::lang($event->getUser()->id ?? 0, true);
+                $lang = Tools::lang($event->getUser()->id ?? 0);
                 $location = $this->ipLocationService->query($ip, $lang);
                 
                 // 格式化地理位置字符串

@@ -23,38 +23,9 @@ use function Hyperf\AsyncQueue\dispatch;
 
 class Tools
 {
-    /**
-     * 翻译函数（简化版）
-     *
-     * @param string $t 翻译键名
-     * @param array $re 替换参数数组
-     * @return array|string 翻译后的文本或数组
-     */
-    public static function __(string $t, array $re = [], int $userId = 0): array|string
-    {
-        return trans($t, $re, self::lang($userId));
-    }
-
     public static function getContainer(): ContainerInterface
     {
         return ApplicationContext::getContainer();
-    }
-
-    /**
-     * 获取当前语言代码
-     *
-     * @param bool $format 是否格式化（将下划线替换为横线），默认false
-     * @return string 语言代码，如：zh_CN 或 zh-CN（根据format参数）
-     */
-    public static function lang(int $userId = 0, bool $format = false): string
-    {
-        if ($userId) {
-            $cache = self::getUserCache($userId, ['lang']);
-            return $cache['lang'] ?? 'zh-CN';
-        }
-        $lang = self::getHeader('accept-language');
-        if ($format) $lang = str_replace('_', '-', $lang);
-        return $lang ?: 'zh-CN';
     }
 
     /**
@@ -69,15 +40,46 @@ class Tools
     }
 
     /**
+     * 翻译函数（简化版）
+     *
+     * @param string $t
+     * @param array $re 替换参数数组
+     * @param int $userId
+     * @return array|string 翻译后的文本或数组
+     */
+    public static function __(string $t, array $re = [], int $userId = 0): array|string
+    {
+        return trans($t, $re, self::lang($userId));
+    }
+
+    /**
+     * 获取当前语言代码
+     *
+     * @param bool $format 是否格式化（将下划线替换为横线），默认false
+     * @return string 语言代码，如：zh_CN 或 zh-CN（根据format参数）
+     */
+    public static function lang(int $userId = 0, bool $format = false): string
+    {
+        $lang = '';
+        if ($userId) {
+            $cache = self::getUserCache($userId, ['lang']);
+            $lang = $cache['lang'] ?? 'zh_CN';
+        }
+        if (!$lang) $lang = self::getHeader('accept-language');
+        if ($format) $lang = str_replace('_', '-', $lang);
+        return $lang ?: 'zh_CN';
+    }
+
+    /**
      * 根据当前语言从多语言数据数组中获取对应文本
      *
      * @param array $data 多语言数据数组，格式：[['lang' => 'zh_CN', 'text' => '文本'], ...]
-     * @param bool $format 是否格式化语言代码，默认true
+     * @param int $userId
      * @return string 匹配的文本，如果未找到则返回第一条文本
      */
-    public static function formatLang(array $data, bool $format = true): string
+    public static function formatLang(array $data, int $userId = 0): string
     {
-        $lang = Tools::lang(0, $format);
+        $lang = Tools::lang($userId);
         foreach ($data as $v) {
             if ($v['lang'] == $lang) return $v['text'];
         }

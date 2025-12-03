@@ -1,5 +1,5 @@
 const DEFAULT_IMAGE = '/404.png'
-const LANGUAGE_CODES = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'gm', 'ru', 'th', 'au'] as const
+const LANGUAGE_CODES = ['zh_CN', 'zh_TW', 'en', 'ja', 'ko', 'gm', 'ru', 'th', 'au'] as const
 
 /**
  * 语言选项类型
@@ -27,7 +27,7 @@ export function lang(t: TranslateFunction): LangOption[] {
 }
 
 /**
- * 获取当前本地语言代码（格式：zh-CN）
+ * 获取当前本地语言代码（格式：zh_CN）
  * @returns 格式化的语言代码，将下划线替换为连字符
  */
 export function getLocalLang(): string {

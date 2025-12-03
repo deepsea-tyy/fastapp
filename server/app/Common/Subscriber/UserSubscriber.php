@@ -47,7 +47,7 @@ class UserSubscriber implements ListenerInterface
             try {
                 if ($event instanceof UserLoginEvent) {
                     $user = $event->getUser();
-                    if (\Hyperf\Config\config('env') == 'prod') $res = $this->ipLocationService->query($event->getIp(), Tools::lang($user->id));
+                    if (\Hyperf\Config\config('env') == 'prod') $res = $this->ipLocationService->query($event->getIp(), Tools::lang($user->id, true));
                     $res['user_id'] = $user->id;
                     $res['ip'] = $event->getIp();
                     $res['device'] = $event->getDevice();
