@@ -23,18 +23,22 @@ dependencies:
   # E
   event_bus: ^2.0.0
   # F
+  fl_chart: ^0.69.0
   flutter_mobx: ^2.0.6+5
   # G
   get_it: ^7.2.0
   google_fonts: ^4.0.3
   # H
   http: ^0.13.5
+  flutter_html: ^3.0.0-beta.2
+  html: ^0.15.4
   # I
   intl: ^0.20.2
   # J
   json_serializable: ^6.6.1
   # K
-  k_chart_plus: ^1.0.2
+  k_chart_plus:
+    path: packages/k_chart_plus
   # L
   # M
   mobx: ^2.1.4
@@ -50,6 +54,7 @@ dependencies:
   sembast: ^3.4.4
   # T
   # U
+  url_launcher: ^6.2.2
   # V
   validators: ^3.0.0
   # W

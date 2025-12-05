@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/views/user/message/activity_screen.dart';
+import 'package:fastapp/presentation/views/user/message/announcement_screen.dart';
 import 'package:fastapp/presentation/views/user/message/message_setting.dart';
+import 'package:fastapp/presentation/views/user/message/account_detail_screen.dart';
 
 /// 消息页面
 class MessageScreen extends StatelessWidget {
@@ -50,6 +53,13 @@ class MessageScreen extends StatelessWidget {
             title: '公告',
             description: 'LAB 交易竞赛: 交易LAB (LAB), ...',
             date: '11/28',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AnnouncementScreen(),
+                ),
+              );
+            },
           ),
           _buildMessageItem(
             context,
@@ -57,11 +67,13 @@ class MessageScreen extends StatelessWidget {
             title: '活动',
             description: '交易合约赢奖励',
             date: '11/27',
-          ),
-          _buildMessageItem(
-            context,
-            icon: Icons.auto_awesome,
-            title: '小安助手',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ActivityScreen(),
+                ),
+              );
+            },
           ),
           _buildMessageItem(
             context,
@@ -70,6 +82,13 @@ class MessageScreen extends StatelessWidget {
             description: '登录IP变更',
             unreadCount: 2,
             date: '11/28',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AccountDetailScreen(),
+                ),
+              );
+            },
           ),
           _buildMessageItem(
             context,
@@ -77,14 +96,6 @@ class MessageScreen extends StatelessWidget {
             title: '广场',
             unreadCount: 14,
             date: '10/08',
-          ),
-          _buildMessageItem(
-            context,
-            icon: Icons.calendar_today,
-            title: '营销与活动',
-            description: 'U本位合约强制平仓通知',
-            unreadCount: 35,
-            date: '06/17',
           ),
           _buildMessageItem(
             context,
@@ -105,6 +116,7 @@ class MessageScreen extends StatelessWidget {
     String? description,
     int? unreadCount,
     String? date,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Container(
@@ -184,7 +196,7 @@ class MessageScreen extends StatelessWidget {
           ],
         ),
       ),
-      onTap: () {
+      onTap: onTap ?? () {
         // TODO: 跳转到消息详情
       },
     );

@@ -1,0 +1,379 @@
+import 'package:flutter/material.dart';
+
+/// 搜索页面
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final List<String> _historyRecords = ['TON/USDT'];
+  final List<String> _hotSearchTabs = ['AI 热搜', '现货热搜', 'Alpha 热搜', '热门类'];
+  int _selectedTabIndex = 0;
+
+  final List<Map<String, dynamic>> _hotSearchItems = [
+    {'text': '美联储降息预期升至87%', 'badge': 'HOT'},
+    {'text': '贝莱德大额增持BTC与ETH', 'badge': 'HOT'},
+    {'text': '比特币止跌反弹超9万美元', 'badge': null},
+    {'text': '白银价格创历史新高', 'badge': null},
+    {'text': '山寨币ETF集中上市', 'badge': null},
+    {'text': 'Tom Lee预期ETH达7000美元', 'badge': 'NEW'},
+    {'text': '爆涨币种MBL行情解析', 'badge': null},
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHistorySection(),
+            _buildMajorEventsSection(),
+            _buildHotSearchSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      title: _buildSearchBar(),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.delete_outline, color: Colors.black),
+          onPressed: () {
+            // TODO: 清空搜索
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 14,
+        ),
+        decoration: InputDecoration(
+          hintText: 'ZEC',
+          hintStyle: TextStyle(
+            color: Colors.grey[700],
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.local_fire_department,
+            size: 18,
+            color: Colors.deepOrange,
+          ),
+          suffixIcon: const Icon(
+            Icons.search,
+            size: 18,
+            color: Colors.grey,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          isDense: true,
+        ),
+        onSubmitted: (value) {
+          // TODO: 处理搜索
+        },
+      ),
+    );
+  }
+
+  Widget _buildHistorySection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '历史记录',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _historyRecords.clear();
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_historyRecords.isEmpty)
+            const Text(
+              '暂无历史记录',
+              style: TextStyle(color: Colors.grey),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _historyRecords.map((record) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    record,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMajorEventsSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '重大活动',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildEventItem(
+            icon: Icons.circle,
+            title: 'ASTERIDR 即将上线',
+            subtitle: '结束日期 2025-11-29',
+            iconColor: Colors.brown,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconColor,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHotSearchSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '热搜排行榜',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildTabBar(),
+          const SizedBox(height: 16),
+          _buildHotSearchList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(_hotSearchTabs.length, (index) {
+          final isSelected = index == _selectedTabIndex;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedTabIndex = index;
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.blue[50] : Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? Colors.blue : Colors.transparent,
+                ),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Text(
+                    _hotSearchTabs[index],
+                    style: TextStyle(
+                      color: isSelected ? Colors.blue : Colors.black87,
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  if (index == 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 12,
+                          minHeight: 10,
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Hot',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 7,
+                              fontWeight: FontWeight.bold,
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildHotSearchList() {
+    return Column(
+      children: List.generate(_hotSearchItems.length, (index) {
+        final item = _hotSearchItems[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: index < 3 ? Colors.red : Colors.grey[600],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  item['text'] as String,
+                  style: const TextStyle(
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (item['badge'] != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: item['badge'] == 'HOT' ? Colors.amber : Colors.blue,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    item['badge'] as String,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}

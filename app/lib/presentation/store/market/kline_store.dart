@@ -2,6 +2,8 @@ import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart' as kline_usecase;
+import 'package:fastapp/data/network/websocket/websocket_service.dart';
+import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:mobx/mobx.dart';
 
 part 'kline_store.g.dart';
@@ -11,10 +13,12 @@ class KlineStore = _KlineStore with _$KlineStore;
 abstract class _KlineStore with Store {
   final GetKlineUseCase _getKlineUseCase;
   final ErrorStore _errorStore;
+  final WebSocketService _webSocketService;
 
   _KlineStore(
     this._getKlineUseCase,
     this._errorStore,
+    this._webSocketService,
   );
 
   // K线数据列表
@@ -37,6 +41,10 @@ abstract class _KlineStore with Store {
   @observable
   String secondaryIndicator = 'MACD';
 
+  // 选中的副图指标列表
+  @observable
+  ObservableList<String> selectedSecondaryIndicators = ObservableList<String>();
+
   // 是否正在加载
   @observable
   bool isLoading = false;
@@ -48,15 +56,51 @@ abstract class _KlineStore with Store {
   // 时间周期列表
   final List<String> intervals = ['1m', '5m', '15m', '1h', '4h', '1d'];
 
+  // 当前订阅的主题（用于取消订阅）
+  String? _currentKlineTopic;
+
   // Actions
   @action
   void setCurrentSymbol(String symbol) {
     currentSymbol = symbol;
+    // 切换交易对时，更新WebSocket订阅
+    _subscribeKline(symbol, currentInterval);
   }
 
   @action
   void setCurrentInterval(String interval) {
     currentInterval = interval;
+    // 切换时间周期时，更新WebSocket订阅
+    _subscribeKline(currentSymbol, interval);
+  }
+
+  /// 订阅K线实时数据
+  void _subscribeKline(String symbol, String interval) {
+    // 取消之前的订阅
+    if (_currentKlineTopic != null) {
+      _webSocketService.unsubscribe(_currentKlineTopic!);
+    }
+
+    // 确保WebSocket已连接
+    if (!_webSocketService.isConnected) {
+      _webSocketService.connect();
+    }
+
+    // 订阅新的K线频道
+    final topic = 'kline:$symbol:$interval';
+    _currentKlineTopic = topic;
+    
+    _webSocketService.subscribe(topic, (message) {
+      if (message.type == WebSocketMessageType.kline &&
+          message.symbol == symbol) {
+        try {
+          final klineData = KlineData.fromJson(message.data as Map<String, dynamic>);
+          updateLatestKline(klineData);
+        } catch (e) {
+          // 忽略解析错误
+        }
+      }
+    });
   }
 
   @action
@@ -67,6 +111,12 @@ abstract class _KlineStore with Store {
   @action
   void setSecondaryIndicator(String indicator) {
     secondaryIndicator = indicator;
+  }
+
+  @action
+  void setSelectedSecondaryIndicators(List<String> indicators) {
+    selectedSecondaryIndicators.clear();
+    selectedSecondaryIndicators.addAll(indicators);
   }
 
   @action
@@ -103,6 +153,32 @@ abstract class _KlineStore with Store {
     await loadKlineData();
   }
 
-  void dispose() {}
+  /// 更新最新的K线数据（用于实时数据推送）
+  /// 如果新数据的时间戳与最后一条数据相同，则更新最后一条
+  /// 如果时间戳不同，则添加新的K线数据
+  @action
+  void updateLatestKline(KlineData newKline) {
+    if (klineData.isEmpty) {
+      klineData.add(newKline);
+      return;
+    }
+
+    final lastKline = klineData.last;
+    // 如果是同一根K线（相同时间戳），更新最后一条
+    if (lastKline.timestamp == newKline.timestamp) {
+      klineData[klineData.length - 1] = newKline;
+    } else {
+      // 如果是新的K线，添加到最后
+      klineData.add(newKline);
+    }
+  }
+
+  void dispose() {
+    // 取消WebSocket订阅
+    if (_currentKlineTopic != null) {
+      _webSocketService.unsubscribe(_currentKlineTopic!);
+      _currentKlineTopic = null;
+    }
+  }
 }
 

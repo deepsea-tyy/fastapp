@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fastapp/presentation/views/search/search_screen.dart';
+import 'package:fastapp/presentation/views/home/search_screen.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 
 class TopBar extends StatelessWidget implements PreferredSizeWidget {
@@ -102,8 +102,8 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
           Positioned(
-            right: 4,
-            top: 4,
+            right: 8,
+            top: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
               decoration: BoxDecoration(

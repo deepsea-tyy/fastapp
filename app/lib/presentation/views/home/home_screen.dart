@@ -16,11 +16,13 @@
 /// )
 /// ```
 import 'package:fastapp/presentation/views/home/widgets/top_bar.dart';
-import 'package:fastapp/presentation/views/home/widgets/copy_trading_section.dart';
-import 'package:fastapp/presentation/views/home/widgets/journey_section.dart';
-import 'package:fastapp/presentation/views/home/widgets/mobile_crypto_list_section.dart';
-import 'package:fastapp/presentation/views/home/widgets/trust_section.dart';
-import 'package:fastapp/presentation/views/home/widgets/tologin_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/copy_trading_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/journey_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/mobile_crypto_list_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/trust_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/tologin_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/sections/quick_entrance_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/feed/feed_section.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
@@ -70,6 +72,42 @@ class HomeScreen extends StatelessWidget {
           return SingleChildScrollView(
             child: Column(
               children: [
+                // 登录后显示快捷入口
+                if (!isLoggedIn) ...[
+                  const QuickEntranceSection(),
+                  
+                  // 信息流区域
+                  const FeedSection(),
+                  
+                  // 加密货币行情区域：热门榜、涨幅榜、新币榜
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const MobileCryptoListSection(),
+                  ),
+                  
+                  // 开始您的加密货币之旅：功能介绍
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const JourneySection(),
+                  ),
+                  
+                  // 交易"智"变跟单：跟单交易员展示
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const CopyTradingSection(),
+                  ),
+                  
+                  // 值得您信赖的平台：安全特性
+                  Container(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const TrustSection(),
+                  ),
+                ],
+                
                 // 未登录时显示的内容
                 if (!isLoggedIn) ...[
                   Container(

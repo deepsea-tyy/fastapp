@@ -5,7 +5,7 @@ import 'package:fastapp/core/widgets/empty_app_bar_widget.dart';
 import 'package:fastapp/core/widgets/progress_indicator_widget.dart';
 import 'package:fastapp/data/sharedpref/constants/preferences.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
-import 'package:fastapp/presentation/views/common/country_code_selector.dart';
+import 'package:fastapp/presentation/views/common/country_selector.dart';
 import 'package:fastapp/utils/device/device_utils.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:flutter/material.dart';
@@ -201,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       padding: const EdgeInsets.only(right: 4.0),
       child: Row(
         children: [
-          CountryCodeSelector(
+          CountrySelector(
             selectedCode: _selectedCountryCode,
             selectedFlag: _selectedCountryFlag,
             onChanged: (code, flag) {

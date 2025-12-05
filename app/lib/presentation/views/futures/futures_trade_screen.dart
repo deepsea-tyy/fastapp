@@ -1,13 +1,6 @@
-import 'package:fastapp/constants/app_config.dart';
-import 'package:fastapp/di/service_locator.dart';
-import 'package:fastapp/domain/entity/futures/position.dart';
-import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
-import 'package:fastapp/presentation/views/common/app_bar.dart';
-import 'package:fastapp/presentation/views/common/symbol_selector.dart';
-import 'package:fastapp/presentation/views/spot/widgets/order_book.dart';
-import 'package:fastapp/presentation/views/spot/widgets/order_form.dart';
+import 'package:fastapp/presentation/views/futures/options_trade_screen.dart';
+import 'package:fastapp/presentation/views/futures/widgets/futures_trade.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 永续合约交易页面
 class FuturesTradeScreen extends StatefulWidget {
@@ -18,326 +11,190 @@ class FuturesTradeScreen extends StatefulWidget {
 }
 
 class _FuturesTradeScreenState extends State<FuturesTradeScreen> {
-  final FuturesTradeStore _store = getIt<FuturesTradeStore>();
+  int _selectedTopTab = 0; // 0: U本位, 1: 币本位, 2: 期权
+  final GlobalKey _menuButtonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _store.loadOrderBookData();
-    _store.loadBalance();
-    _store.loadPosition();
-    _store.loadFundingRate();
-    _store.loadMarkPrice();
-    _store.loadLeverage();
-  }
-
-  void _refreshAll() {
-    _store.loadOrderBookData();
-    _store.loadBalance();
-    _store.loadPosition();
-    _store.loadFundingRate();
-    _store.loadMarkPrice();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: CommonAppBar(
-        title: '',
-        titleWidget: Observer(
-          builder: (_) => Text(
-            _store.selectedSymbol,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 20.0,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            onPressed: _refreshAll,
-            tooltip: '刷新',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 交易对和杠杆选择器
-          _buildTopBar(context),
-          
-          // 持仓信息卡片（如有持仓）
-          Observer(
-            builder: (_) => _store.currentPosition != null
-                ? _buildPositionCard(context, _store.currentPosition!)
-                : const SizedBox.shrink(),
-          ),
-          
-          // 资金费率和标记价格
-          _buildInfoBar(context),
-          
-          // 主要内容区域
-          Expanded(
-            child: Row(
-              children: [
-                // 左侧：订单簿
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-                    ),
-                    child: const OrderBook(),
-                  ),
-                ),
-                
-                // 右侧：交易表单
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    child: Column(
-                      children: [
-                        // 杠杆选择器
-                        _buildLeverageSelector(context),
-                        const SizedBox(height: 8),
-                        // 交易表单
-                        const Expanded(child: OrderForm()),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    final symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT'];
-    return ObservableSymbolSelector(
-      symbols: symbols,
-      selectedSymbolGetter: () => _store.selectedSymbol,
-      onSymbolSelected: (symbol) => _store.setSelectedSymbol(symbol),
-    );
-  }
-
-  Widget _buildLeverageSelector(BuildContext context) {
-    final leverages = [1, 2, 5, 10, 20, 50, 100];
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      child: Row(
-        children: [
-          Text(
-            '杠杆: ',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 14,
-            ),
-          ),
-          Expanded(
-            child: Observer(
-              builder: (_) => Wrap(
-                spacing: 8,
-                children: leverages.map((lev) {
-                  return ChoiceChip(
-                    label: Text('${lev}x'),
-                    selected: _store.leverage == lev,
-                    onSelected: (selected) {
-                      if (selected) {
-                        _store.setLeverageValue(lev);
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPositionCard(BuildContext context, Position position) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-        border: Border.all(
-          color: position.isProfit
-              ? Colors.green
-              : position.isLoss
-                  ? Theme.of(context).colorScheme.error
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '持仓方向',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                position.side == PositionSide.long ? '做多' : '做空',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '持仓数量',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                position.quantity.toStringAsFixed(4),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '未实现盈亏',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                position.unrealizedPnl.toStringAsFixed(2),
-                style: TextStyle(
-                  color: position.isProfit
-                      ? Colors.green
-                      : position.isLoss
-                          ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '杠杆',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${position.leverage}x',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoBar(BuildContext context) {
-    return Observer(
-      builder: (_) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          border: Border(
-            bottom: BorderSide(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
           children: [
-            if (_store.markPrice != null)
-              _buildInfoItem(
-                context,
-                '标记价格',
-                _store.markPrice!.price.toStringAsFixed(2),
-              ),
-            if (_store.fundingRate != null)
-              _buildInfoItem(
-                context,
-                '资金费率',
-                '${(_store.fundingRate!.rate * 100).toStringAsFixed(4)}%',
-              ),
+            // 顶部导航栏
+            _buildTopNavigation(context),
+            
+            // 内容区域
+            Expanded(
+              child: _buildTabContent(),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoItem(BuildContext context, String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            fontSize: 12,
+  Widget _buildTabContent() {
+    switch (_selectedTopTab) {
+      case 0:
+        return const FuturesTrade(); // U本位
+      case 1:
+        return const Center(child: Text('币本位功能开发中')); // 币本位（暂未实现）
+      // case 2 是期权，但不会到达这里，因为期权点击时会跳转新页面
+      default:
+        return const FuturesTrade();
+    }
+  }
+
+  Widget _buildTopNavigation(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+      ),
+      child: Row(
+        children: [
+          _buildTopTab('U本位', 0),
+          const SizedBox(width: 16),
+          _buildTopTab('币本位', 1),
+          const SizedBox(width: 16),
+          _buildTopTab('期权', 2),
+          const Spacer(),
+          IconButton(
+            key: _menuButtonKey,
+            icon: const Icon(Icons.menu, color: Colors.black87),
+            onPressed: () => _showMenu(context),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopTab(String label, int index) {
+    final isSelected = _selectedTopTab == index;
+    return GestureDetector(
+      onTap: () {
+        if (index == 2) {
+          // 点击期权，跳转到期权交易页面
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const OptionsTradeScreen(),
+            ),
+          );
+        } else {
+          setState(() {
+            _selectedTopTab = index;
+          });
+        }
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  void _showMenu(BuildContext context) {
+    RenderBox? button;
+    if (_menuButtonKey.currentContext != null) {
+      button = _menuButtonKey.currentContext!.findRenderObject() as RenderBox?;
+    } else {
+      button = context.findRenderObject() as RenderBox?;
+    }
+    
+    if (button == null) return;
+    
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
+    
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx + button.size.width - 180,
+        position.dy + button.size.height,
+        position.dx + button.size.width + 20,
+        position.dy + button.size.height,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      color: Colors.white,
+      items: [
+        _buildMenuItem(
+          icon: Icons.people_alt_outlined,
+          label: '跟单',
+          onTap: () {
+            Navigator.pop(context);
+            // TODO: 处理跟单功能
+          },
+        ),
+        _buildMenuItem(
+          icon: Icons.smart_toy_outlined,
+          label: '交易机器人',
+          onTap: () {
+            Navigator.pop(context);
+            // TODO: 处理交易机器人功能
+          },
+        ),
+        _buildMenuItem(
+          icon: Icons.edit_document,
+          label: '功能管理',
+          onTap: () {
+            Navigator.pop(context);
+            // TODO: 处理功能管理
+          },
         ),
       ],
     );
   }
+
+  PopupMenuItem<void> _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return PopupMenuItem<void>(
+      padding: EdgeInsets.zero,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Icon(icon, size: 24, color: Colors.grey.shade400),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 }
 

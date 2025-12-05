@@ -1,6 +1,7 @@
 import 'package:fastapp/presentation/views/home/home_screen.dart';
+import 'package:fastapp/presentation/views/home/service_screen.dart';
 import 'package:fastapp/presentation/views/market/market_screen.dart';
-import 'package:fastapp/presentation/views/market/depth_screen.dart';
+import 'package:fastapp/presentation/views/c2c/c2c_screen.dart';
 import 'package:fastapp/presentation/views/user/login.dart';
 import 'package:fastapp/presentation/views/user/forgot_password.dart';
 import 'package:fastapp/presentation/views/user/register.dart';
@@ -15,7 +16,7 @@ class Routes {
 
   static const String home = '/home';
   static const String market = '/market';
-  static const String depth = '/depth';
+  static const String c2c = '/c2c';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -23,11 +24,12 @@ class Routes {
   static const String profile = '/profile';
   static const String settings = '/settings';
   static const String message = '/message';
+  static const String service = '/service';
 
   static final routes = <String, WidgetBuilder>{
     home: (BuildContext context) => const HomeScreen(),
     market: (BuildContext context) => const MarketScreen(),
-    depth: (BuildContext context) => const DepthScreen(),
+    c2c: (BuildContext context) => const C2CScreen(),
     login: (BuildContext context) => LoginScreen(),
     register: (BuildContext context) => RegisterScreen(),
     forgotPassword: (BuildContext context) => ForgotPasswordScreen(),
@@ -35,5 +37,6 @@ class Routes {
     profile: (BuildContext context) => const ProfileScreen(),
     settings: (BuildContext context) => const SettingsScreen(),
     message: (BuildContext context) => const MessageScreen(),
+    service: (BuildContext context) => const ServiceScreen(),
   };
 }

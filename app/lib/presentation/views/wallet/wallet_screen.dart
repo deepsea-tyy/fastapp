@@ -1,11 +1,10 @@
-import 'package:fastapp/constants/app_config.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
-import 'package:fastapp/presentation/views/common/app_bar.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/balance_card.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/transaction_list.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/contract/contract_tab.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/funds/funds_tab.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/overview/overview_tab.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/spot/spot_tab.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 资产管理页面
 class WalletScreen extends StatefulWidget {
@@ -15,132 +14,87 @@ class WalletScreen extends StatefulWidget {
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends State<WalletScreen> {
+class _WalletScreenState extends State<WalletScreen>
+    with SingleTickerProviderStateMixin {
   final WalletStore _store = getIt<WalletStore>();
+  TabController? _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     _store.loadAsset();
     _store.loadTransactions();
   }
 
   @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
+  }
+
+  TabController get tabController {
+    _tabController ??= TabController(length: 4, vsync: this);
+    return _tabController!;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: CommonAppBar(
-        title: '资产',
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: Theme.of(context).colorScheme.onSurface,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // TabBar 导航栏
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TabBar(
+                  controller: tabController,
+                  labelColor: Colors.black87,
+                  unselectedLabelColor: Colors.grey.shade600,
+                  labelStyle: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  indicatorColor: Colors.transparent,
+                  dividerColor: Colors.transparent,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  tabs: const [
+                    Tab(text: '总览'),
+                    Tab(text: '合约'),
+                    Tab(text: '现货'),
+                    Tab(text: '资金'),
+                  ],
+                ),
+              ),
             ),
-            onPressed: () {
-              _store.refreshAsset();
-              _store.refreshTransactions();
-            },
-            tooltip: '刷新',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 总资产卡片
-          const BalanceCard(),
-          
-          // 币种余额列表
-          _buildBalanceList(context),
-          
-          // 交易记录列表
-          const Expanded(
-            child: TransactionList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceList(BuildContext context) {
-    return Observer(
-      builder: (_) {
-        if (_store.isLoadingAsset && _store.balances.isEmpty) {
-          return const SizedBox(
-            height: 100,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (_store.balances.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Container(
-          height: 120,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-          ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(8),
-            itemCount: _store.balances.length,
-            itemBuilder: (context, index) {
-              final balance = _store.balances[index];
-              return _buildBalanceItem(context, balance);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBalanceItem(BuildContext context, balance) {
-    final theme = Theme.of(context);
-    final textStyle = TextStyle(
-      color: theme.colorScheme.onSurface,
-      fontSize: 14,
-      fontWeight: FontWeight.bold,
-    );
-    final valueStyle = TextStyle(
-      color: theme.colorScheme.onSurface,
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
-    );
-    final hintStyle = TextStyle(
-      color: theme.colorScheme.onSurface.withOpacity(0.6),
-      fontSize: 10,
-    );
-
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(balance.currency, style: textStyle),
-          const SizedBox(height: 8),
-          Text(
-            balance.total.toStringAsFixed(4),
-            style: valueStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '可用: ${balance.available.toStringAsFixed(4)}',
-            style: hintStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Colors.grey.shade200,
+            ),
+            // TabBarView 内容区域
+            Expanded(
+              child: TabBarView(
+                controller: tabController,
+                children: const [
+                  OverviewTab(),
+                  ContractTab(),
+                  SpotTab(),
+                  FundsTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

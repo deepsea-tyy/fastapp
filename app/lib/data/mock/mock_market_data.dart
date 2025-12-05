@@ -33,13 +33,13 @@ class MockMarketData {
     
     for (int i = 0; i < limitValue; i++) {
       final timestamp = start + (i * intervalMs);
-      final open = basePrice;
+      final open = double.parse(basePrice.toStringAsFixed(2));
       final change = (basePrice * 0.02) * (_random.nextDouble() - 0.5); // ±2%波动
-      final high = open + (change.abs() * 1.5);
-      final low = open - (change.abs() * 1.5);
-      final close = open + change;
-      final volume = _random.nextDouble() * 1000 + 100;
-      final amount = volume * close;
+      final high = double.parse((open + (change.abs() * 1.5)).toStringAsFixed(2));
+      final low = double.parse((open - (change.abs() * 1.5)).toStringAsFixed(2));
+      final close = double.parse((open + change).toStringAsFixed(2));
+      final volume = double.parse((_random.nextDouble() * 1000 + 100).toStringAsFixed(2));
+      final amount = double.parse((volume * close).toStringAsFixed(2));
       
       klines.add(KlineData(
         timestamp: timestamp,
@@ -69,13 +69,13 @@ class MockMarketData {
     final List<DepthData> bids = [];
     double cumulativeBid = 0;
     for (int i = 0; i < limit; i++) {
-      final price = basePrice * (1 - (i * 0.001)); // 价格递减
-      final quantity = _random.nextDouble() * 10 + 1;
+      final price = double.parse((basePrice * (1 - (i * 0.001))).toStringAsFixed(2)); // 价格递减，保留2位小数
+      final quantity = double.parse((_random.nextDouble() * 10 + 1).toStringAsFixed(2));
       cumulativeBid += quantity;
       bids.add(DepthData(
         price: price,
         quantity: quantity,
-        cumulativeQuantity: cumulativeBid,
+        cumulativeQuantity: double.parse(cumulativeBid.toStringAsFixed(2)),
       ));
     }
     
@@ -83,20 +83,20 @@ class MockMarketData {
     final List<DepthData> asks = [];
     double cumulativeAsk = 0;
     for (int i = 0; i < limit; i++) {
-      final price = basePrice * (1 + (i * 0.001)); // 价格递增
-      final quantity = _random.nextDouble() * 10 + 1;
+      final price = double.parse((basePrice * (1 + (i * 0.001))).toStringAsFixed(2)); // 价格递增，保留2位小数
+      final quantity = double.parse((_random.nextDouble() * 10 + 1).toStringAsFixed(2));
       cumulativeAsk += quantity;
       asks.add(DepthData(
         price: price,
         quantity: quantity,
-        cumulativeQuantity: cumulativeAsk,
+        cumulativeQuantity: double.parse(cumulativeAsk.toStringAsFixed(2)),
       ));
     }
     
     return DepthChartData(
       bids: bids.reversed.toList(), // 反转，使价格从高到低
       asks: asks,
-      lastPrice: basePrice,
+      lastPrice: double.parse(basePrice.toStringAsFixed(2)),
       timestamp: now,
     );
   }
@@ -106,16 +106,17 @@ class MockMarketData {
     final basePrice = _getBasePrice(symbol);
     final now = DateTime.now().millisecondsSinceEpoch;
     final changePercent = (_random.nextDouble() - 0.5) * 10; // ±5%波动
-    final openPrice = basePrice / (1 + changePercent / 100);
-    final highPrice = basePrice * (1 + _random.nextDouble() * 0.05);
-    final lowPrice = basePrice * (1 - _random.nextDouble() * 0.05);
-    final volume = _random.nextDouble() * 10000 + 1000;
-    final amount = volume * basePrice;
-    final changeAmount = basePrice - openPrice;
+    final openPrice = double.parse((basePrice / (1 + changePercent / 100)).toStringAsFixed(2));
+    final highPrice = double.parse((basePrice * (1 + _random.nextDouble() * 0.05)).toStringAsFixed(2));
+    final lowPrice = double.parse((basePrice * (1 - _random.nextDouble() * 0.05)).toStringAsFixed(2));
+    final lastPrice = double.parse(basePrice.toStringAsFixed(2));
+    final volume = double.parse((_random.nextDouble() * 10000 + 1000).toStringAsFixed(2));
+    final amount = double.parse((volume * basePrice).toStringAsFixed(2));
+    final changeAmount = double.parse((lastPrice - openPrice).toStringAsFixed(2));
     
     return TickerData(
       symbol: symbol,
-      lastPrice: basePrice,
+      lastPrice: lastPrice,
       openPrice: openPrice,
       highPrice: highPrice,
       lowPrice: lowPrice,

@@ -8,6 +8,7 @@ import 'package:fastapp/data/network/apis/wallet/wallet_api.dart';
 import 'package:fastapp/data/network/apis/trade/trade_api.dart';
 import 'package:fastapp/data/network/apis/futures/futures_api.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/data/network/constants/endpoints.dart';
 import 'package:fastapp/data/network/interceptors/error_interceptor.dart';
 import 'package:fastapp/data/network/rest_client.dart';
@@ -61,5 +62,8 @@ class NetworkModule {
 
     // websocket:---------------------------------------------------------------
     getIt.registerSingleton(MarketWebSocket());
+    getIt.registerSingleton<WebSocketService>(
+      WebSocketService(getIt<MarketWebSocket>()),
+    );
   }
 }
