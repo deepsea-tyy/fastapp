@@ -162,6 +162,8 @@ crud:
   importMessage: 是否确认导入数据？
   confirmTitle: 系统提示
   confirmMessage: 确定要%{msg}吗？
+  confirm: 确认
+  createFailed: 创建失败
   noPermission: 没有权限访问页面或使用此功能
   userNotAllow: 当前用户不可访问或使用此功能
   superAdminNoEdit: 超管不可修改
