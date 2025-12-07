@@ -26,6 +26,8 @@ class _SpotScreenState extends State<SpotScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      // 键盘弹出时调整布局，兼容移动端
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [

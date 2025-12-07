@@ -1,4 +1,4 @@
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:flutter/material.dart';
 
 /// 杠杆调整弹窗

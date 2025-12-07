@@ -1,5 +1,5 @@
 import 'package:fastapp/presentation/views/spot/widgets/spot/assets/current_trading_pair_assets.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/assets/other_non_zero_assets.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/assets/other_non_zero_assets.dart';
 import 'package:flutter/material.dart';
 
 /// 持有币种内容组件

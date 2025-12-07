@@ -1,5 +1,5 @@
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/constants.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:flutter/material.dart';
 
 /// 持仓模式（资产模式）选择弹窗

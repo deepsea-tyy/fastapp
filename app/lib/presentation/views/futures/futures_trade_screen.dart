@@ -15,20 +15,16 @@ class _FuturesTradeScreenState extends State<FuturesTradeScreen> {
   final GlobalKey _menuButtonKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      // 键盘弹出时调整布局，兼容移动端
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
             // 顶部导航栏
             _buildTopNavigation(context),
-            
             // 内容区域
             Expanded(
               child: _buildTabContent(),
@@ -42,12 +38,12 @@ class _FuturesTradeScreenState extends State<FuturesTradeScreen> {
   Widget _buildTabContent() {
     switch (_selectedTopTab) {
       case 0:
-        return const FuturesTrade(); // U本位
+        return const FuturesTrade(isCoinMargined: false); // U本位
       case 1:
-        return const Center(child: Text('币本位功能开发中')); // 币本位（暂未实现）
+        return const FuturesTrade(isCoinMargined: true); // 币本位
       // case 2 是期权，但不会到达这里，因为期权点击时会跳转新页面
       default:
-        return const FuturesTrade();
+        return const FuturesTrade(isCoinMargined: false);
     }
   }
 
@@ -195,6 +191,5 @@ class _FuturesTradeScreenState extends State<FuturesTradeScreen> {
       ),
     );
   }
-
 }
 

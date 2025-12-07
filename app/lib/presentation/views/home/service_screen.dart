@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../finance/finance_home_screen.dart';
+import '../finance/finance_dual_investment_screen.dart';
+import 'models/service_item.dart';
+import 'constants/service_constants.dart';
+import 'widgets/service_widgets.dart';
 
 /// 服务页面
 class ServiceScreen extends StatefulWidget {
@@ -8,233 +13,85 @@ class ServiceScreen extends StatefulWidget {
   State<ServiceScreen> createState() => _ServiceScreenState();
 }
 
-class _ServiceScreenState extends State<ServiceScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
+class _ServiceScreenState extends State<ServiceScreen> {
 
   // 常用功能列表
-  final List<ServiceItem> _commonServices = [
-    ServiceItem(icon: Icons.swap_horiz, label: '划转'),
-    ServiceItem(icon: Icons.account_balance_wallet, label: '币安钱包'),
-    ServiceItem(icon: Icons.shopping_cart, label: '购买加密货币'),
-    ServiceItem(icon: Icons.add_circle_outline, label: '买币/充币'),
-    ServiceItem(icon: Icons.block, label: '禁用账户'),
-    ServiceItem(icon: Icons.description, label: '账户结单'),
-    ServiceItem(icon: Icons.science, label: '模拟交易'),
-    ServiceItem(icon: Icons.rocket_launch, label: 'Launchpool'),
-    ServiceItem(icon: Icons.account_balance, label: '数字货币充值'),
-    ServiceItem(icon: Icons.card_giftcard, label: '邀请奖励'),
-    ServiceItem(icon: Icons.payment, label: '支付'),
-    ServiceItem(icon: Icons.receipt_long, label: '订单管理'),
-    ServiceItem(icon: Icons.sell, label: '卖出至法币'),
-    ServiceItem(icon: Icons.security, label: '账户安全'),
+  List<ServiceItem> get _commonServices => [
+    ServiceItem.simple(icon: Icons.compare_arrows, label: '划转'),
+    ServiceItem.simple(icon: Icons.account_balance_wallet, label: '币安钱包'),
+    ServiceItem.simple(icon: Icons.shopping_cart_outlined, label: '购买加密货币'),
+    ServiceItem.simple(icon: Icons.add_circle_outline, label: '买币/充币'),
+    ServiceItem.simple(icon: Icons.block, label: '禁用账户'),
+    ServiceItem.simple(icon: Icons.description_outlined, label: '账户结单'),
+    ServiceItem.simple(icon: Icons.science_outlined, label: '模拟交易'),
+    ServiceItem.simple(icon: Icons.rocket_launch, label: 'Launchpool'),
+    ServiceItem.simple(icon: Icons.account_balance_outlined, label: '数字货币充值'),
+    ServiceItem.simple(icon: Icons.card_giftcard, label: '邀请奖励'),
+    ServiceItem.simple(icon: Icons.payment, label: '支付'),
+    ServiceItem.simple(icon: Icons.list_alt, label: '订单管理'),
+    ServiceItem.simple(icon: Icons.sell_outlined, label: '卖出至法币'),
+    ServiceItem.simple(icon: Icons.security, label: '账户安全'),
   ];
 
   // 活动和奖励列表
-  final List<ServiceItem> _activityServices = [
-    ServiceItem(icon: Icons.star, label: 'WOTD'),
-    ServiceItem(icon: Icons.local_fire_department, label: '热门活动'),
-    ServiceItem(icon: Icons.new_releases, label: '新币上线活动'),
-    ServiceItem(icon: Icons.emoji_events, label: '交易合约赢奖励'),
+  List<ServiceItem> get _activityServices => [
+    ServiceItem.simple(icon: Icons.star, label: 'WOTD'),
+    ServiceItem.simple(icon: Icons.local_fire_department, label: '热门活动'),
+    ServiceItem.simple(icon: Icons.new_releases, label: '新币上线活动'),
+    ServiceItem.simple(icon: Icons.emoji_events, label: '交易合约赢奖励'),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 6, vsync: this);
-  }
+  // 交易服务列表
+  List<ServiceItem> get _tradeServices => [
+    ServiceItem.simple(icon: Icons.swap_horiz_outlined, label: '闪兑'),
+    ServiceItem.simple(icon: Icons.donut_large, label: '现货'),
+    ServiceItem.simple(icon: Icons.star_border, label: 'Alpha'),
+    ServiceItem.simple(icon: Icons.percent, label: '杠杆'),
+    ServiceItem.simple(icon: Icons.receipt_long_outlined, label: '合约'),
+    ServiceItem.simple(icon: Icons.people_outline, label: '跟单交易'),
+    ServiceItem.simple(icon: Icons.business_outlined, label: '场外大宗交易'),
+    ServiceItem.simple(icon: Icons.people_alt_outlined, label: 'C2C买币'),
+    ServiceItem.simple(icon: Icons.smart_toy_outlined, label: '交易机器人'),
+    ServiceItem.simple(icon: Icons.repeat, label: '闪兑定投'),
+    ServiceItem.simple(icon: Icons.trending_up, label: '指数关连'),
+    ServiceItem.simple(icon: Icons.menu_book_outlined, label: '期权'),
+  ];
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
+  // 理财服务列表
+  List<ServiceItem> get _financeServices => [
+    ServiceItem.navigable(
+      icon: Icons.account_balance_wallet_outlined,
+      label: '理财',
+      destination: const FinanceHomeScreen(),
+    ),
+    ServiceItem.simple(icon: Icons.wb_sunny_outlined, label: 'SOL 质押'),
+    ServiceItem.simple(icon: Icons.link, label: '链上赚币'),
+    ServiceItem.simple(icon: Icons.stadium_outlined, label: '收益竞技场'),
+    ServiceItem.simple(icon: Icons.rocket_outlined, label: '超级挖矿'),
+    ServiceItem.simple(icon: Icons.local_offer_outlined, label: '折价买币'),
+    ServiceItem.simple(icon: Icons.verified_user_outlined, label: '保本赚币'),
+    ServiceItem.simple(icon: Icons.construction_outlined, label: '币安矿池'),
+    ServiceItem.simple(icon: Icons.diamond_outlined, label: 'ETH 质押'),
+    ServiceItem.navigable(
+      icon: Icons.sync_alt,
+      label: '双币投资',
+      destination: const FinanceDualInvestmentScreen(),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          '服务',
-          style: TextStyle(color: Colors.black, fontSize: 18),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          // 搜索栏
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: '搜索更多服务',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey, size: 20),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-            ),
-          ),
-          // Tab导航
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: Colors.amber.shade700,
-              unselectedLabelColor: Colors.black87,
-              indicatorColor: Colors.amber.shade700,
-              indicatorWeight: 2,
-              labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              unselectedLabelStyle: const TextStyle(fontSize: 14),
-              tabs: const [
-                Tab(text: '常用功能'),
-                Tab(text: '活动和奖励'),
-                Tab(text: '交易'),
-                Tab(text: '理财'),
-                Tab(text: '金融业务'),
-                Tab(text: '资讯'),
-              ],
-            ),
-          ),
-          // 内容区域
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildCommonServicesTab(),
-                _buildActivityServicesTab(),
-                _buildEmptyTab('交易'),
-                _buildEmptyTab('理财'),
-                _buildEmptyTab('金融业务'),
-                _buildEmptyTab('资讯'),
-              ],
-            ),
-          ),
+      backgroundColor: ServiceConstants.backgroundColor,
+      appBar: const ServiceAppBar(),
+      body: ServiceTabView(
+        sections: [
+          ServiceSection(title: '常用功能', services: _commonServices),
+          ServiceSection(title: '活动和奖励', services: _activityServices),
+          ServiceSection(title: '交易', services: _tradeServices),
+          ServiceSection(title: '理财', services: _financeServices),
         ],
       ),
     );
   }
-
-  Widget _buildCommonServicesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildServiceGrid(_commonServices),
-          const SizedBox(height: 24),
-          const Text(
-            '活动和奖励',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildServiceGrid(_activityServices),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityServicesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: _buildServiceGrid(_activityServices),
-    );
-  }
-
-  Widget _buildEmptyTab(String title) {
-    return Center(
-      child: Text(
-        '$title 功能开发中',
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServiceGrid(List<ServiceItem> services) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: services.length,
-      itemBuilder: (context, index) {
-        final item = services[index];
-        return _buildServiceItem(item);
-      },
-    );
-  }
-
-  Widget _buildServiceItem(ServiceItem item) {
-    return GestureDetector(
-      onTap: () {
-        // TODO: 导航到对应功能页面
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              item.icon,
-              size: 28,
-              color: Colors.amber.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item.label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ServiceItem {
-  final IconData icon;
-  final String label;
-
-  ServiceItem({required this.icon, required this.label});
 }

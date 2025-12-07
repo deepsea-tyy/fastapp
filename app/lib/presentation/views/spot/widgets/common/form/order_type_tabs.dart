@@ -19,7 +19,7 @@ class OrderTypeTabs extends StatelessWidget {
       children: tabs.asMap().entries.map((entry) {
         final index = entry.key;
         final isSelected = selectedTab == index;
-        
+
         return Expanded(
           child: GestureDetector(
             onTap: () => onTabChanged(index),
@@ -39,7 +39,7 @@ class OrderTypeTabs extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: Colors.black87,
+                  color: isSelected ? Colors.black87 : Colors.grey.shade600,
                 ),
               ),
             ),

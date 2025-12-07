@@ -9,7 +9,12 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 交易对头部组件
 class SymbolHeader extends StatelessWidget {
-  const SymbolHeader({super.key});
+  final bool isCoinMargined; // true: 币本位, false: U本位
+  
+  const SymbolHeader({
+    super.key,
+    this.isCoinMargined = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +30,7 @@ class SymbolHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    '${store.selectedSymbol} 永续',
+                    '${store.selectedSymbol}${isCoinMargined ? 'CM' : ''} 永续',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   const SizedBox(width: 4),
@@ -46,30 +51,28 @@ class SymbolHeader extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Observer(
-              builder: (_) => IconButton(
-                icon: Icon(Icons.candlestick_chart, color: Colors.grey.shade600),
-                onPressed: () {
-                  final orderBookData = store.orderBookData;
-                  final ticker = TickerData(
-                    symbol: store.selectedSymbol,
-                    lastPrice: orderBookData?.lastPrice ?? 0.0,
-                    openPrice: orderBookData?.lastPrice ?? 0.0,
-                    highPrice: orderBookData?.lastPrice ?? 0.0,
-                    lowPrice: orderBookData?.lastPrice ?? 0.0,
-                    volume: 0.0,
-                    amount: 0.0,
-                    changePercent: 0.0,
-                    changeAmount: 0.0,
-                    timestamp: DateTime.now().millisecondsSinceEpoch,
-                  );
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => MarketDetailScreen(ticker: ticker),
-                    ),
-                  );
-                },
-              ),
+            IconButton(
+              icon: Icon(Icons.candlestick_chart, color: Colors.grey.shade600),
+              onPressed: () {
+                final orderBookData = store.orderBookData;
+                final ticker = TickerData(
+                  symbol: store.selectedSymbol,
+                  lastPrice: orderBookData?.lastPrice ?? 0.0,
+                  openPrice: orderBookData?.lastPrice ?? 0.0,
+                  highPrice: orderBookData?.lastPrice ?? 0.0,
+                  lowPrice: orderBookData?.lastPrice ?? 0.0,
+                  volume: 0.0,
+                  amount: 0.0,
+                  changePercent: 0.0,
+                  changeAmount: 0.0,
+                  timestamp: DateTime.now().millisecondsSinceEpoch,
+                );
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => MarketDetailScreen(ticker: ticker),
+                  ),
+                );
+              },
             ),
             IconButton(
               icon: Icon(Icons.calculate_outlined, color: Colors.grey.shade600),

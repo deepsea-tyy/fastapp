@@ -2,26 +2,36 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/more_options_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/symbol_selector_bottom_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/more_options_bottom_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/trade_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-/// 交易对头部组件
-class SymbolHeader extends StatelessWidget {
-  const SymbolHeader({super.key});
+/// 交易对头部组件（通用）
+class TradeSymbolHeader extends StatelessWidget {
+  /// 交易类型
+  final TradeType tradeType;
+
+  /// 点击交易对时的回调（现货支持选择，杠杆可能不支持）
+  final VoidCallback? onSymbolTap;
+
+  const TradeSymbolHeader({
+    super.key,
+    required this.tradeType,
+    this.onSymbolTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final SpotTradeStore store = getIt<SpotTradeStore>();
-    
+
     return Observer(
       builder: (_) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => _showSymbolSelectorBottomSheet(context),
+              onTap: onSymbolTap,
               child: Row(
                 children: [
                   Text(
@@ -87,15 +97,6 @@ class SymbolHeader extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => const MoreOptionsBottomSheet(),
-    );
-  }
-
-  void _showSymbolSelectorBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => const SymbolSelectorBottomSheet(),
     );
   }
 }

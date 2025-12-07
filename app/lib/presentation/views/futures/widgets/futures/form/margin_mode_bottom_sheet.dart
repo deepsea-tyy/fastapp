@@ -1,5 +1,5 @@
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/constants.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:flutter/material.dart';
 
 /// 保证金模式选择弹窗

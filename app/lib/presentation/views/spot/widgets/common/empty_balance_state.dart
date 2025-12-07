@@ -1,14 +1,26 @@
+import 'package:fastapp/presentation/views/spot/widgets/common/trade_type.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
 import 'package:flutter/material.dart';
 
-/// 空余额状态组件
+/// 空余额状态组件（通用）
 class EmptyBalanceState extends StatelessWidget {
+  final TradeType tradeType;
   final VoidCallback? onAddBalance;
 
   const EmptyBalanceState({
     super.key,
+    required this.tradeType,
     this.onAddBalance,
   });
+
+  String get _walletTypeText {
+    switch (tradeType) {
+      case TradeType.spot:
+        return '现货钱包';
+      case TradeType.leverage:
+        return '杠杆钱包';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +42,7 @@ class EmptyBalanceState extends StatelessWidget {
             const SizedBox(height: 12),
             // 提示文字
             Text(
-              '将资金转入您的现货钱包进行交易',
+              '将资金转入您的$_walletTypeText进行交易',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,

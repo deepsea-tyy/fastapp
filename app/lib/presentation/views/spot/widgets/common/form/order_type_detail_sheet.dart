@@ -1,8 +1,8 @@
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/constants.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/order_type_tabs.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/utils.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/order_type_content.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/form/order_type_tabs.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/form/order_type_content.dart';
 import 'package:flutter/material.dart';
 
 // 订单类型详情弹框

@@ -1,15 +1,20 @@
 import 'package:fastapp/constants/app_config.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/current_orders_content.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/held_positions_content.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/futures_order_book.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/futures_order_form.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/symbol_header.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/trade_order_book.dart';
 import 'package:fastapp/presentation/views/grid/grid_trading_screen.dart';
 import 'package:flutter/material.dart';
 
 /// 期货交易页面（复制自杠杆交易）
 class FuturesTrade extends StatefulWidget {
-  const FuturesTrade({super.key});
+  final bool isCoinMargined; // true: 币本位, false: U本位
+  
+  const FuturesTrade({
+    super.key,
+    this.isCoinMargined = false,
+  });
 
   @override
   State<FuturesTrade> createState() => _FuturesTradeState();
@@ -44,65 +49,65 @@ class _FuturesTradeState extends State<FuturesTrade> {
     }
   }
 
-  void _scheduleHeightUpdate() {
-    // 使用 addPostFrameCallback 确保在布局完成后更新高度
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateFormHeight();
-      // 再次调度一次，确保在动画完成后也能更新
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _updateFormHeight();
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    // 在每次构建后检查form高度
-    _scheduleHeightUpdate();
+    // 使用 MediaQuery 获取屏幕宽度
+    final screenWidth = MediaQuery.of(context).size.width;
+    final totalPadding = 8.0 + 8.0; // 左padding + 中间间距（订单簿右边没有边距）
+    final usableWidth = screenWidth - totalPadding;
+    
+    // 按照 3:2 的比例分配宽度
+    final formWidth = usableWidth * 3 / 5;
+    final bookWidth = usableWidth * 2 / 5;
+    
+    // 延迟更新高度，避免在 build 中频繁调用 setState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateFormHeight();
+      }
+    });
 
     return Column(
       children: [
         // 交易对头部
-        const SymbolHeader(),
+        SymbolHeader(isCoinMargined: widget.isCoinMargined),
+        // 订单表单和订单簿 - 完整显示，不裁剪
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 订单表单
+            SizedBox(
+              width: formWidth,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: FuturesOrderForm(
+                  key: _formKey,
+                  onHeightChanged: _updateFormHeight,
+                ),
+              ),
+            ),
+            // 订单簿
+            SizedBox(
+              width: bookWidth,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+                  ),
+                  child: TradeOrderBook(formHeight: _formHeight),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // 可滚动内容区域
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 订单表单和订单簿（始终显示）
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                          child: FuturesOrderForm(
-                            key: _formKey,
-                            onHeightChanged: _updateFormHeight,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 8, 8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-                            ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: FuturesOrderBook(formHeight: _formHeight),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 // 标签栏
                 _buildTabs(),
                 // 根据选中的标签显示对应内容
@@ -121,11 +126,10 @@ class _FuturesTradeState extends State<FuturesTrade> {
 
   Widget _buildTabs() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          top: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
       ),
       child: Row(
@@ -155,15 +159,12 @@ class _FuturesTradeState extends State<FuturesTrade> {
           setState(() => _selectedBottomTab = index);
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? Colors.black87 : Colors.grey.shade500,
-          ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: Colors.black87,
         ),
       ),
     );

@@ -5,31 +5,30 @@ import 'package:fastapp/domain/entity/order/order_type.dart';
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/views/spot/widgets/leverage/form/advanced_take_profit_stop_loss_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/spot/widgets/leverage/form/auto_borrow_repay_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/leverage/form/info_bottom_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/info_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/spot/widgets/leverage/form/payment_account_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/leverage/form/constants.dart';
-import 'package:fastapp/presentation/views/spot/widgets/leverage/form/order_type_detail_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/form/order_type_detail_sheet.dart';
 import 'package:fastapp/presentation/views/common/selection_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/common/number_input_widget.dart';
-import 'package:fastapp/presentation/views/spot/widgets/leverage/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:fastapp/presentation/views/spot/widgets/leverage/manual_borrow_repay_screen.dart';
 import 'package:fastapp/presentation/views/common/percentage_slider.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-/// 订单表单组件
-class SpotOrderForm extends StatefulWidget {
+/// 杠杆订单表单组件
+class LeverageOrderForm extends StatefulWidget {
   final VoidCallback? onHeightChanged;
-  
-  const SpotOrderForm({super.key, this.onHeightChanged});
+
+  const LeverageOrderForm({super.key, this.onHeightChanged});
 
   @override
-  State<SpotOrderForm> createState() => _SpotOrderFormState();
+  State<LeverageOrderForm> createState() => _LeverageOrderFormState();
 }
 
-class _SpotOrderFormState extends State<SpotOrderForm> {
+class _LeverageOrderFormState extends State<LeverageOrderForm> {
   final SpotTradeStore _store = getIt<SpotTradeStore>();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();

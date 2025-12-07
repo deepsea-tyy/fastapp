@@ -6,8 +6,8 @@ import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
 import 'package:fastapp/presentation/views/common/number_input_widget.dart';
 import 'package:fastapp/presentation/views/common/percentage_slider.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/constants.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/form/advanced_take_profit_stop_loss_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/form/margin_mode_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/form/leverage_bottom_sheet.dart';
@@ -205,7 +205,7 @@ class _FuturesOrderFormState extends State<FuturesOrderForm> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                positionSideOpen,
+positionSideOpen,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -235,7 +235,7 @@ class _FuturesOrderFormState extends State<FuturesOrderForm> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                positionSideClose,
+positionSideClose,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -304,21 +304,19 @@ class _FuturesOrderFormState extends State<FuturesOrderForm> {
   }
 
   Widget _buildPriceInput() {
-    return Observer(
-      builder: (_) => NumberInputWidget(
-        controller: _priceController,
-        onDecrease: () {
-          final price = double.tryParse(_priceController.text) ?? 0;
-          _priceController.text = (price - 0.001).toStringAsFixed(3);
-        },
-        onIncrease: () {
-          final price = double.tryParse(_priceController.text) ?? 0;
-          _priceController.text = (price + 0.001).toStringAsFixed(3);
-        },
-        label: '委托价(USDT)',
-        isBold: true,
-        fontSize: 18,
-      ),
+    return NumberInputWidget(
+      controller: _priceController,
+      onDecrease: () {
+        final price = double.tryParse(_priceController.text) ?? 0;
+        _priceController.text = (price - 0.001).toStringAsFixed(3);
+      },
+      onIncrease: () {
+        final price = double.tryParse(_priceController.text) ?? 0;
+        _priceController.text = (price + 0.001).toStringAsFixed(3);
+      },
+      label: '委托价(USDT)',
+      isBold: true,
+      fontSize: 18,
     );
   }
 
@@ -516,57 +514,53 @@ class _FuturesOrderFormState extends State<FuturesOrderForm> {
   }
 
   Widget _buildBalanceInfo() {
-    return Observer(
-      builder: (_) {
-        // 平仓时只显示可平信息
-        if (_positionSide == positionSideClose) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: [
-                Text('可平', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                const Spacer(),
-                const Text('0.00 USDT', style: TextStyle(fontSize: 12, color: Colors.black87)),
-              ],
-            ),
-          );
-        }
-        
-        // 开仓时显示完整信息
-        return Column(
+    // 平仓时只显示可平信息
+    if (_positionSide == positionSideClose) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
+            Text('可平', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            const Spacer(),
+            const Text('0.00 USDT', style: TextStyle(fontSize: 12, color: Colors.black87)),
+          ],
+        ),
+      );
+    }
+    
+    // 开仓时显示完整信息
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('可用', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Text('可用', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('0 USDT', style: TextStyle(fontSize: 12, color: Colors.black87)),
-                      const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const TransferScreen(),
-                            ),
-                          );
-                        },
-                        child: Icon(Icons.swap_horiz, size: 20, color: Colors.amber.shade700),
-                      ),
-                    ],
+                  const Text('0 USDT', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const TransferScreen(),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.swap_horiz, size: 20, color: Colors.amber.shade700),
                   ),
                 ],
               ),
-            ),
-            _buildBalanceRow('可开', '0 USDT'),
-            _buildBalanceRow('可用保证金', '0 USDT'),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        _buildBalanceRow('可开', '0 USDT'),
+        _buildBalanceRow('可用保证金', '0 USDT'),
+      ],
     );
   }
 

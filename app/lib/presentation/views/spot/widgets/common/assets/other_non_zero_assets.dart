@@ -1,4 +1,4 @@
-import 'package:fastapp/presentation/views/spot/widgets/spot/assets/asset_metrics.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/assets/asset_metrics.dart';
 import 'package:fastapp/presentation/views/wallet/currency/asset_detail_screen.dart';
 import 'package:flutter/material.dart';
 

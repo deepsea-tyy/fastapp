@@ -1,4 +1,4 @@
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:flutter/material.dart';
 
 /// 通用选择底部弹窗（用于单选场景）

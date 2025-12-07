@@ -1,4 +1,4 @@
-import 'package:fastapp/presentation/views/spot/widgets/spot/assets/asset_item.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/assets/asset_item.dart';
 import 'package:flutter/material.dart';
 
 /// 当前交易对资产组件

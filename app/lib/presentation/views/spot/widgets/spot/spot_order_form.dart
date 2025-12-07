@@ -4,19 +4,16 @@ import 'package:fastapp/domain/entity/order/order_side.dart';
 import 'package:fastapp/domain/entity/order/order_type.dart';
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/views/spot/widgets/spot/form/advanced_take_profit_stop_loss_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/auto_borrow_repay_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/info_bottom_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/info_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/spot/widgets/spot/form/payment_account_bottom_sheet.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/constants.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/order_type_detail_sheet.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/constants.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/form/order_type_detail_sheet.dart';
 import 'package:fastapp/presentation/views/common/selection_bottom_sheet.dart';
 import 'package:fastapp/presentation/views/common/number_input_widget.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/form/utils.dart';
-import 'package:fastapp/presentation/views/spot/widgets/spot/manual_borrow_repay_screen.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:fastapp/presentation/views/common/percentage_slider.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 订单表单组件
@@ -469,17 +466,15 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
   }
 
   Widget _buildPercentageSlider() {
-    return Observer(
-      builder: (_) => PercentageSlider(
-        value: _selectedPercentage,
-        activeColor: Colors.green,
-        onChanged: (value) {
-          setState(() {
-            _selectedPercentage = value;
-          });
-          // TODO: 根据百分比设置数量
-        },
-      ),
+    return PercentageSlider(
+      value: _selectedPercentage,
+      activeColor: Colors.green,
+      onChanged: (value) {
+        setState(() {
+          _selectedPercentage = value;
+        });
+        // TODO: 根据百分比设置数量
+      },
     );
   }
 
@@ -698,48 +693,44 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
   }
 
   Widget _buildBalanceInfo() {
-    return Observer(
-      builder: (_) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => _showPaymentAccountBottomSheet(context),
+                  child: _buildLabelWithDottedLine('可用'),
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _showPaymentAccountBottomSheet(context),
-                      child: _buildLabelWithDottedLine('可用'),
-                    ),
+                  InkWell(
+                    onTap: () => _showPaymentAccountBottomSheet(context),
+                    child: Text('0 USDT', style: const TextStyle(fontSize: 12, color: Colors.black87)),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () => _showPaymentAccountBottomSheet(context),
-                        child: Text('0 USDT', style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                      ),
-                      const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const TransferScreen(),
-                            ),
-                          );
-                        },
-                        child: Icon(Icons.swap_horiz, size: 20, color: Colors.amber.shade700),
-                      ),
-                    ],
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const TransferScreen(),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.swap_horiz, size: 20, color: Colors.amber.shade700),
                   ),
                 ],
               ),
-            ),
-            _buildBalanceRow('可买入', '0 USDT'),
-            _buildBalanceRow('预估手续费', '0 USDT'),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        _buildBalanceRow('可买入', '0 USDT'),
+        _buildBalanceRow('预估手续费', '0 USDT'),
+      ],
     );
   }
 

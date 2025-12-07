@@ -1,5 +1,5 @@
 import 'package:fastapp/presentation/views/common/number_input_widget.dart';
-import 'package:fastapp/presentation/views/futures/widgets/futures/form/utils.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/utils.dart';
 import 'package:flutter/material.dart';
 
 /// 高级止盈止损设置弹窗
