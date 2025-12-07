@@ -177,13 +177,16 @@ dictionary:
     statusDisabled: Disabled
     successState: Success
     failState: Failure
+    yesNo:
+      no: No
+      yes: Yes
   base:
     systemUser: System user
     normalUser: Normal user
 
 language:
-  zh-CN: Simplified Chinese
-  zh-TW: Traditional Chinese
+  zh_CN: Simplified Chinese
+  zh_TW: Traditional Chinese
   en: English
   ja: Japanese
   ko: Korean

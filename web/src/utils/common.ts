@@ -32,7 +32,7 @@ export function lang(t: TranslateFunction): LangOption[] {
  */
 export function getLocalLang(): string {
   const userStore = useUserStore()
-  return userStore.getLanguage().replace(/_/g, '-')
+  return userStore.getLanguage()
 }
 
 /**

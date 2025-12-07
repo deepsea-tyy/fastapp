@@ -177,13 +177,16 @@ dictionary:
     statusDisabled: 禁用
     successState: 成功
     failState: 失败
+    yesNo:
+      no: 否
+      yes: 是
   base:
     systemUser: 系统用户
     normalUser: 普通用户
 
 language:
-  zh-CN: 中文简体
-  zh-TW: 中文繁体
+  zh_CN: 中文简体
+  zh_TW: 中文繁体
   en: 英文
   ja: 日语
   ko: 韩语

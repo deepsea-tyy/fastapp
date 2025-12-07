@@ -168,6 +168,7 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
         rules: [{ required: true, message: t('form.pleaseInput', { msg: t('{{$transKey}}') }) }],
       },
 @endif
+      cols: { lg: 12, md: 24 },
     },
 @endif
 @endforeach

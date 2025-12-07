@@ -9,12 +9,13 @@ const props = defineProps<{
   api?: <T>(...args: T[]) => Promise<T>
   url?: string
   axiosConfig?: {
-    autoRequest: boolean
+    autoRequest?: boolean
     method?: string
     params?: Record<string, any>
     data?: Record<string, any>
     header?: Record<string, any>
     timeout?: number
+    [key: string]: any // 支持其他参数直接传递
   }
   dataHandle?: (response: any) => any[]
 }>()
@@ -35,9 +36,34 @@ function handleChange(value: any) {
   emit('select-item', options.value.find(item => item[key] === value) ?? null)
 }
 
+function getRequestParams() {
+  if (!props.axiosConfig) {
+    return {}
+  }
+  
+  const config = props.axiosConfig
+  const reservedKeys = ['autoRequest', 'method', 'data', 'header', 'timeout', 'params']
+  
+  // 如果明确指定了 params，直接使用 params
+  if (config.params) {
+    return config.params
+  }
+  
+  // 否则，将 axiosConfig 中除了保留字段外的其他字段作为 params
+  const params: Record<string, any> = {}
+  Object.keys(config).forEach(key => {
+    if (!reservedKeys.includes(key)) {
+      params[key] = config[key]
+    }
+  })
+  
+  return params
+}
+
 function request() {
   if (props?.api && typeof props.api === 'function') {
-    props.api(props.axiosConfig).then((res: any) => {
+    const params = getRequestParams()
+    props.api(params).then((res: any) => {
       options.value = props?.dataHandle?.(res) ?? res.data
     }).catch((err) => {
       msg.error(err)
@@ -45,7 +71,31 @@ function request() {
   }
   else if (props?.url) {
     const method = useHttp()[props?.axiosConfig?.method ?? 'get']
-    method(props?.url, props?.axiosConfig).then((res: any) => {
+    const requestConfig: any = {}
+    
+    // 保留原有的配置项
+    if (props.axiosConfig?.data) {
+      requestConfig.data = props.axiosConfig.data
+    }
+    if (props.axiosConfig?.header) {
+      requestConfig.header = props.axiosConfig.header
+    }
+    if (props.axiosConfig?.timeout) {
+      requestConfig.timeout = props.axiosConfig.timeout
+    }
+    
+    // 处理 params - 直接作为查询参数，不包装
+    const params = getRequestParams()
+    if (Object.keys(params).length > 0) {
+      // 对于 GET 请求，参数应该直接作为查询参数
+      if (props.axiosConfig?.method === 'get' || !props.axiosConfig?.method) {
+        Object.assign(requestConfig, params)
+      } else {
+        requestConfig.params = params
+      }
+    }
+    
+    method(props?.url, requestConfig).then((res: any) => {
       options.value = props?.dataHandle?.(res) ?? res.data
     }).catch((err: any) => {
       msg.error(err)

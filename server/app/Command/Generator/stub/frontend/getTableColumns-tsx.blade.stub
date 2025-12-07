@@ -79,7 +79,7 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
 @endphp
     {
       label: () => t('{{$transKey}}'), // '{{$label}}'
-      minWidth: 120,
+      minWidth: 150,
       prop: '{{$field['field']}}',
 @if($field['sortable'] ?? false)
       sortable: 'custom',

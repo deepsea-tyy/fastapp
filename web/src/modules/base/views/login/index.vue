@@ -18,11 +18,9 @@ const { locale, t } = useI18n()
 const locales = computed(() => {
   const rawLocales = userStore.getLocales()
   return rawLocales.map((item: any) => {
-    // 将 value 从 zh_CN 格式转换为 zh-CN 格式用于翻译键
-    const langKey = item.value.replace('_', '-')
     return {
       ...item,
-      label: t(`language.${langKey}`) || item.label,
+      label: t(`language.${item.value}`) || item.label,
     }
   })
 })
