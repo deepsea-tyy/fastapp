@@ -1,0 +1,24 @@
+{
+  "name": "ds/sysKefu",
+  "version": "1.0.0",
+  "type": "mixed",
+  "description": "客服系统插件",
+  "homepage": "",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\SysKefu\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\SysKefu\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\SysKefu\\UninstallScript",
+    "config": "Plugin\\Ds\\SysKefu\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

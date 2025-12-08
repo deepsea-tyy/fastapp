@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->string('password', 100)->comment('密码');
             $table->string('user_type', 3)->default('100')->comment('用户类型:100=系统用户,200=普通用户,300=通用账户');
             $table->tinyInteger('status')->default(1)->comment('状态:1=正常,2=停用');
-            $table->string('google2fa', 50)->comment('google2fa');
+            $table->string('google2fa', 50)->nullable()->comment('google2fa');
             $table->string('remark', 255)->default('')->comment('备注');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
@@ -38,10 +38,9 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->bigInteger('user_id')->comment('用户ID');
             $table->string('phone')->nullable()->comment('联系电话');
-            $table->json('dept_id')->unsigned()->nullable()->comment('部门ID');
+            $table->json('dept_id')->nullable()->comment('部门ID');
             $table->json('backend_setting')->nullable()->comment('后台设置数据');
             $table->unique('user_id');
-            $table->index('dept_id', 'idx_dept_id');
         });
         Schema::create('user_admin_login_log', static function (Blueprint $table) {
             $table->comment('登录日志表');
@@ -150,8 +149,7 @@ return new class extends Migration {
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
             $table->timestamps();
-            $table->string('remark')->comment('备注')->default('');
-            $table->index('storage_path');
+            $table->string('remark')->comment('备注')->nullable();
             $table->unique('hash');
         });
         Schema::create('user_belongs_role', static function (Blueprint $table) {

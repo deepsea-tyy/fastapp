@@ -17,7 +17,7 @@ use Hyperf\Redis\Redis;
 use Overtrue\EasySms\EasySms;
 use Overtrue\EasySms\PhoneNumber;
 use Overtrue\EasySms\Strategies\OrderStrategy;
-use Plugin\Ds\SystemConfig\Helper\CacheConfigHelper;
+use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 
 class VerifyCodeService
 {

@@ -15,7 +15,7 @@
 |------|------|------|
 | `{模块名}` | 功能模块名称（小写） | `product`、`user` |
 | `{table}` | 数据库表名（蛇形命名） | `products`、`users` |
-| `{organization}/{plugin}` | 插件标识 | `ds/article` |
+| `{organization}/{plugin}` | 插件标识 | `ds/cms` |
 
 ## ⚡ AI 能力边界
 
@@ -214,7 +214,7 @@
 4. 自动在 Service 层添加数据权限逻辑
 
 **重要提示：**
-- 权限代码格式：`{plugin_path}:{table_name}:{action}`（如 `ds/article` → `ds:article:article:list`）
+- 权限代码格式：`{plugin_path}:{table_name}:{action}`（如 `ds/cms` → `ds:cms:article:list`）
 - 插件路径中的 `/` 会被转换为 `:`
 ```
 
@@ -347,7 +347,7 @@ public function page(array $params, int $page = 1, int $pageSize = 10): array
 | 模式 | 格式 | 示例 |
 |------|------|------|
 | **普通模式** | `{module}:{table}:{action}` | `product:product:list` |
-| **插件模式** | `{plugin_path}:{table_name}:{action}` | `ds:article:article:list`（插件 `ds/article`，表 `article`） |
+| **插件模式** | `{plugin_path}:{table_name}:{action}` | `ds:cms:article:list`（插件 `ds/cms`，表 `article`） |
 
 **注意**：插件路径中的 `/` 会被转换为 `:`（如 `ds/gift-card` → `ds:gift-card`）
 

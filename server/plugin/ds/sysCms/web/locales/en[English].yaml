@@ -1,0 +1,93 @@
+article:
+  Article: Article List
+  ArticleManager: Content Manager
+  ArticleFields:
+    title: Title
+    subtitle: Subtitle
+    author: Author
+    cover: Cover
+    video: Video
+    release_at: ReleaseAt
+    brief: Brief
+    content: Content
+    comment: Comment
+    views: Views
+    like: Like
+    code: Code
+    name: Name
+    icon: Icon
+    parent_id: ParentId
+  Category: Category List
+  CategoryFields:
+    name: Name
+    icon: Icon
+    parent_id: ParentId
+    code: Code
+admin:
+  PlacementContent: PlacementContent
+  PlacementContentFields:
+    code: Code
+    name: Name
+    object_type: ObjectType
+    object_id: ObjectId
+    url: Url
+    target: Target
+    title: Title
+    cover: Cover
+    desc: Desc
+    content: Content
+    start_at: StartAt
+    end_at: EndAt
+    fixed: Fixed
+    status: Status
+    sort: Sort
+    views: Views
+    clicks: Clicks
+  PlacementPosition: PlacementPosition
+  PlacementPositionFields:
+    code: Code
+    name: Name
+    status: Status
+  PlacementContentDict:
+    objectType:
+      link: Link
+      video: Video
+      share: Share
+      article: Article
+      path: Path
+    target:
+      current: Current Window
+      new: New Window
+    status:
+      hide: Hide
+      show: Show
+  AppPageContent: App Page Content
+  AppPageContentFields:
+    code: Code
+    page_code: Page Code
+    component_code: Component Code
+    content_type: Content Type
+    data: Data
+    platform: Platform
+    start_at: Start At
+    end_at: End At
+    fixed: Fixed
+  AppPageContentDict:
+    contentType:
+      '1': Fixed Text
+      '2': List Data
+      '3': Rich Text
+      '4': Config Item
+    platform:
+      '1': Web
+      '2': App
+      '3': Both
+  AppPageContentSync: App Page Content Sync
+  AppPageContentSyncFields:
+    version: Version
+    platform: Platform
+    file_path: File Path
+    file_size: File Size
+    record_count: Record Count
+    generated_at: Generated At
+    generate: Generate

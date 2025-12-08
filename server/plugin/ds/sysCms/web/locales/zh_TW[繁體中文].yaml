@@ -1,0 +1,93 @@
+article:
+  Article: 文章列表
+  ArticleManager: 内容管理
+  ArticleFields:
+    title: 标题
+    subtitle: 副标题
+    author: 作者
+    cover: 封面
+    video: 视频
+    release_at: 发布日期
+    brief: 摘要
+    content: 内容
+    comment: 评论数
+    views: 浏览数
+    like: 点赞数
+    code: 调用代码
+    name: 名称
+    icon: icon
+    parent_id: 上级
+  Category: 分类列表
+  CategoryFields:
+    name: 名称
+    icon: icon
+    parent_id: 上级
+    code: 调用代码
+admin:
+  PlacementContent: 投放内容
+  PlacementContentFields:
+    code: 調用代碼
+    name: 內容名稱
+    object_type: 數據類型
+    object_id: 關聯數據ID
+    url: 鏈接地址
+    target: 鏈接打開方式
+    title: 標題
+    cover: 封面圖片
+    desc: 描述
+    content: 分享內容
+    start_at: 開始時間
+    end_at: 結束時間
+    fixed: 永久有效
+    status: 狀態
+    sort: 排序
+    views: 展示次數
+    clicks: 點擊次數
+  PlacementPosition: 投放位置
+  PlacementPositionFields:
+    code: 調用代碼
+    name: 位置名稱
+    status: 狀態
+  AppPageContent: App頁面內容
+  AppPageContentFields:
+    code: 內容標識
+    page_code: 頁面標識
+    component_code: 組件標識
+    content_type: 內容類型
+    data: 處理
+    platform: 平台
+    start_at: 開始時間
+    end_at: 結束時間
+    fixed: 永久有效
+  AppPageContentDict:
+    contentType:
+      '1': 固定文本
+      '2': 列表數據
+      '3': 富文本
+      '4': 配置項
+    platform:
+      '1': Web
+      '2': App
+      '3': Both
+  AppPageContentSync: App頁面內容同步
+  AppPageContentSyncFields:
+    version: 版本號
+    platform: 平台
+    file_path: 文件路徑
+    file_size: 文件大小
+    record_count: 記錄數量
+    generated_at: 生成時間
+    generate: 生成文件
+  PlacementContentDict:
+    objectType:
+      link: 鏈接
+      video: 視頻
+      share: 分享
+      article: 文章
+      path: 路徑
+    target:
+      current: 當前窗口
+      new: 新窗口
+    status:
+      hide: 隱藏
+      show: 顯示
