@@ -20,6 +20,7 @@ class ConfigProvider
             'swagger' => [
                 'scan' => [
                     'paths' => [
+                        __DIR__ . '/Http/Api',
                     ],
                 ],
             ],

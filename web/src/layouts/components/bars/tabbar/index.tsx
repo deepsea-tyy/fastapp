@@ -135,10 +135,14 @@ export default defineComponent({
       twoKey: null,
     })
 
-    watch(() => keys.value, async () => {
-      pressKeys.oneKey = keys.value[0] ?? null
-      pressKeys.twoKey = keys.value[1] ?? null
+    // 使用 watchEffect 确保按键状态实时更新
+    watchEffect(() => {
+      const keysArray = Array.from(current)
+      pressKeys.oneKey = keysArray[0] ?? null
+      pressKeys.twoKey = keysArray[1] ?? null
+    })
 
+    watch(() => keys.value, async () => {
       if (pressKeys.oneKey === 'alt' && pressKeys.twoKey !== null) {
         switch (pressKeys.twoKey) {
           case 'c':

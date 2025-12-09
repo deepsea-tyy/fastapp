@@ -35,7 +35,7 @@ class Result implements Arrayable
         return [
             'code' => $this->code->value,
             'message' => $this->message,
-            'data' => $this->data,
+            'data' => is_array($this->data) && !$this->data ? new \StdClass() : $this->data,
         ];
     }
 }

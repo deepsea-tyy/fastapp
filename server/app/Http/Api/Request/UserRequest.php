@@ -18,7 +18,7 @@ use Hyperf\Swagger\Annotation\Property;
 use Hyperf\Swagger\Annotation\Schema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[Schema(title: '注册请求', description: '登录请求参数', properties: [
+#[Schema(title: '登录注册请求', description: '登录请求参数', properties: [
     new Property('username', description: 'username', type: 'string'),
     new Property('password', description: 'password', type: 'string'),
     new Property('password_confirmation', description: '确认密码', type: 'string'),

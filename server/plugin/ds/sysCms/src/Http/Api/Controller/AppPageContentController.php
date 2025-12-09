@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysCms\Http\Api\Controller;
 
 use App\Common\AbstractController;
-use App\Common\Result;
 use Plugin\Ds\SysCms\Http\Api\Service\AppPageContentService;
 use Hyperf\HttpServer\Annotation\Controller;
-use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Psr\Http\Message\ResponseInterface;
@@ -32,44 +30,22 @@ class AppPageContentController extends AbstractController
     ) {}
 
     #[Get(
-        path: '/api/app/page-content/version',
-        operationId: 'GetAppPageContentVersion',
-        summary: '获取最新版本号',
-        tags: ['App页面内容'],
-    )]
-    #[QueryParameter(name: 'platform', description: '平台：1Web 2App', example: '2')]
-    public function getVersion(): Result
-    {
-        $params = $this->getRequestData();
-        $version = $this->service->getLatestVersion(
-            (int)($params['platform'] ?? 2)
-        );
-        
-        return $version ? $this->success($version) : $this->error('暂无可用版本');
-    }
-
-    #[Get(
         path: '/api/app/page-content/download',
         operationId: 'DownloadAppPageContentFile',
         summary: '下载页面内容文件',
         tags: ['App页面内容'],
     )]
-    #[QueryParameter(name: 'version', description: '版本号', example: '1705123456')]
     #[QueryParameter(name: 'platform', description: '平台：1Web 2App', example: '2')]
     public function download(): ResponseInterface
     {
         $params = $this->getRequestData();
-        $version = $params['version'] ?? '';
         $platform = (int)($params['platform'] ?? 2);
         
-        if (empty($version)) {
-            return $this->jsonResponse(400, '版本号不能为空');
-        }
+        // 直接使用固定文件名格式
+        $relativePath = $this->service->getFixedFilePath($platform);
+        $filePath = BASE_PATH . '/' . $relativePath;
         
-        $relativePath = $this->service->getFilePath($version, $platform);
-        $filePath = $relativePath ? BASE_PATH . '/' . $relativePath : null;
-        
-        if (!$filePath || !file_exists($filePath)) {
+        if (!file_exists($filePath)) {
             return $this->jsonResponse(404, '文件不存在');
         }
         
