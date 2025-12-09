@@ -31,7 +31,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 移动端首页组件
 ///
-/// 这是一个无状态的 Widget，使用 [StatelessWidget] 实现。
+/// 这是一个有状态的 Widget，使用 [StatefulWidget] 实现。
 /// 页面采用垂直滚动的单列布局，所有内容模块按顺序排列。
 ///
 /// 页面结构：
@@ -42,15 +42,39 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 /// 5. [CopyTradingSection] - 交易"智"变跟单
 /// 6. [TrustSection] - 值得您信赖的平台
 /// 7. [BottomNavBar] - 底部导航栏
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   /// 创建移动端首页
   ///
   /// [key] 用于标识此 Widget 的键值
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final UserStore _userStore = getIt<UserStore>();
+
+  @override
+  void initState() {
+    super.initState();
+    // 页面初始化时，如果已登录但用户信息未加载，则获取用户信息
+    if (_userStore.isLoggedIn && _userStore.currentUser == null) {
+      _userStore.getUserInfo();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 当页面重新可见时（例如从其他页面返回），检查是否需要刷新用户信息
+    if (_userStore.isLoggedIn && _userStore.currentUser == null) {
+      _userStore.getUserInfo();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final userStore = getIt<UserStore>();
 
     return Scaffold(
       // 使用浅灰色作为背景色
@@ -67,45 +91,17 @@ class HomeScreen extends StatelessWidget {
       body: Observer(
         builder: (_) {
           // 确保访问 observable，即使条件为 false
-          final isLoggedIn = userStore.isLoggedIn;
+          final isLoggedIn = _userStore.isLoggedIn;
           
           return SingleChildScrollView(
             child: Column(
               children: [
                 // 登录后显示快捷入口
-                if (!isLoggedIn) ...[
+                if (isLoggedIn) ...[
                   const QuickEntranceSection(),
                   
                   // 信息流区域
                   const FeedSection(),
-                  
-                  // 加密货币行情区域：热门榜、涨幅榜、新币榜
-                  Container(
-                    color: Colors.white,
-                    margin: const EdgeInsets.only(top: 8),
-                    child: const MobileCryptoListSection(),
-                  ),
-                  
-                  // 开始您的加密货币之旅：功能介绍
-                  Container(
-                    color: Colors.white,
-                    margin: const EdgeInsets.only(top: 8),
-                    child: const JourneySection(),
-                  ),
-                  
-                  // 交易"智"变跟单：跟单交易员展示
-                  Container(
-                    color: Colors.white,
-                    margin: const EdgeInsets.only(top: 8),
-                    child: const CopyTradingSection(),
-                  ),
-                  
-                  // 值得您信赖的平台：安全特性
-                  Container(
-                    color: Colors.white,
-                    margin: const EdgeInsets.only(top: 8),
-                    child: const TrustSection(),
-                  ),
                 ],
                 
                 // 未登录时显示的内容

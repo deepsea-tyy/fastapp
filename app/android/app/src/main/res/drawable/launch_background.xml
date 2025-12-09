@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 使用启动背景图片填充整个屏幕 -->
+    <!-- 启动图片层 - 使用 fill 填充整个屏幕 -->
     <item>
         <bitmap
             android:gravity="fill"

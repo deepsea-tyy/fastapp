@@ -56,30 +56,28 @@ class TradeSymbolHeader extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Observer(
-              builder: (_) => IconButton(
-                icon: Icon(Icons.candlestick_chart, color: Colors.grey.shade600),
-                onPressed: () {
-                  final orderBookData = store.orderBookData;
-                  final ticker = TickerData(
-                    symbol: store.selectedSymbol,
-                    lastPrice: orderBookData?.lastPrice ?? 0.0,
-                    openPrice: orderBookData?.lastPrice ?? 0.0,
-                    highPrice: orderBookData?.lastPrice ?? 0.0,
-                    lowPrice: orderBookData?.lastPrice ?? 0.0,
-                    volume: 0.0,
-                    amount: 0.0,
-                    changePercent: 0.0,
-                    changeAmount: 0.0,
-                    timestamp: DateTime.now().millisecondsSinceEpoch,
-                  );
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => MarketDetailScreen(ticker: ticker),
-                    ),
-                  );
-                },
-              ),
+            IconButton(
+              icon: Icon(Icons.candlestick_chart, color: Colors.grey.shade600),
+              onPressed: () {
+                final orderBookData = store.orderBookData;
+                final ticker = TickerData(
+                  symbol: store.selectedSymbol,
+                  lastPrice: orderBookData?.lastPrice ?? 0.0,
+                  openPrice: orderBookData?.lastPrice ?? 0.0,
+                  highPrice: orderBookData?.lastPrice ?? 0.0,
+                  lowPrice: orderBookData?.lastPrice ?? 0.0,
+                  volume: 0.0,
+                  amount: 0.0,
+                  changePercent: 0.0,
+                  changeAmount: 0.0,
+                  timestamp: DateTime.now().millisecondsSinceEpoch,
+                );
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => MarketDetailScreen(ticker: ticker),
+                  ),
+                );
+              },
             ),
             IconButton(
               icon: Icon(Icons.more_vert, color: Colors.grey.shade600),

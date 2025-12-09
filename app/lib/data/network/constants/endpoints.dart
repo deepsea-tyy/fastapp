@@ -37,4 +37,13 @@ class Endpoints {
   static const String futuresPosition = AppConfig.futuresPosition;
   static const String futuresLeverage = AppConfig.futuresLeverage;
   static const String futuresFundingRate = AppConfig.futuresFundingRate;
+
+  /// 用户相关端点
+  static const String userLogin = '/api/user/login';
+  static const String userRegister = '/api/user/register';
+  static const String userInfo = '/api/user/info';
+  static const String userSms = '/api/sms';
+
+  /// 页面内容相关端点
+  static const String pageContentDownload = '/api/app/page-content/download';
 }

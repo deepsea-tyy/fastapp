@@ -3,6 +3,7 @@ library dio_logging_interceptor;
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:fastapp/utils/logger/network_logger.dart';
 
 /// Log Level
 enum Level {
@@ -92,39 +93,13 @@ class LoggingInterceptor extends Interceptor {
       return handler.next(options);
     }
 
-    logPrint('--> ${options.method} ${options.uri}');
-
     if (level == Level.basic) {
+      logPrint('--> ${options.method} ${options.uri}');
       return handler.next(options);
     }
 
-    logPrint('[DIO][HEADERS]');
-    options.headers.forEach((key, value) {
-      logPrint('$key:$value');
-    });
-
-    if (level == Level.headers) {
-      logPrint('[DIO][HEADERS]--> END ${options.method}');
-      return handler.next(options);
-    }
-
-    final data = options.data;
-    if (data != null) {
-      // logPrint('[DIO]dataType:${data.runtimeType}');
-      if (data is Map) {
-        if (compact) {
-          logPrint('$data');
-        } else {
-          _prettyPrintJson(data);
-        }
-      } else if (data is FormData) {
-        // NOT IMPLEMENT
-      } else {
-        logPrint(data.toString());
-      }
-    }
-
-    logPrint('[DIO]--> END ${options.method}');
+    // 使用封装的打印方法
+    NetworkLogger.logRequest(options);
 
     return handler.next(options);
   }
@@ -138,38 +113,15 @@ class LoggingInterceptor extends Interceptor {
       return handler.next(response);
     }
 
-    logPrint(
-        '<-- ${response.statusCode} ${(response.statusMessage?.isNotEmpty ?? false) ? response.statusMessage : '' '${response.requestOptions.uri}'}');
-
     if (level == Level.basic) {
+      logPrint(
+          '<-- ${response.statusCode} ${(response.statusMessage?.isNotEmpty ?? false) ? response.statusMessage : ''} ${response.requestOptions.uri}');
       return handler.next(response);
     }
 
-    logPrint('[DIO][HEADER]');
-    response.headers.forEach((key, value) {
-      logPrint('$key:$value');
-    });
-    logPrint('[DIO][HEADERS]<-- END ${response.requestOptions.method}');
-    if (level == Level.headers) {
-      return handler.next(response);
-    }
-    final data = response.data;
-    if (data != null) {
-      // logPrint('[DIO]dataType:${data.runtimeType}');
-      if (data is Map) {
-        if (compact) {
-          logPrint('$data');
-        } else {
-          _prettyPrintJson(data);
-        }
-      } else if (data is List) {
-        // NOT IMPLEMENT
-      } else {
-        logPrint(data.toString());
-      }
-    }
+    // 使用封装的打印方法
+    NetworkLogger.logResponse(response);
 
-    logPrint('[DIO]<-- END HTTP');
     return handler.next(response);
   }
 
@@ -182,14 +134,9 @@ class LoggingInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    logPrint('[DIO]<-- HTTP FAILED: $err');
+    // 使用封装的打印方法
+    NetworkLogger.logError(err);
 
     return handler.next(err);
-  }
-
-  void _prettyPrintJson(Object input) {
-    final prettyString = encoder.convert(input);
-    logPrint('<-- Response payload');
-    prettyString.split('\n').forEach((element) => logPrint(element));
   }
 }

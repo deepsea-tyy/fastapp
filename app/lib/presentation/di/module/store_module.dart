@@ -6,6 +6,7 @@ import 'package:fastapp/domain/repository/setting/setting_repository.dart';
 import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
 import 'package:fastapp/domain/usecase/user/login_usecase.dart';
 import 'package:fastapp/domain/usecase/user/save_login_in_status_usecase.dart';
+import 'package:fastapp/domain/usecase/user/get_user_info_usecase.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 import 'package:fastapp/presentation/store/app/theme_store.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
@@ -45,6 +46,7 @@ class StoreModule {
         getIt<IsLoggedInUseCase>(),
         getIt<SaveLoginStatusUseCase>(),
         getIt<LoginUseCase>(),
+        getIt<GetUserInfoUseCase>(),
         getIt<FormErrorStore>(),
         getIt<ErrorStore>(),
       ),

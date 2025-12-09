@@ -1,6 +1,6 @@
 import 'package:fastapp/constants/app_config.dart';
 import 'package:fastapp/core/stores/form/form_store.dart';
-import 'package:fastapp/core/widgets/center_message_dialog.dart';
+import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/core/widgets/empty_app_bar_widget.dart';
 import 'package:fastapp/core/widgets/progress_indicator_widget.dart';
 import 'package:fastapp/data/sharedpref/constants/preferences.dart';
@@ -58,8 +58,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: EmptyAppBar(),
-      body: _buildBody(),
+      body: SafeArea(
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -112,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(left: _horizontalPadding, top: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: const Align(
                   alignment: Alignment.centerLeft,
                   child: BackButton(),
@@ -123,7 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 16.0),
+                    const SizedBox(height: 4.0),
                     const Text(
                       '注册',
                       style: TextStyle(
@@ -543,11 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget _showErrorMessage(String message) {
     if (message.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        CenterMessageDialog.showError(
-          context: context,
-          message: message,
-          duration: const Duration(seconds: 2),
-        );
+        MessageService.error(message);
       });
     }
     return const SizedBox.shrink();

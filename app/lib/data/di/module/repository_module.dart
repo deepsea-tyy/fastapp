@@ -5,6 +5,7 @@ import 'package:fastapp/data/network/apis/order/order_api.dart';
 import 'package:fastapp/data/network/apis/wallet/wallet_api.dart';
 import 'package:fastapp/data/network/apis/trade/trade_api.dart';
 import 'package:fastapp/data/network/apis/futures/futures_api.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/data/repository/setting/setting_repository_impl.dart';
 import 'package:fastapp/data/repository/user/user_repository_impl.dart';
 import 'package:fastapp/data/repository/market/market_repository_impl.dart';
@@ -32,6 +33,7 @@ class RepositoryModule {
 
     getIt.registerSingleton<UserRepository>(UserRepositoryImpl(
       getIt<SharedPreferenceHelper>(),
+      getIt<UserApi>(),
     ));
 
     getIt.registerSingleton<MarketRepository>(MarketRepositoryImpl(

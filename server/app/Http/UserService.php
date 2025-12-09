@@ -20,6 +20,7 @@ use App\Model\Enums\User\Type;
 use App\Model\User;
 use App\Model\UserProfile;
 use App\Repository\Permission\UserRepository;
+use Hyperf\DbConnection\Db;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\UnencryptedToken;
 
@@ -123,12 +124,14 @@ class UserService extends IService
 
     public function create(array $data): mixed
     {
-        $md = parent::create($data);
-        if ($md->wasRecentlyCreated) {
-            UserProfile::query()->create(['user_id' => $md->id]);
-        }
-        Tools::eventDispatcher(new UserRegisterEvent($md, $data['invite_code'] ?? ''));
-        return $md;
+        return Db::transaction(function () use ($data) {
+            $md = parent::create($data);
+            if ($md->wasRecentlyCreated) {
+                UserProfile::query()->create(['user_id' => $md->id]);
+            }
+            Tools::eventDispatcher(new UserRegisterEvent($md, $data['invite_code'] ?? ''));
+            return $md;
+        });
     }
 
     public function getInfo(int $id): mixed

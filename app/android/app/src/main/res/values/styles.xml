@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- LaunchTheme: 启动时显示的主题，使用全屏背景图片 -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <!-- Show a splash screen on the activity. Automatically removed when
              Flutter draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
-    <!-- You can name this style whatever you'd like -->
+    <!-- NormalTheme: Flutter 渲染后使用的主题 -->
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">@drawable/ic_appicon</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

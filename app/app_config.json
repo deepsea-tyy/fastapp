@@ -7,7 +7,12 @@
   },
   "android": {
     "packageName": "com.iotecksolutions.todoapp",
-    "label": "fastapp"
+    "label": "fastapp",
+    "styles": {
+      "normalThemeBackground": "?android:colorBackground",
+      "launchThemeBackground": "@drawable/launch_background",
+      "nightNormalThemeBackground": "?android:colorBackground"
+    }
   },
   "ios": {
     "bundleId": "com.iotecksolutions.todoapp",
@@ -22,8 +27,8 @@
     "icon": "assets/images/launch/logo.png"
   },
   "network": {
-    "apiBaseUrl": "http://jsonplaceholder.typicode.com",
-    "wsBaseUrl": "ws://127.0.0.1:9502/ws",
+    "apiBaseUrl": "http://192.168.1.4:9501",
+    "wsBaseUrl": "ws://192.168.1.4:9502/ws",
     "connectionTimeout": 30000,
     "receiveTimeout": 15000,
     "endpoints": {
@@ -55,7 +60,7 @@
     "seedColor": "#2196F3"
   },
   "resources": {
-    "imageCdnBaseUrl": "https://static.bgbstatic.com"
+    "imageCdnBaseUrl": "http://127.0.0.1:9501/api/file?path="
   },
   "assets": {
     "appLogo": "assets/images/launch/logo.png",

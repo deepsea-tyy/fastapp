@@ -22,21 +22,21 @@ class MockWalletData {
         available: 0.1 + _random.nextDouble() * 0.1,
         frozen: _random.nextDouble() * 0.01,
         name: 'Bitcoin',
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/btc.png',
+        logoUrl: '',
       ),
       Balance(
         currency: 'ETH',
         available: 1.0 + _random.nextDouble() * 2,
         frozen: _random.nextDouble() * 0.1,
         name: 'Ethereum',
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/eth.png',
+        logoUrl: '',
       ),
       Balance(
         currency: 'SOL',
         available: 10.0 + _random.nextDouble() * 20,
         frozen: _random.nextDouble() * 2,
         name: 'Solana',
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/sol.png',
+        logoUrl: '',
       ),
     ];
     

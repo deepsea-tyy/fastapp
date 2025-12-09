@@ -1,4 +1,5 @@
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
+import 'package:fastapp/core/services/message_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -361,12 +362,7 @@ class _DetailInfoTabState extends State<DetailInfoTab> {
                         ? (html_parser.parse(description).body?.text ?? description)
                         : description;
                     Clipboard.setData(ClipboardData(text: plainText));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('已复制到剪贴板'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
+                    MessageService.snackBar('已复制到剪贴板', duration: const Duration(seconds: 1));
                   },
                   child: Container(
                     width: 16,

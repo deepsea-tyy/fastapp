@@ -76,7 +76,7 @@ return new class extends Migration {
             $table->string('avatar', 255)->nullable()->comment('用户头像');
             $table->string('signed', 255)->nullable()->comment('个人签名');
             $table->string('lang', 8)->nullable()->comment('言语');
-            $table->string('trans_password', 50)->comment('交易密码');
+            $table->string('trans_password', 50)->nullable()->comment('交易密码');
             $table->unique('user_id');
             $table->timestamps();
         });

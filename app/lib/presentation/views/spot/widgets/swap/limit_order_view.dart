@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/core/services/message_service.dart';
 import 'currency_selector.dart';
 import 'swap_button.dart';
 
@@ -455,11 +456,6 @@ class _LimitOrderViewState extends State<LimitOrderView> {
   void _createLimitOrder() {
     // TODO: 实现创建限价订单的 API 调用
     setState(() => _currentOrdersCount++);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('限价订单创建成功'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    MessageService.success('限价订单创建成功');
   }
 }

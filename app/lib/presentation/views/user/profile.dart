@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
@@ -12,39 +13,48 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          '账户中心',
-          style: TextStyle(
-            fontSize: 20.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 顶部标题栏
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
                 children: [
-                  // 用户资料卡片
-                  _buildUserProfileCard(context),
-                  
-                  // 功能列表
-                  _buildFeatureList(context),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    '账户中心',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-          // 退出按钮
-          _buildLogoutButton(context),
-        ],
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // 用户资料卡片
+                    _buildUserProfileCard(context),
+                    
+                    // 功能列表
+                    _buildFeatureList(context),
+                  ],
+                ),
+              ),
+            ),
+            // 退出按钮
+            _buildLogoutButton(context),
+          ],
+        ),
       ),
     );
   }
@@ -109,9 +119,7 @@ class ProfileScreen extends StatelessWidget {
             Icons.copy,
             onIconTap: () {
               Clipboard.setData(const ClipboardData(text: '589772405'));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ID已复制')),
-              );
+              MessageService.snackBar('ID已复制');
             },
           ),
           const SizedBox(height: 12),

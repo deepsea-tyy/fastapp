@@ -130,3 +130,6 @@ coverage/
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 android/app/src/main/res/drawable
+/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
+/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png
+/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png

@@ -24,6 +24,39 @@ class SharedPreferenceHelper {
     return _sharedPreference.remove(Preferences.auth_token);
   }
 
+  Future<String?> get refreshToken async {
+    return _sharedPreference.getString(Preferences.refresh_token);
+  }
+
+  Future<bool> saveRefreshToken(String refreshToken) async {
+    return _sharedPreference.setString(Preferences.refresh_token, refreshToken);
+  }
+
+  Future<bool> removeRefreshToken() async {
+    return _sharedPreference.remove(Preferences.refresh_token);
+  }
+
+  Future<int?> get expireAt async {
+    return _sharedPreference.getInt(Preferences.expire_at);
+  }
+
+  Future<bool> saveExpireAt(int expireAt) async {
+    return _sharedPreference.setInt(Preferences.expire_at, expireAt);
+  }
+
+  Future<bool> removeExpireAt() async {
+    return _sharedPreference.remove(Preferences.expire_at);
+  }
+
+  /// 清除所有认证相关的 token
+  Future<void> clearAllTokens() async {
+    await Future.wait([
+      removeAuthToken(),
+      removeRefreshToken(),
+      removeExpireAt(),
+    ]);
+  }
+
   // Login:---------------------------------------------------------------------
   Future<bool> get isLoggedIn async {
     return _sharedPreference.getBool(Preferences.is_logged_in) ?? false;

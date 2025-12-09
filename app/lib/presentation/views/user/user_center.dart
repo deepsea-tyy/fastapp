@@ -1,45 +1,100 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:fastapp/utils/routes/routes.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 /// 用户中心页面
-class UserCenterScreen extends StatelessWidget {
+class UserCenterScreen extends StatefulWidget {
   const UserCenterScreen({super.key});
+
+  @override
+  State<UserCenterScreen> createState() => _UserCenterScreenState();
+}
+
+class _UserCenterScreenState extends State<UserCenterScreen> {
+  final UserStore _userStore = getIt<UserStore>();
+
+  @override
+  void initState() {
+    super.initState();
+    // 如果已登录，获取用户信息
+    if (_userStore.isLoggedIn) {
+      _userStore.getUserInfo();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 当页面重新可见时（例如从其他页面返回），如果已登录但用户信息未加载，则刷新用户信息
+    if (_userStore.isLoggedIn && _userStore.currentUser == null) {
+      _userStore.getUserInfo();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.crop_free),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.headphones_outlined),
-            onPressed: () {},
-          ),
-          IconButton(icon: const Icon(Icons.settings),
-          onPressed: () {
-            Navigator.of(context).pushNamed(Routes.settings);
-          },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+      body: SafeArea(
         child: Column(
           children: [
-            // 用户信息区域
-            _buildUserInfoSection(context),
-            
-            // 快捷入口区域
-            _buildQuickAccessSection(context),
+            // 顶部标题栏
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.crop_free),
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.headphones_outlined),
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(Routes.settings);
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Observer(
+                builder: (_) {
+                  if (_userStore.isUserInfoLoading && _userStore.currentUser == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // 用户信息区域
+                        _buildUserInfoSection(context),
+                        
+                        // 快捷入口区域
+                        _buildQuickAccessSection(context),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -48,97 +103,129 @@ class UserCenterScreen extends StatelessWidget {
 
   /// 构建用户信息区域
   Widget _buildUserInfoSection(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).pushNamed(Routes.profile);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            // 头像
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                shape: BoxShape.circle,
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.white,
-                    ),
+    return Observer(
+      builder: (_) {
+        final user = _userStore.currentUser;
+        final username = user?.username ?? '未登录';
+        final userId = user?.id ?? 0;
+        final userCode = user?.code?.toString() ?? '';
+        final nickname = user?.profile?.nickname;
+        final avatar = user?.profile?.avatar;
+        
+        // 获取用户名首字母作为头像显示
+        String getInitials(String name) {
+          if (name.isEmpty) return 'U';
+          return name.substring(0, 1).toUpperCase();
+        }
+
+        return InkWell(
+          onTap: () {
+            Navigator.of(context).pushNamed(Routes.profile);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // 头像
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.amber[700],
-                        shape: BoxShape.circle,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: avatar != null && avatar.isNotEmpty
+                            ? ClipOval(
+                                child: Image.network(
+                                  avatar,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.person,
+                                size: 40,
+                                color: Colors.white,
+                              ),
                       ),
-                      child: Center(
-                        child: Text(
-                          'M',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      if (userCode.isNotEmpty)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.amber[700],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                getInitials(userCode),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            // 用户信息
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ID: 589772405',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'User-92084',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildTag('普通用户', Colors.amber),
-                      const SizedBox(width: 8),
-                      _buildTag('已认证', Colors.green[300]!),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                // 用户信息
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ID: $userId',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        nickname?.isNotEmpty == true ? nickname! : username,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildTag('普通用户', Colors.amber),
+                          const SizedBox(width: 8),
+                          _buildTag('已认证', Colors.green[300]!),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // 右侧箭头
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
-            // 右侧箭头
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

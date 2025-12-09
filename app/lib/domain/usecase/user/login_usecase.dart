@@ -7,10 +7,21 @@ part 'login_usecase.g.dart';
 
 @JsonSerializable()
 class LoginParams {
-  final String username;
-  final String password;
+  final int type; // 1=用户名密码，2=手机验证码
+  final String? username;
+  final String? password;
+  final String? mobile;
+  final String? code;
+  final String? scene; // 验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)
 
-  LoginParams({required this.username, required this.password});
+  LoginParams({
+    required this.type,
+    this.username,
+    this.password,
+    this.mobile,
+    this.code,
+    this.scene,
+  });
 
   factory LoginParams.fromJson(Map<String, dynamic> json) =>
       _$LoginParamsFromJson(json);

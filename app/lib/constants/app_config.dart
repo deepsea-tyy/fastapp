@@ -35,10 +35,10 @@ class AppConfig {
   // ==================== 网络配置 ====================
   
   /// API 基础 URL
-  static const String apiBaseUrl = 'http://jsonplaceholder.typicode.com';
+  static const String apiBaseUrl = 'http://192.168.1.4:9501';
 
   /// WebSocket 基础 URL
-  static const String wsBaseUrl = 'ws://127.0.0.1:9502/ws';
+  static const String wsBaseUrl = 'ws://192.168.1.4:9502/ws';
 
   /// 连接超时时间（毫秒）
   static const int connectionTimeout = 30000;
@@ -78,7 +78,7 @@ class AppConfig {
   // ==================== 资源配置 ====================
   
   /// 图片 CDN 基础 URL
-  static const String imageCdnBaseUrl = 'https://static.bgbstatic.com';
+  static const String imageCdnBaseUrl = 'http://127.0.0.1:9501/api/file?path=';
 
   // ==================== UI 配置 ====================
   
