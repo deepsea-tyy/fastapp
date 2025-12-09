@@ -5,7 +5,7 @@ import 'package:image/image.dart' as img;
 /// 应用资源管理脚本
 /// 统一管理 iOS、Android 和 Web 的应用图标和启动图
 /// 
-/// 使用方法: dart run scripts/manage_launch_screen.dart [command]
+/// 使用方法: dart run scripts/launch_screen.dart [command]
 /// 命令: icons, launch/sync, all (默认)
 /// 
 /// 功能：
@@ -15,8 +15,6 @@ import 'package:image/image.dart' as img;
 
 // 路径常量
 const _configFile = 'app_config.json';
-const _defaultSplashImage = 'assets/images/launch/light-background.png';
-const _defaultLogoPath = 'assets/images/launch/logo.png';
 
 // Android 路径
 const _androidDrawable = 'android/app/src/main/res/drawable';
@@ -125,7 +123,10 @@ Future<void> generateAppIcons() async {
 
   try {
     final config = await _loadConfig();
-    final logoPath = _getConfigValue<String>(config, ['assets', 'appLogo']) ?? _defaultLogoPath;
+    // 优先读取 Android logo，如果不存在则读取 iOS logo，最后使用默认值
+    final logoPath = _getConfigValue<String>(config, ['assets', 'appLogo', 'android']) ?? 
+                     _getConfigValue<String>(config, ['assets', 'appLogo', 'ios']) ?? 
+                     'assets/images/launch/logo.png';
     final sourceImage = await _loadImage(logoPath);
 
     // Android 图标
@@ -174,7 +175,11 @@ Future<void> syncLaunchScreen() async {
 
   try {
     final config = await _loadConfig();
-    final imagePath = _getConfigValue<String>(config, ['splash', 'image']) ?? _defaultSplashImage;
+    // 优先读取 Android 启动图，如果不存在则读取 iOS/Web，最后使用默认值
+    final imagePath = _getConfigValue<String>(config, ['splash', 'android', 'image']) ?? 
+                      _getConfigValue<String>(config, ['splash', 'ios', 'image']) ?? 
+                      _getConfigValue<String>(config, ['splash', 'web', 'image']) ?? 
+                      'assets/images/launch/light-background.png';
     final sourceImage = await _loadImage(imagePath);
 
     // Android 启动图
@@ -207,6 +212,9 @@ Future<void> syncLaunchScreen() async {
         );
       }
     }
+    
+    // 同步 iOS LaunchScreen.storyboard
+    await _syncIosLaunchScreen(config);
 
     // Web 启动图
     await _syncWebLaunchScreen(config);
@@ -218,15 +226,54 @@ Future<void> syncLaunchScreen() async {
   }
 }
 
+/// 同步 iOS LaunchScreen.storyboard 配置
+Future<void> _syncIosLaunchScreen(Map<String, dynamic> config) async {
+  const storyboardPath = 'ios/Runner/Base.lproj/LaunchScreen.storyboard';
+  final storyboardFile = File(storyboardPath);
+  if (!await storyboardFile.exists()) return;
+
+  final splash = config['splash'] as Map<String, dynamic>? ?? {};
+  final iosSplash = splash['ios'] as Map<String, dynamic>? ?? {};
+  final backgroundColor = iosSplash['backgroundColor'] as String? ?? '#ffffff';
+  
+  // 将十六进制颜色转换为 RGB (0.0-1.0)
+  Map<String, double> hexToRgb(String hex) {
+    hex = hex.replaceAll('#', '');
+    if (hex.length == 6) {
+      return {
+        'r': int.parse(hex.substring(0, 2), radix: 16) / 255.0,
+        'g': int.parse(hex.substring(2, 4), radix: 16) / 255.0,
+        'b': int.parse(hex.substring(4, 6), radix: 16) / 255.0,
+      };
+    }
+    return {'r': 1.0, 'g': 1.0, 'b': 1.0}; // 默认白色
+  }
+  
+  final rgb = hexToRgb(backgroundColor);
+  var content = await storyboardFile.readAsString();
+  
+  // 更新背景色
+  content = content.replaceAll(
+    RegExp(r'<color key="backgroundColor" red="[^"]*" green="[^"]*" blue="[^"]*" alpha="[^"]*"'),
+    '<color key="backgroundColor" red="${rgb['r']}" green="${rgb['g']}" blue="${rgb['b']}" alpha="1"',
+  );
+  
+  await storyboardFile.writeAsString(content);
+  print('   ✅ 已更新 iOS LaunchScreen.storyboard');
+}
+
 /// 同步 Web 启动图配置
 Future<void> _syncWebLaunchScreen(Map<String, dynamic> config) async {
   final webIndexFile = File(_webIndexHtml);
   if (!await webIndexFile.exists()) return;
 
   final splash = config['splash'] as Map<String, dynamic>? ?? {};
-  final image = _getConfigValue<String>(config, ['splash', 'image']) ?? _defaultSplashImage;
-  final backgroundColor = _getConfigValue<String>(config, ['splash', 'backgroundColor']) ?? '#ffffff';
+  final image = _getConfigValue<String>(config, ['splash', 'web', 'image']) ?? 
+                _getConfigValue<String>(config, ['splash', 'android', 'image']) ?? 
+                _getConfigValue<String>(config, ['splash', 'ios', 'image']) ?? 
+                'assets/images/launch/light-background.png';
   final web = splash['web'] as Map<String, dynamic>? ?? {};
+  final backgroundColor = web['backgroundColor'] as String? ?? '#ffffff';
   final webBackgroundSize = web['backgroundSize'] as String? ?? 'cover';
   final webFadeOutTime = web['fadeOutTime'] as int? ?? 400;
   final webHideDelay = web['hideDelay'] as int? ?? 500;

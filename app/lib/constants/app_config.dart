@@ -72,8 +72,11 @@ class AppConfig {
 
   // ==================== 主题配置 ====================
   
-  /// 主题种子颜色
-  static const String seedColor = '#2196F3';
+  /// 亮色主题种子颜色
+  static const String seedColorLight = '#2196F3';
+  
+  /// 暗色主题种子颜色
+  static const String seedColorDark = '#2196F3';
 
   // ==================== 资源配置 ====================
   
@@ -110,10 +113,16 @@ class AppConfig {
   // ==================== 启动图配置 ====================
   
   /// 启动图图片路径
-  static const String splashImage = 'assets/images/launch/light-background.png';
+  static const String splashImage = 'assets/images/launch/logo.png';
   
-  /// 启动图背景颜色
-  static const String splashBackgroundColor = '#ffffff';
+  /// Android 启动图背景颜色
+  static const String splashBackgroundColorAndroid = '#ffffff';
+  
+  /// iOS 启动图背景颜色
+  static const String splashBackgroundColorIos = '#ffffff';
+  
+  /// Web 启动图背景颜色
+  static const String splashBackgroundColorWeb = '#ffffff';
   
   /// Web 端启动图背景尺寸
   static const String splashWebBackgroundSize = 'cover';

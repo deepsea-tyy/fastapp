@@ -103,7 +103,7 @@ cd ios && pod install
 ### Xcode 相关问题
 
 **Q: "Command PhaseScriptExecution failed" 错误？**
-- 运行重建脚本：`./scripts/rebuild_ios.sh`
+- 运行重建脚本：`./scripts/dev_rebuild_ios.sh`
 - 或在 Xcode 中：`Product` → `Clean Build Folder`
 
 **Q: "Update to recommended settings" 提示？**

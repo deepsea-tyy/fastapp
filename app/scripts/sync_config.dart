@@ -79,19 +79,23 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
   final ios = _getMap(config, ['ios']);
   final network = _getMap(config, ['network']);
   final theme = _getMap(config, ['theme']);
+  final themeLight = _getMap(config, ['theme', 'light']);
+  final themeDark = _getMap(config, ['theme', 'dark']);
   final resources = _getMap(config, ['resources']);
   final ui = _getMap(config, ['ui']);
   final assets = _getMap(config, ['assets']);
   final fonts = _getMap(config, ['fonts']);
   final splash = _getMap(config, ['splash']);
+  final splashAndroid = _getMap(splash, ['android']);
+  final splashIos = _getMap(splash, ['ios']);
   final splashWeb = _getMap(splash, ['web']);
   final endpoints = _getMap(network, ['endpoints']);
 
   final replacements = {
-    r"static const String appName = '[^']*';": "static const String appName = '${app['name']}';",
-    r"static const String appVersion = '[^']*';": "static const String appVersion = '${app['version']}';",
-    r"static const int buildNumber = \d+;": "static const int buildNumber = ${app['buildNumber']};",
-    r"static const String appDescription = '[^']*';": "static const String appDescription = '${app['description']}';",
+    r"static const String appName = '[^']*';": "static const String appName = '${app['name'] ?? 'fastapp'}';",
+    r"static const String appVersion = '[^']*';": "static const String appVersion = '${app['version'] ?? '1.0.0'}';",
+    r"static const int buildNumber = \d+;": "static const int buildNumber = ${app['buildNumber'] ?? 1};",
+    r"static const String appDescription = '[^']*';": "static const String appDescription = '${app['description'] ?? 'A flutter boilerplate project'}';",
     r"static const String apiBaseUrl = '[^']*';": "static const String apiBaseUrl = '${network['apiBaseUrl'] ?? 'http://jsonplaceholder.typicode.com'}';",
     r"static const String wsBaseUrl = '[^']*';": "static const String wsBaseUrl = '${network['wsBaseUrl'] ?? 'ws://127.0.0.1:9502/ws'}';",
     r"static const int connectionTimeout = \d+;": "static const int connectionTimeout = ${network['connectionTimeout'] ?? 30000};",
@@ -108,19 +112,22 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
     r"static const String futuresPosition = '[^']*';": "static const String futuresPosition = '${_getMap(endpoints, ['futures'])['position'] ?? '/api/v1/futures/position'}';",
     r"static const String futuresLeverage = '[^']*';": "static const String futuresLeverage = '${_getMap(endpoints, ['futures'])['leverage'] ?? '/api/v1/futures/leverage'}';",
     r"static const String futuresFundingRate = '[^']*';": "static const String futuresFundingRate = '${_getMap(endpoints, ['futures'])['fundingRate'] ?? '/api/v1/futures/funding-rate'}';",
-    r"static const String seedColor = '[^']*';": "static const String seedColor = '${theme['seedColor'] ?? '#2196F3'}';",
+    r"static const String seedColorLight = '[^']*';": "static const String seedColorLight = '${themeLight['seedColor'] ?? '#2196F3'}';",
+    r"static const String seedColorDark = '[^']*';": "static const String seedColorDark = '${themeDark['seedColor'] ?? '#2196F3'}';",
     r"static const String imageCdnBaseUrl = '[^']*';": "static const String imageCdnBaseUrl = '${resources['imageCdnBaseUrl'] ?? ''}';",
     r"static const double defaultHorizontalPadding = [\d.]+;": "static const double defaultHorizontalPadding = ${ui['defaultHorizontalPadding'] ?? 12.0};",
     r"static const double defaultVerticalPadding = [\d.]+;": "static const double defaultVerticalPadding = ${ui['defaultVerticalPadding'] ?? 12.0};",
     r"static const double defaultBorderRadius = [\d.]+;": "static const double defaultBorderRadius = ${ui['defaultBorderRadius'] ?? 8.0};",
-    r"static const String appLogo = '[^']*';": "static const String appLogo = '${assets['appLogo'] ?? 'assets/icons/ic_appicon.png'}';",
+    r"static const String appLogo = '[^']*';": "static const String appLogo = '${_get<String>(config, ['assets', 'appLogo', 'android']) ?? _get<String>(config, ['assets', 'appLogo', 'ios']) ?? 'assets/icons/ic_appicon.png'}';",
     r"static const String carBackground = '[^']*';": "static const String carBackground = '${assets['carBackground'] ?? 'assets/images/img_login.jpg'}';",
     r"static const String productSans = '[^']*';": "static const String productSans = '${fonts['productSans'] ?? 'ProductSans'}';",
     r"static const String roboto = '[^']*';": "static const String roboto = '${fonts['roboto'] ?? 'Roboto'}';",
     r"static const String androidPackageName = '[^']*';": "static const String androidPackageName = '${android['packageName'] ?? 'com.iotecksolutions.todoapp'}';",
     r"static const String iosBundleId = '[^']*';": "static const String iosBundleId = '${ios['bundleId'] ?? 'com.iotecksolutions.todoapp'}';",
-    r"static const String splashImage = '[^']*';": "static const String splashImage = '${splash['image'] ?? 'assets/images/launch/light-background.png'}';",
-    r"static const String splashBackgroundColor = '[^']*';": "static const String splashBackgroundColor = '${splash['backgroundColor'] ?? '#ffffff'}';",
+    r"static const String splashImage = '[^']*';": "static const String splashImage = '${_get<String>(config, ['splash', 'android', 'image']) ?? _get<String>(config, ['splash', 'ios', 'image']) ?? _get<String>(config, ['splash', 'web', 'image']) ?? 'assets/images/launch/light-background.png'}';",
+    r"static const String splashBackgroundColorAndroid = '[^']*';": "static const String splashBackgroundColorAndroid = '${splashAndroid['backgroundColor'] ?? '#ffffff'}';",
+    r"static const String splashBackgroundColorIos = '[^']*';": "static const String splashBackgroundColorIos = '${splashIos['backgroundColor'] ?? '#ffffff'}';",
+    r"static const String splashBackgroundColorWeb = '[^']*';": "static const String splashBackgroundColorWeb = '${splashWeb['backgroundColor'] ?? '#ffffff'}';",
     r"static const String splashWebBackgroundSize = '[^']*';": "static const String splashWebBackgroundSize = '${splashWeb['backgroundSize'] ?? 'cover'}';",
     r"static const int splashWebFadeOutTime = \d+;": "static const int splashWebFadeOutTime = ${splashWeb['fadeOutTime'] ?? 400};",
     r"static const int splashWebHideDelay = \d+;": "static const int splashWebHideDelay = ${splashWeb['hideDelay'] ?? 500};",
@@ -135,15 +142,17 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
 }
 
 Future<void> syncAndroidManifest(Map<String, dynamic> config) async {
+  final android = _getMap(config, ['android']);
   await _updateFile('android/app/src/main/AndroidManifest.xml', (content) {
     return content
-        .replaceAll(RegExp(r'android:label="[^"]*"'), 'android:label="${config['label']}"')
-        .replaceAll(RegExp(r'package="[^"]*"'), 'package="${config['packageName']}"');
+        .replaceAll(RegExp(r'android:label="[^"]*"'), 'android:label="${android['label'] ?? 'fastapp'}"')
+        .replaceAll(RegExp(r'package="[^"]*"'), 'package="${android['packageName'] ?? 'com.iotecksolutions.todoapp'}"');
   });
 }
 
 Future<void> syncAndroidBuildGradle(Map<String, dynamic> config) async {
-  final packageName = config['packageName'] as String? ?? 'com.iotecksolutions.todoapp';
+  final android = _getMap(config, ['android']);
+  final packageName = android['packageName'] as String? ?? 'com.iotecksolutions.todoapp';
   await _updateFile('android/app/build.gradle', (content) {
     return content
         .replaceAll(RegExp(r'namespace\s+"[^"]*"'), 'namespace "$packageName"')
@@ -152,27 +161,34 @@ Future<void> syncAndroidBuildGradle(Map<String, dynamic> config) async {
 }
 
 Future<void> syncMacosBundleId(Map<String, dynamic> config) async {
-  final bundleId = config['bundleId'] as String? ?? 'com.iotecksolutions.todoapp';
+  final ios = _getMap(config, ['ios']);
+  final bundleId = ios['bundleId'] as String? ?? 'com.iotecksolutions.todoapp';
   await _updateFile('macos/Runner/Configs/AppInfo.xcconfig', (content) {
     return content.replaceAll(RegExp(r'PRODUCT_BUNDLE_IDENTIFIER = [^\n]*'), 'PRODUCT_BUNDLE_IDENTIFIER = $bundleId');
   });
 }
 
 Future<void> syncInfoPlist(Map<String, dynamic> config) async {
+  final ios = _getMap(config, ['ios']);
   await _updateFile('ios/Runner/Info.plist', (content) {
     return content
-        .replaceAll(RegExp(r'<key>CFBundleDisplayName</key>\s*<string>[^<]*</string>'), '<key>CFBundleDisplayName</key>\n\t<string>${config['displayName']}</string>')
-        .replaceAll(RegExp(r'<key>CFBundleName</key>\s*<string>[^<]*</string>'), '<key>CFBundleName</key>\n\t<string>${config['bundleName']}</string>');
+        .replaceAll(RegExp(r'<key>CFBundleDisplayName</key>\s*<string>[^<]*</string>'), '<key>CFBundleDisplayName</key>\n\t<string>${ios['displayName'] ?? 'fastapp'}</string>')
+        .replaceAll(RegExp(r'<key>CFBundleName</key>\s*<string>[^<]*</string>'), '<key>CFBundleName</key>\n\t<string>${ios['bundleName'] ?? 'fastapp'}</string>');
   });
 }
 
 Future<void> syncWebIndexHtml(Map<String, dynamic> config) async {
+  final web = _getMap(config, ['web']);
   await _updateFile('web/index.html', (content) {
+    final title = web['title'] as String? ?? 'fastapp';
+    final themeColor = web['themeColor'] as String? ?? '#0175C2';
     content = content
-        .replaceAll(RegExp(r'<title>[^<]*</title>'), '<title>${config['title']}</title>')
-        .replaceAll(RegExp(r'<meta name="apple-mobile-web-app-title" content="[^"]*">'), '<meta name="apple-mobile-web-app-title" content="${config['title']}">');
+        .replaceAll(RegExp(r'<title>[^<]*</title>'), '<title>$title</title>')
+        .replaceAll(RegExp(r'<meta name="apple-mobile-web-app-title" content="[^"]*">'), '<meta name="apple-mobile-web-app-title" content="$title">')
+        .replaceAll(RegExp(r'<meta name="theme-color" content="[^"]*">'), '<meta name="theme-color" content="$themeColor">');
     
-    final icon = config['icon'] as String?;
+    // 读取 web icon
+    final icon = _get<String>(config, ['web', 'icon']);
     if (icon != null) {
       content = content
           .replaceAll(RegExp(r'<link rel="apple-touch-icon" href="[^"]*"'), '<link rel="apple-touch-icon" href="$icon"')
@@ -190,14 +206,17 @@ Future<void> syncWebManifest(Map<String, dynamic> config) async {
   }
 
   final manifest = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-  final web = config['web'] as Map<String, dynamic>;
-  final app = config['app'] as Map<String, dynamic>;
+  final web = _getMap(config, ['web']);
+  final app = _getMap(config, ['app']);
   
-  manifest['name'] = web['title'];
-  manifest['short_name'] = web['shortName'];
-  manifest['description'] = app['description'];
+  manifest['name'] = web['title'] ?? 'fastapp';
+  manifest['short_name'] = web['shortName'] ?? 'fastapp';
+  manifest['description'] = app['description'] ?? 'A flutter boilerplate project';
+  manifest['theme_color'] = web['themeColor'] ?? '#0175C2';
+  manifest['background_color'] = web['backgroundColor'] ?? '#0175C2';
   
-  final icon = web['icon'] as String?;
+  // 读取 web icon
+  final icon = _get<String>(config, ['web', 'icon']);
   if (icon != null && manifest['icons'] is List) {
     for (final iconMap in (manifest['icons'] as List).whereType<Map<String, dynamic>>()) {
       iconMap['src'] = icon;
@@ -209,9 +228,11 @@ Future<void> syncWebManifest(Map<String, dynamic> config) async {
 }
 
 Future<void> syncAndroidStyles(Map<String, dynamic> config) async {
-  final normalThemeBackground = _get<String>(config, ['android', 'styles', 'normalThemeBackground']) ?? '@drawable/ic_launcher';
-  final launchThemeBackground = _get<String>(config, ['android', 'styles', 'launchThemeBackground']) ?? '@drawable/launch_background';
-  final nightNormalThemeBackground = _get<String>(config, ['android', 'styles', 'nightNormalThemeBackground']) ?? '?android:colorBackground';
+  final android = _getMap(config, ['android']);
+  final styles = _getMap(android, ['styles']);
+  final normalThemeBackground = styles['normalThemeBackground'] as String? ?? '@drawable/ic_launcher';
+  final launchThemeBackground = styles['launchThemeBackground'] as String? ?? '@drawable/launch_background';
+  final nightNormalThemeBackground = styles['nightNormalThemeBackground'] as String? ?? '?android:colorBackground';
   
   await _syncAndroidStylesXml('android/app/src/main/res/values/styles.xml', normalThemeBackground, launchThemeBackground);
   await _syncAndroidStylesXml('android/app/src/main/res/values-night/styles.xml', nightNormalThemeBackground, launchThemeBackground);

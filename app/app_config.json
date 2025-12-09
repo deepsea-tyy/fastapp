@@ -57,19 +57,35 @@
     }
   },
   "theme": {
-    "seedColor": "#2196F3"
+    "light": {
+      "seedColor": "#2196F3"
+    },
+    "dark": {
+      "seedColor": "#2196F3"
+    }
   },
   "resources": {
     "imageCdnBaseUrl": "http://127.0.0.1:9501/api/file?path="
   },
   "assets": {
-    "appLogo": "assets/images/launch/logo.png",
+    "appLogo": {
+      "android": "assets/images/launch/logo.png",
+      "ios": "assets/images/launch/logo.png"
+    },
     "carBackground": "assets/images/img_login.jpg"
   },
   "splash": {
-    "image": "assets/images/launch/light-background.png",
-    "backgroundColor": "#ffffff",
+    "android": {
+      "image": "assets/images/launch/logo.png",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "image": "assets/images/launch/light-background.png",
+      "backgroundColor": "#ffffff"
+    },
     "web": {
+      "image": "assets/images/launch/light-background.png",
+      "backgroundColor": "#ffffff",
       "backgroundSize": "cover",
       "fadeOutTime": 400,
       "hideDelay": 500

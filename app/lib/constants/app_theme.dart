@@ -54,8 +54,11 @@ class AppTheme {
   static ThemeData _buildTheme(AppThemeType themeType) {
     final brightness = themeType.brightness;
     
-    // 将 hex 颜色字符串转换为 Color
-    final seedColor = _hexToColor(AppConfig.seedColor);
+    // 根据主题类型选择对应的种子颜色
+    final seedColorString = themeType == AppThemeType.light 
+        ? AppConfig.seedColorLight 
+        : AppConfig.seedColorDark;
+    final seedColor = _hexToColor(seedColorString);
     final borderRadius = AppConfig.defaultBorderRadius;
     
     return ThemeData(
