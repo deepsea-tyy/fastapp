@@ -9,6 +9,8 @@ import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
 import 'package:fastapp/domain/usecase/user/login_usecase.dart';
 import 'package:fastapp/domain/usecase/user/save_login_in_status_usecase.dart';
 import 'package:fastapp/domain/usecase/user/get_user_info_usecase.dart';
+import 'package:fastapp/domain/usecase/user/logout_usecase.dart';
+import 'package:fastapp/domain/usecase/user/refresh_token_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
@@ -34,6 +36,12 @@ class UseCaseModule {
     );
     getIt.registerSingleton<GetUserInfoUseCase>(
       GetUserInfoUseCase(getIt<UserRepository>()),
+    );
+    getIt.registerSingleton<LogoutUseCase>(
+      LogoutUseCase(getIt<UserRepository>()),
+    );
+    getIt.registerSingleton<RefreshTokenUseCase>(
+      RefreshTokenUseCase(getIt<UserRepository>()),
     );
 
     // market:------------------------------------------------------------------

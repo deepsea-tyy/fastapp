@@ -8,7 +8,7 @@ namespace App\Http\Admin\Middleware;
 use App\Http\Admin\Permission;
 use App\Common\ResultCode;
 use App\Exception\BusinessException;
-use App\Http\CurrentUser;
+use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Model\Enums\User\Status;
 use Hyperf\Collection\Arr;
 use Hyperf\Di\Annotation\AnnotationCollector;
@@ -23,16 +23,16 @@ final class PermissionMiddleware implements MiddlewareInterface
     use ParserRouterTrait;
 
     public function __construct(
-        private readonly CurrentUser $currentUser,
+        private readonly AdminUserService $adminUserService,
     )
     {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $user = $this->currentUser->adminUser();
+        $user = $this->adminUserService->getInfo();
         if ($user->status == Status::DISABLE) {
-            throw new BusinessException(code: ResultCode::DISABLED, message: trans('user.disable'));
+            throw new BusinessException(code: ResultCode::DISABLED, message: trans('result.disable'));
         }
         if ($user->isSuperAdmin()) {
             return $handler->handle($request);
@@ -68,7 +68,7 @@ final class PermissionMiddleware implements MiddlewareInterface
         $operation = $permission->getOperation();
         $codes = $permission->getCode();
         foreach ($codes as $code) {
-            $isMenu = $this->currentUser->adminUser()->hasPermission($code);
+            $isMenu = $this->adminUserService->getInfo()->hasPermission($code);
             if ($operation === Permission::OPERATION_AND && !$isMenu) {
                 throw new BusinessException(code: ResultCode::FORBIDDEN);
             }

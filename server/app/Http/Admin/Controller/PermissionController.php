@@ -27,23 +27,22 @@ use Psr\SimpleCache\CacheInterface;
 final class PermissionController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser $currentUser,
         private readonly MenuRepository $repository,
         private readonly RoleRepository $roleRepository,
-        private readonly AdminUserService $userService
+        private readonly AdminUserService $adminUserService
     ) {}
 
     #[GetMapping(path: '/admin/permission/menus')]
     public function menus(): Result
     {
         return $this->success(
-            data: $this->currentUser->isSuperAdmin()
+            data: $this->adminUserService->isSuperAdmin()
                 ? $this->repository->list([
                     'status' => Status::Normal,
                     'children' => true,
                     'parent_id' => 0,
                 ])
-                : $this->currentUser->filterCurrentUser()
+                : $this->adminUserService->filterCurrentUser()
         );
     }
 
@@ -51,9 +50,9 @@ final class PermissionController extends AbstractController
     public function roles(): Result
     {
         return $this->success(
-            data: $this->currentUser->isSuperAdmin()
+            data: $this->adminUserService->isSuperAdmin()
                 ? $this->roleRepository->list(['status' => Status::Normal])
-                : $this->currentUser->adminUser()->getRoles()
+                : $this->adminUserService->getInfo()->getRoles()
         );
     }
 
@@ -61,14 +60,14 @@ final class PermissionController extends AbstractController
     public function update(PermissionRequest $request, CacheInterface $cache): Result
     {
         $data = $request->validated();
-        $user = $this->currentUser->adminUser();
+        $user = $this->adminUserService->getInfo();
         if (Arr::exists($data, 'new_password')) {
             if (! $user->verifyPassword(Arr::get($data, 'old_password'))) {
                 throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, trans('user.old_password_error'));
             }
             $data['password'] = $data['new_password'];
         }
-        $this->userService->updateById($user->id, $data);
+        $this->adminUserService->updateById($user->id, $data);
         $cache->delete((string)$user->id);
         return $this->success();
     }

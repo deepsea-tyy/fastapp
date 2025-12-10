@@ -13,49 +13,60 @@ class ResponseInterceptor extends Interceptor {
     try {
       final data = response.data;
       
-      // 如果响应数据是 Map，检查是否符合统一响应结构
-      if (data is Map<String, dynamic>) {
-        // 检查是否有 code 字段（标准响应格式）
-        if (data.containsKey('code')) {
-          final apiResponse = ApiResponse.fromJson(data);
-          
-          // 如果 code 不是 200，需要处理错误
-          if (!apiResponse.isSuccess) {
-            // 如果是 422 或 500，发送消息事件
-            if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
-              _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
-            }
-            
-            // 抛出 DioException，让 ErrorInterceptor 处理
-            final error = DioException(
-              requestOptions: response.requestOptions,
-              response: Response(
-                requestOptions: response.requestOptions,
-                data: apiResponse.toJson(),
-                headers: response.headers,
-                isRedirect: response.isRedirect,
-                statusCode: response.statusCode,
-                statusMessage: response.statusMessage,
-                redirects: response.redirects,
-                extra: response.extra,
-              ),
-              type: apiResponse.code == 422
-                  ? DioExceptionType.badResponse
-                  : DioExceptionType.unknown,
-              error: apiResponse.message,
-            );
-            
-            return handler.reject(error);
-          }
-          
-          // 成功时，将 data 字段提取出来作为响应数据
-          // 如果 data 为 null，保留原始响应（可能是直接返回的数据）
-          response.data = apiResponse.data ?? data;
-        }
-        // 如果没有 code 字段，说明响应直接是数据，保持不变
+      // 只处理 Map 类型的响应，其他类型（String、null等）直接跳过
+      if (data is! Map<String, dynamic>) {
+        return handler.next(response);
       }
+      
+      // 检查是否有 code 字段（标准响应格式）
+      if (!data.containsKey('code')) {
+        return handler.next(response);
+      }
+      
+      // 解析统一响应结构
+      final apiResponse = ApiResponse.fromJson(data);
+      
+      // 处理错误响应
+      if (!apiResponse.isSuccess) {
+        // 发送错误消息事件
+        if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
+          _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
+        }
+        
+        // 抛出 DioException，让 ErrorInterceptor 处理
+        return handler.reject(
+          DioException(
+            requestOptions: response.requestOptions,
+            response: Response(
+              requestOptions: response.requestOptions,
+              data: apiResponse.toJson(),
+              headers: response.headers,
+              isRedirect: response.isRedirect,
+              statusCode: response.statusCode,
+              statusMessage: response.statusMessage,
+              redirects: response.redirects,
+              extra: response.extra,
+            ),
+            type: apiResponse.code == 422
+                ? DioExceptionType.badResponse
+                : DioExceptionType.unknown,
+            error: apiResponse.message,
+          ),
+        );
+      }
+      
+      // 成功时，提取 data 字段作为响应数据
+      response.data = apiResponse.data ?? data;
     } catch (e) {
-      // 如果解析失败，继续正常流程
+      // 解析失败，抛出错误
+      return handler.reject(
+        DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          error: '响应数据格式错误: $e',
+        ),
+      );
     }
     
     handler.next(response);

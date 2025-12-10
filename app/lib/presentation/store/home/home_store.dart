@@ -56,35 +56,35 @@ abstract class _HomeStore with Store {
         name: 'Bitcoin',
         price: 90714.12,
         changePercent: -5.19,
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/btc.png',
+        logoUrl: '',
       ),
       CryptoCoin(
         symbol: 'ETH',
         name: 'Ethereum',
         price: 3034.23,
         changePercent: -5.11,
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/eth.png',
+        logoUrl: '',
       ),
       CryptoCoin(
         symbol: 'SOL',
         name: 'Solana',
         price: 137.45,
         changePercent: -2.64,
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/sol.png',
+        logoUrl: '',
       ),
       CryptoCoin(
         symbol: 'XRP',
         name: 'XRP',
         price: 2.1733,
         changePercent: -3.98,
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/xrp.png',
+        logoUrl: '',
       ),
       CryptoCoin(
         symbol: 'BGB',
         name: 'Bitget Token',
         price: 3.7,
         changePercent: -4.0,
-        logoUrl: 'https://static.bgbstatic.com/portalx-static/img/coin/bgb.png',
+        logoUrl: '',
       ),
     ]);
 
@@ -120,21 +120,21 @@ abstract class _HomeStore with Store {
     traderCards.addAll([
       TraderCard(
         username: 'GainGold',
-        avatarUrl: 'https://static.bgbstatic.com/portalx-static/img/trader/gaingold.png',
+        avatarUrl: '',
         copyCount: 531,
         maxCopyCount: 1000,
         profit30Days: 1328.74,
         roi30Days: 8910.34,
-        chartImageUrl: 'https://static.bgbstatic.com/portalx-static/img/chart/gaingold.png',
+        chartImageUrl: '',
       ),
       TraderCard(
         username: 'Lemonwater',
-        avatarUrl: 'https://static.bgbstatic.com/portalx-static/img/trader/lemonwater.png',
+        avatarUrl: '',
         copyCount: 316,
         maxCopyCount: 550,
         profit30Days: 46158.51,
         roi30Days: 7077.89,
-        chartImageUrl: 'https://static.bgbstatic.com/portalx-static/img/chart/lemonwater.png',
+        chartImageUrl: '',
       ),
     ]);
   }

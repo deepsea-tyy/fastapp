@@ -20,13 +20,17 @@ use Hyperf\Validation\Request\FormRequest;
 
 #[Schema(title: '登录注册请求', description: '登录请求参数', properties: [
     new Property('username', description: 'username', type: 'string'),
+    new Property('mobile', description: 'mobile', type: 'string'),
+    new Property('code', description: 'mobile code', type: 'string'),
+    new Property('mobile', description: 'mobile', type: 'string'),
     new Property('password', description: 'password', type: 'string'),
     new Property('password_confirmation', description: '确认密码', type: 'string'),
-    new Property('code', description: 'sms', type: 'string'),
+    new Property('vcode', description: '验证码', type: 'string'),
     new Property('openid', description: 'openid', type: 'string'),
-    new Property('type', description: '类型 1账号密码2手机验证码3小程序4公众号', type: 'integer'),
+    new Property('type', description: '类型 1账号密码,2手机验证码,3邮箱证码,11小程序,12公众号', type: 'integer'),
     new Property('scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', type: 'string'),
-    new Property('secret', description: 'Google2FA密钥', type: 'string'),
+    new Property('google2fa', description: 'Google2FA密钥', type: 'string'),
+    new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
     new Property('invite_code', description: '邀请码', type: 'string'),
 ])]
 class UserRequest extends FormRequest
@@ -45,11 +49,14 @@ class UserRequest extends FormRequest
             'username' => 'string|max:16',
             'password' => 'string|max:32',
             'password_confirmation' => 'string|max:32',
+            'code' => 'string|max:8',
             'mobile' => 'string|max:16',
-            'code' => 'string|max:32',
+            'email' => 'string|max:64',
+            'vcode' => 'string|max:32',
             'type' => 'integer',
             'scene' => 'string|in:login,register,reset_password,bind,change,default',
-            'secret' => 'string|max:50',
+            'google2fa' => 'string|max:50',
+            'google2fa_code' => 'nullable|integer',
             'invite_code' => 'nullable|string|max:16',
         ];
     }
@@ -64,6 +71,7 @@ class UserRequest extends FormRequest
             'password' => 'required_if:type,1|confirmed',
             'password_confirmation' => 'required_if:type,1',
             'mobile' => 'required_if:type,2',
+            'email' => 'required_if:type,3',
             'scene' => 'required_if:type,2',
             'type' => 'required|integer',
             'invite_code' => 'nullable|string|max:16',
@@ -76,10 +84,15 @@ class UserRequest extends FormRequest
     public function loginRules(): array
     {
         return [
-            'username' => 'required_if:type,1',
+            // username 不再必填，允许为空
+            'username' => 'nullable',
+            // mobile 在 type=1 时（当 username 和 email 都不存在时必填），或在 type=2 时必填
+            'mobile' => 'required_without_all:username,email|required_if:type,2',
+            // email 在 type=1 时（当 username 和 mobile 都不存在时必填）
+            'email' => 'required_without_all:username,mobile',
             'password' => 'required_if:type,1',
-            'mobile' => 'required_if:type,2',
-            'code' => 'required_if:type,2',
+            // type=2 时，手机验证码登录
+            'vcode' => 'required_if:type,2',
             'scene' => 'required_if:type,2',
             'type' => 'required|integer',
         ];
@@ -91,6 +104,7 @@ class UserRequest extends FormRequest
     public function smsRules(): array
     {
         return [
+            'code' => 'required',
             'mobile' => 'required|string|max:16',
             'scene' => 'required|string|in:login,register,reset_password,bind,change,default',
         ];
@@ -102,8 +116,8 @@ class UserRequest extends FormRequest
     public function google2faBindRules(): array
     {
         return [
-            'secret' => 'required|string|max:50',
-            'code' => 'required|string|max:32',
+            'google2fa' => 'required|string|max:50',
+            'google2fa_code' => 'required|string|max:32',
         ];
     }
 
@@ -113,7 +127,7 @@ class UserRequest extends FormRequest
     public function google2faVerifyRules(): array
     {
         return [
-            'code' => 'required|string|max:32',
+            'google2fa_code' => 'required|string|max:32',
         ];
     }
 
@@ -123,7 +137,7 @@ class UserRequest extends FormRequest
     public function google2faUnbindRules(): array
     {
         return [
-            'code' => 'required|string|max:32',
+            'google2fa_code' => 'required|string|max:32',
         ];
     }
 
@@ -134,10 +148,12 @@ class UserRequest extends FormRequest
             'password' => trans('user.password'),
             'password_confirmation' => trans('user.password'),
             'mobile' => trans('user.mobile'),
-            'code' => trans('user.code'),
+            'email' => trans('user.email') ?: '邮箱',
+            'vcode' => trans('user.vcode'),
             'type' => trans('user.type'),
             'scene' => trans('user.scene', [], 'zh_CN') ?: '验证码场景',
-            'secret' => 'Google2FA密钥',
+            'google2fa' => 'Google2FA密钥',
+            'google2fa_code' => 'Google2FA验证码',
             'invite_code' => '邀请码',
         ];
     }

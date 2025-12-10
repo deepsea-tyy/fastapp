@@ -101,32 +101,46 @@ class MobileCryptoListSection extends StatelessWidget {
           ),
           child: Row(
             children: [
-              CachedNetworkImage(
-                imageUrl: coin.logoUrl,
-                width: 40,
-                height: 40,
-                placeholder: (context, url) => SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary,
-                    strokeWidth: 2,
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.currency_bitcoin,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 20,
-                  ),
-                ),
-              ),
+              coin.logoUrl.isEmpty
+                  ? Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.currency_bitcoin,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        size: 20,
+                      ),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: coin.logoUrl,
+                      width: 40,
+                      height: 40,
+                      placeholder: (context, url) => SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.primary,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.currency_bitcoin,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          size: 20,
+                        ),
+                      ),
+                    ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

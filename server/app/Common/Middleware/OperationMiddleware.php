@@ -134,19 +134,19 @@ class OperationMiddleware implements MiddlewareInterface
     private function getRequestParams(ServerRequestInterface $request): array
     {
         $params = [];
-        
+
         // 获取 GET 参数
         $queryParams = $request->getQueryParams();
         if (!empty($queryParams)) {
             $params = array_merge($params, $queryParams);
         }
-        
+
         // 获取 POST/PUT/PATCH 参数
         $parsedBody = $request->getParsedBody();
         if (is_array($parsedBody)) {
             $params = array_merge($params, $parsedBody);
         }
-        
+
         // 过滤敏感信息
         $sensitiveKeys = ['password', 'pwd', 'passwd', 'token', 'secret', 'api_key', 'api_secret'];
         foreach ($sensitiveKeys as $key) {
@@ -154,7 +154,7 @@ class OperationMiddleware implements MiddlewareInterface
                 $params[$key] = '***';
             }
         }
-        
+
         return $params;
     }
 }

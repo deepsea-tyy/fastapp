@@ -82,8 +82,10 @@ class _CountrySelectorState extends State<CountrySelector> {
       onTap: _showCountryCodePicker,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+        alignment: Alignment.center, // 垂直居中
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(widget.selectedFlag, style: const TextStyle(fontSize: 20.0)),
             const SizedBox(width: 4.0),

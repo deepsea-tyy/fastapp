@@ -10,7 +10,7 @@ namespace App\Common\Middleware;
 
 use App\Common\Jwt\JwtFactory;
 use App\Common\Jwt\JwtInterface;
-use App\Http\UserService;
+use App\Http\CurrentUser;
 use Hyperf\Collection\Arr;
 use Hyperf\Stringable\Str;
 use Lcobucci\JWT\Token;
@@ -25,7 +25,7 @@ abstract class AbstractTokenMiddleware
 {
     public function __construct(
         protected readonly JwtFactory  $jwtFactory,
-        protected readonly UserService $service
+        protected readonly CurrentUser $service
     )
     {
     }

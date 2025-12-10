@@ -9,6 +9,11 @@ class User {
   final String? mobile;
   final String? email;
   final int? code;
+  @JsonKey(name: 'is_google2fa')
+  final int? isGoogle2fa;
+  @JsonKey(name: 'is_trans_password')
+  final int? isTransPassword;
+  final int? no;
   final UserProfile? profile;
 
   User({
@@ -17,6 +22,9 @@ class User {
     this.mobile,
     this.email,
     this.code,
+    this.isGoogle2fa,
+    this.isTransPassword,
+    this.no,
     this.profile,
   });
 

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/network/dio/interceptors/response_interceptor.dart';
 
 /// 全局消息服务
-/// 统一管理所有类型的提示消息（错误、成功、警告、信息、SnackBar）
+/// 统一管理所有类型的提示消息（错误、成功、警告、信息、SnackBar、确认对话框）
 /// 
 /// 使用方式：
 /// 1. 通过静态方法调用（推荐）：
@@ -13,6 +13,11 @@ import '../data/network/dio/interceptors/response_interceptor.dart';
 ///    MessageService.warning('警告消息');
 ///    MessageService.info('信息消息');
 ///    MessageService.snackBar('简单提示');
+///    MessageService.confirm(
+///      title: '确认标题',
+///      message: '确认内容',
+///      onConfirm: () { /* 确认操作 */ },
+///    );
 /// 
 /// 2. 通过 EventBus 发送事件：
 ///    eventBus.fire(ErrorMessageEvent(message: '错误消息'));
@@ -41,6 +46,15 @@ class MessageService {
   static const _messageMargin = 40.0;
   static const _messagePadding = EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0);
   static const _borderRadius = 10.0;
+  
+  // 确认对话框样式常量
+  static const _confirmDialogMaxWidth = 320.0;
+  static const _confirmDialogPadding = EdgeInsets.all(24);
+  static const _confirmDialogBorderRadius = 16.0;
+  static const _confirmDialogShadowAlpha = 0.15;
+  static const _confirmButtonPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 12);
+  static const _confirmButtonBorderRadius = 8.0;
+  static const _confirmButtonBackgroundAlpha = 0.1;
 
   MessageService._internal(this._eventBus);
 
@@ -296,6 +310,170 @@ class MessageService {
   /// 静态方法：显示 SnackBar 提示
   static void snackBar(String message, {Duration? duration, Color? backgroundColor, Color? textColor}) {
     _instance?.showSnackBar(message, duration: duration, backgroundColor: backgroundColor, textColor: textColor);
+  }
+
+  /// 显示确认对话框
+  /// [title] 对话框标题
+  /// [message] 对话框内容
+  /// [confirmText] 确认按钮文本，默认为"确定"
+  /// [cancelText] 取消按钮文本，默认为"取消"
+  /// [confirmColor] 确认按钮颜色，默认为红色
+  /// [onConfirm] 确认回调
+  /// [onCancel] 取消回调（可选）
+  Future<bool?> showConfirm({
+    required String title,
+    required String message,
+    String confirmText = '确定',
+    String cancelText = '取消',
+    Color? confirmColor,
+    required VoidCallback onConfirm,
+    VoidCallback? onCancel,
+  }) async {
+    final context = _getValidContext();
+    if (context == null) return false;
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _buildConfirmDialog(
+        title: title,
+        message: message,
+        confirmText: confirmText,
+        cancelText: cancelText,
+        confirmColor: confirmColor ?? Colors.red,
+        onConfirm: () {
+          Navigator.of(dialogContext).pop(true);
+          onConfirm();
+        },
+        onCancel: () {
+          Navigator.of(dialogContext).pop(false);
+          onCancel?.call();
+        },
+      ),
+    );
+  }
+
+  /// 构建确认对话框
+  Widget _buildConfirmDialog({
+    required String title,
+    required String message,
+    required String confirmText,
+    required String cancelText,
+    required Color confirmColor,
+    required VoidCallback onConfirm,
+    required VoidCallback onCancel,
+  }) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: _confirmDialogMaxWidth),
+        padding: _confirmDialogPadding,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_confirmDialogBorderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: _confirmDialogShadowAlpha),
+              blurRadius: 20.0,
+              offset: const Offset(0, 8.0),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildDialogButton(
+                  text: cancelText,
+                  onPressed: onCancel,
+                  textColor: Colors.black54,
+                ),
+                const SizedBox(width: 12),
+                _buildDialogButton(
+                  text: confirmText,
+                  onPressed: onConfirm,
+                  backgroundColor: confirmColor.withValues(alpha: _confirmButtonBackgroundAlpha),
+                  textColor: confirmColor,
+                  isBold: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建对话框按钮
+  Widget _buildDialogButton({
+    required String text,
+    required VoidCallback onPressed,
+    Color? backgroundColor,
+    required Color textColor,
+    bool isBold = false,
+  }) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        padding: _confirmButtonPadding,
+        backgroundColor: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_confirmButtonBorderRadius),
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  /// 静态方法：显示确认对话框
+  static Future<bool?> confirm({
+    required String title,
+    required String message,
+    String confirmText = '确定',
+    String cancelText = '取消',
+    Color? confirmColor,
+    required VoidCallback onConfirm,
+    VoidCallback? onCancel,
+  }) {
+    return _instance?.showConfirm(
+          title: title,
+          message: message,
+          confirmText: confirmText,
+          cancelText: cancelText,
+          confirmColor: confirmColor,
+          onConfirm: onConfirm,
+          onCancel: onCancel,
+        ) ??
+        Future.value(false);
   }
 
   /// 清理资源

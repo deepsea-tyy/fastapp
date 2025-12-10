@@ -7,13 +7,11 @@ namespace App\Http\Admin\Controller;
 
 use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
-use App\Common\Middleware\RefreshTokenMiddleware;
 use App\Common\Result;
-use App\Common\ResultCode;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\PassportLoginRequest;
 use App\Http\CurrentUser;
-use App\Http\UserService;
+use App\Model\Enums\User\Type;
 use Hyperf\Collection\Arr;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
@@ -29,8 +27,7 @@ final class PassportController extends AbstractController
 {
 
     public function __construct(
-        private readonly UserService $passportService,
-        private readonly CurrentUser $currentUser
+        private readonly CurrentUser $currentUser,
     )
     {
     }
@@ -43,8 +40,10 @@ final class PassportController extends AbstractController
         $password = (string)$validated['password'];
 
         // 查找用户
-        $user = $this->passportService->findUsernamePassword($username, $password, 100);
-
+        $user = $this->currentUser->findUser(['username' => $username, 'user_type' => Type::SYSTEM]);
+        if (!$user || !$user->verifyPassword($password)) {
+            throw new BusinessException(message: trans('auth.password_error'));
+        }
         // 开发环境无需验证
         $isDev = config('env') === 'dev';
         $type = config('captcha');
@@ -58,7 +57,7 @@ final class PassportController extends AbstractController
             $storedCode = $redis->get($cacheKey);
 
             if (!$storedCode || strtolower($storedCode) !== strtolower($code)) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误无效');
+                throw new BusinessException(message: '验证码错误无效');
             }
 
             // 验证成功后删除验证码
@@ -66,7 +65,7 @@ final class PassportController extends AbstractController
         } elseif ($type === 'google2fa' && !$isDev) {
             // 验证Google2FA
             if (empty($user->google2fa)) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '未绑定Google2FA');
+                throw new BusinessException(message: '未绑定Google2FA');
             }
 
             $google2faCode = $validated['google2fa'] ?? '';
@@ -74,13 +73,13 @@ final class PassportController extends AbstractController
             $valid = $google2fa->verifyKey($user->google2fa, $google2faCode, 2); // 允许2个时间窗口的误差
 
             if (!$valid) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误');
+                throw new BusinessException(message: '验证码错误');
             }
         }
 
         $browser = $request->header('User-Agent') ?: 'unknown';
         return $this->success(
-            $this->passportService->formatToken(
+            $this->currentUser->formatToken(
                 $user,
                 $request->ip(),
                 $browser,
@@ -93,7 +92,7 @@ final class PassportController extends AbstractController
     #[Middleware(AccessTokenMiddleware::class)]
     public function logout(): Result
     {
-        $this->passportService->logout(RequestContext::get()->getAttribute('token'));
+        $this->currentUser->logout(RequestContext::get()->getAttribute('token'));
         return $this->success();
     }
 
@@ -103,17 +102,17 @@ final class PassportController extends AbstractController
     {
         return $this->success(
             Arr::only(
-                $this->currentUser->adminUser()?->toArray() ?: [],
+                $this->currentUser->getInfo($this->currentUser->id())?->toArray() ?: [],
                 ['username', 'nickname', 'avatar', 'signed', 'backend_setting', 'phone', 'email']
             )
         );
     }
 
     #[PostMapping(path: '/admin/passport/refresh')]
-    #[Middleware(RefreshTokenMiddleware::class)]
-    public function refresh(CurrentUser $user): Result
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function refresh(): Result
     {
-        return $this->success($user->refresh());
+        return $this->success($this->currentUser->refreshToken($this->currentUser->getToken()));
     }
 
     #[GetMapping(path: '/admin/passport/captcha')]

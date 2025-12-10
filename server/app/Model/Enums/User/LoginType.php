@@ -8,6 +8,7 @@ enum LoginType: int
 {
     case USERNAME_PASSWORD = 1;
     case MOBILE_CODE = 2;
-    case WECHAT_MINI = 3;
-    case WECHAT_OPEN = 4;
+    case EMAIL_CODE = 3;
+    case WECHAT_MINI = 11;
+    case WECHAT_OPEN = 12;
 }

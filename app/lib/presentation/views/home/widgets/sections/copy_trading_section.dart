@@ -128,23 +128,32 @@ class CopyTradingSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              CachedNetworkImage(
-                imageUrl: trader.avatarUrl,
-                width: 40,
-                height: 40,
-                placeholder: (context, url) => CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-                errorWidget: (context, url, error) => CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  child: Icon(
-                    Icons.person,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
+              trader.avatarUrl.isEmpty
+                  ? CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      child: Icon(
+                        Icons.person,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: trader.avatarUrl,
+                      width: 40,
+                      height: 40,
+                      placeholder: (context, url) => CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                      errorWidget: (context, url, error) => CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        child: Icon(
+                          Icons.person,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(

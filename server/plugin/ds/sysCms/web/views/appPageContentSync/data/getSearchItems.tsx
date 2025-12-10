@@ -3,17 +3,14 @@ import type { MaSearchItem } from '@/components/ma-search'
 export default function getSearchItems(t: any): MaSearchItem[] {
   return [
     {
-      label: () => t('admin.AppPageContentSyncFields.platform'),
+      label: () => t('admin.AppPageContentFields.platform'),
       prop: 'platform',
-      render: () => <el-select />,
+      render: () => <ma-dict-select />,
       renderProps: {
-        placeholder: t('admin.AppPageContentSyncFields.platform'),
+        placeholder: t('admin.AppPageContentFields.platform'),
+        dictName: 'app-page-content-platform',
         clearable: true,
       },
-      options: [
-        { label: 'Web', value: 1 },
-        { label: 'App', value: 2 },
-      ],
     },
   ]
 }

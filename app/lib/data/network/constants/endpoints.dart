@@ -43,6 +43,13 @@ class Endpoints {
   static const String userRegister = '/api/user/register';
   static const String userInfo = '/api/user/info';
   static const String userSms = '/api/sms';
+  static const String userLogout = '/api/user/logout';
+  static const String userRefreshToken = '/api/user/refreshToken';
+  
+  /// Google2FA 相关端点
+  static const String google2faQrcode = '/api/user/google2fa/qrcode';
+  static const String google2faBind = '/api/user/google2fa/bind';
+  static const String google2faUnbind = '/api/user/google2fa/unbind';
 
   /// 页面内容相关端点
   static const String pageContentDownload = '/api/app/page-content/download';

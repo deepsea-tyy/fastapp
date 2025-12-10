@@ -2,7 +2,20 @@ import 'package:fastapp/core/services/page_content_service.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 
 /// 页面内容管理器
-/// 提供便捷的方法来获取页面配置中的文本内容
+/// 提供便捷的方法来获取页面配置中的内容
+/// 支持4种内容类型：
+/// 1. 固定文本（多语言对象）- getText()
+/// 2. 列表数据（数组）- getList()
+/// 3. 富文本（对象）- getRichText()
+/// 4. 配置项（对象）- getConfig()
+/// 
+/// 统一数据结构：
+/// {
+///   "key": {
+///     "data": {...},
+///     "content_type": 1|2|3|4
+///   }
+/// }
 class PageContentManager {
   final PageContentService _pageContentService;
   final LanguageStore _languageStore;
@@ -57,10 +70,18 @@ class PageContentManager {
     }
   }
 
-  /// 获取文本内容
+  /// 获取文本内容（content_type = 1）
   /// [key] 配置的key，如 'login.title'
   /// [defaultValue] 如果找不到配置，返回的默认值
   /// [params] 可选的参数，用于替换文本中的占位符，如 {count}
+  /// 
+  /// 数据结构：
+  /// {
+  ///   "login.title": {
+  ///     "data": {"en": "Login", "zh_CN": "登录"},
+  ///     "content_type": 1
+  ///   }
+  /// }
   String getText(
     String key, {
     String? defaultValue,
@@ -83,6 +104,114 @@ class PageContentManager {
 
     final text = _getTextByLocale(data, defaultResult);
     return _replaceParams(text, params);
+  }
+
+  /// 获取列表数据（content_type = 2）
+  /// [key] 配置的key
+  /// [defaultValue] 如果找不到配置，返回的默认值
+  /// 
+  /// 数据结构：
+  /// {
+  ///   "home.banner.list": {
+  ///     "data": [
+  ///       {"id": 1, "title": "Banner 1"},
+  ///       {"id": 2, "title": "Banner 2"}
+  ///     ],
+  ///     "content_type": 2
+  ///   }
+  /// }
+  List<dynamic> getList(
+    String key, {
+    List<dynamic>? defaultValue,
+  }) {
+    final defaultResult = defaultValue ?? [];
+    
+    if (_cachedContent == null) return defaultResult;
+
+    final content = _cachedContent![key];
+    if (content is! Map<String, dynamic> || 
+        (content['content_type'] as int?) != 2) {
+      return defaultResult;
+    }
+
+    final data = content['data'];
+    if (data is! List) {
+      return defaultResult;
+    }
+
+    return data;
+  }
+
+  /// 获取富文本内容（content_type = 3）
+  /// [key] 配置的key
+  /// [defaultValue] 如果找不到配置，返回的默认值
+  /// 
+  /// 数据结构：
+  /// {
+  ///   "article.content": {
+  ///     "data": {
+  ///       "html": "<p>内容</p>",
+  ///       "text": "内容"
+  ///     },
+  ///     "content_type": 3
+  ///   }
+  /// }
+  Map<String, dynamic> getRichText(
+    String key, {
+    Map<String, dynamic>? defaultValue,
+  }) {
+    final defaultResult = defaultValue ?? {};
+    
+    if (_cachedContent == null) return defaultResult;
+
+    final content = _cachedContent![key];
+    if (content is! Map<String, dynamic> || 
+        (content['content_type'] as int?) != 3) {
+      return defaultResult;
+    }
+
+    final data = content['data'];
+    if (data is! Map<String, dynamic>) {
+      return defaultResult;
+    }
+
+    return data;
+  }
+
+  /// 获取配置项（content_type = 4）
+  /// [key] 配置的key
+  /// [defaultValue] 如果找不到配置，返回的默认值
+  /// 
+  /// 数据结构：
+  /// {
+  ///   "app.config": {
+  ///     "data": {
+  ///       "theme": "dark",
+  ///       "language": "zh_CN"
+  ///     },
+  ///     "content_type": 4
+  ///   }
+  /// }
+  Map<String, dynamic> getConfig(
+    String key, {
+    Map<String, dynamic>? defaultValue,
+  }) {
+    final defaultResult = defaultValue ?? {};
+    
+    if (_cachedContent == null) return defaultResult;
+
+    final content = _cachedContent![key];
+    if (content is! Map<String, dynamic> || 
+        (content['content_type'] as int?) != 4) {
+      return defaultResult;
+    }
+
+    final data = content['data'];
+    if (data is! Map<String, dynamic>) {
+      return defaultResult;
+    }
+
+    return data;
   }
 
   /// 根据语言获取文本

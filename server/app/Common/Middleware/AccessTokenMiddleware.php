@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace App\Common\Middleware;
 
 use App\Common\Jwt\JwtFactory;
-use App\Http\UserService;
+use App\Http\CurrentUser;
 use Hyperf\Stringable\Str;
 use Lcobucci\JWT\UnencryptedToken;
 use Psr\Http\Message\ResponseInterface;
@@ -19,7 +19,7 @@ class AccessTokenMiddleware
 {
     public function __construct(
         protected readonly JwtFactory  $jwtFactory,
-        protected readonly UserService $service
+        protected readonly CurrentUser $service
     )
     {
     }

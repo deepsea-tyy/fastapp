@@ -4,6 +4,9 @@ import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'widgets.dart';
 
 /// 账户中心页面
 class ProfileScreen extends StatelessWidget {
@@ -16,28 +19,7 @@ class ProfileScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // 顶部标题栏
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text(
-                    '账户中心',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            SettingAppBar(title: '账户中心'),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -61,79 +43,146 @@ class ProfileScreen extends StatelessWidget {
 
   /// 构建用户资料卡片
   Widget _buildUserProfileCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Column(
-        children: [
-          // 头像和用户名
-          Row(
+    final userStore = getIt<UserStore>();
+    
+    return Observer(
+      builder: (_) {
+        final user = userStore.currentUser;
+        
+        if (user == null) {
+          return Container(
+            margin: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // 显示名称：优先显示昵称，如果没有则显示用户名
+        final displayName = user.profile?.nickname?.isNotEmpty == true
+            ? user.profile!.nickname!
+            : user.username;
+        
+        // 用户编号（no字段）
+        final userNo = user.no?.toString() ?? user.id.toString();
+        
+        // 手机号（注册信息）
+        final mobile = user.mobile ?? '';
+        
+        return Container(
+          margin: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Column(
             children: [
-              // 头像
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.amber,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.person,
-                  size: 30,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(width: 12),
-              // 用户名
-              Expanded(
-                child: Text(
-                  'User-92084',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
+              // 头像和用户名
+              Row(
+                children: [
+                  // 头像
+                  _buildAvatar(user.profile?.avatar),
+                  const SizedBox(width: 12),
+                  // 用户名
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
+                  // 编辑图标
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () {
+                      // TODO: 编辑用户信息
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
-              // 编辑图标
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20),
-                onPressed: () {
-                  // TODO: 编辑用户信息
+              const SizedBox(height: 16),
+              // ID
+              _buildInfoRow(
+                context,
+                'ID',
+                userNo,
+                Icons.copy,
+                onIconTap: () {
+                  Clipboard.setData(ClipboardData(text: userNo));
+                  MessageService.snackBar('ID已复制');
                 },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
               ),
+              const SizedBox(height: 12),
+              // 注册信息（手机号）
+              if (mobile.isNotEmpty)
+                _buildInfoRow(
+                  context,
+                  '注册信息',
+                  mobile,
+                  Icons.visibility,
+                  onIconTap: () {
+                    // TODO: 切换显示/隐藏
+                  },
+                ),
             ],
           ),
-          const SizedBox(height: 16),
-          // ID
-          _buildInfoRow(
-            context,
-            'ID',
-            '589772405',
-            Icons.copy,
-            onIconTap: () {
-              Clipboard.setData(const ClipboardData(text: '589772405'));
-              MessageService.snackBar('ID已复制');
-            },
+        );
+      },
+    );
+  }
+  
+  /// 构建头像
+  Widget _buildAvatar(String? avatarUrl) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: avatarUrl,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            width: 50,
+            height: 50,
+            color: Colors.grey[300],
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
-          const SizedBox(height: 12),
-          // 注册信息
-          _buildInfoRow(
-            context,
-            '注册信息',
-            '17612870893',
-            Icons.visibility,
-            onIconTap: () {
-              // TODO: 切换显示/隐藏
-            },
+          errorWidget: (context, url, error) => Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              size: 30,
+              color: Colors.grey[600],
+            ),
           ),
-        ],
+        ),
+      );
+    }
+    
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.person,
+        size: 30,
+        color: Colors.grey[600],
       ),
     );
   }
@@ -185,7 +234,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'VIP特权',
           trailing: _buildStatusTag('普通用户', Colors.orange[300]!),
           onTap: () {
-            // TODO: 跳转到VIP特权页面
+            Navigator.of(context).pushNamed(Routes.vipPrivilege);
           },
         ),
         _buildFeatureItem(
@@ -194,7 +243,7 @@ class ProfileScreen extends StatelessWidget {
           title: '身份认证',
           trailing: _buildStatusTag('已认证', Colors.green[300]!),
           onTap: () {
-            // TODO: 跳转到身份认证页面
+            Navigator.of(context).pushNamed(Routes.identityVerification);
           },
         ),
         _buildFeatureItem(
@@ -203,7 +252,7 @@ class ProfileScreen extends StatelessWidget {
           title: '账户安全',
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            // TODO: 跳转到账户安全页面
+            Navigator.of(context).pushNamed(Routes.accountSecurity);
           },
         ),
         _buildFeatureItem(
@@ -240,12 +289,9 @@ class ProfileScreen extends StatelessWidget {
     required Widget trailing,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
-      title: Text(title),
+    return SettingItem(
+      title: title,
+      leadingIcon: icon,
       trailing: trailing,
       onTap: onTap,
     );
@@ -256,21 +302,7 @@ class ProfileScreen extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        StatusTag(text: text, color: color),
         const SizedBox(width: 8),
         const Icon(Icons.chevron_right),
       ],
@@ -309,36 +341,21 @@ class ProfileScreen extends StatelessWidget {
 
   /// 处理退出登录
   void _handleLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('确认退出'),
-          content: const Text('确定要退出登录吗？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                final userStore = getIt<UserStore>();
-                await userStore.logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    Routes.home,
-                    (route) => false,
-                  );
-                }
-              },
-              child: const Text(
-                '确定',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
+    MessageService.confirm(
+      title: '确认退出',
+      message: '确定要退出登录吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      confirmColor: Colors.red,
+      onConfirm: () async {
+        final userStore = getIt<UserStore>();
+        await userStore.logout();
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            Routes.home,
+            (route) => false,
+          );
+        }
       },
     );
   }
