@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:fastapp/core/services/message_service.dart';
+import 'package:fastapp/presentation/views/common/pagination_controller.dart';
 import 'widgets.dart';
 
 /// 账户活动页面
@@ -10,33 +14,87 @@ class AccountActivityScreen extends StatefulWidget {
 }
 
 class _AccountActivityScreenState extends State<AccountActivityScreen> {
+  final UserApi _userApi = getIt<UserApi>();
   int _selectedTab = 0; // 0: 登录活动, 1: 安全操作记录
-  String _selectedTimeRange = '1个月';
-  String _selectedStatus = '全部';
-
-  // TODO: 从后端获取数据
-  final List<ActivityItem> _loginActivities = [
-    ActivityItem(
-      date: '2025-11-29 21:13:44',
-      source: 'android',
-      status: '成功',
-      ipAddress: '109.110.162.168',
-    ),
-    ActivityItem(
-      date: '2025-11-29 21:13:42',
-      source: 'android',
-      status: '成功',
-      ipAddress: '109.110.162.168',
-    ),
-    ActivityItem(
-      date: '2025-11-28 08:22:52',
-      source: 'android',
-      status: '成功',
-      ipAddress: '109.110.162.168',
-    ),
-  ];
-
   final List<ActivityItem> _securityActivities = [];
+  
+  late final PaginationController<ActivityItem> _paginationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _paginationController = PaginationController<ActivityItem>(
+      pageSize: 20,
+      onStateChanged: () => setState(() {}),
+      isMounted: () => mounted,
+      loadDataCallback: _loadData,
+    );
+    _paginationController.init();
+    _paginationController.loadMore();
+  }
+
+  @override
+  void dispose() {
+    _paginationController.dispose();
+    super.dispose();
+  }
+
+  Future<List<ActivityItem>> _loadData(int page, int pageSize) async {
+    try {
+      final response = await _userApi.getLoginLogs(page: page, pageSize: pageSize);
+      final code = response['code'] as int?;
+      
+      if (code == 200) {
+        final data = response['data'] as Map<String, dynamic>?;
+        // 处理 simplePaginate 返回的数据结构
+        // 可能是 {list: {data: [...], has_more: true}} 或 {list: [...]}
+        dynamic listData = data?['list'];
+        List<dynamic> list = [];
+        
+        if (listData is Map) {
+          // 如果是 Paginator 对象，提取 data 数组
+          list = listData['data'] as List<dynamic>? ?? [];
+        } else if (listData is List) {
+          // 如果直接是数组
+          list = listData;
+        }
+        
+        return list.map((item) {
+          final map = item as Map<String, dynamic>;
+          // 构建来源信息（操作系统 + 位置）
+          final os = map['os'] as String? ?? '';
+          final country = map['country'] as String? ?? '';
+          final region = map['region'] as String? ?? '';
+          final city = map['city'] as String? ?? '';
+          
+          String source = os;
+          if (country.isNotEmpty || region.isNotEmpty || city.isNotEmpty) {
+            final locationParts = <String>[];
+            if (country.isNotEmpty) locationParts.add(country);
+            if (region.isNotEmpty) locationParts.add(region);
+            if (city.isNotEmpty) locationParts.add(city);
+            if (locationParts.isNotEmpty) {
+              source = '$os · ${locationParts.join(' ')}';
+            }
+          }
+          
+          return ActivityItem(
+            date: map['created_at'] as String? ?? '',
+            source: source.isEmpty ? '未知' : source,
+            status: '成功',
+            ipAddress: map['ip'] as String? ?? '',
+          );
+        }).toList();
+      } else {
+        final message = response['message'] as String? ?? '获取登录日志失败';
+        MessageService.error(message);
+        return [];
+      }
+    } catch (e) {
+      MessageService.error('获取登录日志失败: ${e.toString()}');
+      return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +106,6 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
             SettingAppBar(title: '账户活动'),
             // 标签页
             _buildTabBar(),
-            // 筛选器
-            _buildFilters(),
             // 活动列表
             Expanded(
               child: _buildActivityList(),
@@ -112,74 +168,13 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
     );
   }
 
-  /// 构建筛选器
-  Widget _buildFilters() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        children: [
-          _buildFilterDropdown(
-            value: _selectedTimeRange,
-            items: ['1个月', '3个月', '6个月', '1年', '全部'],
-            onChanged: (value) {
-              setState(() => _selectedTimeRange = value!);
-            },
-          ),
-          const SizedBox(width: 12),
-          _buildFilterDropdown(
-            value: _selectedStatus,
-            items: ['全部', '成功', '失败'],
-            onChanged: (value) {
-              setState(() => _selectedStatus = value!);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建筛选下拉框
-  Widget _buildFilterDropdown({
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.2),
-        ),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(
-              item,
-              style: const TextStyle(fontSize: 14),
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-        underline: const SizedBox(),
-        icon: Icon(
-          Icons.arrow_drop_down,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        isDense: true,
-      ),
-    );
-  }
-
   /// 构建活动列表
   Widget _buildActivityList() {
-    final activities = _selectedTab == 0 ? _loginActivities : _securityActivities;
+    final activities = _selectedTab == 0 
+        ? _paginationController.dataList 
+        : _securityActivities;
     
-    if (activities.isEmpty) {
+    if (activities.isEmpty && !_paginationController.isLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -202,12 +197,23 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: activities.length,
-      itemBuilder: (context, index) {
-        return _buildActivityItem(activities[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: _selectedTab == 0 
+          ? () => _paginationController.refresh() 
+          : () async {},
+      child: ListView.builder(
+        controller: _selectedTab == 0 
+            ? _paginationController.scrollController 
+            : null,
+        padding: const EdgeInsets.all(16.0),
+        itemCount: activities.length + (_selectedTab == 0 ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (_selectedTab == 0 && index == activities.length) {
+            return _paginationController.buildLoadMoreIndicator();
+          }
+          return _buildActivityItem(activities[index]);
+        },
+      ),
     );
   }
 

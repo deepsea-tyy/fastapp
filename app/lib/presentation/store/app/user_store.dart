@@ -8,6 +8,8 @@ import 'package:fastapp/domain/usecase/user/get_user_info_usecase.dart';
 import 'package:fastapp/domain/usecase/user/logout_usecase.dart';
 import 'package:fastapp/domain/usecase/user/refresh_token_usecase.dart';
 import 'package:fastapp/core/exceptions/verify_again_exception.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:mobx/mobx.dart';
 
 import 'package:fastapp/domain/entity/user/user.dart';
@@ -34,11 +36,8 @@ abstract class _UserStore with Store {
 
     // checking if user is logged in
     _isLoggedInUseCase.call(params: null).then((value) async {
-      _setIsLoggedIn(value);
-      if (value) {
-        // 如果已登录，自动获取用户信息
-        await getUserInfo();
-      }
+      setIsLoggedIn(value);
+      if (value) await getUserInfo();
     });
   }
 
@@ -143,15 +142,8 @@ abstract class _UserStore with Store {
 
     try {
       await future;
-      // 登录成功（无异常），保存状态并获取用户信息
-      await _saveLoginStatusUseCase.call(params: true);
-      isLoggedIn = true;
-      success = true;
-      verifyAgainType = null; // 清除二次验证状态
-      verifyAgainEmail = null;
-      verifyAgainMobile = null;
-      verifyAgainCode = null;
-      await getUserInfo();
+      // 登录成功（无异常），使用统一方法处理状态同步
+      await handleLoginSuccess();
     } on VerifyAgainException catch (e) {
       // 需要二次验证
       verifyAgainType = e.verifyType;
@@ -174,16 +166,31 @@ abstract class _UserStore with Store {
 
   @action
   void clearVerifyAgain() {
+    _clearVerifyAgainState();
+  }
+
+  @action
+  void setIsLoggedIn(bool value) {
+    isLoggedIn = value;
+  }
+
+  /// 处理登录/注册成功后的状态同步（统一方法）
+  @action
+  Future<void> handleLoginSuccess() async {
+    await _saveLoginStatusUseCase.call(params: true);
+    isLoggedIn = true;
+    success = true;
+    _clearVerifyAgainState();
+    await getUserInfo();
+  }
+
+  /// 清除二次验证状态（内部方法）
+  void _clearVerifyAgainState() {
     verifyAgainType = null;
     verifyAgainEmail = null;
     verifyAgainMobile = null;
     verifyAgainCode = null;
     verifyAgainDeviceId = null;
-  }
-
-  @action
-  void _setIsLoggedIn(bool value) {
-    isLoggedIn = value;
   }
 
   @action
@@ -255,17 +262,27 @@ abstract class _UserStore with Store {
   void _clearUserState() {
     isLoggedIn = false;
     currentUser = null;
-    verifyAgainType = null;
-    verifyAgainEmail = null;
-    verifyAgainMobile = null;
-    verifyAgainCode = null;
-    verifyAgainDeviceId = null;
+    _clearVerifyAgainState();
   }
 
   @action
   Future<void> refreshToken() async {
     try {
       await _refreshTokenUseCase.call(params: null);
+    } catch (e) {
+      errorStore.setErrorMessage(e.toString());
+      rethrow;
+    }
+  }
+
+  /// 更新昵称
+  @action
+  Future<void> updateNickname(String nickname) async {
+    try {
+      final userApi = getIt<UserApi>();
+      await userApi.updateProfile(nickname: nickname);
+      // 更新成功后立即刷新用户信息，确保界面同步
+      await getUserInfo();
     } catch (e) {
       errorStore.setErrorMessage(e.toString());
       rethrow;

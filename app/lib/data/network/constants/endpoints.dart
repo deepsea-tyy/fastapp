@@ -46,6 +46,7 @@ class Endpoints {
   static const String userRegister = '/api/user/register';
   static const String userInfo = '/api/user/info';
   static const String userSms = '/api/sms';
+  static const String userSmsCheck = '/api/user/smsCheck';
   static const String userLogout = '/api/user/logout';
   static const String userRefreshToken = '/api/user/refreshToken';
   
@@ -64,10 +65,17 @@ class Endpoints {
   
   /// 密码相关端点
   static const String passwordChange = '/api/user/password/change';
+  static const String passwordReset = '/api/user/resetPassword';
   
   /// 账户管理相关端点
   static const String accountDisable = '/api/user/account/disable';
   static const String accountDelete = '/api/user/account/delete';
+  
+  /// 登录日志相关端点
+  static const String userLoginLogs = '/api/user/login-logs';
+  
+  /// 用户资料相关端点
+  static const String userProfileUpdate = '/api/user/profile/update';
 
   /// 页面内容相关端点
   static const String pageContentDownload = '/api/app/page-content/download';

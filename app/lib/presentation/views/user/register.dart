@@ -1,17 +1,16 @@
 import 'package:fastapp/constants/app_config.dart';
-import 'package:fastapp/core/stores/form/form_store.dart';
 import 'package:fastapp/core/services/message_service.dart';
-import 'package:fastapp/core/widgets/empty_app_bar_widget.dart';
-import 'package:fastapp/core/widgets/progress_indicator_widget.dart';
 import 'package:fastapp/data/sharedpref/constants/preferences.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/presentation/views/common/country_selector.dart';
+import 'package:fastapp/presentation/views/common/verify_code_button.dart';
 import 'package:fastapp/utils/device/device_utils.dart';
+import 'package:fastapp/utils/device/device_id_utils.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fastapp/di/service_locator.dart';
 
@@ -24,6 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   // Constants
   static const double _horizontalPadding = 24.0;
   static const double _buttonHeight = 48.0;
+  static const double _inputHeight = 56.0;
+  static const double _fieldSpacing = 16.0;
 
   // Controllers
   final TextEditingController _phoneController = TextEditingController();
@@ -34,7 +35,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   late final TabController _tabController;
 
   // Stores
-  final FormStore _formStore = getIt<FormStore>();
+  final UserApi _userApi = getIt<UserApi>();
+  final SharedPreferenceHelper _sharedPrefsHelper = getIt<SharedPreferenceHelper>();
   final UserStore _userStore = getIt<UserStore>();
 
   // Country code
@@ -45,13 +47,49 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
+  bool _showPasswordFields = false; // 控制密码输入框显示
+  bool _isCodeVerified = false; // 验证码是否已验证
+  bool _isLoading = false; // 是否正在加载
+  int _previousTabIndex = 0; // 记录之前的Tab索引
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
+    _previousTabIndex = _tabController.index;
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index != _previousTabIndex) {
+      _resetAllFields();
+    }
+  }
+
+  void _resetAllFields() {
+    setState(() {
+      _previousTabIndex = _tabController.index;
+      _showPasswordFields = false;
+      _isCodeVerified = false;
+      _isLoading = false;
+      _isPasswordVisible = false;
+      _isConfirmPasswordVisible = false;
+      _phoneController.clear();
+      _emailController.clear();
+      _codeController.clear();
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+      _selectedCountryCode = '+86';
+      _selectedCountryFlag = '🇨🇳';
     });
+  }
+
+  void _clearControllers() {
+    _phoneController.clear();
+    _emailController.clear();
+    _codeController.clear();
+    _passwordController.clear();
+    _confirmPasswordController.clear();
   }
 
   @override
@@ -96,11 +134,34 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildInputField() {
-    return IndexedStack(
-      index: _tabController.index,
+    final contentHeight = _inputHeight * 2 + _fieldSpacing;
+    
+    return Column(
       children: [
-        _buildPhoneField(),
-        _buildEmailField(),
+        _buildTabBar(),
+        const SizedBox(height: _fieldSpacing),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: contentHeight,
+          child: _showPasswordFields
+              ? Column(
+                  children: [
+                    _buildPasswordField(),
+                    const SizedBox(height: _fieldSpacing),
+                    _buildConfirmPasswordField(),
+                  ],
+                )
+              : Column(
+                  children: [
+                    IndexedStack(
+                      index: _tabController.index,
+                      children: [_buildPhoneField(), _buildEmailField()],
+                    ),
+                    const SizedBox(height: _fieldSpacing),
+                    _buildCodeField(),
+                  ],
+                ),
+        ),
       ],
     );
   }
@@ -134,15 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       ),
                     ),
                     const SizedBox(height: 32.0),
-                    _buildTabBar(),
-                    const SizedBox(height: 16.0),
                     _buildInputField(),
-                    const SizedBox(height: 16.0),
-                    _buildPasswordField(),
-                    const SizedBox(height: 16.0),
-                    _buildConfirmPasswordField(),
-                    const SizedBox(height: 16.0),
-                    _buildCodeField(),
                     const SizedBox(height: 24.0),
                     _buildRegisterButton(),
                     const SizedBox(height: 16.0),
@@ -158,22 +211,24 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             ],
           ),
         ),
-        Observer(
-          builder: (context) {
-            return _userStore.success
-                ? navigate(context)
-                : _showErrorMessage(_formStore.errorStore.errorMessage);
-          },
-        ),
-        Observer(
-          builder: (context) {
-            return Visibility(
-              visible: _userStore.isLoading,
-              child: CustomProgressIndicatorWidget(),
-            );
-          },
-        ),
+        if (_isLoading)
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
       ],
+    );
+  }
+
+  Widget _buildInputContainer(Widget child) {
+    return Container(
+      height: _inputHeight,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+      ),
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.only(right: 4.0),
+      child: child,
     );
   }
 
@@ -186,34 +241,40 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       border: InputBorder.none,
       filled: true,
       fillColor: Colors.transparent,
-      contentPadding: EdgeInsets.only(
-        left: 12.0,
-        right: controller.text.isNotEmpty ? 0.0 : 12.0,
-        top: 16.0,
-        bottom: 16.0,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
       suffixIcon: controller.text.isNotEmpty
           ? IconButton(
               icon: const Icon(Icons.close, size: 20.0),
-              onPressed: () {
-                setState(() {
-                  controller.clear();
-                });
-              },
+              onPressed: () => setState(() => controller.clear()),
             )
           : null,
     );
   }
 
-  Widget _buildPhoneField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+  InputDecoration _buildPasswordDecoration({
+    required String hintText,
+    required VoidCallback onToggleVisibility,
+    required bool isVisible,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      border: InputBorder.none,
+      filled: true,
+      fillColor: Colors.transparent,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+      suffixIcon: IconButton(
+        icon: Icon(
+          isVisible ? Icons.visibility : Icons.visibility_off,
+          size: 20.0,
+        ),
+        onPressed: onToggleVisibility,
       ),
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Row(
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return _buildInputContainer(
+      Row(
         children: [
           CountrySelector(
             selectedCode: _selectedCountryCode,
@@ -231,6 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(height: 1.5),
               decoration: _buildInputDecoration(
                 hintText: '请输入手机号码',
                 controller: _phoneController,
@@ -244,16 +306,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildEmailField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: TextField(
+    return _buildInputContainer(
+      TextField(
         controller: _emailController,
         keyboardType: TextInputType.emailAddress,
+        style: const TextStyle(height: 1.5),
         decoration: _buildInputDecoration(
           hintText: '请输入邮箱地址',
           controller: _emailController,
@@ -264,38 +321,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildPasswordField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: TextField(
+    return _buildInputContainer(
+      TextField(
         controller: _passwordController,
         obscureText: !_isPasswordVisible,
-        decoration: InputDecoration(
+        style: const TextStyle(height: 1.5),
+        decoration: _buildPasswordDecoration(
           hintText: '请输入密码',
-          border: InputBorder.none,
-          filled: true,
-          fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.only(
-            left: 12.0,
-            right: 12.0,
-            top: 16.0,
-            bottom: 16.0,
-          ),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-              size: 20.0,
-            ),
-            onPressed: () {
-              setState(() {
-                _isPasswordVisible = !_isPasswordVisible;
-              });
-            },
-          ),
+          onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+          isVisible: _isPasswordVisible,
         ),
         onChanged: (_) => setState(() {}),
       ),
@@ -303,79 +337,52 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildConfirmPasswordField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: TextField(
+    return _buildInputContainer(
+      TextField(
         controller: _confirmPasswordController,
         obscureText: !_isConfirmPasswordVisible,
-        decoration: InputDecoration(
+        style: const TextStyle(height: 1.5),
+        decoration: _buildPasswordDecoration(
           hintText: '请确认密码',
-          border: InputBorder.none,
-          filled: true,
-          fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.only(
-            left: 12.0,
-            right: 12.0,
-            top: 16.0,
-            bottom: 16.0,
-          ),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
-              size: 20.0,
-            ),
-            onPressed: () {
-              setState(() {
-                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-              });
-            },
-          ),
+          onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+          isVisible: _isConfirmPasswordVisible,
         ),
         onChanged: (_) => setState(() {}),
       ),
     );
   }
 
+  bool get _isPhoneRegister => _tabController.index == 0;
+  
+  String get _recipient => _isPhoneRegister 
+      ? _phoneController.text.trim() 
+      : _emailController.text.trim();
+
   Widget _buildCodeField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-      ),
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Row(
+    return _buildInputContainer(
+      Row(
         children: [
           Expanded(
             child: TextField(
               controller: _codeController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
+              keyboardType: TextInputType.text,
+              style: const TextStyle(height: 1.5),
+              decoration: const InputDecoration(
                 hintText: '请输入验证码',
                 border: InputBorder.none,
                 filled: true,
                 fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.only(
-                  left: 12.0,
-                  right: 12.0,
-                  top: 16.0,
-                  bottom: 16.0,
-                ),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
               ),
               onChanged: (_) => setState(() {}),
             ),
           ),
           const SizedBox(width: 8.0),
-          OutlinedButton(
-            onPressed: () {
-              // TODO: 发送验证码
-            },
+          VerifyCodeButton(
+            onSend: _sendVerificationCode,
+            recipient: _recipient,
+            type: _isPhoneRegister ? VerifyCodeType.sms : VerifyCodeType.email,
+            scene: 'register',
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.amber),
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
@@ -385,56 +392,183 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
               ),
             ),
-            child: const Text(
-              '获取验证码',
-              style: TextStyle(fontSize: 12.0, color: Colors.amber),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            textStyle: const TextStyle(fontSize: 12.0, color: Colors.amber),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
       ),
     );
   }
 
-  void _handleRegister() {
-    final isPhoneRegister = _tabController.index == 0;
-    final accountController = isPhoneRegister ? _phoneController : _emailController;
-    final accountType = isPhoneRegister ? '手机号码' : '邮箱地址';
+  Future<bool> _sendVerificationCode(String recipient) async {
+    try {
+      if (_isPhoneRegister) {
+        final response = await _userApi.sendSms(
+          mobile: recipient,
+          code: _selectedCountryCode.replaceAll('+', ''),
+          scene: 'register',
+        );
+        return response['code'] == 200;
+      } else {
+        final response = await _userApi.sendEmailCode(
+          email: recipient,
+          scene: 'register',
+        );
+        return response['code'] == 200;
+      }
+    } catch (e) {
+      MessageService.error('发送验证码失败：${e.toString()}');
+      return false;
+    }
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_isCodeVerified) {
+      await _verifyCode();
+      return;
+    }
+    await _submitRegister();
+  }
+
+  Future<void> _verifyCode() async {
+    final accountController = _isPhoneRegister ? _phoneController : _emailController;
+    final accountType = _isPhoneRegister ? '手机号码' : '邮箱地址';
 
     if (accountController.text.isEmpty) {
       _showErrorMessage('请输入$accountType');
       return;
     }
-
-    if (_passwordController.text.isEmpty) {
-      _showErrorMessage('请输入密码');
-      return;
-    }
-
-    if (_passwordController.text.length < 6) {
-      _showErrorMessage('密码长度至少6位');
-      return;
-    }
-
-    if (_confirmPasswordController.text.isEmpty) {
-      _showErrorMessage('请确认密码');
-      return;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      _showErrorMessage('两次输入的密码不一致');
-      return;
-    }
-
-    if (isPhoneRegister && _codeController.text.isEmpty) {
+    if (_codeController.text.isEmpty) {
       _showErrorMessage('请输入验证码');
       return;
     }
 
     DeviceUtils.hideKeyboard(context);
-    // TODO: 调用注册接口
-    _showErrorMessage('注册功能待实现');
+    _setLoading(true);
+
+    try {
+      final response = await _userApi.smsCheck(
+        type: _isPhoneRegister ? 'sms' : 'email',
+        to: accountController.text.trim(),
+        vcode: _codeController.text.trim(),
+        scene: 'register',
+        code: _isPhoneRegister ? _selectedCountryCode.replaceAll('+', '') : null,
+      );
+
+      if (response['code'] == 200) {
+        setState(() {
+          _isCodeVerified = true;
+          _showPasswordFields = true;
+          _isLoading = false;
+        });
+      } else {
+        _setLoading(false);
+        _showErrorMessage(response['message'] ?? '验证码错误');
+      }
+    } catch (e) {
+      _setLoading(false);
+      _showErrorMessage('验证码验证失败：${e.toString()}');
+    }
+  }
+
+  String? _validatePassword() {
+    if (_passwordController.text.isEmpty) return '请输入密码';
+    if (_passwordController.text.length < 6) return '密码长度至少6位';
+    if (_confirmPasswordController.text.isEmpty) return '请确认密码';
+    if (_passwordController.text != _confirmPasswordController.text) {
+      return '两次输入的密码不一致';
+    }
+    return null;
+  }
+
+  Future<void> _submitRegister() async {
+    final error = _validatePassword();
+    if (error != null) {
+      _showErrorMessage(error);
+      return;
+    }
+
+    DeviceUtils.hideKeyboard(context);
+    _setLoading(true);
+
+    try {
+      final deviceId = await DeviceIdUtils.getDeviceId().catchError((_) => null);
+      final response = await _userApi.register(
+        type: _isPhoneRegister ? 2 : 3,
+        mobile: _isPhoneRegister ? _phoneController.text.trim() : null,
+        email: _isPhoneRegister ? null : _emailController.text.trim(),
+        code: _isPhoneRegister ? _selectedCountryCode.replaceAll('+', '') : null,
+        vcode: _codeController.text.trim(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+        scene: 'register',
+        deviceId: deviceId,
+      );
+
+      if (response['code'] == 200) {
+        await _handleRegisterSuccess(response);
+      } else {
+        _setLoading(false);
+        _showErrorMessage(response['message'] ?? '注册失败');
+      }
+    } catch (e) {
+      _setLoading(false);
+      _showErrorMessage('注册失败：${e.toString()}');
+    }
+  }
+
+  Future<void> _handleRegisterSuccess(Map<String, dynamic> response) async {
+    final accessToken = response['access_token'] as String?;
+    if (accessToken == null || accessToken.isEmpty) {
+      _setLoading(false);
+      _showErrorMessage('注册失败：未获取到访问令牌');
+      return;
+    }
+
+    // 保存 token 和设备ID
+    await _saveTokens(response);
+
+    // 同步用户状态到 UserStore
+    try {
+      await _userStore.handleLoginSuccess();
+    } catch (e) {
+      if (mounted) _showErrorMessage('获取用户信息失败：${e.toString()}');
+    }
+
+    if (mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        Routes.home,
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
+  Future<void> _saveTokens(Map<String, dynamic> response) async {
+    final futures = <Future>[
+      _sharedPrefsHelper.saveAuthToken(response['access_token'] as String),
+    ];
+
+    final refreshToken = response['refresh_token'] as String?;
+    final expireAt = response['expire_at'] as int?;
+    final deviceId = response['device_id'] as String?;
+
+    if (refreshToken?.isNotEmpty == true) {
+      futures.add(_sharedPrefsHelper.saveRefreshToken(refreshToken!));
+    }
+    if (expireAt != null) {
+      futures.add(_sharedPrefsHelper.saveExpireAt(expireAt));
+    }
+    if (deviceId?.isNotEmpty == true) {
+      futures.add(DeviceIdUtils.saveDeviceId(deviceId!));
+    }
+
+    await Future.wait(futures);
+  }
+
+  void _setLoading(bool value) {
+    setState(() => _isLoading = value);
   }
 
   Widget _buildRegisterButton() {
@@ -442,19 +576,30 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       height: _buttonHeight,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _handleRegister,
+        onPressed: _isLoading ? null : _handleRegister,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.amber,
           foregroundColor: Colors.black,
+          disabledBackgroundColor: Colors.amber.withValues(alpha: 0.6),
+          disabledForegroundColor: Colors.black54,
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
           ),
         ),
-        child: const Text(
-          '注册',
-          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w600),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20.0,
+                height: 20.0,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                ),
+              )
+            : Text(
+                _isCodeVerified ? '注册' : '确认',
+                style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w600),
+              ),
       ),
     );
   }
@@ -528,26 +673,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     );
   }
 
-  Widget navigate(BuildContext context) {
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool(Preferences.is_logged_in, true);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        Routes.home,
-        (Route<dynamic> route) => false,
-      );
-    });
-    return const SizedBox.shrink();
-  }
-
-  Widget _showErrorMessage(String message) {
+  void _showErrorMessage(String message) {
     if (message.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        MessageService.error(message);
-      });
+      MessageService.error(message);
     }
-    return const SizedBox.shrink();
   }
 
   @override

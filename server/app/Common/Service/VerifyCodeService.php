@@ -185,7 +185,7 @@ class VerifyCodeService
      *
      * @param string $type 验证码类型：sms 或 email
      * @param string $target 目标地址：手机号或邮箱地址
-     * @param string $code 用户输入的验证码
+     * @param string $vcode 用户输入的验证码
      * @param string $scene 使用场景，必须与发送时一致
      * @param bool $clean 验证成功后是否删除验证码，默认true
      * @param int $countryCode 国家代码（仅手机短信需要），默认86
@@ -194,17 +194,17 @@ class VerifyCodeService
     public static function verify(
         string $type,
         string $target,
-        string $code,
+        string $vcode,
         string $scene = self::SCENE_DEFAULT,
-        bool $clean = true,
-        int $countryCode = 86
+        bool   $clean = true,
+        int    $countryCode = 86
     ): bool {
         // 开发环境直接返回成功
         if (config('env') == 'dev') {
             return true;
         }
 
-        if (empty($code)) {
+        if (empty($vcode)) {
             return false;
         }
 
@@ -212,7 +212,7 @@ class VerifyCodeService
         $redis = ApplicationContext::getContainer()->get(Redis::class);
         $storedCode = $redis->get($cacheKey);
 
-        if ($storedCode && $storedCode === $code) {
+        if ($storedCode && $storedCode === $vcode) {
             if ($clean) {
                 $redis->del($cacheKey);
             }

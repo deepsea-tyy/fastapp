@@ -27,7 +27,7 @@ use Hyperf\Validation\Request\FormRequest;
     new Property('password_confirmation', description: '确认密码', type: 'string'),
     new Property('vcode', description: '验证码', type: 'numeric'),
     new Property('openid', description: 'openid', type: 'string'),
-    new Property('type', description: '类型 1账号密码,2手机验证码,3邮箱证码,11小程序,12公众号', type: 'integer'),
+    new Property('type', description: '类型 1账号密码,2手机验证码,3邮箱证码,11小程序,12公众号', type: 'numeric'),
     new Property('scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', type: 'string'),
     new Property('google2fa', description: 'Google2FA密钥', type: 'string'),
     new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
@@ -55,7 +55,7 @@ class UserRequest extends FormRequest
             'email' => 'string|max:64',
             'to' => 'string|max:128', // 验证码接收地址（手机号或邮箱）
             'vcode' => 'numeric',
-            'type' => 'string|integer', // 支持字符串（sms/email）和整数（登录类型）
+            'type' => 'string|numeric', // 支持字符串（sms/email）和整数（登录类型）
             'scene' => 'string|in:login,register,reset_password,bind,change,default',
             'google2fa' => 'string|max:50',
             'google2fa_code' => 'nullable|numeric',
@@ -76,7 +76,7 @@ class UserRequest extends FormRequest
             'mobile' => 'required_if:type,2',
             'email' => 'required_if:type,3',
             'scene' => 'required_if:type,2',
-            'type' => 'required|integer',
+            'type' => 'required|numeric',
             'invite_code' => 'nullable|string|max:16',
         ];
     }
@@ -97,7 +97,7 @@ class UserRequest extends FormRequest
             // type=2 时，手机验证码登录
             'vcode' => 'required_if:type,2',
             'scene' => 'required_if:type,2',
-            'type' => 'required|integer',
+            'type' => 'required|numeric',
         ];
     }
 
@@ -125,6 +125,20 @@ class UserRequest extends FormRequest
             'to' => 'required|string|max:128',
             'code' => 'nullable|numeric',
             'scene' => 'nullable|string|in:login,register,reset_password,bind,change,default',
+        ];
+    }
+
+    /**
+     * 验证验证码场景验证规则
+     */
+    public function smsCheckRules(): array
+    {
+        return [
+            'type' => 'required|string|in:sms,email',
+            'to' => 'required|string|max:128',
+            'vcode' => 'required|numeric',
+            'scene' => 'nullable|string|in:login,register,reset_password,bind,change,default',
+            'code' => 'nullable|numeric',
         ];
     }
 
@@ -220,6 +234,35 @@ class UserRequest extends FormRequest
         ];
     }
 
+    /**
+     * 重置密码场景验证规则
+     */
+    public function resetPasswordRules(): array
+    {
+        return [
+            'step' => 'required|numeric',
+            'type' => 'required|numeric|in:2,3', // 2=手机验证码，3=邮箱验证码
+            'mobile' => 'required_if:type,2|string|max:16',
+            'email' => 'required_if:type,3|email|max:64',
+            'code' => 'required_if:type,2|numeric',
+            'vcode' => 'nullable|numeric',
+            'google2fa_code' => 'nullable|numeric',
+            'password' => 'nullable|string|min:6|max:32',
+            'password_confirmation' => 'required_with:password|string|max:32|same:password',
+        ];
+    }
+
+    /**
+     * 更新用户资料场景验证规则
+     */
+    public function profileUpdateRules(): array
+    {
+        return [
+            'nickname' => 'string|max:32|regex:/^[^\s]+$/',
+            'avatar' => 'string|max:64',
+        ];
+    }
+
     public function attributes(): array
     {
         return [
@@ -238,6 +281,7 @@ class UserRequest extends FormRequest
             'old_password' => trans('user.old_password'),
             'type' => 'login/register type',
             'scene' => trans('user.scene'),
+            'nickname' => trans('user.nickname'),
         ];
     }
 

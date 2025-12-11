@@ -22,6 +22,7 @@ use App\Http\CurrentUser;
 use App\Model\Enums\User\LoginType;
 use App\Model\Enums\User\Status;
 use App\Model\Enums\User\Type;
+use App\Model\UserLoginLog;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\GDLibRenderer;
@@ -59,7 +60,7 @@ class UserController extends AbstractController
         ref: UserRequest::class,
         title: '注册请求参数',
         required: ['register_type'],
-        example: '{ "username": "deepsea", "password": "123456", "password_confirmation": "123456", "mobile": "18111111111", "code": "12345", "openid": "oFvZO197qeVdsnFyKh7gDrqUpsf0", "type": 1, "invite_code": "ABC12345" }'
+        example: '{ "username": "deepsea", "password": "123456", "password_confirmation": "123456", "mobile": "18111111111", "code": "86","vcode": "1234", "openid": "oFvZO197qeVdsnFyKh7gDrqUpsf0", "type": 1, "invite_code": "ABC12345" }'
     ))]
     #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAiO","expire_at":300}}')]
     public function register(UserRequest $request): Result
@@ -93,7 +94,21 @@ class UserController extends AbstractController
             $user = $this->userService->create($validated);
         }
         if (!$user) throw new BusinessException(message: trans('user.register_fail'));
-        return $this->success($this->userService->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
+
+        $deviceId = $validated['device_id'] ?? '';
+        if (empty($deviceId)) {
+            $deviceId = Uuid::uuid4()->toString();
+        }
+
+        $tokenData = $this->userService->setScene('api')->formatToken(
+            $user,
+            $request->ip(),
+            $request->header('User-Agent') ?: 'unknown',
+            $request->os(),
+            $deviceId
+        );
+        $tokenData['device_id'] = $deviceId;
+        return $this->success($tokenData);
     }
 
     #[Get(
@@ -139,6 +154,34 @@ class UserController extends AbstractController
             countryCode: $countryCode
         );
         return $result['success'] ? $this->success(message: $result['message']) : $this->error($result['message']);
+    }
+
+    #[Post(
+        path: '/api/user/smsCheck',
+        operationId: 'ApiUserSmsCheck',
+        summary: '登录',
+        tags: ['用户接口'],
+    )]
+    #[ResultResponse(instance: new Result())]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '验证码验证',
+        required: ['type'],
+        example: '{ "type": "smm", to": "", "code": "",  "vcode": "", "scene": "" }'
+    ))]
+    public function smsCheck(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $type = $validated['type'];
+
+        return VerifyCodeService::verify(
+            $type === 'sms' ? VerifyCodeService::TYPE_SMS : VerifyCodeService::TYPE_EMAIL,
+            $validated['to'],
+            $validated['vcode'],
+            $validated['scene'] ?? VerifyCodeService::SCENE_DEFAULT,
+            false,
+            (int)($validated['code'] ?? 86),
+        ) ? $this->success() : $this->error(trans('auth.mobile_code_invalid'));
     }
 
     #[Post(
@@ -195,7 +238,8 @@ class UserController extends AbstractController
                 $verifyAgain = 'mobile_code';
             }
             if (empty($validated['google2fa_code']) && empty($validated['vcode']) && $verifyAgain) {
-                return $this->success(['verify_again' => $verifyAgain,
+                return $this->success([
+                    'verify_again' => $verifyAgain,
                     'email' => $user->email,
                     'mobile' => $user->mobile,
                     'code' => (string)$user->code,
@@ -283,6 +327,7 @@ class UserController extends AbstractController
         $user->is_google2fa = $user->google2fa ? 1 : 0;
         $user->is_trans_password = $user->profile?->trans_password ? 1 : 0;
         $user->is_password = $user->getOriginal('password') ? 1 : 0;
+        $user->is_kyc = 0; //0未填写1待认证2失败3成功
         return $this->success($user);
     }
 
@@ -707,6 +752,113 @@ class UserController extends AbstractController
         $user->save();
 
         return $this->success(message: trans('auth.unbind_success'));
+    }
+
+    #[Get(
+        path: '/api/user/login-logs',
+        operationId: 'ApiUserLoginLogs',
+        summary: '获取登录日志',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[QueryParameter(name: 'page', description: '页码', required: false, example: '1')]
+    #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: '20')]
+    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"list":[{"id":1,"ip":"192.168.1.1","os":"Android","device_id":"xxx","country":"中国","region":"北京","city":"北京","created_at":"2025-11-29 21:13:44"}],"total":10}}')]
+    #[Middleware(TokenMiddleware::class)]
+    public function loginLogs(): Result
+    {
+        $userId = $this->userService->id();
+        $query = UserLoginLog::query()->where('user_id', $userId);
+        $logs = $query->orderByDesc('id')
+            ->simplePaginate($this->getPageSize());
+        return $this->success([
+            'list' => $logs,
+        ]);
+    }
+
+    #[Post(
+        path: '/api/user/profile/update',
+        operationId: 'ApiUserProfileUpdate',
+        summary: '更新用户资料',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '更新用户资料请求参数',
+        example: '{ "nickname": "新昵称" }'
+    ))]
+    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{}}')]
+    #[Middleware(TokenMiddleware::class)]
+    public function profileUpdate(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        if (!$validated) return $this->success();
+        $user = $this->userService->user();
+        $user->profile->fill($validated)->save();
+
+        return $this->success(message: trans('user.profile_update_success'));
+    }
+
+    #[Post(
+        path: '/api/user/resetPassword',
+        operationId: 'ApiUserResetPassword',
+        summary: '重置密码',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '重置密码请求参数',
+    ))]
+    #[ResultResponse(instance: new Result(), example: '{"code":200,"vcode":200,"message":"成功","data":{}}')]
+    public function resetPassword(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $findParams = [];
+        if ($validated['type'] == LoginType::MOBILE_CODE->value) {
+            $findParams['code'] = $validated['code'];
+            $findParams['mobile'] = $validated['mobile'];
+        } elseif ($validated['type'] == LoginType::EMAIL_CODE->value) {
+            $findParams['email'] = $validated['email'];
+        }
+        $user = $this->userService->findUser($findParams);
+        if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
+
+        $verifyAgain = $user->google2fa ? 'google2fa_code' : '';
+
+        if ($validated['step'] == 1 && $verifyAgain && empty($validated['google2fa_code'])) {
+            return $this->success([
+                'verify_again' => $verifyAgain,
+            ]);
+        }
+        if ($validated['step'] == 2 && $user->google2fa) {
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            return $this->success();
+        }
+        $scene = VerifyCodeService::SCENE_RESET_PASSWORD;
+        if ($validated['type'] == LoginType::EMAIL_CODE->value) {
+            if (!VerifyCodeService::verify(
+                VerifyCodeService::TYPE_EMAIL,
+                $user->email,
+                $validated['vcode'],
+                $scene
+            )) {
+                throw new BusinessException(message: trans('auth.email_code_invalid'));
+            }
+        } else if ($validated['type'] == LoginType::MOBILE_CODE->value) {
+            if (!VerifyCodeService::verify(
+                VerifyCodeService::TYPE_SMS,
+                $user->mobile,
+                $validated['vcode'],
+                $scene
+            )) {
+                throw new BusinessException(message: trans('auth.mobile_code_invalid'));
+            }
+        }
+        $user->password = $validated['password'];
+        $user->save();
+        return $this->success();
     }
 
     /**

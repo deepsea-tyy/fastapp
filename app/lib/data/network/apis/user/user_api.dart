@@ -114,6 +114,88 @@ class UserApi {
     return response.data;
   }
 
+  /// 验证验证码
+  /// [type] 验证码类型：'sms'(手机短信)或'email'(邮箱)
+  /// [to] 接收地址：手机号或邮箱地址
+  /// [vcode] 验证码
+  /// [scene] 验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)
+  /// [code] 国家代码（仅手机短信需要，可选，默认86）
+  Future<Map<String, dynamic>> smsCheck({
+    required String type,
+    required String to,
+    required String vcode,
+    String scene = 'register',
+    String? code,
+  }) async {
+    final data = {
+      'type': type,
+      'to': to,
+      'vcode': vcode,
+      'scene': scene,
+    };
+    if (code != null) {
+      data['code'] = code;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.userSmsCheck,
+      data: data,
+    );
+
+    return response.data;
+  }
+
+  /// 注册
+  /// [type] 注册类型：2=手机验证码，3=邮箱验证码
+  /// [mobile] 手机号（type=2时使用）
+  /// [email] 邮箱（type=3时使用）
+  /// [code] 国家代码（type=2时使用）
+  /// [vcode] 验证码
+  /// [password] 密码
+  /// [passwordConfirmation] 确认密码
+  /// [scene] 验证码场景（默认为'register'）
+  /// [deviceId] 设备唯一标识（可选）
+  Future<Map<String, dynamic>> register({
+    required int type,
+    String? mobile,
+    String? email,
+    String? code,
+    required String vcode,
+    required String password,
+    required String passwordConfirmation,
+    String scene = 'register',
+    String? deviceId,
+  }) async {
+    final data = <String, dynamic>{
+      'type': type,
+      'vcode': vcode,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+      'scene': scene,
+    };
+
+    if (type == 2) {
+      // 手机验证码注册
+      if (mobile != null) data['mobile'] = mobile;
+      if (code != null) data['code'] = code;
+    } else if (type == 3) {
+      // 邮箱验证码注册
+      if (email != null) data['email'] = email;
+    }
+
+    // 添加设备ID
+    if (deviceId != null && deviceId.isNotEmpty) {
+      data['device_id'] = deviceId;
+    }
+
+    final response = await _dioClient.dio.post(
+      Endpoints.userRegister,
+      data: data,
+    );
+
+    return response.data;
+  }
+
   /// 获取用户信息
   Future<Map<String, dynamic>> getUserInfo() async {
     final response = await _dioClient.dio.get(
@@ -359,6 +441,103 @@ class UserApi {
     
     final response = await _dioClient.dio.post(
       Endpoints.accountDelete,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 获取登录日志
+  /// [page] 页码（可选，默认1）
+  /// [pageSize] 每页数量（可选，默认20）
+  Future<Map<String, dynamic>> getLoginLogs({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.userLoginLogs,
+      queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return response.data;
+  }
+
+  /// 更新用户资料
+  /// [nickname] 昵称
+  Future<Map<String, dynamic>> updateProfile({
+    String? nickname,
+  }) async {
+    final data = <String, dynamic>{};
+    if (nickname != null) {
+      data['nickname'] = nickname;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.userProfileUpdate,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 重置密码
+  /// [type] 类型：2=手机验证码，3=邮箱验证码
+  /// [mobile] 手机号（与email二选一）
+  /// [email] 邮箱（与mobile二选一）
+  /// [code] 国家代码（手机号时必填）
+  /// [vcode] 验证码（首次验证码或双重认证验证码）
+  /// [password] 新密码（可选，用于获取二次认证方式时可不传）
+  /// [passwordConfirmation] 确认新密码（可选，用于获取二次认证方式时可不传）
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  /// [step] 请求步骤（第一次请求为1，按请求次数递增）
+  Future<Map<String, dynamic>> resetPassword({
+    int? type,
+    String? mobile,
+    String? email,
+    String? code,
+    String? vcode,
+    String? password,
+    String? passwordConfirmation,
+    String? google2faCode,
+    int? step,
+  }) async {
+    final data = <String, dynamic>{};
+    
+    if (type != null) {
+      data['type'] = type;
+    }
+    
+    if (step != null) {
+      data['step'] = step;
+    }
+    
+    if (password != null && password.isNotEmpty) {
+      data['password'] = password;
+    }
+    
+    if (passwordConfirmation != null && passwordConfirmation.isNotEmpty) {
+      data['password_confirmation'] = passwordConfirmation;
+    }
+    
+    if (mobile != null && mobile.isNotEmpty) {
+      data['mobile'] = mobile;
+      if (code != null) {
+        data['code'] = code;
+      }
+    } else if (email != null && email.isNotEmpty) {
+      data['email'] = email;
+    }
+    
+    if (vcode != null && vcode.isNotEmpty) {
+      data['vcode'] = vcode;
+    }
+    
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.passwordReset,
       data: data,
     );
     return response.data;

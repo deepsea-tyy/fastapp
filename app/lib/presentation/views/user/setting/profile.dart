@@ -3,14 +3,29 @@ import 'package:flutter/services.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/domain/entity/user/user.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets.dart';
 
 /// 账户中心页面
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // 常量配置
+  static const _cardMargin = EdgeInsets.all(16.0);
+  static const _cardPadding = EdgeInsets.all(16.0);
+  static const _avatarSize = 50.0;
+  static const _iconSize = 20.0;
+
+  // 是否显示完整的手机号
+  bool _showMobile = false;
 
   @override
   Widget build(BuildContext context) {
@@ -19,21 +34,17 @@ class ProfileScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            SettingAppBar(title: '账户中心'),
+            const SettingAppBar(title: '账户中心'),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // 用户资料卡片
                     _buildUserProfileCard(context),
-                    
-                    // 功能列表
                     _buildFeatureList(context),
                   ],
                 ),
               ),
             ),
-            // 退出按钮
             _buildLogoutButton(context),
           ],
         ),
@@ -48,59 +59,45 @@ class ProfileScreen extends StatelessWidget {
     return Observer(
       builder: (_) {
         final user = userStore.currentUser;
-        
         if (user == null) {
           return Container(
-            margin: const EdgeInsets.all(16.0),
-            padding: const EdgeInsets.all(16.0),
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            margin: _cardMargin,
+            padding: _cardPadding,
+            child: const Center(child: CircularProgressIndicator()),
           );
         }
         
-        // 显示名称：优先显示昵称，如果没有则显示用户名
-        final displayName = user.profile?.nickname?.isNotEmpty == true
-            ? user.profile!.nickname!
-            : user.username;
-        
-        // 用户编号（no字段）
+        final theme = Theme.of(context);
+        final displayName = _getDisplayName(user);
         final userNo = user.no?.toString() ?? user.id.toString();
         
-        // 手机号（注册信息）
-        final mobile = user.mobile ?? '';
-        
         return Container(
-          margin: const EdgeInsets.all(16.0),
-          padding: const EdgeInsets.all(16.0),
+          margin: _cardMargin,
+          padding: _cardPadding,
           decoration: BoxDecoration(
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(12.0),
           ),
           child: Column(
             children: [
-              // 头像和用户名
               Row(
                 children: [
-                  // 头像
                   _buildAvatar(user.profile?.avatar),
                   const SizedBox(width: 12),
-                  // 用户名
                   Expanded(
                     child: Text(
                       displayName,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  // 编辑图标
                   IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
+                    icon: const Icon(Icons.edit, size: _iconSize),
                     onPressed: () {
-                      // TODO: 编辑用户信息
+                      _showEditNicknameDialog(context, userStore, user);
                     },
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -108,7 +105,6 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              // ID
               _buildInfoRow(
                 context,
                 'ID',
@@ -119,70 +115,77 @@ class ProfileScreen extends StatelessWidget {
                   MessageService.snackBar('ID已复制');
                 },
               ),
-              const SizedBox(height: 12),
-              // 注册信息（手机号）
-              if (mobile.isNotEmpty)
+              if (user.mobile?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
                 _buildInfoRow(
                   context,
                   '注册信息',
-                  mobile,
-                  Icons.visibility,
+                  _showMobile ? user.mobile! : _maskMobile(user.mobile!),
+                  _showMobile ? Icons.visibility_off : Icons.visibility,
                   onIconTap: () {
-                    // TODO: 切换显示/隐藏
+                    setState(() {
+                      _showMobile = !_showMobile;
+                    });
                   },
                 ),
+              ],
             ],
           ),
         );
       },
     );
   }
+
+  /// 获取显示名称
+  String _getDisplayName(User user) {
+    if (user.profile?.nickname?.isNotEmpty == true) {
+      return user.profile!.nickname!;
+    }
+    if (user.username?.isNotEmpty == true) {
+      return user.username!;
+    }
+    return user.mobile ?? user.email ?? '未设置';
+  }
+
+  /// 隐藏手机号中间部分
+  String _maskMobile(String mobile) {
+    if (mobile.length <= 7) {
+      return mobile;
+    }
+    // 显示前3位和后4位，中间用*代替
+    final prefix = mobile.substring(0, 3);
+    final suffix = mobile.substring(mobile.length - 4);
+    final middle = '*' * (mobile.length - 7);
+    return '$prefix$middle$suffix';
+  }
   
   /// 构建头像
   Widget _buildAvatar(String? avatarUrl) {
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: avatarUrl,
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            width: 50,
-            height: 50,
-            color: Colors.grey[300],
-            child: const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.person,
-              size: 30,
-              color: Colors.grey[600],
-            ),
-          ),
-        ),
-      );
-    }
-    
-    return Container(
-      width: 50,
-      height: 50,
+    final defaultAvatar = Container(
+      width: _avatarSize,
+      height: _avatarSize,
       decoration: BoxDecoration(
         color: Colors.grey[300],
         shape: BoxShape.circle,
       ),
-      child: Icon(
-        Icons.person,
-        size: 30,
-        color: Colors.grey[600],
+      child: Icon(Icons.person, size: 30, color: Colors.grey[600]),
+    );
+
+    if (avatarUrl?.isNotEmpty != true) return defaultAvatar;
+
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: avatarUrl!,
+        width: _avatarSize,
+        height: _avatarSize,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          width: _avatarSize,
+          height: _avatarSize,
+          color: Colors.grey[300],
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (_, __, ___) => defaultAvatar,
       ),
     );
   }
@@ -195,23 +198,18 @@ class ProfileScreen extends StatelessWidget {
     IconData icon, {
     required VoidCallback onIconTap,
   }) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
           ),
         ),
         IconButton(
@@ -226,59 +224,51 @@ class ProfileScreen extends StatelessWidget {
 
   /// 构建功能列表
   Widget _buildFeatureList(BuildContext context) {
-    return Column(
-      children: [
-        _buildFeatureItem(
-          context,
-          icon: Icons.diamond,
-          title: 'VIP特权',
-          trailing: _buildStatusTag('普通用户', Colors.orange[300]!),
-          onTap: () {
-            Navigator.of(context).pushNamed(Routes.vipPrivilege);
-          },
-        ),
-        _buildFeatureItem(
-          context,
-          icon: Icons.person,
-          title: '身份认证',
-          trailing: _buildStatusTag('已认证', Colors.green[300]!),
-          onTap: () {
-            Navigator.of(context).pushNamed(Routes.identityVerification);
-          },
-        ),
-        _buildFeatureItem(
-          context,
-          icon: Icons.lock,
-          title: '账户安全',
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).pushNamed(Routes.accountSecurity);
-          },
-        ),
-        _buildFeatureItem(
-          context,
-          icon: Icons.close,
-          title: 'Twitter',
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '未绑定',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+    final userStore = getIt<UserStore>();
+    
+    return Observer(
+      builder: (_) {
+        final isKycVerified = userStore.currentUser?.isKyc == 1;
+        final theme = Theme.of(context);
+        
+        return Column(
+          children: [
+            _buildFeatureItem(
+              context,
+              icon: Icons.diamond,
+              title: 'VIP特权',
+              trailing: _buildStatusTag('普通用户', Colors.orange[300]!),
+              onTap: () => Navigator.of(context).pushNamed(Routes.vipPrivilege),
+            ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.person,
+              title: '身份认证',
+              trailing: _buildStatusTag(
+                isKycVerified ? '已认证' : '未认证',
+                isKycVerified ? Colors.green[300]! : Colors.grey[400]!,
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
-          onTap: () {
-            // TODO: 跳转到Twitter绑定页面
-          },
-        ),
-      ],
+              onTap: () => _navigateToIdentityVerification(context, userStore),
+            ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.lock,
+              title: '账户安全',
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).pushNamed(Routes.accountSecurity),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  /// 导航到身份认证页面
+  Future<void> _navigateToIdentityVerification(BuildContext context, UserStore userStore) async {
+    await Navigator.of(context).pushNamed(Routes.identityVerification);
+    if (context.mounted) {
+      await userStore.getUserInfo();
+    }
   }
 
   /// 构建功能项
@@ -312,27 +302,20 @@ class ProfileScreen extends StatelessWidget {
   /// 构建退出按钮
   Widget _buildLogoutButton(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: _cardMargin,
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: () {
-            _handleLogout(context);
-          },
+          onPressed: () => _handleLogout(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.grey[800],
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           child: const Text(
             '退出登录',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -358,5 +341,48 @@ class ProfileScreen extends StatelessWidget {
         }
       },
     );
+  }
+
+  /// 显示编辑昵称对话框
+  Future<void> _showEditNicknameDialog(BuildContext context, UserStore userStore, User user) async {
+    final result = await MessageService.inputDialog(
+      title: '编辑昵称',
+      fields: [
+        InputField(
+          label: '昵称',
+          hintText: '请输入昵称',
+          initialValue: user.profile?.nickname ?? '',
+          maxLength: 60,
+          autofocus: true,
+          validator: (value) {
+            if (value.isEmpty) {
+              MessageService.snackBar('昵称不能为空');
+              return false;
+            }
+            if (value.contains(' ')) {
+              MessageService.snackBar('昵称不能包含空格');
+              return false;
+            }
+            return true;
+          },
+        ),
+      ],
+    );
+
+    if (result != null && result['昵称'] != null) {
+      final nickname = result['昵称']!.trim();
+      await _updateNickname(context, userStore, nickname);
+    }
+  }
+
+  /// 更新昵称
+  Future<void> _updateNickname(BuildContext context, UserStore userStore, String nickname) async {
+    try {
+      await userStore.updateNickname(nickname);
+    } catch (e) {
+      if (context.mounted) {
+        MessageService.snackBar('更新失败: ${e.toString()}');
+      }
+    }
   }
 }
