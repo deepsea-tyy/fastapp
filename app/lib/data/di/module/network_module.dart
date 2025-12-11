@@ -59,7 +59,8 @@ class NetworkModule {
       const DioConfigs(
         baseUrl: Endpoints.baseUrl,
         connectionTimeout: Endpoints.connectionTimeout,
-        receiveTimeout:Endpoints.receiveTimeout,
+        receiveTimeout: Endpoints.receiveTimeout,
+        sendTimeout: Endpoints.sendTimeout,
       ),
     );
     getIt.registerSingleton<DioClient>(

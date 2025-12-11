@@ -18,6 +18,7 @@ class UserApi {
   /// [vcode] 验证码（type=2或3时使用，或二次验证时使用）
   /// [scene] 验证码场景（type=2或3时使用，默认为'login'）
   /// [google2faCode] Google2FA验证码（二次验证时使用）
+  /// [deviceId] 设备唯一标识（iOS/Android/Web通用，可选）
   Future<Map<String, dynamic>> login({
     required int type,
     String? username,
@@ -28,6 +29,7 @@ class UserApi {
     String? vcode,
     String? scene,
     int? google2faCode,
+    String? deviceId,
   }) async {
     final data = <String, dynamic>{'type': type};
 
@@ -62,21 +64,30 @@ class UserApi {
       data['google2fa_code'] = google2faCode;
     }
 
+    // 设备唯一标识（iOS/Android/Web通用）
+    if (deviceId != null && deviceId.isNotEmpty) {
+      data['device_id'] = deviceId;
+    }
+
     final response = await _dioClient.dio.post(Endpoints.userLogin, data: data);
     return response.data;
   }
 
   /// 发送验证码
   /// [mobile] 手机号
+  /// [code] 国家代码（可选，默认86）
   /// [scene] 验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)
   Future<Map<String, dynamic>> sendSms({
     required String mobile,
+    String? code,
     String scene = 'login',
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.userSms,
       queryParameters: {
-        'mobile': mobile,
+        'type': 'sms',
+        'to': mobile,
+        if (code != null) 'code': code,
         'scene': scene,
       },
     );
@@ -94,7 +105,8 @@ class UserApi {
     final response = await _dioClient.dio.get(
       Endpoints.userSms,
       queryParameters: {
-        'mobile': email, // 服务端使用 mobile 字段接收邮箱
+        'type': 'email',
+        'to': email,
         'scene': scene,
       },
     );
@@ -166,6 +178,131 @@ class UserApi {
       data: {
         'google2fa_code': code,
       },
+    );
+    return response.data;
+  }
+
+  /// 绑定邮箱
+  /// [email] 邮箱地址
+  /// [vcode] 6位验证码
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  Future<Map<String, dynamic>> bindEmail({
+    required String email,
+    required String vcode,
+    String? google2faCode,
+  }) async {
+    final data = {
+      'email': email,
+      'vcode': vcode,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.emailBind,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 解绑邮箱
+  /// [vcode] 6位验证码
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  Future<Map<String, dynamic>> unbindEmail({
+    required String vcode,
+    String? google2faCode,
+  }) async {
+    final data = {
+      'vcode': vcode,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.emailUnbind,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 绑定手机号
+  /// [mobile] 手机号
+  /// [code] 国家代码（如 "86"）
+  /// [vcode] 6位验证码
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  Future<Map<String, dynamic>> bindMobile({
+    required String mobile,
+    required String code,
+    required String vcode,
+    String? google2faCode,
+  }) async {
+    final data = {
+      'mobile': mobile,
+      'code': code,
+      'vcode': vcode,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.mobileBind,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 解绑手机号
+  /// [code] 国家代码（如 "86"）
+  /// [vcode] 6位验证码
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  Future<Map<String, dynamic>> unbindMobile({
+    required String code,
+    required String vcode,
+    String? google2faCode,
+  }) async {
+    final data = {
+      'code': code,
+      'vcode': vcode,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.mobileUnbind,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 修改密码
+  /// [oldPassword] 旧密码（如果已设置密码则必填）
+  /// [password] 新密码
+  /// [passwordConfirmation] 确认新密码
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  Future<Map<String, dynamic>> changePassword({
+    String? oldPassword,
+    required String password,
+    required String passwordConfirmation,
+    String? google2faCode,
+  }) async {
+    final data = {
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    };
+    if (oldPassword != null && oldPassword.isNotEmpty) {
+      data['old_password'] = oldPassword;
+    }
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.passwordChange,
+      data: data,
     );
     return response.data;
   }

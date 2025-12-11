@@ -39,17 +39,17 @@ class OperationMiddleware implements MiddlewareInterface
             return $callback;
         }
 
-        if (\is_string($callback)) {
-            $separator = str_contains($callback, '@') ? '@' : (str_contains($callback, '::') ? '::' : null);
-            if ($separator) {
-                $parts = explode($separator, $callback);
-                if (\count($parts) === 2) {
-                    return $parts;
-                }
-            }
+        if (!\is_string($callback)) {
+            return null;
         }
 
-        return null;
+        $separator = str_contains($callback, '@') ? '@' : (str_contains($callback, '::') ? '::' : null);
+        if (!$separator) {
+            return null;
+        }
+
+        $parts = explode($separator, $callback);
+        return \count($parts) === 2 ? $parts : null;
     }
 
     private const SWAGGER_ATTRIBUTES = [
@@ -75,27 +75,14 @@ class OperationMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $dispatched = $request->getAttribute(Dispatched::class);
-        $parseResult = $this->parse($dispatched?->handler?->callback);
-        if ($parseResult) {
-            [$controller, $method] = $parseResult;
-            $summary = $this->getOperationSummary($controller, $method, $request->getUri()->getPath(), $request->getMethod());
+        $response = $handler->handle($request);
 
-            if ($summary) {
-                $requestObj = $this->container->get(Request::class);
-                $requestParams = $this->getRequestParams($request);
-                Tools::eventDispatcher(new RequestOperationEvent(
-                    $this->user->id(),
-                    $summary,
-                    $request->getUri()->getPath(),
-                    Arr::first($requestObj->getClientIps(), fn($val) => $val, '0.0.0.0'),
-                    $request->getMethod(),
-                    $requestParams
-                ));
-            }
+        // 只有请求成功时才记录操作日志
+        if ($this->isSuccessResponse($response)) {
+            $this->logOperationIfNeeded($request);
         }
 
-        return $handler->handle($request);
+        return $response;
     }
 
     private function getOperationSummary(string $controller, string $method, string $path, string $httpMethod): ?string
@@ -124,28 +111,20 @@ class OperationMiddleware implements MiddlewareInterface
 
     private function getAnnotation(array $annotations, string $attribute): ?Operation
     {
-        if (empty($annotations[$attribute]) || !($annotations[$attribute] instanceof MultipleAnnotation)) {
+        $annotation = $annotations[$attribute] ?? null;
+        if (!$annotation instanceof MultipleAnnotation) {
             return null;
         }
 
-        return Arr::first($annotations[$attribute]->toAnnotations());
+        return Arr::first($annotation->toAnnotations());
     }
 
     private function getRequestParams(ServerRequestInterface $request): array
     {
-        $params = [];
-
-        // 获取 GET 参数
-        $queryParams = $request->getQueryParams();
-        if (!empty($queryParams)) {
-            $params = array_merge($params, $queryParams);
-        }
-
-        // 获取 POST/PUT/PATCH 参数
-        $parsedBody = $request->getParsedBody();
-        if (is_array($parsedBody)) {
-            $params = array_merge($params, $parsedBody);
-        }
+        $params = array_merge(
+            $request->getQueryParams(),
+            \is_array($request->getParsedBody()) ? $request->getParsedBody() : []
+        );
 
         // 过滤敏感信息
         $sensitiveKeys = ['password', 'pwd', 'passwd', 'token', 'secret', 'api_key', 'api_secret'];
@@ -156,5 +135,36 @@ class OperationMiddleware implements MiddlewareInterface
         }
 
         return $params;
+    }
+
+    private function isSuccessResponse(ResponseInterface $response): bool
+    {
+        $statusCode = $response->getStatusCode();
+        return $statusCode >= 200 && $statusCode < 300;
+    }
+
+    private function logOperationIfNeeded(ServerRequestInterface $request): void
+    {
+        $dispatched = $request->getAttribute(Dispatched::class);
+        $parseResult = $this->parse($dispatched?->handler?->callback);
+        if (!$parseResult) {
+            return;
+        }
+
+        [$controller, $method] = $parseResult;
+        $summary = $this->getOperationSummary($controller, $method, $request->getUri()->getPath(), $request->getMethod());
+        if (!$summary) {
+            return;
+        }
+
+        $requestObj = $this->container->get(Request::class);
+        Tools::eventDispatcher(new RequestOperationEvent(
+            $this->user->id(),
+            $summary,
+            $request->getUri()->getPath(),
+            Arr::first($requestObj->getClientIps(), fn($val) => $val, '0.0.0.0'),
+            $request->getMethod(),
+            $this->getRequestParams($request)
+        ));
     }
 }

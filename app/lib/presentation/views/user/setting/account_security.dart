@@ -44,6 +44,9 @@ class AccountSecurityScreen extends StatelessWidget {
         // 判断邮箱是否已设置（email 有值表示已设置）
         final isEmailEnabled = user?.email != null && user?.email?.isNotEmpty == true;
         
+        // 判断密码是否已设置（is_password == 1 表示已设置）
+        final isPasswordEnabled = user?.isPassword != null && user?.isPassword == 1;
+        
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -82,13 +85,19 @@ class AccountSecurityScreen extends StatelessWidget {
                 icon: Icons.email,
                 title: '邮箱',
                 isEnabled: isEmailEnabled,
+                onTap: () {
+                  Navigator.of(context).pushNamed('/email-binding');
+                },
               ),
               const SizedBox(height: 12),
               _build2FAOption(
                 context,
                 icon: Icons.lock,
                 title: '密码',
-                isEnabled: false,
+                isEnabled: isPasswordEnabled,
+                onTap: () {
+                  Navigator.of(context).pushNamed('/password-setting');
+                },
               ),
               const SizedBox(height: 12),
               _build2FAOption(
@@ -97,7 +106,7 @@ class AccountSecurityScreen extends StatelessWidget {
                 title: '手机',
                 isEnabled: isMobileEnabled,
                 onTap: () {
-                  Navigator.of(context).pushNamed('/phone-verification');
+                  Navigator.of(context).pushNamed('/mobile-binding');
                 },
               ),
               const SizedBox(height: 16),
@@ -173,6 +182,15 @@ class AccountSecurityScreen extends StatelessWidget {
                 Icons.check,
                 color: Colors.white,
                 size: 16,
+              ),
+            )
+          else
+            Text(
+              '未设置',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.red[600],
+                fontWeight: FontWeight.w500,
               ),
             ),
         ],

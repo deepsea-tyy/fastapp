@@ -1,9 +1,10 @@
 baseUserManage:
   avatar: 頭像
-  username: 用戶名
+  username: 登錄用戶名
   nickname: 昵稱
-  phone: 手機
-  email: 郵箱
+  phone: 聯繫電話
+  loginMobile: 登入手機號
+  email: 登錄郵箱
   password: 密碼
   userType: 用戶類型
   signed: 個人簽名

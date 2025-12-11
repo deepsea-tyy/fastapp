@@ -16,6 +16,9 @@ import 'package:fastapp/presentation/views/user/setting/manage_account.dart';
 import 'package:fastapp/presentation/views/user/setting/phone_verification.dart';
 import 'package:fastapp/presentation/views/user/setting/settings_screen.dart';
 import 'package:fastapp/presentation/views/user/setting/account_binding.dart';
+import 'package:fastapp/presentation/views/user/setting/email_binding.dart';
+import 'package:fastapp/presentation/views/user/setting/mobile_binding.dart';
+import 'package:fastapp/presentation/views/user/setting/password_setting.dart';
 import 'package:fastapp/presentation/views/user/message/message_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -38,6 +41,9 @@ class Routes {
   static const String manageAccount = '/manage-account';
   static const String phoneVerification = '/phone-verification';
   static const String accountBinding = '/account-binding';
+  static const String emailBinding = '/email-binding';
+  static const String mobileBinding = '/mobile-binding';
+  static const String passwordSetting = '/password-setting';
   static const String settings = '/settings';
   static const String message = '/message';
   static const String service = '/service';
@@ -59,6 +65,9 @@ class Routes {
     manageAccount: (BuildContext context) => const ManageAccountScreen(),
     phoneVerification: (BuildContext context) => const PhoneVerificationScreen(),
     accountBinding: (BuildContext context) => const AccountBindingScreen(),
+    emailBinding: (BuildContext context) => const EmailBindingScreen(),
+    mobileBinding: (BuildContext context) => const MobileBindingScreen(),
+    passwordSetting: (BuildContext context) => const PasswordSettingScreen(),
     settings: (BuildContext context) => const SettingsScreen(),
     message: (BuildContext context) => const MessageScreen(),
     service: (BuildContext context) => const ServiceScreen(),

@@ -22,7 +22,6 @@ use App\Http\CurrentUser;
 use App\Model\Enums\User\LoginType;
 use App\Model\Enums\User\Type;
 use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\GDLibRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -35,7 +34,9 @@ use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
+use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 use PragmaRX\Google2FA\Google2FA;
+use Ramsey\Uuid\Uuid;
 
 #[HyperfServer(name: 'http')]
 class UserController extends AbstractController
@@ -71,7 +72,6 @@ class UserController extends AbstractController
             $user = $this->userService->create($validated);
         }
         if ($validated['type'] == LoginType::MOBILE_CODE->value) {
-            // 验证手机验证码
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_REGISTER;
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_SMS,
@@ -118,20 +118,26 @@ class UserController extends AbstractController
         security: [['Bearer' => [], 'ApiKey' => []]],
         tags: ['用户接口'],
     )]
-    #[QueryParameter(name: 'mobile', description: '手机号', example: '1311111111')]
+    #[QueryParameter(name: 'type', description: '验证码类型：sms(手机短信)或email(邮箱)', required: true, example: 'sms')]
+    #[QueryParameter(name: 'to', description: '接收地址：手机号或邮箱地址', required: true, example: '1311111111')]
+    #[QueryParameter(name: 'code', description: '国家代码（仅手机短信需要），默认86', required: false, example: '86')]
     #[QueryParameter(name: 'scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', required: false, example: 'login')]
     #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {}}')]
     public function sms(UserRequest $request): Result
     {
-        $request->validated();
-        $mobile = $request->query('mobile');
-        $scene = $request->query('scene', VerifyCodeService::SCENE_DEFAULT);
+        $validated = $request->validated();
+        $type = $validated['type'];
+        $to = $validated['to'];
+        $scene = $validated['scene'] ?? VerifyCodeService::SCENE_DEFAULT;
+        $countryCode = (int)($validated['code'] ?? 86);
+
         $result = VerifyCodeService::send(
-            VerifyCodeService::TYPE_SMS,
-            $mobile,
-            $scene
+            $type === 'sms' ? VerifyCodeService::TYPE_SMS : VerifyCodeService::TYPE_EMAIL,
+            $to,
+            $scene,
+            countryCode: $countryCode
         );
-        return $result['success'] ? $this->success(null, $result['message']) : $this->error($result['message']);
+        return $result['success'] ? $this->success(message: $result['message']) : $this->error($result['message']);
     }
 
     #[Post(
@@ -152,7 +158,6 @@ class UserController extends AbstractController
         $validated = $request->validated();
         $user = '';
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value) {
-            // type=1 时，可以使用 username、mobile 或 email 登录
             $findParams = [];
             if (!empty($validated['username'])) {
                 $findParams['username'] = $validated['username'];
@@ -170,29 +175,44 @@ class UserController extends AbstractController
         }
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value && !$user->verifyPassword($validated['password'])) {
-            throw new BusinessException(message: trans('auth.password_error'));
+            throw new BusinessException(message: trans('user.password_error'));
+        }
+
+        $deviceId = $validated['device_id'] ?? '';
+        if (empty($deviceId)) {
+            $deviceId = Uuid::uuid4()->toString();
         }
         $verifyAgain = '';
-        if ($user->google2fa) {
-            $verifyAgain = 'google2fa_code';
-        } elseif ($user->email) {
-            $verifyAgain = 'email_code';
+        $fa = CacheConfigHelper::getConfigByKey('user_2FA')['value'] ?? true;
+        if ($fa) {
+            if ($user->google2fa) {
+                $verifyAgain = 'google2fa_code';
+            } elseif ($user->email) {
+                $verifyAgain = 'email_code';
+            } elseif ($user->mobile) {
+                $verifyAgain = 'mobile_code';
+            }
+            if (empty($validated['google2fa_code']) && empty($validated['vcode']) && $verifyAgain) {
+                return $this->success(['verify_again' => $verifyAgain,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'code' => (string)$user->code,
+                    'device_id' => $deviceId,
+                ]);
+            }
         }
-        if (empty($validated['google2fa_code']) && empty($validated['vcode']) && $verifyAgain) {
-            return $this->success(['verify_again' => $verifyAgain]);
-        }
-        if ($validated['type'] == LoginType::EMAIL_CODE->value) {
+        if ($validated['type'] == LoginType::EMAIL_CODE->value || $verifyAgain == 'email_code') {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_LOGIN;
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_EMAIL,
-                $validated['mobile'],
+                $validated['email'],
                 $validated['vcode'],
                 $scene
             )) {
                 throw new BusinessException(message: trans('auth.email_code_invalid'));
             }
         }
-        if ($validated['type'] == LoginType::MOBILE_CODE->value) {
+        if ($validated['type'] == LoginType::MOBILE_CODE->value || $verifyAgain == 'mobile_code') {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_LOGIN;
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_SMS,
@@ -203,16 +223,19 @@ class UserController extends AbstractController
                 throw new BusinessException(message: trans('auth.mobile_code_invalid'));
             }
         }
-        if ($user->google2fa) {
-            $google2fa = new Google2FA();
-            try {
-                $valid = $google2fa->verifyKey($user->google2fa, $validated['google2fa_code'], 2); // 允许2个时间窗口的误差
-                if (!$valid) throw new BusinessException(message: trans('auth.google_code_invalid'));
-            } catch (\Throwable) {
-                throw new BusinessException(message: trans('auth.google_code_invalid'));
-            }
+        if ($user->google2fa && $verifyAgain == 'google2fa_code') {
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code'] ?? '');
         }
-        return $this->success($this->userService->setScene('api')->formatToken($user, $request->ip(), $request->header('User-Agent') ?: 'unknown', $request->os()));
+
+        $tokenData = $this->userService->setScene('api')->formatToken(
+            $user,
+            $request->ip(),
+            $request->header('User-Agent') ?: 'unknown',
+            $request->os(),
+            $deviceId
+        );
+        $tokenData['device_id'] = $deviceId;
+        return $this->success($tokenData);
     }
 
     #[Post(
@@ -257,7 +280,56 @@ class UserController extends AbstractController
         $user = $this->userService->user();
         $user->is_google2fa = $user->google2fa ? 1 : 0;
         $user->is_trans_password = $user->profile?->trans_password ? 1 : 0;
+        $user->is_password = !empty($user->getOriginal('password')) ? 1 : 0;
         return $this->success($user);
+    }
+
+    #[Post(
+        path: '/api/user/password/change',
+        operationId: 'ApiUserPasswordChange',
+        summary: '修改密码',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '修改密码请求参数',
+        required: ['password', 'password_confirmation'],
+        example: '{ "old_password": "123456", "password": "newpassword", "password_confirmation": "newpassword", "google2fa_code": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function changePassword(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+
+        if (!empty($user->getOriginal('password'))) {
+            if (empty($validated['old_password'])) {
+                throw new BusinessException(message: trans('user.old_password_required'));
+            }
+            if (!$user->verifyPassword($validated['old_password'])) {
+                throw new BusinessException(message: trans('user.old_password_error'));
+            }
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        }
+
+        $user->password = $validated['password'];
+        $user->save();
+
+        // 密码修改成功后，退出登录并清除token
+        $token = RequestContext::get()->getAttribute('token');
+        if ($token) {
+            $this->userService->setScene('api')->logout($token);
+        }
+
+        return $this->success(message: trans('user.password_change_success'));
     }
 
     #[Get(
@@ -273,7 +345,6 @@ class UserController extends AbstractController
     {
         $user = $this->userService->user();
 
-        // 如果已经绑定，返回错误
         if (!empty($user->google2fa)) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
@@ -282,34 +353,13 @@ class UserController extends AbstractController
         $appName = \Hyperf\Config\config('app_name', 'FastApp');
         $secret = $google2fa->generateSecretKey();
 
-        // 生成二维码URL (otpauth://totp/...)
         $qrCodeUrl = $google2fa->getQRCodeUrl(
             $appName,
             $user->email ?: ($user->username ?: $user->mobile),
             $secret
         );
 
-        // 生成PNG格式二维码（Flutter直接支持PNG图片）
-        $qrcodeBase64 = null;
-
-        // 优先使用 Imagick 生成 PNG
-        if (extension_loaded('imagick')) {
-            $renderer = new ImageRenderer(
-                new RendererStyle(400),
-                new ImagickImageBackEnd()
-            );
-            $writer = new Writer($renderer);
-            $qrcodePng = $writer->writeString($qrCodeUrl);
-            $qrcodeBase64 = 'data:image/png;base64,' . base64_encode($qrcodePng);
-        }
-
-        // 如果没有 Imagick 或失败，尝试使用 GD 库
-        if (!$qrcodeBase64) {
-            $renderer = new GDLibRenderer(400);
-            $writer = new Writer($renderer);
-            $qrcodePng = $writer->writeString($qrCodeUrl);
-            $qrcodeBase64 = 'data:image/png;base64,' . base64_encode($qrcodePng);
-        }
+        $qrcodeBase64 = $this->generateQrCodeBase64($qrCodeUrl);
 
         return $this->success([
             'google2fa' => $secret,
@@ -339,20 +389,12 @@ class UserController extends AbstractController
         $secret = $validated['google2fa'];
         $code = $validated['google2fa_code'];
 
-        // 如果已经绑定，返回错误
         if (!empty($user->google2fa)) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
 
-        // 验证验证码
-        $google2fa = new Google2FA();
-        $valid = $google2fa->verifyKey($secret, $code, 2); // 允许2个时间窗口的误差
+        $this->verifyGoogle2fa($secret, $code);
 
-        if (!$valid) {
-            throw new BusinessException(message: trans('auth.google_code_invalid'));
-        }
-
-        // 保存密钥
         $user->google2fa = $secret;
         $user->save();
 
@@ -384,17 +426,266 @@ class UserController extends AbstractController
             throw new BusinessException(message: trans('auth.google_code_unbind'));
         }
 
-        // 验证验证码
-        $google2fa = new Google2FA();
-        $valid = $google2fa->verifyKey($user->google2fa, $code, 2);
-
-        if (!$valid) {
-            throw new BusinessException(message: trans('auth.google_code_invalid'));
-        }
-        // 清除密钥
+        $this->verifyGoogle2fa($user->google2fa, $code);
         $user->google2fa = '';
         $user->save();
         return $this->success(message: trans('auth.unbind_success'));
+    }
+
+    #[Post(
+        path: '/api/user/email/bind',
+        operationId: 'ApiUserEmailBind',
+        summary: '绑定邮箱',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '绑定邮箱请求参数',
+        required: ['email', 'vcode'],
+        example: '{ "email": "user@example.com", "vcode": "123456", "google2fa_code": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function emailBind(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+        $email = $validated['email'];
+        $vcode = $validated['vcode'];
+
+        $existingUser = $this->userService->findUser(['email' => $email]);
+        if ($existingUser && $existingUser->id !== $user->id) {
+            throw new BusinessException(message: trans('auth.email_used'));
+        }
+
+        if (!empty($user->email)) {
+            throw new BusinessException(message: trans('auth.email_bind'));
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        }
+
+        $scene = VerifyCodeService::SCENE_BIND;
+        if (!VerifyCodeService::verify(
+            VerifyCodeService::TYPE_EMAIL,
+            $email,
+            $vcode,
+            $scene,
+        )) {
+            throw new BusinessException(message: trans('auth.email_code_invalid'));
+        }
+
+        $user->email = $email;
+        $user->save();
+
+        return $this->success(message: trans('auth.bind_success'));
+    }
+
+    #[Post(
+        path: '/api/user/email/unbind',
+        operationId: 'ApiUserEmailUnbind',
+        summary: '解绑邮箱',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '解绑邮箱请求参数',
+        required: ['vcode'],
+        example: '{ "vcode": "123456", "google2fa_code": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function emailUnbind(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+        $vcode = $validated['vcode'];
+
+        if (empty($user->email)) {
+            throw new BusinessException(message: trans('auth.email_unbind'));
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        }
+
+        $scene = VerifyCodeService::SCENE_BIND;
+        if (!VerifyCodeService::verify(
+            VerifyCodeService::TYPE_EMAIL,
+            $user->email,
+            $vcode,
+            $scene,
+        )) {
+            throw new BusinessException(message: trans('auth.email_code_invalid'));
+        }
+
+        $user->email = null;
+        $user->save();
+
+        return $this->success(message: trans('auth.unbind_success'));
+    }
+
+    #[Post(
+        path: '/api/user/mobile/bind',
+        operationId: 'ApiUserMobileBind',
+        summary: '绑定手机号',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '绑定手机号请求参数',
+        required: ['mobile', 'vcode', 'code'],
+        example: '{ "mobile": "18111111111", "code": "86", "vcode": "123456", "google2fa_code": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function mobileBind(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+        $mobile = $validated['mobile'];
+        $vcode = $validated['vcode'];
+        $countryCode = (int)($validated['code'] ?? 86);
+
+        $existingUser = $this->userService->findUser(['mobile' => $mobile]);
+        if ($existingUser && $existingUser->id !== $user->id) {
+            throw new BusinessException(message: trans('auth.mobile_used'));
+        }
+
+        if (!empty($user->mobile)) {
+            throw new BusinessException(message: trans('auth.mobile_bind'));
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        }
+
+        $scene = VerifyCodeService::SCENE_BIND;
+        if (!VerifyCodeService::verify(
+            VerifyCodeService::TYPE_SMS,
+            $mobile,
+            $vcode,
+            $scene,
+            countryCode: $countryCode
+        )) {
+            throw new BusinessException(message: trans('auth.mobile_code_invalid'));
+        }
+
+        $user->mobile = $mobile;
+        $user->save();
+
+        return $this->success(message: trans('auth.bind_success'));
+    }
+
+    #[Post(
+        path: '/api/user/mobile/unbind',
+        operationId: 'ApiUserMobileUnbind',
+        summary: '解绑手机号',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '解绑手机号请求参数',
+        required: ['vcode'],
+        example: '{ "code": "86", "vcode": "123456", "google2fa_code": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function mobileUnbind(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+        $vcode = $validated['vcode'];
+
+        if (empty($user->mobile)) {
+            throw new BusinessException(message: trans('auth.mobile_unbind'));
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        }
+
+        $scene = VerifyCodeService::SCENE_BIND;
+        $countryCode = (int)($validated['code'] ?? $user->code ?? 86);
+        if (!VerifyCodeService::verify(
+            VerifyCodeService::TYPE_SMS,
+            $user->mobile,
+            $vcode,
+            $scene,
+            countryCode: $countryCode
+        )) {
+            throw new BusinessException(message: trans('auth.mobile_code_invalid'));
+        }
+
+        $user->mobile = null;
+        $user->save();
+
+        return $this->success(message: trans('auth.unbind_success'));
+    }
+
+    /**
+     * 验证 Google2FA 验证码
+     */
+    private function verifyGoogle2fa(string $secret, string $code): void
+    {
+        if (\Hyperf\Config\config('env') == 'dev') return;
+        $google2fa = new Google2FA();
+        try {
+            $valid = $google2fa->verifyKey($secret, $code, 2);
+            if (!$valid) {
+                throw new BusinessException(message: trans('auth.google_code_invalid'));
+            }
+        } catch (\Throwable $e) {
+            if ($e instanceof BusinessException) {
+                throw $e;
+            }
+            throw new BusinessException(message: trans('auth.google_code_invalid'));
+        }
+    }
+
+    /**
+     * 生成二维码 Base64
+     */
+    private function generateQrCodeBase64(string $qrCodeUrl): ?string
+    {
+        if (extension_loaded('imagick')) {
+            try {
+                $renderer = new ImageRenderer(
+                    new RendererStyle(400),
+                    new ImagickImageBackEnd()
+                );
+                $writer = new Writer($renderer);
+                $qrcodePng = $writer->writeString($qrCodeUrl);
+                return 'data:image/png;base64,' . base64_encode($qrcodePng);
+            } catch (\Throwable) {
+            }
+        }
+
+        try {
+            $renderer = new GDLibRenderer(400);
+            $writer = new Writer($renderer);
+            $qrcodePng = $writer->writeString($qrCodeUrl);
+            return 'data:image/png;base64,' . base64_encode($qrcodePng);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
 }

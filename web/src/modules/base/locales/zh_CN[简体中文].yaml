@@ -1,9 +1,10 @@
 baseUserManage:
   avatar: 头像
-  username: 用户名
+  username: 登录用户名
   nickname: 昵称
-  phone: 手机
-  email: 邮箱
+  phone: 联系电话
+  loginMobile: 登录手机号
+  email: 登录邮箱
   password: 密码
   userType: 用户类型
   role: 角色

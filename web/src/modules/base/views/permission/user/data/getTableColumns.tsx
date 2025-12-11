@@ -28,15 +28,9 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
     // 索引序号列
     { type: 'index' },
     // 普通列
-    { label: () => t('baseUserManage.avatar'), prop: 'avatar', width: '120px',
-      cellRender: ({ row }) => (
-        <div class="flex-center">
-          <el-avatar src={(row.avatar === '' || !row.avatar) ? defaultAvatar : formatImagePath(row.avatar)} alt={row.username} />
-        </div>
-      ),
-    },
     { label: () => t('baseUserManage.username'), prop: 'username' },
-    { label: () => t('baseUserManage.nickname'), prop: 'nickname' },
+    { label: () => t('baseUserManage.loginMobile'), prop: 'mobile' },
+    { label: () => t('baseUserManage.email'), prop: 'email', sortable: 'custom' },
     { label: () => t('baseUserManage.userType'), prop: 'user_type',
       sortable: 'custom',
       cellRender: ({ row }) => (
@@ -45,8 +39,6 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
         </ElTag>
       ),
     },
-    { label: () => t('baseUserManage.phone'), prop: 'phone' },
-    { label: () => t('baseUserManage.email'), prop: 'email', sortable: 'custom' },
     { label: () => t('crud.status'), prop: 'status',
       sortable: 'custom',
       cellRender: ({ row }) => (
@@ -55,6 +47,15 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
         </ElTag>
       ),
     },
+    { label: () => t('baseUserManage.avatar'), prop: 'avatar', width: '120px',
+      cellRender: ({ row }) => (
+        <div class="flex-center">
+          <el-avatar src={(row.avatar === '' || !row.avatar) ? defaultAvatar : formatImagePath(row.avatar)} alt={row.username} />
+        </div>
+      ),
+    },
+    { label: () => t('baseUserManage.nickname'), prop: 'nickname' },
+    { label: () => t('baseUserManage.phone'), prop: 'phone' },
     // 操作列
     {
       type: 'operation',

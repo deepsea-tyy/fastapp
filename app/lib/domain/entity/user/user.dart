@@ -13,6 +13,8 @@ class User {
   final int? isGoogle2fa;
   @JsonKey(name: 'is_trans_password')
   final int? isTransPassword;
+  @JsonKey(name: 'is_password')
+  final int? isPassword;
   final int? no;
   final UserProfile? profile;
 
@@ -24,6 +26,7 @@ class User {
     this.code,
     this.isGoogle2fa,
     this.isTransPassword,
+    this.isPassword,
     this.no,
     this.profile,
   });

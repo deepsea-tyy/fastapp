@@ -4,6 +4,7 @@ import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/core/utils/error_handler.dart';
 import 'package:fastapp/core/exceptions/verify_again_exception.dart';
+import 'package:fastapp/utils/device/device_id_utils.dart';
 
 import '../../../domain/entity/user/user.dart';
 import '../../../domain/usecase/user/login_usecase.dart';
@@ -28,17 +29,27 @@ class UserRepositoryImpl extends UserRepository {
         vcode: params.vcode,
         scene: params.scene,
         google2faCode: params.google2faCode,
+        deviceId: params.deviceId,
       );
 
       // 检查是否需要二次验证
       final verifyAgain = response['verify_again'] as String?;
       if (verifyAgain != null) {
         final email = response['email'] as String?;
-        throw VerifyAgainException(verifyAgain, email: email);
+        final mobile = response['mobile'] as String?;
+        final code = response['code'] as String?;
+        final deviceId = response['device_id'] as String?;
+        throw VerifyAgainException(verifyAgain, email: email, mobile: mobile, code: code, deviceId: deviceId);
       }
 
       // 保存 token
       await _saveTokens(response, errorMessage: '登录失败：未获取到访问令牌');
+
+      // 保存设备ID（如果后端返回了设备ID）
+      final deviceId = response['device_id'] as String?;
+      if (deviceId != null && deviceId.isNotEmpty) {
+        await DeviceIdUtils.saveDeviceId(deviceId);
+      }
 
       // 登录 API 只返回 token，用户信息需通过 getUserInfo() 获取
       return null;

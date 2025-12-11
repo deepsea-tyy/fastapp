@@ -13,27 +13,21 @@ class ResponseInterceptor extends Interceptor {
     try {
       final data = response.data;
       
-      // 只处理 Map 类型的响应，其他类型（String、null等）直接跳过
       if (data is! Map<String, dynamic>) {
         return handler.next(response);
       }
       
-      // 检查是否有 code 字段（标准响应格式）
       if (!data.containsKey('code')) {
         return handler.next(response);
       }
       
-      // 解析统一响应结构
       final apiResponse = ApiResponse.fromJson(data);
       
-      // 处理错误响应
       if (!apiResponse.isSuccess) {
-        // 发送错误消息事件
         if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
           _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
         }
         
-        // 抛出 DioException，让 ErrorInterceptor 处理
         return handler.reject(
           DioException(
             requestOptions: response.requestOptions,
@@ -55,10 +49,15 @@ class ResponseInterceptor extends Interceptor {
         );
       }
       
-      // 成功时，提取 data 字段作为响应数据
-      response.data = apiResponse.data ?? data;
+      final responseData = apiResponse.data ?? data;
+      if (!responseData.containsKey('code')) {
+        responseData['code'] = apiResponse.code;
+      }
+      if (!responseData.containsKey('message')) {
+        responseData['message'] = apiResponse.message;
+      }
+      response.data = responseData;
     } catch (e) {
-      // 解析失败，抛出错误
       return handler.reject(
         DioException(
           requestOptions: response.requestOptions,

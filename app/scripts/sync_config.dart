@@ -98,8 +98,9 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
     r"static const String appDescription = '[^']*';": "static const String appDescription = '${app['description'] ?? 'A flutter boilerplate project'}';",
     r"static const String apiBaseUrl = '[^']*';": "static const String apiBaseUrl = '${network['apiBaseUrl'] ?? 'http://jsonplaceholder.typicode.com'}';",
     r"static const String wsBaseUrl = '[^']*';": "static const String wsBaseUrl = '${network['wsBaseUrl'] ?? 'ws://127.0.0.1:9502/ws'}';",
-    r"static const int connectionTimeout = \d+;": "static const int connectionTimeout = ${network['connectionTimeout'] ?? 30000};",
-    r"static const int receiveTimeout = \d+;": "static const int receiveTimeout = ${network['receiveTimeout'] ?? 15000};",
+    r"static const int connectionTimeout = \d+;": "static const int connectionTimeout = ${network['connectionTimeout'] ?? 5000};",
+    r"static const int receiveTimeout = \d+;": "static const int receiveTimeout = ${network['receiveTimeout'] ?? 5000};",
+    r"static const int sendTimeout = \d+;": "static const int sendTimeout = ${network['sendTimeout'] ?? 5000};",
     r"static const String marketTicker = '[^']*';": "static const String marketTicker = '${_getMap(endpoints, ['market'])['ticker'] ?? '/api/v1/market/ticker'}';",
     r"static const String marketKline = '[^']*';": "static const String marketKline = '${_getMap(endpoints, ['market'])['kline'] ?? '/api/v1/market/kline'}';",
     r"static const String marketDepth = '[^']*';": "static const String marketDepth = '${_getMap(endpoints, ['market'])['depth'] ?? '/api/v1/market/depth'}';",
@@ -305,7 +306,7 @@ Future<void> syncAndroidLaunchBackgroundXml() async {
 
 Future<void> syncLaunchScreenAndIcons() async {
   print('🎨 同步启动图和图标...');
-  final result = await Process.run('dart', ['run', 'scripts/manage_launch_screen.dart', 'all'], runInShell: true);
+  final result = await Process.run('dart', ['run', 'scripts/launch_screen.dart', 'all'], runInShell: true);
   if (result.exitCode != 0) {
     print('   ⚠️  同步启动图和图标失败: ${result.stderr}');
   }

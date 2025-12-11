@@ -21,17 +21,18 @@ use Hyperf\Validation\Request\FormRequest;
 #[Schema(title: '登录注册请求', description: '登录请求参数', properties: [
     new Property('username', description: 'username', type: 'string'),
     new Property('mobile', description: 'mobile', type: 'string'),
-    new Property('code', description: 'mobile code', type: 'string'),
+    new Property('code', description: 'mobile code', type: 'numeric'),
     new Property('mobile', description: 'mobile', type: 'string'),
     new Property('password', description: 'password', type: 'string'),
     new Property('password_confirmation', description: '确认密码', type: 'string'),
-    new Property('vcode', description: '验证码', type: 'string'),
+    new Property('vcode', description: '验证码', type: 'numeric'),
     new Property('openid', description: 'openid', type: 'string'),
     new Property('type', description: '类型 1账号密码,2手机验证码,3邮箱证码,11小程序,12公众号', type: 'integer'),
     new Property('scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', type: 'string'),
     new Property('google2fa', description: 'Google2FA密钥', type: 'string'),
     new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
     new Property('invite_code', description: '邀请码', type: 'string'),
+    new Property('device_id', description: '设备唯一标识（iOS/Android/Web通用）', type: 'string'),
 ])]
 class UserRequest extends FormRequest
 {
@@ -49,15 +50,17 @@ class UserRequest extends FormRequest
             'username' => 'string|max:16',
             'password' => 'string|max:32',
             'password_confirmation' => 'string|max:32',
-            'code' => 'string|max:8',
+            'code' => 'numeric',
             'mobile' => 'string|max:16',
             'email' => 'string|max:64',
-            'vcode' => 'string|max:32',
-            'type' => 'integer',
+            'to' => 'string|max:128', // 验证码接收地址（手机号或邮箱）
+            'vcode' => 'numeric',
+            'type' => 'string|integer', // 支持字符串（sms/email）和整数（登录类型）
             'scene' => 'string|in:login,register,reset_password,bind,change,default',
             'google2fa' => 'string|max:50',
-            'google2fa_code' => 'nullable|integer',
+            'google2fa_code' => 'nullable|numeric',
             'invite_code' => 'nullable|string|max:16',
+            'device_id' => 'nullable|string|max:128', // 设备唯一标识（iOS/Android/Web通用）
         ];
     }
 
@@ -99,14 +102,28 @@ class UserRequest extends FormRequest
     }
 
     /**
+     * 修改密码场景验证规则
+     */
+    public function changePasswordRules(): array
+    {
+        return [
+            'old_password' => 'nullable|string|max:32',
+            'password' => 'required|string|max:32|min:6',
+            'password_confirmation' => 'required|string|max:32|same:password',
+            'google2fa_code' => 'nullable|numeric',
+        ];
+    }
+
+    /**
      * 发送验证码场景验证规则
      */
     public function smsRules(): array
     {
         return [
-            'code' => 'required',
-            'mobile' => 'required|string|max:16',
-            'scene' => 'required|string|in:login,register,reset_password,bind,change,default',
+            'type' => 'required|string|in:sms,email',
+            'to' => 'required|string|max:128',
+            'code' => 'nullable|numeric',
+            'scene' => 'nullable|string|in:login,register,reset_password,bind,change,default',
         ];
     }
 
@@ -117,17 +134,7 @@ class UserRequest extends FormRequest
     {
         return [
             'google2fa' => 'required|string|max:50',
-            'google2fa_code' => 'required|string|max:32',
-        ];
-    }
-
-    /**
-     * 验证Google2FA场景验证规则
-     */
-    public function google2faVerifyRules(): array
-    {
-        return [
-            'google2fa_code' => 'required|string|max:32',
+            'google2fa_code' => 'required|numeric',
         ];
     }
 
@@ -137,7 +144,54 @@ class UserRequest extends FormRequest
     public function google2faUnbindRules(): array
     {
         return [
-            'google2fa_code' => 'required|string|max:32',
+            'google2fa_code' => 'required|numeric',
+        ];
+    }
+
+    /**
+     * 绑定邮箱场景验证规则
+     */
+    public function emailBindRules(): array
+    {
+        return [
+            'email' => 'required|email|max:64',
+            'vcode' => 'required|numeric',
+            'google2fa_code' => 'nullable|numeric',
+        ];
+    }
+
+    /**
+     * 解绑邮箱场景验证规则
+     */
+    public function emailUnbindRules(): array
+    {
+        return [
+            'vcode' => 'required|numeric',
+            'google2fa_code' => 'nullable|numeric',
+        ];
+    }
+
+    /**
+     * 绑定手机号场景验证规则
+     */
+    public function mobileBindRules(): array
+    {
+        return [
+            'mobile' => 'required|numeric',
+            'code' => 'required|numeric',
+            'vcode' => 'required|numeric',
+            'google2fa_code' => 'nullable|numeric',
+        ];
+    }
+
+    /**
+     * 解绑手机号场景验证规则
+     */
+    public function mobileUnbindRules(): array
+    {
+        return [
+            'vcode' => 'required|numeric',
+            'google2fa_code' => 'nullable|numeric',
         ];
     }
 
@@ -147,14 +201,18 @@ class UserRequest extends FormRequest
             'username' => trans('user.username'),
             'password' => trans('user.password'),
             'password_confirmation' => trans('user.password'),
+            'code' => trans('user.code'),
             'mobile' => trans('user.mobile'),
-            'email' => trans('user.email') ?: '邮箱',
+            'email' => trans('user.email'),
             'vcode' => trans('user.vcode'),
-            'type' => trans('user.type'),
-            'scene' => trans('user.scene', [], 'zh_CN') ?: '验证码场景',
-            'google2fa' => 'Google2FA密钥',
-            'google2fa_code' => 'Google2FA验证码',
-            'invite_code' => '邀请码',
+            'to' => 'mobile/email',
+            'google2fa' => trans('user.google2fa'),
+            'google2fa_code' => trans('user.vcode'),
+            'invite_code' => trans('user.invite_code'),
+            'device_id' => 'device_id',
+            'old_password' => trans('user.old_password'),
+            'type' => 'login/register type',
+            'scene' => trans('user.scene'),
         ];
     }
 

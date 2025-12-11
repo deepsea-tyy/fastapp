@@ -10,7 +10,8 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $id 
  * @property int $user_id 用户id
  * @property string $ip 
- * @property string $device 设备
+ * @property string $os 操作系统
+ * @property string $device_id 设备唯一标识（iOS/Android/Web通用）
  * @property string $country_code 国家代码
  * @property string $country 国家
  * @property string $region 省
@@ -28,7 +29,7 @@ class UserLoginLog extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'user_id', 'ip', 'device', 'country_code', 'country', 'region', 'city', 'created_at'];
+    protected array $fillable = ['id', 'user_id', 'ip', 'os', 'device_id', 'country_code', 'country', 'region', 'city', 'created_at'];
 
     /**
      * The attributes that should be cast to native types.

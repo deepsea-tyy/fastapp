@@ -21,9 +21,9 @@ class CacheConfigHelper
     }
 
     #[Cacheable(prefix: 'syscfg:config', value: '_#{key}')]
-    public static function getConfigByKey(string $key): ?array
+    public static function getConfigByKey(string $key): array
     {
-        return Helper::getSystemConfig($key);
+        return Helper::getSystemConfig($key) ?? [];
     }
 
     /**

@@ -32,6 +32,10 @@ class HeaderInterceptor extends Interceptor {
       () => _languageService.getCurrentAcceptLanguage(),
     );
 
+    // 移除 Accept-Encoding 头，避免 Swoole 的 Content-Length 警告
+    // 对于 API 请求，JSON 数据通常不大，不需要压缩
+    options.headers.remove('Accept-Encoding');
+
     // 跳过refresh token、logout和login请求的token添加
     if (!_shouldSkipToken(options.path)) {
       final accessToken = await _sharedPreferenceHelper.authToken;

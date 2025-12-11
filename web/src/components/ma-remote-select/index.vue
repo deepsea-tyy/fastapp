@@ -64,7 +64,8 @@ function request() {
   if (props?.api && typeof props.api === 'function') {
     const params = getRequestParams()
     props.api(params).then((res: any) => {
-      options.value = props?.dataHandle?.(res) ?? res.data
+      const data = props?.dataHandle?.(res) ?? res.data
+      options.value = Array.isArray(data) ? data : []
     }).catch((err) => {
       msg.error(err)
     })
@@ -96,7 +97,8 @@ function request() {
     }
     
     method(props?.url, requestConfig).then((res: any) => {
-      options.value = props?.dataHandle?.(res) ?? res.data
+      const data = props?.dataHandle?.(res) ?? res.data
+      options.value = Array.isArray(data) ? data : []
     }).catch((err: any) => {
       msg.error(err)
     })

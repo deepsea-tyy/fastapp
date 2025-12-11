@@ -29,8 +29,9 @@
   "network": {
     "apiBaseUrl": "http://192.168.1.4:9501",
     "wsBaseUrl": "ws://192.168.1.4:9502/ws",
-    "connectionTimeout": 30000,
-    "receiveTimeout": 15000,
+    "connectionTimeout": 5000,
+    "receiveTimeout": 5000,
+    "sendTimeout": 5000,
     "endpoints": {
       "market": {
         "ticker": "/api/v1/market/ticker",

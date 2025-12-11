@@ -35,7 +35,17 @@ class CurrentUser
     {
     }
 
-    public function formatToken(User $user, string $ip = '', string $browser = '', string $os = ''): array
+    /**
+     * 格式化 Token
+     * 
+     * @param User $user 用户对象
+     * @param string $ip IP地址
+     * @param string $browser 浏览器/User-Agent
+     * @param string $os 操作系统
+     * @param string $deviceId 设备唯一标识（iOS/Android/Web通用，可选）
+     * @return array Token数据
+     */
+    public function formatToken(User $user, string $ip = '', string $browser = '', string $os = '', string $deviceId = ''): array
     {
         $jwt = $this->getJwt();
         if ($user->status == Status::DISABLE) {
@@ -51,7 +61,7 @@ class CurrentUser
                     'lang' => $user->profile?->lang ?? 'zh_CN',
                     'trans_password' => $user->profile?->trans_password ?: '',
                 ]);
-                Tools::eventDispatcher(new UserLoginEvent($user, $ip, $os, $browser));
+                Tools::eventDispatcher(new UserLoginEvent($user, $ip, $os, $browser, $deviceId));
             } else {
                 Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));
             }

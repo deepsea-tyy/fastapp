@@ -48,14 +48,14 @@ class UserRequest extends FormRequest
             'username' => 'required|string|max:20',
             'user_type' => 'required|integer',
             'nickname' => ['required', 'string', 'max:60', 'regex:/^[^\s]+$/'],
-            'phone' => 'sometimes|string|max:12',
-            'email' => 'sometimes|string|max:60|email:rfc,dns',
-            'avatar' => 'sometimes|string|max:255|url',
-            'signed' => 'sometimes|string|max:255',
-            'status' => 'sometimes|integer',
-            'backend_setting' => 'sometimes|array|max:255',
-            'remark' => 'sometimes|string|max:255',
-            'password' => 'sometimes|string|min:6|max:20',
+            'phone' => 'nullable|sometimes|string|max:12',
+            'email' => 'nullable|sometimes|string|max:60|email:rfc,dns',
+            'avatar' => 'nullable|sometimes|string|max:255|url',
+            'signed' => 'nullable|sometimes|string|max:255',
+            'status' => 'nullable|sometimes|integer',
+            'backend_setting' => 'nullable|sometimes|array|max:255',
+            'remark' => 'nullable|sometimes|string|max:255',
+            'password' => 'nullable|sometimes|string|min:6|max:20',
         ];
     }
 

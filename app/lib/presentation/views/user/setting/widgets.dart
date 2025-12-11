@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// 设置页面公共组件
 
@@ -17,6 +18,12 @@ class SettingAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = const TextStyle(
+      fontSize: 20.0,
+      fontWeight: FontWeight.bold,
+    );
+    final titleWidget = Text(title, style: titleStyle);
+    
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -28,30 +35,9 @@ class SettingAppBar extends StatelessWidget implements PreferredSizeWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
-            if (showCloseButton)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              )
-            else ...[
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+            Expanded(
+              child: showCloseButton ? Center(child: titleWidget) : titleWidget,
+            ),
             if (showCloseButton)
               IconButton(
                 icon: const Icon(Icons.close),

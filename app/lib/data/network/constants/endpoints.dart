@@ -14,6 +14,9 @@ class Endpoints {
   /// 接收超时时间（毫秒）
   static const int receiveTimeout = AppConfig.receiveTimeout;
 
+  /// 发送超时时间（毫秒）
+  static const int sendTimeout = AppConfig.sendTimeout;
+
   // ==================== API 端点路径 ====================
   
   /// 行情相关端点
@@ -50,6 +53,17 @@ class Endpoints {
   static const String google2faQrcode = '/api/user/google2fa/qrcode';
   static const String google2faBind = '/api/user/google2fa/bind';
   static const String google2faUnbind = '/api/user/google2fa/unbind';
+  
+  /// 邮箱相关端点
+  static const String emailBind = '/api/user/email/bind';
+  static const String emailUnbind = '/api/user/email/unbind';
+  
+  /// 手机号相关端点
+  static const String mobileBind = '/api/user/mobile/bind';
+  static const String mobileUnbind = '/api/user/mobile/unbind';
+  
+  /// 密码相关端点
+  static const String passwordChange = '/api/user/password/change';
 
   /// 页面内容相关端点
   static const String pageContentDownload = '/api/app/page-content/download';

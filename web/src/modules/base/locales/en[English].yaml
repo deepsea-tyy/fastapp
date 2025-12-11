@@ -1,9 +1,10 @@
 baseUserManage:
   avatar: Avatar
-  username: Username
+  username: Login Username
   nickname: Nickname
-  phone: Phone
-  email: Email
+  phone: Contact Phone
+  loginMobile: Login Mobile
+  email: Login Email
   password: Password
   userType: User type
   role: Role

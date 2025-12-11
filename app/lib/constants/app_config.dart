@@ -41,10 +41,13 @@ class AppConfig {
   static const String wsBaseUrl = 'ws://192.168.1.4:9502/ws';
 
   /// 连接超时时间（毫秒）
-  static const int connectionTimeout = 30000;
+  static const int connectionTimeout = 5000;
 
   /// 接收超时时间（毫秒）
-  static const int receiveTimeout = 15000;
+  static const int receiveTimeout = 5000;
+
+  /// 发送超时时间（毫秒）
+  static const int sendTimeout = 5000;
 
   // ==================== API 端点路径 ====================
   

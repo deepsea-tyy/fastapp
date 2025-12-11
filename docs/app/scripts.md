@@ -6,6 +6,7 @@
 
 | 脚本 | 功能 | 命令 |
 |------|------|------|
+| `clean.sh` | 彻底清理项目缓存 | `./scripts/clean.sh` |
 | `dev.sh` | 快速运行应用 | `./scripts/dev.sh [参数]` |
 | `dev_rebuild_ios.sh` | 重建 iOS 项目 | `./scripts/dev_rebuild_ios.sh` |
 | `launch_screen.dart` | 管理图标和启动图 | `dart run scripts/launch_screen.dart [命令]` |
@@ -15,7 +16,43 @@
 
 ## 脚本详情
 
-### 1. `dev.sh` - 快速开发运行
+### 1. `clean.sh` - 彻底清理缓存
+
+彻底清理 Flutter 项目的所有构建缓存和残留文件，解决编译卡顿、依赖残留等问题。
+
+```bash
+cd app
+./scripts/clean.sh
+```
+
+**清理内容**：
+
+1. **Flutter 标准清理**：执行 `flutter clean`
+2. **删除编译缓存**：删除 `.dart_tool` 目录（包含 `flutter_build` 编译缓存）
+3. **删除构建产物**：删除 `build` 目录
+4. **清理插件配置**：删除 `.flutter-plugins` 和 `.flutter-plugins-dependencies`
+5. **平台特定清理**：
+   - **Android**：清理 Gradle 缓存、`app/build`、`.gradle`
+   - **iOS**：清理 Pods、Podfile.lock、DerivedData、ephemeral 文件
+   - **macOS**：清理 Pods、ephemeral 文件
+   - **Linux/Windows/Web**：清理 ephemeral 文件
+6. **重新获取依赖**：执行 `flutter pub get`
+
+**适用场景**：
+- 编译卡顿或异常
+- 卸载包后仍有残留引用
+- 依赖冲突无法解决
+- 构建缓存损坏
+- 切换分支后构建异常
+
+**注意事项**：
+- 清理后首次编译会较慢（需要重新生成缓存）
+- 如需清理全局 pub 缓存，可运行 `flutter pub cache repair`
+- IDE 缓存需要手动清理或重启 IDE
+
+---
+
+### 2. `dev.sh` - 快速开发运行
 
 快速运行 Flutter 应用，跳过自动 pub get 检查。
 
@@ -30,7 +67,7 @@ cd app
 
 ---
 
-### 2. `dev_rebuild_ios.sh` - iOS 重建
+### 3. `dev_rebuild_ios.sh` - iOS 重建
 
 完整清理并重新构建 iOS 项目，解决构建问题和依赖冲突。
 
@@ -51,7 +88,7 @@ cd app
 
 ---
 
-### 3. `launch_screen.dart` - 资源管理
+### 4. `launch_screen.dart` - 资源管理
 
 统一管理 iOS、Android 和 Web 平台的应用图标和启动图。
 
@@ -94,7 +131,7 @@ dart run scripts/launch_screen.dart launch  # 仅同步启动图
 
 ---
 
-### 4. `sync_config.dart` - 配置同步
+### 5. `sync_config.dart` - 配置同步
 
 从 `app_config.json` 读取配置并同步到各平台配置文件。
 
@@ -147,6 +184,11 @@ dart run scripts/sync_config.dart   # 同步配置
 dart run scripts/sync_config.dart
 # 或仅同步资源
 dart run scripts/launch_screen.dart all
+```
+
+### 编译卡顿或依赖问题
+```bash
+./scripts/clean.sh            # 彻底清理缓存
 ```
 
 ### iOS 构建问题

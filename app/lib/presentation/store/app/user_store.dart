@@ -87,10 +87,19 @@ abstract class _UserStore with Store {
   ObservableFuture<User?> userInfoFuture = emptyUserInfoResponse;
 
   @observable
-  String? verifyAgainType; // 'google2fa_code' 或 'email_code'
+  String? verifyAgainType; // 'google2fa_code'、'email_code' 或 'mobile_code'
   
   @observable
   String? verifyAgainEmail; // 邮箱地址（部分隐藏，仅用于显示）
+  
+  @observable
+  String? verifyAgainMobile; // 手机号（部分隐藏，仅用于显示）
+  
+  @observable
+  String? verifyAgainCode; // 手机区号（如 "86"）
+  
+  @observable
+  String? verifyAgainDeviceId; // 设备唯一标识
 
   @computed
   bool get isLoading => loginFuture.status == FutureStatus.pending;
@@ -112,6 +121,7 @@ abstract class _UserStore with Store {
     String? vcode,
     String? scene,
     int? google2faCode,
+    String? deviceId,
   }) async {
     final loginParams = LoginParams(
       type: type,
@@ -123,6 +133,7 @@ abstract class _UserStore with Store {
       vcode: vcode,
       scene: scene,
       google2faCode: google2faCode,
+      deviceId: deviceId,
     );
     
     final future = _loginUseCase.call(params: loginParams);
@@ -135,11 +146,17 @@ abstract class _UserStore with Store {
       isLoggedIn = true;
       success = true;
       verifyAgainType = null; // 清除二次验证状态
+      verifyAgainEmail = null;
+      verifyAgainMobile = null;
+      verifyAgainCode = null;
       await getUserInfo();
     } on VerifyAgainException catch (e) {
       // 需要二次验证
       verifyAgainType = e.verifyType;
       verifyAgainEmail = e.email;
+      verifyAgainMobile = e.mobile;
+      verifyAgainCode = e.code;
+      verifyAgainDeviceId = e.deviceId;
       isLoggedIn = false;
       success = false;
       // 不设置错误消息，让UI显示二次验证输入框
@@ -157,6 +174,9 @@ abstract class _UserStore with Store {
   void clearVerifyAgain() {
     verifyAgainType = null;
     verifyAgainEmail = null;
+    verifyAgainMobile = null;
+    verifyAgainCode = null;
+    verifyAgainDeviceId = null;
   }
 
   @action
@@ -166,14 +186,25 @@ abstract class _UserStore with Store {
 
   @action
   Future getUserInfo() async {
+    // 如果已经有正在进行的请求，直接返回该请求的结果，避免重复请求
+    if (userInfoFuture.status == FutureStatus.pending) {
+      try {
+        return await userInfoFuture;
+      } catch (e) {
+        // 如果之前的请求失败，继续发起新请求
+      }
+    }
+
     final future = _getUserInfoUseCase.call(params: null);
     userInfoFuture = ObservableFuture(future);
 
     try {
       final user = await future;
       currentUser = user;
+      return user;
     } catch (e) {
       errorStore.setErrorMessage(e.toString());
+      rethrow;
     }
   }
 
@@ -197,6 +228,9 @@ abstract class _UserStore with Store {
     currentUser = null;
     verifyAgainType = null;
     verifyAgainEmail = null;
+    verifyAgainMobile = null;
+    verifyAgainCode = null;
+    verifyAgainDeviceId = null;
   }
 
   @action

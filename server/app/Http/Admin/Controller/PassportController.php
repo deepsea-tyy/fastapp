@@ -42,7 +42,7 @@ final class PassportController extends AbstractController
         // 查找用户
         $user = $this->currentUser->findUser(['username' => $username, 'user_type' => Type::SYSTEM]);
         if (!$user || !$user->verifyPassword($password)) {
-            throw new BusinessException(message: trans('auth.password_error'));
+            throw new BusinessException(message: trans('user.password_error'));
         }
         // 开发环境无需验证
         $isDev = config('env') === 'dev';

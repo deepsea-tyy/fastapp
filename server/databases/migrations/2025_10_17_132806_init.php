@@ -85,7 +85,8 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->bigInteger('user_id')->comment('用户id');
             $table->ipAddress('ip');
-            $table->string('device')->comment('设备');
+            $table->string('os')->comment('操作系统');
+            $table->string('device_id', 128)->nullable()->comment('设备唯一标识（iOS/Android/Web通用）');
             $table->string('country_code', 64)->nullable()->comment('国家代码');
             $table->string('country', 64)->nullable()->comment('国家');
             $table->string('region', 64)->nullable()->comment('省');

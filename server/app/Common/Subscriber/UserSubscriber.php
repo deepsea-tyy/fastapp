@@ -50,7 +50,8 @@ class UserSubscriber implements ListenerInterface
                     if (\Hyperf\Config\config('env') == 'prod') $res = $this->ipLocationService->query($event->getIp(), Tools::lang($user->id, true));
                     $res['user_id'] = $user->id;
                     $res['ip'] = $event->getIp();
-                    $res['device'] = $event->getDevice();
+                    $res['os'] = $event->getOs(); // 操作系统
+                    $res['device_id'] = $event->getDeviceId(); // 设备唯一标识（iOS/Android/Web通用）
                     UserLoginLog::create($res);
                 } else if ($event instanceof RequestOperationEvent) {
                     $userId = $event->getUserId();
