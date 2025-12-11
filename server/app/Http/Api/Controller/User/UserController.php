@@ -20,6 +20,7 @@ use App\Exception\BusinessException;
 use App\Http\Api\Request\UserRequest;
 use App\Http\CurrentUser;
 use App\Model\Enums\User\LoginType;
+use App\Model\Enums\User\Status;
 use App\Model\Enums\User\Type;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
@@ -174,6 +175,7 @@ class UserController extends AbstractController
             $user = $this->userService->findUser(['email' => $validated['mobile']]);
         }
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
+        if ($user->status == Status::DISABLE->value) throw new BusinessException(message: trans('result.disabled'));
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value && !$user->verifyPassword($validated['password'])) {
             throw new BusinessException(message: trans('user.password_error'));
         }
@@ -280,7 +282,7 @@ class UserController extends AbstractController
         $user = $this->userService->user();
         $user->is_google2fa = $user->google2fa ? 1 : 0;
         $user->is_trans_password = $user->profile?->trans_password ? 1 : 0;
-        $user->is_password = !empty($user->getOriginal('password')) ? 1 : 0;
+        $user->is_password = $user->getOriginal('password') ? 1 : 0;
         return $this->success($user);
     }
 
@@ -304,6 +306,7 @@ class UserController extends AbstractController
         $validated = $request->validated();
         $user = $this->userService->user();
 
+        $oldPassword = '';
         if (!empty($user->getOriginal('password'))) {
             if (empty($validated['old_password'])) {
                 throw new BusinessException(message: trans('user.old_password_required'));
@@ -311,25 +314,91 @@ class UserController extends AbstractController
             if (!$user->verifyPassword($validated['old_password'])) {
                 throw new BusinessException(message: trans('user.old_password_error'));
             }
+            $oldPassword = $validated['old_password'];
         }
 
-        if (!empty($user->google2fa)) {
-            if (empty($validated['google2fa_code'])) {
-                throw new BusinessException(message: trans('auth.google_code_required'));
-            }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
-        }
+        $scene = VerifyCodeService::SCENE_CHANGE;
+        $this->verifyPasswordAndCode($user, $validated, $oldPassword, $scene);
 
         $user->password = $validated['password'];
         $user->save();
 
-        // 密码修改成功后，退出登录并清除token
         $token = RequestContext::get()->getAttribute('token');
         if ($token) {
             $this->userService->setScene('api')->logout($token);
         }
 
         return $this->success(message: trans('user.password_change_success'));
+    }
+
+    #[Post(
+        path: '/api/user/account/disable',
+        operationId: 'ApiUserAccountDisable',
+        summary: '禁用账户',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '禁用账户请求参数',
+        example: '{ "password": "123456", "google2fa_code": "123456", "vcode": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function disableAccount(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+
+        $this->verifyPasswordAndCode($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
+
+        $user->status = Status::DISABLE->value;
+        $user->save();
+
+        $token = RequestContext::get()->getAttribute('token');
+        if ($token) {
+            $this->userService->setScene('api')->logout($token);
+        }
+
+        return $this->success(message: trans('auth.account_disable_success'));
+    }
+
+    #[Post(
+        path: '/api/user/account/delete',
+        operationId: 'ApiUserAccountDelete',
+        summary: '删除账户',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['用户接口'],
+    )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '删除账户请求参数',
+        example: '{ "password": "123456", "google2fa_code": "123456", "vcode": "123456" }'
+    ))]
+    #[ResultResponse(instance: new Result())]
+    #[Middleware(TokenMiddleware::class)]
+    public function deleteAccount(UserRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->userService->user();
+
+        $this->verifyPasswordAndCode($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
+
+        $parts = array_filter([$user->username ?: '', $user->email ?: "", $user->mobile ?: '']);
+        $newUsername = 'del' . implode('|', $parts);
+
+        $user->email = null;
+        $user->mobile = null;
+        $user->username = $newUsername;
+        $user->status = Status::DISABLE->value;
+        $user->save();
+
+        $token = RequestContext::get()->getAttribute('token');
+        if ($token) {
+            $this->userService->setScene('api')->logout($token);
+        }
+
+        return $this->success(message: trans('auth.account_delete_success'));
     }
 
     #[Get(
@@ -638,6 +707,57 @@ class UserController extends AbstractController
         $user->save();
 
         return $this->success(message: trans('auth.unbind_success'));
+    }
+
+    /**
+     * 验证密码和验证码（通用方法）
+     *
+     * @param object $user 用户对象
+     * @param array $validated 验证后的请求数据
+     * @param string $password 密码（如果用户已设置密码则必填）
+     * @param string $scene 验证码场景
+     */
+    private function verifyPasswordAndCode(object $user, array $validated, string $password, string $scene = VerifyCodeService::SCENE_CHANGE): void
+    {
+        if (!empty($user->getOriginal('password'))) {
+            if (empty($password)) {
+                throw new BusinessException(message: trans('user.password_required'));
+            }
+            if (!$user->verifyPassword($password)) {
+                throw new BusinessException(message: trans('user.password_error'));
+            }
+        }
+
+        if (!empty($user->google2fa)) {
+            if (empty($validated['google2fa_code'])) {
+                throw new BusinessException(message: trans('auth.google_code_required'));
+            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+        } else if (!empty($user->email)) {
+            if (empty($validated['vcode'])) {
+                throw new BusinessException(message: trans('auth.email_code_required'));
+            }
+            if (!VerifyCodeService::verify(
+                VerifyCodeService::TYPE_EMAIL,
+                $user->email,
+                $validated['vcode'],
+                $scene
+            )) {
+                throw new BusinessException(message: trans('auth.email_code_invalid'));
+            }
+        } else if (!empty($user->mobile)) {
+            if (empty($validated['vcode'])) {
+                throw new BusinessException(message: trans('auth.mobile_code_required'));
+            }
+            if (!VerifyCodeService::verify(
+                VerifyCodeService::TYPE_SMS,
+                $user->mobile,
+                $validated['vcode'],
+                $scene
+            )) {
+                throw new BusinessException(message: trans('auth.mobile_code_invalid'));
+            }
+        }
     }
 
     /**

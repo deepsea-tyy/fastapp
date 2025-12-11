@@ -15,7 +15,7 @@ return new class extends Migration {
         Schema::create('user', static function (Blueprint $table) {
             $table->comment('账户表');
             $table->bigIncrements('id')->comment('ID');
-            $table->string('username', 20)->nullable()->comment('用户名');
+            $table->string('username', 64)->nullable()->comment('用户名');
             $table->string('email', 50)->nullable()->comment('用户邮箱');
             $table->smallInteger('code')->nullable()->comment('手机code');
             $table->string('mobile', 11)->nullable()->comment('手机');

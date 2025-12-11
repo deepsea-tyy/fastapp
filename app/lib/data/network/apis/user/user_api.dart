@@ -283,11 +283,13 @@ class UserApi {
   /// [password] 新密码
   /// [passwordConfirmation] 确认新密码
   /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  /// [vcode] 验证码（如果用户没有设置Google2FA，则根据邮箱或手机号必填）
   Future<Map<String, dynamic>> changePassword({
     String? oldPassword,
     required String password,
     required String passwordConfirmation,
     String? google2faCode,
+    String? vcode,
   }) async {
     final data = {
       'password': password,
@@ -299,9 +301,64 @@ class UserApi {
     if (google2faCode != null && google2faCode.isNotEmpty) {
       data['google2fa_code'] = google2faCode;
     }
+    if (vcode != null && vcode.isNotEmpty) {
+      data['vcode'] = vcode;
+    }
     
     final response = await _dioClient.dio.post(
       Endpoints.passwordChange,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 禁用账户
+  /// [password] 密码（如果已设置密码则必填）
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  /// [vcode] 验证码（如果用户没有设置Google2FA，则根据邮箱或手机号必填）
+  Future<Map<String, dynamic>> disableAccount({
+    required String password,
+    String? google2faCode,
+    String? vcode,
+  }) async {
+    final data = {
+      'password': password,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    if (vcode != null && vcode.isNotEmpty) {
+      data['vcode'] = vcode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.accountDisable,
+      data: data,
+    );
+    return response.data;
+  }
+
+  /// 删除账户
+  /// [password] 密码（如果已设置密码则必填）
+  /// [google2faCode] Google2FA验证码（如果用户设置了Google2FA则必填）
+  /// [vcode] 验证码（如果用户没有设置Google2FA，则根据邮箱或手机号必填）
+  Future<Map<String, dynamic>> deleteAccount({
+    required String password,
+    String? google2faCode,
+    String? vcode,
+  }) async {
+    final data = {
+      'password': password,
+    };
+    if (google2faCode != null && google2faCode.isNotEmpty) {
+      data['google2fa_code'] = google2faCode;
+    }
+    if (vcode != null && vcode.isNotEmpty) {
+      data['vcode'] = vcode;
+    }
+    
+    final response = await _dioClient.dio.post(
+      Endpoints.accountDelete,
       data: data,
     );
     return response.data;

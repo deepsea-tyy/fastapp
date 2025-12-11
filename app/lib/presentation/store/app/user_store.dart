@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/core/stores/form/form_store.dart';
 import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
@@ -219,6 +221,33 @@ abstract class _UserStore with Store {
       // 无论 API 调用成功与否，都清除本地状态
       _clearUserState();
       await _saveLoginStatusUseCase.call(params: false);
+    }
+  }
+
+  /// 清除所有用户缓存数据（包括设备ID等）
+  @action
+  Future<void> clearAllUserCache() async {
+    // 先执行 logout 清除 token 和登录状态
+    await logout();
+    
+    // 清除设备ID
+    try {
+      await _clearDeviceId();
+    } catch (e) {
+      // 清除设备ID失败不影响其他操作
+      if (kDebugMode) {
+        print('清除设备ID失败: $e');
+      }
+    }
+  }
+
+  /// 清除设备ID
+  Future<void> _clearDeviceId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('device_id');
+    } catch (e) {
+      // 忽略错误
     }
   }
 

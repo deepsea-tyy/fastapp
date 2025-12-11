@@ -9,6 +9,7 @@
 | `clean.sh` | 彻底清理项目缓存 | `./scripts/clean.sh` |
 | `dev.sh` | 快速运行应用 | `./scripts/dev.sh [参数]` |
 | `dev_rebuild_ios.sh` | 重建 iOS 项目 | `./scripts/dev_rebuild_ios.sh` |
+| `fix_emulator.sh` | 修复 Android 模拟器连接 | `./scripts/fix_emulator.sh [模拟器名称]` |
 | `launch_screen.dart` | 管理图标和启动图 | `dart run scripts/launch_screen.dart [命令]` |
 | `sync_config.dart` | 同步配置到各平台 | `dart run scripts/sync_config.dart` |
 
@@ -54,16 +55,39 @@ cd app
 
 ### 2. `dev.sh` - 快速开发运行
 
-快速运行 Flutter 应用，跳过自动 pub get 检查。
+快速运行 Flutter 应用，自动检查设备连接、修复模拟器问题，跳过自动 pub get 检查。
 
 ```bash
 cd app
-./scripts/dev.sh              # 默认运行
-./scripts/dev.sh --release    # 发布模式
-./scripts/dev.sh -d ios       # 指定设备
+./scripts/dev.sh                    # 默认运行（自动检测设备）
+./scripts/dev.sh --release          # 发布模式
+./scripts/dev.sh -d ios             # 指定 iOS 设备
+./scripts/dev.sh -d emulator-5554   # 指定 Android 模拟器
 ```
 
-**工作原理**：检查依赖是否存在，首次运行自动获取，使用 `--no-pub` 跳过检查。
+**功能特性**：
+
+1. **依赖检查**：检查依赖是否存在，首次运行自动获取，使用 `--no-pub` 跳过检查
+2. **设备自动检测**：
+   - 自动检查可用设备连接状态
+   - 检测到 Android 设备离线时，自动修复连接（重启 ADB、关闭异常进程）
+   - 未检测到设备时，提供友好的提示信息
+3. **智能修复**：
+   - 指定 Android 设备时，自动检测并修复连接问题
+   - 显示当前可用设备列表
+   - 提供修复建议和命令提示
+
+**工作原理**：
+- 检查 `.dart_tool/package_config.json` 判断依赖是否已获取
+- 使用 `flutter devices` 检查设备连接状态
+- 使用 ADB 检查 Android 设备状态（在线/离线/无设备）
+- 检测到离线设备时，自动调用修复逻辑
+- 使用 `--no-pub` 跳过 `flutter run` 的自动 pub get 检查
+
+**适用场景**：
+- 日常快速开发运行
+- Android 模拟器连接异常时自动修复
+- 需要跳过依赖检查以提高启动速度
 
 ---
 
@@ -88,7 +112,51 @@ cd app
 
 ---
 
-### 4. `launch_screen.dart` - 资源管理
+### 4. `fix_emulator.sh` - Android 模拟器连接修复
+
+修复 Android 模拟器无法连接的问题，自动关闭异常进程、重启 ADB 服务器，并可选择启动指定模拟器。
+
+```bash
+cd app
+./scripts/fix_emulator.sh              # 仅修复连接（关闭异常进程，重启 ADB）
+./scripts/fix_emulator.sh Pixel_9_Pro_XL  # 修复并启动指定模拟器
+```
+
+**执行步骤**：
+
+1. **关闭所有模拟器进程**：强制关闭所有 `qemu-system-aarch64` 和 `emulator` 进程
+2. **重启 ADB 服务器**：清理并重启 Android Debug Bridge 服务
+3. **检查设备状态**：显示当前连接的设备列表
+4. **启动模拟器**（可选）：如果提供了模拟器名称，会在后台启动并等待连接
+
+**适用场景**：
+- 模拟器显示为 `offline` 状态
+- `flutter devices` 无法检测到模拟器
+- ADB 连接异常
+- 模拟器进程卡死
+
+**使用示例**：
+
+```bash
+# 查看可用模拟器
+flutter emulators
+
+# 修复连接并启动 Pixel_9_Pro_XL
+./scripts/fix_emulator.sh Pixel_9_Pro_XL
+
+# 仅修复连接（不启动模拟器）
+./scripts/fix_emulator.sh
+```
+
+**注意事项**：
+- 脚本会自动检测 Android SDK 路径（默认 `~/Library/Android/sdk`）
+- 可通过设置 `ANDROID_SDK` 环境变量指定自定义路径
+- 启动模拟器时，日志会保存到 `/tmp/emulator_<模拟器名称>.log`
+- 模拟器启动通常需要 30-60 秒，脚本会等待最多 60 秒
+
+---
+
+### 5. `launch_screen.dart` - 资源管理
 
 统一管理 iOS、Android 和 Web 平台的应用图标和启动图。
 
@@ -131,7 +199,7 @@ dart run scripts/launch_screen.dart launch  # 仅同步启动图
 
 ---
 
-### 5. `sync_config.dart` - 配置同步
+### 6. `sync_config.dart` - 配置同步
 
 从 `app_config.json` 读取配置并同步到各平台配置文件。
 
@@ -194,6 +262,13 @@ dart run scripts/launch_screen.dart all
 ### iOS 构建问题
 ```bash
 ./scripts/dev_rebuild_ios.sh  # 完整重建
+```
+
+### Android 模拟器连接问题
+```bash
+./scripts/fix_emulator.sh Pixel_9_Pro_XL  # 修复并启动模拟器
+# 或仅修复连接
+./scripts/fix_emulator.sh
 ```
 
 ### 项目初始化

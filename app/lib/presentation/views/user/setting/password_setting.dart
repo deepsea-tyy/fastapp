@@ -2,13 +2,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:mobx/mobx.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/core/services/message_service.dart';
-import 'package:fastapp/domain/entity/user/user.dart';
 import 'package:fastapp/presentation/views/common/google_code_input.dart';
+import 'package:fastapp/presentation/views/common/verify_code_button.dart';
 import 'widgets.dart';
 
 /// 密码设置页面
@@ -25,12 +24,15 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _vcodeController = TextEditingController();
   final GlobalKey<CodeInputFieldState> _google2faCodeKey = GlobalKey<CodeInputFieldState>();
   
   bool _isLoading = false;
-  bool _obscureOldPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmPassword = true;
+  final Map<String, bool> _obscurePasswords = {
+    'old': true,
+    'new': true,
+    'confirm': true,
+  };
 
   // 间距常量
   static const double _spacingSmall = 8.0;
@@ -71,6 +73,7 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _vcodeController.dispose();
     super.dispose();
   }
 
@@ -80,8 +83,16 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   /// 判断是否已设置密码
   bool get _isPasswordSet => _currentUser?.isPassword == 1;
 
-  /// 判断是否已设置 Google2FA
-  bool get _isGoogle2faEnabled => _currentUser?.isGoogle2fa == 1;
+  /// 获取验证方式类型
+  /// 返回: 'google2fa' | 'email' | 'mobile' | null
+  String? get _verificationType {
+    if (_currentUser?.isGoogle2fa == 1) return 'google2fa';
+    final email = _currentUser?.email;
+    if (email != null && email.isNotEmpty) return 'email';
+    final mobile = _currentUser?.mobile;
+    if (mobile != null && mobile.isNotEmpty) return 'mobile';
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,12 +126,20 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
           const SizedBox(height: _spacingMedium),
           _buildDescriptionText(context, isSetPassword: true),
           const SizedBox(height: _spacingMedium),
-          _buildNewPasswordInput(context),
+          _buildPasswordInput(
+            controller: _newPasswordController,
+            hintText: '请输入新密码',
+            key: 'new',
+          ),
           const SizedBox(height: _spacingMedium),
-          _buildConfirmPasswordInput(context),
-          if (_isGoogle2faEnabled) ...[
+          _buildPasswordInput(
+            controller: _confirmPasswordController,
+            hintText: '请再次输入新密码',
+            key: 'confirm',
+          ),
+          if (_verificationType != null) ...[
             const SizedBox(height: _spacingMedium),
-            _buildGoogle2faCodeInput(context),
+            _buildVerificationCodeInput(context),
           ],
           const SizedBox(height: _spacingMedium),
           _buildActionButton(
@@ -143,14 +162,26 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
           const SizedBox(height: _spacingMedium),
           _buildDescriptionText(context, isSetPassword: false),
           const SizedBox(height: _spacingMedium),
-          _buildOldPasswordInput(context),
+          _buildPasswordInput(
+            controller: _oldPasswordController,
+            hintText: '请输入旧密码',
+            key: 'old',
+          ),
           const SizedBox(height: _spacingMedium),
-          _buildNewPasswordInput(context),
+          _buildPasswordInput(
+            controller: _newPasswordController,
+            hintText: '请输入新密码',
+            key: 'new',
+          ),
           const SizedBox(height: _spacingMedium),
-          _buildConfirmPasswordInput(context),
-          if (_isGoogle2faEnabled) ...[
+          _buildPasswordInput(
+            controller: _confirmPasswordController,
+            hintText: '请再次输入新密码',
+            key: 'confirm',
+          ),
+          if (_verificationType != null) ...[
             const SizedBox(height: _spacingMedium),
-            _buildGoogle2faCodeInput(context),
+            _buildVerificationCodeInput(context),
           ],
           const SizedBox(height: _spacingMedium),
           _buildActionButton(
@@ -176,80 +207,29 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     );
   }
 
-  /// 构建旧密码输入框
-  Widget _buildOldPasswordInput(BuildContext context) {
+  /// 构建密码输入框（通用方法）
+  Widget _buildPasswordInput({
+    required TextEditingController controller,
+    required String hintText,
+    required String key,
+  }) {
+    final isObscure = _obscurePasswords[key] ?? true;
     return SettingCard(
       padding: const EdgeInsets.all(_spacingMedium),
       child: TextField(
-        controller: _oldPasswordController,
-        obscureText: _obscureOldPassword,
+        controller: controller,
+        obscureText: isObscure,
         decoration: _buildInputDecoration(
-          hintText: '请输入旧密码',
+          hintText: hintText,
           prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade600),
           suffixIcon: IconButton(
             icon: Icon(
-              _obscureOldPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              isObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
               color: Colors.grey.shade600,
             ),
             onPressed: () {
               setState(() {
-                _obscureOldPassword = !_obscureOldPassword;
-              });
-            },
-          ),
-        ),
-        style: const TextStyle(fontSize: 16),
-        enabled: !_isLoading,
-      ),
-    );
-  }
-
-  /// 构建新密码输入框
-  Widget _buildNewPasswordInput(BuildContext context) {
-    return SettingCard(
-      padding: const EdgeInsets.all(_spacingMedium),
-      child: TextField(
-        controller: _newPasswordController,
-        obscureText: _obscureNewPassword,
-        decoration: _buildInputDecoration(
-          hintText: '请输入新密码',
-          prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade600),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureNewPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.grey.shade600,
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureNewPassword = !_obscureNewPassword;
-              });
-            },
-          ),
-        ),
-        style: const TextStyle(fontSize: 16),
-        enabled: !_isLoading,
-      ),
-    );
-  }
-
-  /// 构建确认密码输入框
-  Widget _buildConfirmPasswordInput(BuildContext context) {
-    return SettingCard(
-      padding: const EdgeInsets.all(_spacingMedium),
-      child: TextField(
-        controller: _confirmPasswordController,
-        obscureText: _obscureConfirmPassword,
-        decoration: _buildInputDecoration(
-          hintText: '请再次输入新密码',
-          prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade600),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: Colors.grey.shade600,
-            ),
-            onPressed: () {
-              setState(() {
-                _obscureConfirmPassword = !_obscureConfirmPassword;
+                _obscurePasswords[key] = !isObscure;
               });
             },
           ),
@@ -275,80 +255,124 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     );
   }
 
+  /// 构建验证码输入框（根据验证方式显示不同的输入框）
+  Widget _buildVerificationCodeInput(BuildContext context) {
+    final verificationType = _verificationType;
+    if (verificationType == null) {
+      return const SizedBox.shrink();
+    }
+
+    switch (verificationType) {
+      case 'google2fa':
+        return _buildGoogle2faCodeInput(context);
+      case 'email':
+        return _buildVerificationCodeInputField(
+          hintText: '请输入邮箱验证码',
+          prefixIcon: Icons.email_outlined,
+          recipient: _currentUser?.email ?? '',
+          description: '验证码将发送到您的邮箱',
+          type: VerifyCodeType.email,
+          onSend: _sendEmailCode,
+        );
+      case 'mobile':
+        return _buildVerificationCodeInputField(
+          hintText: '请输入手机验证码',
+          prefixIcon: Icons.phone_outlined,
+          recipient: _currentUser?.mobile ?? '',
+          description: '验证码将发送到您的手机',
+          type: VerifyCodeType.sms,
+          onSend: _sendMobileCode,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// 构建验证码输入框（邮箱/手机通用）
+  Widget _buildVerificationCodeInputField({
+    required String hintText,
+    required IconData prefixIcon,
+    required String recipient,
+    required String description,
+    required VerifyCodeType type,
+    required Future<bool> Function(String) onSend,
+  }) {
+    return SettingCard(
+      padding: const EdgeInsets.all(_spacingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _vcodeController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            decoration: _buildInputDecoration(
+              hintText: hintText,
+              prefixIcon: Icon(prefixIcon, color: Colors.grey.shade600),
+            ),
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+            enabled: !_isLoading,
+          ),
+          const SizedBox(height: _spacingSmall),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              VerifyCodeButton(
+                onSend: onSend,
+                recipient: recipient,
+                type: type,
+                scene: 'change',
+                disabled: _isLoading,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 构建操作按钮
   Widget _buildActionButton({
     required String text,
     required VoidCallback onPressed,
-    bool isOutlined = false,
-    bool isDanger = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final buttonStyle = _buildButtonStyle(colorScheme, isOutlined: isOutlined, isDanger: isDanger);
-    
-    final button = isOutlined
-        ? OutlinedButton(
-            style: buttonStyle,
-            onPressed: _isLoading ? null : onPressed,
-            child: _buildButtonChild(text, isDanger: isDanger),
-          )
-        : ElevatedButton(
-            style: buttonStyle,
-            onPressed: _isLoading ? null : onPressed,
-            child: _buildButtonChild(text, isDanger: isDanger),
-          );
-
-    return SizedBox(width: double.infinity, child: button);
-  }
-
-  /// 构建按钮样式
-  ButtonStyle _buildButtonStyle(ColorScheme colorScheme, {required bool isOutlined, required bool isDanger}) {
-    final baseStyle = ButtonStyle(
-      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 14)),
-      shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+    final buttonStyle = ElevatedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+      elevation: 2,
+      shadowColor: colorScheme.primary.withOpacity(0.3),
     );
 
-    if (isOutlined) {
-      final dangerColor = Colors.red.shade600;
-      final primaryColor = colorScheme.primary;
-      return baseStyle.copyWith(
-        foregroundColor: WidgetStatePropertyAll(isDanger ? dangerColor : primaryColor),
-        side: WidgetStatePropertyAll(BorderSide(
-          color: isDanger ? Colors.red.shade400 : primaryColor.withOpacity(0.5),
-          width: 1.5,
-        )),
-        backgroundColor: WidgetStatePropertyAll(
-          isDanger ? Colors.red.shade50.withOpacity(0.1) : colorScheme.primaryContainer.withOpacity(0.1),
-        ),
-        elevation: const WidgetStatePropertyAll(0),
-      );
-    }
-    
-    return baseStyle.copyWith(
-      backgroundColor: WidgetStatePropertyAll(colorScheme.primary),
-      foregroundColor: WidgetStatePropertyAll(colorScheme.onPrimary),
-      elevation: const WidgetStatePropertyAll(2),
-      shadowColor: WidgetStatePropertyAll(colorScheme.primary.withOpacity(0.3)),
-    );
-  }
-
-  /// 构建按钮子组件
-  Widget _buildButtonChild(String text, {bool isDanger = false}) {
-    if (_isLoading) {
-      return SizedBox(
-        height: 20,
-        width: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            isDanger ? Colors.red.shade600 : Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      );
-    }
-    
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: buttonStyle,
+        onPressed: _isLoading ? null : onPressed,
+        child: _isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
+                ),
+              )
+            : Text(
+                text,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+              ),
+      ),
     );
   }
 
@@ -414,6 +438,100 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     return code.isEmpty ? '请输入$label' : null;
   }
 
+  /// 验证验证码格式
+  bool _validateCode(String code, {String label = '验证码'}) {
+    if (code.isEmpty) {
+      MessageService.error('请输入$label');
+      return false;
+    }
+    if (code.length != 6) {
+      MessageService.error('$label必须是6位数字');
+      return false;
+    }
+    return true;
+  }
+
+  /// 获取验证码（根据验证方式）
+  Map<String, String?> _getVerificationCode() {
+    final verificationType = _verificationType;
+    String? google2faCode;
+    String? vcode;
+
+    switch (verificationType) {
+      case 'google2fa':
+        google2faCode = _google2faCodeKey.currentState?.value ?? '';
+        if (google2faCode.isEmpty) {
+          MessageService.error('请输入Google验证码');
+          return {};
+        }
+        break;
+      case 'email':
+        vcode = _vcodeController.text.trim();
+        if (!_validateCode(vcode, label: '邮箱验证码')) {
+          return {};
+        }
+        break;
+      case 'mobile':
+        vcode = _vcodeController.text.trim();
+        if (!_validateCode(vcode, label: '手机验证码')) {
+          return {};
+        }
+        break;
+    }
+
+    return {'google2faCode': google2faCode, 'vcode': vcode};
+  }
+
+  /// 发送邮箱验证码
+  Future<bool> _sendEmailCode(String email) async {
+    try {
+      final response = await _userApi.sendEmailCode(
+        email: email,
+        scene: 'change',
+      );
+      if (response['code'] == 200) {
+        MessageService.success(response['message'] ?? '验证码已发送');
+        return true;
+      } else {
+        MessageService.error(response['message'] ?? '验证码发送失败');
+        return false;
+      }
+    } catch (e) {
+      MessageService.error(e.toString());
+      return false;
+    }
+  }
+
+  /// 发送手机验证码
+  Future<bool> _sendMobileCode(String mobile) async {
+    try {
+      final response = await _userApi.sendSms(
+        mobile: mobile,
+        code: _currentUser?.code?.toString(),
+        scene: 'change',
+      );
+      if (response['code'] == 200) {
+        MessageService.success(response['message'] ?? '验证码已发送');
+        return true;
+      } else {
+        MessageService.error(response['message'] ?? '验证码发送失败');
+        return false;
+      }
+    } catch (e) {
+      MessageService.error(e.toString());
+      return false;
+    }
+  }
+
+  /// 清空所有输入框
+  void _clearAllInputs() {
+    _oldPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+    _vcodeController.clear();
+    _google2faCodeKey.currentState?.clear();
+  }
+
   /// 执行带加载状态的异步操作
   Future<void> _executeWithLoading(Future<void> Function() action) async {
     setState(() => _isLoading = true);
@@ -426,35 +544,51 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     }
   }
 
+  /// 验证密码输入
+  bool _validatePasswordInputs({
+    String? oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    if (oldPassword != null && !_validatePassword(oldPassword, label: '旧密码')) {
+      return false;
+    }
+    if (!_validatePassword(newPassword, label: '新密码')) return false;
+    if (!_validatePassword(confirmPassword, label: '确认密码')) return false;
+    
+    if (newPassword != confirmPassword) {
+      MessageService.error('两次输入的密码不一致');
+      return false;
+    }
+    
+    if (oldPassword != null && oldPassword == newPassword) {
+      MessageService.error('新密码不能与旧密码相同');
+      return false;
+    }
+    
+    return true;
+  }
+
   /// 处理设置密码操作
   Future<void> _handleSetPassword(BuildContext context) async {
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
     
-    if (!_validatePassword(newPassword, label: '新密码')) return;
-    if (!_validatePassword(confirmPassword, label: '确认密码')) return;
-    
-    if (newPassword != confirmPassword) {
-      MessageService.error('两次输入的密码不一致');
+    if (!_validatePasswordInputs(newPassword: newPassword, confirmPassword: confirmPassword)) {
       return;
     }
 
-    // 如果启用了 Google2FA，获取 Google 验证码
-    String? google2faCode;
-    if (_isGoogle2faEnabled) {
-      google2faCode = _google2faCodeKey.currentState?.value ?? '';
-      if (google2faCode.isEmpty) {
-        MessageService.error('请输入Google验证码');
-        return;
-      }
-    }
+    // 根据验证方式获取验证码
+    final verificationCodes = _getVerificationCode();
+    if (verificationCodes.isEmpty) return;
 
     // 执行设置密码操作
     await _performChangePassword(
-      oldPassword: null, // 设置密码时不需要旧密码
+      oldPassword: null,
       newPassword: newPassword,
       confirmPassword: confirmPassword,
-      google2faCode: google2faCode,
+      google2faCode: verificationCodes['google2faCode'],
+      vcode: verificationCodes['vcode'],
     );
   }
 
@@ -464,36 +598,25 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
     
-    if (!_validatePassword(oldPassword, label: '旧密码')) return;
-    if (!_validatePassword(newPassword, label: '新密码')) return;
-    if (!_validatePassword(confirmPassword, label: '确认密码')) return;
-    
-    if (newPassword != confirmPassword) {
-      MessageService.error('两次输入的密码不一致');
+    if (!_validatePasswordInputs(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    )) {
       return;
     }
 
-    if (oldPassword == newPassword) {
-      MessageService.error('新密码不能与旧密码相同');
-      return;
-    }
-
-    // 如果启用了 Google2FA，获取 Google 验证码
-    String? google2faCode;
-    if (_isGoogle2faEnabled) {
-      google2faCode = _google2faCodeKey.currentState?.value ?? '';
-      if (google2faCode.isEmpty) {
-        MessageService.error('请输入Google验证码');
-        return;
-      }
-    }
+    // 根据验证方式获取验证码
+    final verificationCodes = _getVerificationCode();
+    if (verificationCodes.isEmpty) return;
 
     // 执行修改密码操作
     await _performChangePassword(
       oldPassword: oldPassword,
       newPassword: newPassword,
       confirmPassword: confirmPassword,
-      google2faCode: google2faCode,
+      google2faCode: verificationCodes['google2faCode'],
+      vcode: verificationCodes['vcode'],
     );
   }
 
@@ -503,6 +626,7 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     required String newPassword,
     required String confirmPassword,
     String? google2faCode,
+    String? vcode,
   }) async {
     await _executeWithLoading(() async {
       final response = await _userApi.changePassword(
@@ -510,21 +634,14 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
         password: newPassword,
         passwordConfirmation: confirmPassword,
         google2faCode: google2faCode,
+        vcode: vcode,
       );
       
       await _handleApiResponse(
         response,
         successMessage: _isPasswordSet ? '密码修改成功' : '密码设置成功',
         errorMessage: _isPasswordSet ? '密码修改失败' : '密码设置失败',
-        onSuccess: () {
-          _oldPasswordController.clear();
-          _newPasswordController.clear();
-          _confirmPasswordController.clear();
-          // 清空 Google 验证码输入框
-          if (_isGoogle2faEnabled) {
-            _google2faCodeKey.currentState?.clear();
-          }
-        },
+        onSuccess: _clearAllInputs,
       );
     });
   }

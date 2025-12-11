@@ -135,12 +135,20 @@ class CodeInputFieldState extends State<CodeInputField> {
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(_codeLength, (index) => _buildCodeInput(
-                context,
-                index,
-                field: field,
-                hasError: hasError,
-                primaryColor: primaryColor,
+              children: List.generate(_codeLength, (index) => Flexible(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == _codeLength - 1 ? 0 : 4,
+                  ),
+                  child: _buildCodeInput(
+                    context,
+                    index,
+                    field: field,
+                    hasError: hasError,
+                    primaryColor: primaryColor,
+                  ),
+                ),
               )),
             ),
             if (hasError)
@@ -172,10 +180,14 @@ class CodeInputFieldState extends State<CodeInputField> {
       borderSide: BorderSide(color: borderColor, width: 2),
     );
 
-    return SizedBox(
-      width: 45,
-      height: 56,
-      child: TextField(
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: 40,
+        maxWidth: 50,
+      ),
+      child: SizedBox(
+        height: 56,
+        child: TextField(
         controller: _controllers[index],
         focusNode: _focusNodes[index],
         textAlign: TextAlign.center,
@@ -209,6 +221,7 @@ class CodeInputFieldState extends State<CodeInputField> {
             TextPosition(offset: _controllers[index].text.length),
           );
         },
+      ),
       ),
     );
   }

@@ -37,7 +37,7 @@ class CurrentUser
 
     /**
      * 格式化 Token
-     * 
+     *
      * @param User $user 用户对象
      * @param string $ip IP地址
      * @param string $browser 浏览器/User-Agent
@@ -126,7 +126,7 @@ class CurrentUser
     public function getInfo(int $id): ?User
     {
         return User::query()->with(['profile'])
-            ->select(['id', 'username', 'mobile', 'email', 'code', 'google2fa'])
+            ->select(['id', 'username', 'mobile', 'email', 'code', 'google2fa', 'password'])
             ->find($id);
     }
 

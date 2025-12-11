@@ -64,6 +64,10 @@ class Endpoints {
   
   /// 密码相关端点
   static const String passwordChange = '/api/user/password/change';
+  
+  /// 账户管理相关端点
+  static const String accountDisable = '/api/user/account/disable';
+  static const String accountDelete = '/api/user/account/delete';
 
   /// 页面内容相关端点
   static const String pageContentDownload = '/api/app/page-content/download';

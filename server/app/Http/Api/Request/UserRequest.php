@@ -111,6 +111,7 @@ class UserRequest extends FormRequest
             'password' => 'required|string|max:32|min:6',
             'password_confirmation' => 'required|string|max:32|same:password',
             'google2fa_code' => 'nullable|numeric',
+            'vcode' => 'nullable|numeric',
         ];
     }
 
@@ -192,6 +193,30 @@ class UserRequest extends FormRequest
         return [
             'vcode' => 'required|numeric',
             'google2fa_code' => 'nullable|numeric',
+        ];
+    }
+
+    /**
+     * 禁用账户场景验证规则
+     */
+    public function accountDisableRules(): array
+    {
+        return [
+            'password' => 'required|string|max:32',
+            'google2fa_code' => 'nullable|numeric',
+            'vcode' => 'nullable|numeric',
+        ];
+    }
+
+    /**
+     * 删除账户场景验证规则
+     */
+    public function accountDeleteRules(): array
+    {
+        return [
+            'password' => 'required|string|max:32',
+            'google2fa_code' => 'nullable|numeric',
+            'vcode' => 'nullable|numeric',
         ];
     }
 

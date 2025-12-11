@@ -19,4 +19,6 @@ return [
     'mobile_bind' => '手机号已绑定',
     'mobile_unbind' => '手机号未绑定',
     'mobile_used' => '手机号已被使用',
+    'account_disable_success' => '账户禁用成功',
+    'account_delete_success' => '账户删除成功',
 ];

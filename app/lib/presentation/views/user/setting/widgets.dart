@@ -296,13 +296,13 @@ class BaseSettingScreen extends StatelessWidget {
 class AccountOptionCard extends StatelessWidget {
   final String title;
   final String description;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const AccountOptionCard({
     super.key,
     required this.title,
     required this.description,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
@@ -310,7 +310,9 @@ class AccountOptionCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: Opacity(
+        opacity: onTap == null ? 0.5 : 1.0,
+        child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
@@ -352,6 +354,7 @@ class AccountOptionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

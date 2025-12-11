@@ -63,6 +63,7 @@ class _AppState extends State<App> {
             : Locale(localeParts[0]);
         
         return MaterialApp(
+          key: const ValueKey('main_material_app'),
           navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
           title: AppConfig.appName,
