@@ -1,6 +1,6 @@
 import { MaSearchOptions } from './search-options';
-import type { MaFormOptions, MaFormItem } from '@/components/ma-form';
-import MaForm from '@/components/ma-form';
+import type { MaFormOptions, MaFormItem } from '@ma/form';
+import MaForm from '@ma/form';
 interface MaSearchItem extends MaFormItem {
     hide?: boolean | (() => boolean);
     span?: number;

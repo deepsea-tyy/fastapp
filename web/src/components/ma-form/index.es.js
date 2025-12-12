@@ -1,57 +1,57 @@
-import { defineComponent as Oe, ref as C, inject as Ee, onMounted as me, onBeforeUnmount as Ce, withDirectives as re, createVNode as m, resolveDirective as Pe, Fragment as ne, mergeProps as V, resolveComponent as N, h as oe, isVNode as xe, vShow as ze, getCurrentInstance as Fe, nextTick as Ie } from "vue";
-import { ElRadioGroup as ae, ElCheckboxGroup as le, ElInput as ke, ElMention as Te, ElAutocomplete as Me, ElInputNumber as $e, ElSelect as Le, ElCascader as Ve, ElSwitch as Ae, ElSlider as Re, ElTimePicker as Be, ElDatePicker as De, ElRate as Ne, ElColorPicker as Ue, ElTransfer as Ge, ElTimeSelect as He, ElSelectV2 as We, ElTreeSelect as qe, ElLoadingDirective as Je, ElForm as Ke, ElFormItem as Qe } from "element-plus";
-var Xe = typeof global == "object" && global && global.Object === Object && global, Ye = typeof self == "object" && self && self.Object === Object && self, J = Xe || Ye || Function("return this")(), x = J.Symbol, ye = Object.prototype, Ze = ye.hasOwnProperty, et = ye.toString, k = x ? x.toStringTag : void 0, tt = Object.prototype.toString, rt = "[object Null]", nt = "[object Undefined]", ie = x ? x.toStringTag : void 0;
+import { defineComponent as xe, ref as C, inject as Ee, onMounted as ye, onBeforeUnmount as Ce, withDirectives as ne, createVNode as f, resolveDirective as Pe, Fragment as B, mergeProps as L, resolveComponent as N, h as oe, isVNode as ze, vShow as Fe, getCurrentInstance as Ie, nextTick as ke } from "vue";
+import { ElRadioGroup as ae, ElCheckboxGroup as le, ElInput as Te, ElMention as $e, ElAutocomplete as Me, ElInputNumber as Le, ElSelect as Ve, ElCascader as Ae, ElSwitch as Re, ElSlider as De, ElTimePicker as Be, ElDatePicker as Ne, ElRate as Ue, ElColorPicker as Ge, ElTransfer as He, ElTimeSelect as We, ElSelectV2 as qe, ElTreeSelect as Je, ElLoadingDirective as Ke, ElForm as Qe, ElFormItem as Xe } from "element-plus";
+var Ye = typeof global == "object" && global && global.Object === Object && global, Ze = typeof self == "object" && self && self.Object === Object && self, J = Ye || Ze || Function("return this")(), z = J.Symbol, he = Object.prototype, et = he.hasOwnProperty, tt = he.toString, k = z ? z.toStringTag : void 0, rt = Object.prototype.toString, nt = "[object Null]", ot = "[object Undefined]", ie = z ? z.toStringTag : void 0;
 function ge(e) {
-  return e == null ? e === void 0 ? nt : rt : ie && ie in Object(e) ? function(t) {
-    var r = Ze.call(t, k), n = t[k];
+  return e == null ? e === void 0 ? ot : nt : ie && ie in Object(e) ? function(t) {
+    var r = et.call(t, k), o = t[k];
     try {
       t[k] = void 0;
       var a = !0;
     } catch {
     }
-    var i = et.call(t);
-    return a && (r ? t[k] = n : delete t[k]), i;
+    var u = tt.call(t);
+    return a && (r ? t[k] = o : delete t[k]), u;
   }(e) : function(t) {
-    return tt.call(t);
+    return rt.call(t);
   }(e);
 }
-var ot = "[object Symbol]";
+var at = "[object Symbol]";
 function K(e) {
   return typeof e == "symbol" || function(t) {
     return t != null && typeof t == "object";
-  }(e) && ge(e) == ot;
+  }(e) && ge(e) == at;
 }
-var q = Array.isArray, at = 1 / 0, ue = x ? x.prototype : void 0, se = ue ? ue.toString : void 0;
+var q = Array.isArray, lt = 1 / 0, ue = z ? z.prototype : void 0, se = ue ? ue.toString : void 0;
 function _e(e) {
   if (typeof e == "string") return e;
-  if (q(e)) return function(r, n) {
-    for (var a = -1, i = r == null ? 0 : r.length, u = Array(i); ++a < i; ) u[a] = n(r[a], a, r);
-    return u;
+  if (q(e)) return function(r, o) {
+    for (var a = -1, u = r == null ? 0 : r.length, s = Array(u); ++a < u; ) s[a] = o(r[a], a, r);
+    return s;
   }(e, _e) + "";
   if (K(e)) return se ? se.call(e) : "";
   var t = e + "";
-  return t == "0" && 1 / e == -at ? "-0" : t;
+  return t == "0" && 1 / e == -lt ? "-0" : t;
 }
-function B(e) {
+function R(e) {
   var t = typeof e;
   return e != null && (t == "object" || t == "function");
 }
-var lt = "[object AsyncFunction]", it = "[object Function]", ut = "[object GeneratorFunction]", st = "[object Proxy]", ce, U = J["__core-js_shared__"], fe = (ce = /[^.]+$/.exec(U && U.keys && U.keys.IE_PROTO || "")) ? "Symbol(src)_1." + ce : "", ct = Function.prototype.toString, ft = /^\[object .+?Constructor\]$/, pt = Function.prototype, dt = Object.prototype, vt = pt.toString, ht = dt.hasOwnProperty, mt = RegExp("^" + vt.call(ht).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$");
-function yt(e) {
-  if (!B(e) || (t = e, fe && fe in t)) return !1;
-  var t, r = function(n) {
-    if (!B(n)) return !1;
-    var a = ge(n);
-    return a == it || a == ut || a == lt || a == st;
-  }(e) ? mt : ft;
-  return r.test(function(n) {
-    if (n != null) {
+var it = "[object AsyncFunction]", ut = "[object Function]", st = "[object GeneratorFunction]", ct = "[object Proxy]", ce, U = J["__core-js_shared__"], pe = (ce = /[^.]+$/.exec(U && U.keys && U.keys.IE_PROTO || "")) ? "Symbol(src)_1." + ce : "", pt = Function.prototype.toString, ft = /^\[object .+?Constructor\]$/, dt = Function.prototype, vt = Object.prototype, mt = dt.toString, yt = vt.hasOwnProperty, ht = RegExp("^" + mt.call(yt).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$");
+function gt(e) {
+  if (!R(e) || (t = e, pe && pe in t)) return !1;
+  var t, r = function(o) {
+    if (!R(o)) return !1;
+    var a = ge(o);
+    return a == ut || a == st || a == it || a == ct;
+  }(e) ? ht : ft;
+  return r.test(function(o) {
+    if (o != null) {
       try {
-        return ct.call(n);
+        return pt.call(o);
       } catch {
       }
       try {
-        return n + "";
+        return o + "";
       } catch {
       }
     }
@@ -59,60 +59,60 @@ function yt(e) {
   }(e));
 }
 function Q(e, t) {
-  var r = function(n, a) {
-    return n == null ? void 0 : n[a];
+  var r = function(o, a) {
+    return o == null ? void 0 : o[a];
   }(e, t);
-  return yt(r) ? r : void 0;
+  return gt(r) ? r : void 0;
 }
-var pe = function() {
+var fe = function() {
   try {
     var e = Q(Object, "defineProperty");
     return e({}, "", {}), e;
   } catch {
   }
-}(), gt = 9007199254740991, _t = /^(?:0|[1-9]\d*)$/;
-function bt(e, t) {
+}(), _t = 9007199254740991, bt = /^(?:0|[1-9]\d*)$/;
+function wt(e, t) {
   var r = typeof e;
-  return !!(t = t ?? gt) && (r == "number" || r != "symbol" && _t.test(e)) && e > -1 && e % 1 == 0 && e < t;
+  return !!(t = t ?? _t) && (r == "number" || r != "symbol" && bt.test(e)) && e > -1 && e % 1 == 0 && e < t;
 }
 function be(e, t) {
   return e === t || e != e && t != t;
 }
-var wt = Object.prototype.hasOwnProperty;
-function jt(e, t, r) {
-  var n = e[t];
-  wt.call(e, t) && be(n, r) && (r !== void 0 || t in e) || function(a, i, u) {
-    i == "__proto__" && pe ? pe(a, i, { configurable: !0, enumerable: !0, value: u, writable: !0 }) : a[i] = u;
+var jt = Object.prototype.hasOwnProperty;
+function St(e, t, r) {
+  var o = e[t];
+  jt.call(e, t) && be(o, r) && (r !== void 0 || t in e) || function(a, u, s) {
+    u == "__proto__" && fe ? fe(a, u, { configurable: !0, enumerable: !0, value: s, writable: !0 }) : a[u] = s;
   }(e, t, r);
 }
-var St = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/, Ot = /^\w*$/, T = Q(Object, "create"), Et = Object.prototype.hasOwnProperty, Ct = Object.prototype.hasOwnProperty;
-function w(e) {
+var Ot = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/, xt = /^\w*$/, T = Q(Object, "create"), Et = Object.prototype.hasOwnProperty, Ct = Object.prototype.hasOwnProperty;
+function j(e) {
   var t = -1, r = e == null ? 0 : e.length;
   for (this.clear(); ++t < r; ) {
-    var n = e[t];
-    this.set(n[0], n[1]);
+    var o = e[t];
+    this.set(o[0], o[1]);
   }
 }
-function A(e, t) {
+function V(e, t) {
   for (var r = e.length; r--; ) if (be(e[r][0], t)) return r;
   return -1;
 }
-w.prototype.clear = function() {
+j.prototype.clear = function() {
   this.__data__ = T ? T(null) : {}, this.size = 0;
-}, w.prototype.delete = function(e) {
+}, j.prototype.delete = function(e) {
   var t = this.has(e) && delete this.__data__[e];
   return this.size -= t ? 1 : 0, t;
-}, w.prototype.get = function(e) {
+}, j.prototype.get = function(e) {
   var t = this.__data__;
   if (T) {
     var r = t[e];
     return r === "__lodash_hash_undefined__" ? void 0 : r;
   }
   return Et.call(t, e) ? t[e] : void 0;
-}, w.prototype.has = function(e) {
+}, j.prototype.has = function(e) {
   var t = this.__data__;
   return T ? t[e] !== void 0 : Ct.call(t, e);
-}, w.prototype.set = function(e, t) {
+}, j.prototype.set = function(e, t) {
   var r = this.__data__;
   return this.size += this.has(e) ? 0 : 1, r[e] = T && t === void 0 ? "__lodash_hash_undefined__" : t, this;
 };
@@ -120,186 +120,187 @@ var Pt = Array.prototype.splice;
 function P(e) {
   var t = -1, r = e == null ? 0 : e.length;
   for (this.clear(); ++t < r; ) {
-    var n = e[t];
-    this.set(n[0], n[1]);
+    var o = e[t];
+    this.set(o[0], o[1]);
   }
 }
 P.prototype.clear = function() {
   this.__data__ = [], this.size = 0;
 }, P.prototype.delete = function(e) {
-  var t = this.__data__, r = A(t, e);
+  var t = this.__data__, r = V(t, e);
   return !(r < 0) && (r == t.length - 1 ? t.pop() : Pt.call(t, r, 1), --this.size, !0);
 }, P.prototype.get = function(e) {
-  var t = this.__data__, r = A(t, e);
+  var t = this.__data__, r = V(t, e);
   return r < 0 ? void 0 : t[r][1];
 }, P.prototype.has = function(e) {
-  return A(this.__data__, e) > -1;
+  return V(this.__data__, e) > -1;
 }, P.prototype.set = function(e, t) {
-  var r = this.__data__, n = A(r, e);
-  return n < 0 ? (++this.size, r.push([e, t])) : r[n][1] = t, this;
+  var r = this.__data__, o = V(r, e);
+  return o < 0 ? (++this.size, r.push([e, t])) : r[o][1] = t, this;
 };
-var xt = Q(J, "Map");
-function R(e, t) {
-  var r, n, a = e.__data__;
-  return ((n = typeof (r = t)) == "string" || n == "number" || n == "symbol" || n == "boolean" ? r !== "__proto__" : r === null) ? a[typeof t == "string" ? "string" : "hash"] : a.map;
+var zt = Q(J, "Map");
+function A(e, t) {
+  var r, o, a = e.__data__;
+  return ((o = typeof (r = t)) == "string" || o == "number" || o == "symbol" || o == "boolean" ? r !== "__proto__" : r === null) ? a[typeof t == "string" ? "string" : "hash"] : a.map;
 }
-function j(e) {
+function S(e) {
   var t = -1, r = e == null ? 0 : e.length;
   for (this.clear(); ++t < r; ) {
-    var n = e[t];
-    this.set(n[0], n[1]);
+    var o = e[t];
+    this.set(o[0], o[1]);
   }
 }
-j.prototype.clear = function() {
-  this.size = 0, this.__data__ = { hash: new w(), map: new (xt || P)(), string: new w() };
-}, j.prototype.delete = function(e) {
-  var t = R(this, e).delete(e);
+S.prototype.clear = function() {
+  this.size = 0, this.__data__ = { hash: new j(), map: new (zt || P)(), string: new j() };
+}, S.prototype.delete = function(e) {
+  var t = A(this, e).delete(e);
   return this.size -= t ? 1 : 0, t;
-}, j.prototype.get = function(e) {
-  return R(this, e).get(e);
-}, j.prototype.has = function(e) {
-  return R(this, e).has(e);
-}, j.prototype.set = function(e, t) {
-  var r = R(this, e), n = r.size;
-  return r.set(e, t), this.size += r.size == n ? 0 : 1, this;
+}, S.prototype.get = function(e) {
+  return A(this, e).get(e);
+}, S.prototype.has = function(e) {
+  return A(this, e).has(e);
+}, S.prototype.set = function(e, t) {
+  var r = A(this, e), o = r.size;
+  return r.set(e, t), this.size += r.size == o ? 0 : 1, this;
 };
-var zt = "Expected a function";
+var Ft = "Expected a function";
 function X(e, t) {
-  if (typeof e != "function" || t != null && typeof t != "function") throw new TypeError(zt);
+  if (typeof e != "function" || t != null && typeof t != "function") throw new TypeError(Ft);
   var r = function() {
-    var n = arguments, a = t ? t.apply(this, n) : n[0], i = r.cache;
-    if (i.has(a)) return i.get(a);
-    var u = e.apply(this, n);
-    return r.cache = i.set(a, u) || i, u;
+    var o = arguments, a = t ? t.apply(this, o) : o[0], u = r.cache;
+    if (u.has(a)) return u.get(a);
+    var s = e.apply(this, o);
+    return r.cache = u.set(a, s) || u, s;
   };
-  return r.cache = new (X.Cache || j)(), r;
+  return r.cache = new (X.Cache || S)(), r;
 }
-X.Cache = j;
-var de, G, H, Ft = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g, It = /\\(\\)?/g, kt = (de = function(e) {
+X.Cache = S;
+var de, G, H, It = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g, kt = /\\(\\)?/g, Tt = (de = function(e) {
   var t = [];
-  return e.charCodeAt(0) === 46 && t.push(""), e.replace(Ft, function(r, n, a, i) {
-    t.push(a ? i.replace(It, "$1") : n || r);
+  return e.charCodeAt(0) === 46 && t.push(""), e.replace(It, function(r, o, a, u) {
+    t.push(a ? u.replace(kt, "$1") : o || r);
   }), t;
 }, G = X(de, function(e) {
   return H.size === 500 && H.clear(), e;
 }), H = G.cache, G);
 function we(e, t) {
-  return q(e) ? e : function(r, n) {
+  return q(e) ? e : function(r, o) {
     if (q(r)) return !1;
     var a = typeof r;
-    return !(a != "number" && a != "symbol" && a != "boolean" && r != null && !K(r)) || Ot.test(r) || !St.test(r) || n != null && r in Object(n);
-  }(e, t) ? [e] : kt(function(r) {
+    return !(a != "number" && a != "symbol" && a != "boolean" && r != null && !K(r)) || xt.test(r) || !Ot.test(r) || o != null && r in Object(o);
+  }(e, t) ? [e] : Tt(function(r) {
     return r == null ? "" : _e(r);
   }(e));
 }
-var Tt = 1 / 0;
+var $t = 1 / 0;
 function je(e) {
   if (typeof e == "string" || K(e)) return e;
   var t = e + "";
-  return t == "0" && 1 / e == -Tt ? "-0" : t;
+  return t == "0" && 1 / e == -$t ? "-0" : t;
 }
 function Mt(e, t, r) {
-  var n = e == null ? void 0 : function(a, i) {
-    for (var u = 0, g = (i = we(i, a)).length; a != null && u < g; ) a = a[je(i[u++])];
-    return u && u == g ? a : void 0;
+  var o = e == null ? void 0 : function(a, u) {
+    for (var s = 0, _ = (u = we(u, a)).length; a != null && s < _; ) a = a[je(u[s++])];
+    return s && s == _ ? a : void 0;
   }(e, t);
-  return n === void 0 ? r : n;
+  return o === void 0 ? r : o;
 }
-function $t(e, t, r) {
-  return e == null ? e : function(n, a, i) {
-    if (!B(n)) return n;
-    for (var u = -1, g = (a = we(a, n)).length, z = g - 1, y = n; y != null && ++u < g; ) {
-      var d = je(a[u]), S = i;
-      if (d === "__proto__" || d === "constructor" || d === "prototype") return n;
-      if (u != z) {
-        var O = y[d];
-        (S = void 0) == void 0 && (S = B(O) ? O : bt(a[u + 1]) ? [] : {});
+function Lt(e, t, r) {
+  return e == null ? e : function(o, a, u) {
+    if (!R(o)) return o;
+    for (var s = -1, _ = (a = we(a, o)).length, F = _ - 1, h = o; h != null && ++s < _; ) {
+      var v = je(a[s]), O = u;
+      if (v === "__proto__" || v === "constructor" || v === "prototype") return o;
+      if (s != F) {
+        var x = h[v];
+        (O = void 0) == void 0 && (O = R(x) ? x : wt(a[s + 1]) ? [] : {});
       }
-      jt(y, d, S), y = y[d];
+      St(h, v, O), h = h[v];
     }
-    return n;
+    return o;
   }(e, t, r);
 }
-const ve = { Radio: ae, Checkbox: le, CheckboxButton: le, Input: ke, Mention: Te, Autocomplete: Me, InputNumber: $e, Select: Le, Cascader: Ve, Switch: Ae, Slider: Re, TimePicker: Be, DatePicker: De, Rate: Ne, ColorPicker: Ue, Transfer: Ge, TimeSelect: He, SelectV2: We, TreeSelect: qe, RadioButton: ae };
+const ve = { Radio: ae, Checkbox: le, CheckboxButton: le, Input: Te, Mention: $e, Autocomplete: Me, InputNumber: Le, Select: Ve, Cascader: Ae, Switch: Re, Slider: De, TimePicker: Be, DatePicker: Ne, Rate: Ue, ColorPicker: Ge, Transfer: He, TimeSelect: We, SelectV2: qe, TreeSelect: Je, RadioButton: ae };
 function W(e) {
-  return typeof e == "function" || Object.prototype.toString.call(e) === "[object Object]" && !xe(e);
+  return typeof e == "function" || Object.prototype.toString.call(e) === "[object Object]" && !ze(e);
 }
-const he = Oe({ name: "MaForm", props: { modelValue: { type: Object, default: () => ({}) }, options: { type: Object, default: () => ({}) }, items: { type: Array, default: () => [] } }, directives: { Loading: Je }, setup(e, { slots: t, attrs: r, expose: n }) {
-  const a = C(e.modelValue), i = C(e.options), u = C(e.items), g = Ee("MaFormOptions"), z = C(!1), y = C(), d = C(!1), S = () => {
-    d.value = window.innerWidth < 768;
+const me = xe({ name: "MaForm", props: { modelValue: { type: Object, default: () => ({}) }, options: { type: Object, default: () => ({}) }, items: { type: Array, default: () => [] } }, directives: { Loading: Ke }, setup(e, { slots: t, attrs: r, expose: o }) {
+  const a = C(e.modelValue), u = C(e.options), s = C(e.items), _ = Ee("MaFormOptions"), F = C(!1), h = C(), v = C(!1), O = () => {
+    v.value = window.innerWidth < 768;
   };
-  me(async () => {
-    z.value = !0, window.addEventListener("resize", S);
+  ye(async () => {
+    F.value = !0, window.addEventListener("resize", O);
   }), Ce(() => {
-    z.value = !1, window.removeEventListener("resize", S);
+    F.value = !1, window.removeEventListener("resize", O);
   });
-  const O = (l, o) => {
-    var v, _, F, b, h;
-    const f = typeof o.prop == "function" ? o.prop() : o.prop;
-    let p = null;
-    return (v = l == null ? void 0 : l.children) != null && v.default ? p = (_ = l == null ? void 0 : l.children) == null ? void 0 : _.default : (F = o == null ? void 0 : o.renderSlots) != null && F.default ? p = (b = o.renderSlots) == null ? void 0 : b.default : o != null && o.children && (p = D((o == null ? void 0 : o.children) ?? [])), oe(l, { ref: "formItem-{$prop}", modelValue: Mt(a.value, f), "onUpdate:modelValue": (I) => $t(a.value, f, I), ...o == null ? void 0 : o.renderProps }, { ...(o == null ? void 0 : o.renderSlots) ?? null, default: o != null && o.children && !((h = o.renderSlots) != null && h.default) && typeof l.type == "string" ? () => p : p });
+  const x = (l, n) => {
+    var m, b, p, w, y;
+    const c = typeof n.prop == "function" ? n.prop() : n.prop;
+    let d = null;
+    return (m = l == null ? void 0 : l.children) != null && m.default ? d = (b = l == null ? void 0 : l.children) == null ? void 0 : b.default : (p = n == null ? void 0 : n.renderSlots) != null && p.default ? d = (w = n.renderSlots) == null ? void 0 : w.default : n != null && n.children && (d = D((n == null ? void 0 : n.children) ?? [])), oe(l, { ref: "formItem-{$prop}", modelValue: Mt(a.value, c), "onUpdate:modelValue": (I) => Lt(a.value, c, I), ...n == null ? void 0 : n.renderProps }, { ...(n == null ? void 0 : n.renderSlots) ?? null, default: n != null && n.children && !((y = n.renderSlots) != null && y.default) && typeof l.type == "string" ? () => d : d });
+  }, Se = (l) => {
+    if (typeof l.render == "string") {
+      const n = l.render[0].toUpperCase().concat(l.render.substring(1, l.render.length));
+      if (ve[n]) return x(ve[n], l);
+    } else {
+      if (typeof l.render == "function") {
+        const n = l.render;
+        return x(n({ item: l, formData: a.value }), l);
+      }
+      if (!l.render)
+        return x((() => f("div", null, null))({ item: l, formData: a.value }), l);
+    }
   }, D = (l) => {
-    const { layout: o } = i.value;
-    return l == null ? void 0 : l.map((f) => {
-      let p;
-      const { label: v, prop: _, itemProps: F, hide: b, show: h, cols: I, itemSlots: s } = f, M = typeof b == "function" ? b : () => b === !0, $ = typeof h == "function" ? h : () => h !== !1, ee = typeof _ == "function" ? _() : _, te = () => re(m(Qe, V({ ref: `formItemRef-${ee}`, label: typeof v == "function" ? v() : v, prop: ee }, F), { default: () => {
-        var E;
-        return ((E = s == null ? void 0 : s.default) == null ? void 0 : E.call(s)) ?? ((c) => {
-          if (typeof c.render == "string") {
-            const L = c.render[0].toUpperCase().concat(c.render.substring(1, c.render.length));
-            if (ve[L]) return O(ve[L], c);
-          } else {
-            if (typeof c.render == "function") {
-              const L = c.render;
-              return O(L({ item: c, formData: a.value }), c);
-            }
-            if (!c.render) return O((a.value, m("div", null, null)), c);
-          }
-        })(f);
-      }, label: s != null && s.label ? (E) => {
-        var c;
-        return ((c = s == null ? void 0 : s.label) == null ? void 0 : c.call(s, E)) ?? null;
-      } : void 0, error: s != null && s.error ? (E) => {
-        var c;
-        return ((c = s == null ? void 0 : s.error) == null ? void 0 : c.call(s, E)) ?? null;
-      } : void 0 }), [[ze, M(f, a.value) !== !0]]);
-      return m(ne, null, [$(f, a.value) && (o === void 0 || o === "flex" ? m(N("el-col"), I, W(p = te()) ? p : { default: () => [p] }) : te())]);
+    const { layout: n } = u.value;
+    return l == null ? void 0 : l.map((c) => {
+      let d;
+      const { label: m, prop: b, itemProps: p, hide: w, show: y, cols: I, itemSlots: i } = c, $ = typeof w == "function" ? w : () => w === !0, M = typeof y == "function" ? y : () => y !== !1, ee = typeof b == "function" ? b() : b, te = () => ne(f(Xe, L({ ref: `formItemRef-${ee}`, label: typeof m == "function" ? m() : m, prop: ee }, p), { default: () => {
+        var E, g, re;
+        return f(B, null, [((E = i == null ? void 0 : i.default) == null ? void 0 : E.call(i)) ?? Se(c), f("div", null, [((p == null ? void 0 : p.help) || (i == null ? void 0 : i.help)) && f("div", { style: "font-size:12px; line-height: 22px; color: #909399" }, [((g = i == null ? void 0 : i.help) == null ? void 0 : g.call(i, c)) || (p == null ? void 0 : p.help)]), ((p == null ? void 0 : p.extra) || (i == null ? void 0 : i.extra)) && f("div", { style: "font-size:12px; line-height: 22px; color: #909399" }, [((re = i == null ? void 0 : i.extra) == null ? void 0 : re.call(i, c)) || (p == null ? void 0 : p.extra)])])]);
+      }, label: i != null && i.label ? (E) => {
+        var g;
+        return ((g = i == null ? void 0 : i.label) == null ? void 0 : g.call(i, E)) ?? null;
+      } : void 0, error: i != null && i.error ? (E) => {
+        var g;
+        return ((g = i == null ? void 0 : i.error) == null ? void 0 : g.call(i, E)) ?? null;
+      } : void 0 }), [[Fe, $(c, a.value) !== !0]]);
+      return f(B, null, [M(c, a.value) && (n === void 0 || n === "flex" ? f(N("el-col"), I, W(d = te()) ? d : { default: () => [d] }) : te())]);
     });
-  }, Se = () => {
-    var M;
-    let l, o;
-    const { layout: f, flex: p, grid: v, loading: _, loadingConfig: F, containerClass: b, footerSlot: h, ...I } = i.value, { style: s } = v ?? {};
-    return m(ne, null, [m(Ke, V({ model: a, ref: y }, I, r), { default: () => {
-      var $;
-      return [(($ = t.default) == null ? void 0 : $.call(t)) ?? (f === void 0 || f === "flex" ? m(N("el-row"), V({ gutter: d.value ? 0 : 15 }, p), W(l = D(u.value ?? [])) ? l : { default: () => [l] }) : m(N("el-space"), V({ style: s ?? "width: 100%" }, v), W(o = D(u.value ?? [])) ? o : { default: () => [o] }))];
-    } }), ((M = t.footer) == null ? void 0 : M.call(t)) ?? (h ? oe(h) : null)]);
+  }, Oe = () => {
+    var $;
+    let l, n;
+    const { layout: c, flex: d, grid: m, loading: b, loadingConfig: p, containerClass: w, footerSlot: y, ...I } = u.value, { style: i } = m ?? {};
+    return f(B, null, [f(Qe, L({ model: a, ref: h }, I, r), { default: () => {
+      var M;
+      return [((M = t.default) == null ? void 0 : M.call(t)) ?? (c === void 0 || c === "flex" ? f(N("el-row"), L({ gutter: v.value ? 0 : 15 }, d), W(l = D(s.value ?? [])) ? l : { default: () => [l] }) : f(N("el-space"), L({ style: i ?? "width: 100%" }, m), W(n = D(s.value ?? [])) ? n : { default: () => [n] }))];
+    } }), (($ = t.footer) == null ? void 0 : $.call(t)) ?? (y ? oe(y) : null)]);
   }, Y = () => {
-    const { loading: l, loadingConfig: o, containerClass: f } = i.value;
-    return re(m("div", { className: ["base.form", f], "element-loading-svg": (o == null ? void 0 : o.svg) ?? '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64a32 32 0 0 1 32 32v192a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 640a32 32 0 0 1 32 32v192a32 32 0 1 1-64 0V736a32 32 0 0 1 32-32m448-192a32 32 0 0 1-32 32H736a32 32 0 1 1 0-64h192a32 32 0 0 1 32 32m-640 0a32 32 0 0 1-32 32H96a32 32 0 0 1 0-64h192a32 32 0 0 1 32 32M195.2 195.2a32 32 0 0 1 45.248 0L376.32 331.008a32 32 0 0 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m452.544 452.544a32 32 0 0 1 45.248 0L828.8 783.552a32 32 0 0 1-45.248 45.248L647.744 692.992a32 32 0 0 1 0-45.248M828.8 195.264a32 32 0 0 1 0 45.184L692.992 376.32a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0m-452.544 452.48a32 32 0 0 1 0 45.248L240.448 828.8a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0"/></svg>', "element-loading-svg-view-box": (o == null ? void 0 : o.viewBox) ?? "-9, -9, 50, 50", "element-loading-text": (o == null ? void 0 : o.text) ?? null, "element-loading-spinner": (o == null ? void 0 : o.spinner) ?? null, "element-loading-background": (o == null ? void 0 : o.spinner) ?? null, "element-loading-custom-class": (o == null ? void 0 : o.customClass) ?? null }, [Se()]), [[Pe("loading"), l]]);
-  }, Z = (l) => u.value = l;
-  return n({ setLoadingState: (l) => i.value.loading = l, setOptions: (l) => i.value = Object.assign(i.value, l), getOptions: () => i.value, setItems: Z, getItems: () => u.value, appendItem: (l) => u.value.push(l), removeItem: (l) => Z(u.value.filter((o) => (typeof o.prop == "function" ? o.prop() : o.prop) !== l)), getItemByProp: (l) => {
-    var o;
-    return ((o = u.value.filter((f) => (typeof f.prop == "function" ? f.prop() : f.prop) === l)) == null ? void 0 : o[0]) ?? null;
-  }, isMobileState: () => d.value, getElFormRef: () => y.value }), () => g.ssr ? z.value && Y() : Y();
+    const { loading: l, loadingConfig: n, containerClass: c } = u.value;
+    return ne(f("div", { className: ["ma-form", c], "element-loading-svg": (n == null ? void 0 : n.svg) ?? '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64a32 32 0 0 1 32 32v192a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 640a32 32 0 0 1 32 32v192a32 32 0 1 1-64 0V736a32 32 0 0 1 32-32m448-192a32 32 0 0 1-32 32H736a32 32 0 1 1 0-64h192a32 32 0 0 1 32 32m-640 0a32 32 0 0 1-32 32H96a32 32 0 0 1 0-64h192a32 32 0 0 1 32 32M195.2 195.2a32 32 0 0 1 45.248 0L376.32 331.008a32 32 0 0 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m452.544 452.544a32 32 0 0 1 45.248 0L828.8 783.552a32 32 0 0 1-45.248 45.248L647.744 692.992a32 32 0 0 1 0-45.248M828.8 195.264a32 32 0 0 1 0 45.184L692.992 376.32a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0m-452.544 452.48a32 32 0 0 1 0 45.248L240.448 828.8a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0"/></svg>', "element-loading-svg-view-box": (n == null ? void 0 : n.viewBox) ?? "-9, -9, 50, 50", "element-loading-text": (n == null ? void 0 : n.text) ?? null, "element-loading-spinner": (n == null ? void 0 : n.spinner) ?? null, "element-loading-background": (n == null ? void 0 : n.spinner) ?? null, "element-loading-custom-class": (n == null ? void 0 : n.customClass) ?? null }, [Oe()]), [[Pe("loading"), l]]);
+  }, Z = (l) => s.value = l;
+  return o({ setLoadingState: (l) => u.value.loading = l, setOptions: (l) => u.value = Object.assign(u.value, l), getOptions: () => u.value, setItems: Z, getItems: () => s.value, appendItem: (l) => s.value.push(l), removeItem: (l) => Z(s.value.filter((n) => (typeof n.prop == "function" ? n.prop() : n.prop) !== l)), getItemByProp: (l) => {
+    var n;
+    return ((n = s.value.filter((c) => (typeof c.prop == "function" ? c.prop() : c.prop) === l)) == null ? void 0 : n[0]) ?? null;
+  }, isMobileState: () => v.value, getElFormRef: () => h.value }), () => _.ssr ? F.value && Y() : Y();
 } });
-function At(e) {
+function Rt(e) {
   return new Promise((t, r) => {
-    const n = Fe();
-    me(async () => {
-      await Ie(() => {
-        if (n && n.refs[e]) {
-          const a = n.refs[e];
+    const o = Ie();
+    ye(async () => {
+      await ke(() => {
+        if (o && o.refs[e]) {
+          const a = o.refs[e];
           t({ ...a });
-        } else r("[@base.form]: not found ref for ma-form component");
+        } else r("[@ma/form]: not found ref for ma-form component");
       });
     });
   });
 }
-const Rt = { install(e, t) {
-  e.component(he.name, he), e.provide("MaFormOptions", t ?? { ssr: !1 });
+const Dt = { install(e, t) {
+  e.component(me.name, me), e.provide("MaFormOptions", t ?? { ssr: !1 });
 } };
 export {
-  Rt as MaForm,
-  Rt as default,
-  At as useForm
+  Dt as MaForm,
+  Dt as default,
+  Rt as useForm
 };

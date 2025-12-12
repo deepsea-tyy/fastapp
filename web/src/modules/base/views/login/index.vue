@@ -77,33 +77,36 @@ onMounted(() => {
 
     <!-- 主要内容区 -->
     <div class="login-content">
-      <!-- Logo区域 -->
-      <div class="logo-section">
-        <Logo />
-      </div>
+      <!-- 中间内容区域 -->
+      <div class="login-content-main">
+        <!-- Logo区域 -->
+        <div class="logo-section">
+          <Logo />
+        </div>
 
-      <!-- 登录表单区域 -->
-      <div class="form-section">
-        <div class="form-card">
-          <div class="card-glow"></div>
-          <div class="card-content">
-            <div class="form-header">
-              <h2 class="form-title">{{ t('loginForm.welcomeBack') }}</h2>
-              <el-select
-                v-model="currentLanguage"
-                class="language-select"
-                size="small"
-                @change="changeLanguage"
-              >
-                <el-option
-                  v-for="item in locales"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
+        <!-- 登录表单区域 -->
+        <div class="form-section">
+          <div class="form-card">
+            <div class="card-glow"></div>
+            <div class="card-content">
+              <div class="form-header">
+                <h2 class="form-title">{{ t('loginForm.welcomeBack') }}</h2>
+                <el-select
+                  v-model="currentLanguage"
+                  class="language-select"
+                  size="small"
+                  @change="changeLanguage"
+                >
+                  <el-option
+                    v-for="item in locales"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </div>
+              <LoginForm />
             </div>
-            <LoginForm />
           </div>
         </div>
       </div>

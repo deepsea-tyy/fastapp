@@ -27,7 +27,6 @@
   src:url('/font/alibaba-pu-hui-ti-3/AlibabaPuHuiTi-3-55-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
-  font-display: swap; /* 优化字体加载，使用备用字体直到自定义字体加载完成 */
 }
 body {
   font-family: 'alibaba-pu-hui-ti-3-regular', Arial, Helvetica, sans-serif;

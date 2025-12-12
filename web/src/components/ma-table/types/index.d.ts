@@ -11,6 +11,7 @@ interface MaTableExpose {
     setData: (data: any[]) => void;
     setPagination: (pagination: PaginationProps) => void;
     setCurrentPage: (pager: number) => void;
+    getCurrentPage: () => number;
     setLoadingState: (loading: boolean) => void;
     setOptions: (opts: MaTableOptions) => void;
     getOptions: () => MaTableOptions;

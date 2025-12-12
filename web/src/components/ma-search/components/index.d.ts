@@ -2,7 +2,7 @@ import '../style/index.scss';
 import type { PropType } from 'vue';
 import { MaSearchOptions } from "../types/search-options";
 import { MaSearchItem } from "../types";
-import type { MaFormOptions } from '@/components/ma-form';
+import type { MaFormOptions } from '@ma/form';
 declare const _default: import("vue").DefineComponent<{
     options: {
         type: PropType<MaSearchOptions>;

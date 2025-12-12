@@ -55,13 +55,20 @@ $bg-dark: rgba(15, 15, 25, 0.8);
 
 // 主要内容区
 .login-content {
-  @apply relative z-10 flex flex-col items-center justify-center min-h-screen;
+  @apply relative z-10 flex flex-col items-center;
+  height: 100vh;
   padding: 2rem;
+  overflow-y: auto;
+}
+
+// 中间内容区域（Logo和表单）
+.login-content-main {
+  @apply flex flex-col items-center flex-1 justify-center w-full;
 }
 
 // Logo区域
 .logo-section {
-  @apply flex flex-col items-center mb-8;
+  @apply flex flex-col items-center mb-4;
 }
 
 // 表单区域
@@ -82,10 +89,6 @@ $bg-dark: rgba(15, 15, 25, 0.8);
     animation: cardGlow 4s ease-in-out infinite;
   }
   
-  .card-content {
-    @apply relative z-10;
-  }
-  
   .form-header {
     @apply flex items-center justify-between mb-2;
     flex-wrap: nowrap;
@@ -93,15 +96,11 @@ $bg-dark: rgba(15, 15, 25, 0.8);
   }
   
   .form-title {
-    @apply text-2xl font-bold text-white;
-    margin: 0;
-    white-space: nowrap;
-    flex-shrink: 0;
+    @apply text-2xl font-bold text-white whitespace-nowrap flex-shrink-0 m-0;
   }
   
   .language-select {
-    width: 100px;
-    flex-shrink: 0;
+    @apply w-[100px] flex-shrink-0;
     
     :deep(.el-input__wrapper) {
       background: rgba(99, 102, 241, 0.1);
@@ -143,7 +142,13 @@ $bg-dark: rgba(15, 15, 25, 0.8);
 
 // 底部区域
 .footer-section {
-  @apply mt-8 text-center;
+  @apply fixed bottom-0 left-0 right-0 w-full z-20 flex items-center justify-center py-4;
+  background: transparent;
+  pointer-events: none;
+  
+  > * {
+    pointer-events: auto;
+  }
 }
 
 // 响应式设计
@@ -163,10 +168,6 @@ $bg-dark: rgba(15, 15, 25, 0.8);
   
   .form-title {
     @apply text-xl;
-  }
-  
-  .language-select {
-    width: 100px;
   }
 }
 

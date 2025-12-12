@@ -14,3 +14,4 @@ keyandcontent.json
 *code-generator.php
 .phpstorm*
 phpstan*
+/plugin/ds/ex/

@@ -1,10 +1,11 @@
-import { MaSearchExpose, type MaSearchItem, type MaSearchOptions } from "@/components/ma-search";
-import { type MaFormOptions } from "@/components/ma-form";
-import type { TableColumnType, TableColumnRenderer, MaTableColumns, MaTableOptions, MaTableExpose } from '@/components/ma-table';
+import { MaSearchExpose, type MaSearchItem, type MaSearchOptions } from "@ma/search";
+import { type MaFormOptions } from "@ma/form";
+import type { TableColumnType, TableColumnRenderer, MaTableColumns, MaTableOptions, MaTableExpose } from '@ma/table';
 import type { LinkProps } from "element-plus/lib/components";
 import type { Component, VNode } from "vue";
 interface MaProTableColumns extends Omit<MaTableColumns, 'children' | 'type'> {
     type?: TableColumnType | 'operation' | 'sort';
+    toolHide?: boolean;
     cellRenderTo?: {
         name: string;
         props?: any | any[];

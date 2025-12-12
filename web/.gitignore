@@ -11,3 +11,4 @@ types/auto-imports.d.ts
 types/components.d.ts
 .idea
 src/plugins/*
+/mineadmin/*

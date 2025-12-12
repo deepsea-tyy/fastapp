@@ -1,7 +1,7 @@
 import type { MaModel } from './index';
 import type { Component, VNode } from 'vue';
 import type { FormItemRule } from 'element-plus';
-import { Arrayable } from 'element-plus/es/utils';
+import type { Arrayable } from 'element-plus/es/utils';
 export type ComponentName = 'Radio' | 'RadioButton' | 'Checkbox' | 'CheckboxButton' | 'Input' | 'Autocomplete' | 'InputNumber' | 'Select' | 'Cascader' | 'Switch' | 'Slider' | 'TimePicker' | 'DatePicker' | 'Rate' | 'ColorPicker' | 'Mention' | 'Transfer' | 'TimeSelect' | 'SelectV2' | 'TreeSelect' | 'Upload';
 export type state = (item: MaFormItem, model: MaModel) => boolean;
 /**
@@ -19,12 +19,14 @@ export interface FormItem {
     size?: '' | 'large' | 'default' | 'small';
     for?: string;
     validateStatus?: '' | 'error' | 'validating' | 'success';
+    help?: string;
+    extra?: string;
     [key: string]: any;
 }
-export type renderArgs = {
+export interface renderArgs {
     item: MaFormItem;
     formData: any;
-};
+}
 export type renderCustomer = (data: renderArgs) => VNode | Component;
 export type renderType = renderCustomer | string | ComponentName | Component | VNode;
 export type itemSlotType = (arg: {
@@ -62,6 +64,8 @@ export interface MaFormItem {
         default?: () => any;
         error?: itemSlotType;
         label?: itemSlotType;
+        help?: itemSlotType;
+        extra?: itemSlotType;
     };
     /**
      * 设置要渲染的组件，可设置 `element plus` 的所有 `form` 组件，例如：`input`, `datePicker`
