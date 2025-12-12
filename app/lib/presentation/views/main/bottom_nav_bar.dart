@@ -43,7 +43,7 @@ class BottomNavBar extends StatelessWidget {
             label: '交易',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance),
+            icon: Icon(Icons.description),
             label: '合约',
           ),
           BottomNavigationBarItem(

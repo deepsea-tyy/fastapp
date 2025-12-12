@@ -6,7 +6,6 @@ import 'package:fastapp/presentation/views/user/login.dart';
 import 'package:fastapp/presentation/views/user/forgot_password.dart';
 import 'package:fastapp/presentation/views/user/register.dart';
 import 'package:fastapp/presentation/views/user/user_center.dart';
-import 'package:fastapp/presentation/views/user/setting/profile.dart';
 import 'package:fastapp/presentation/views/user/setting/account_security.dart';
 import 'package:fastapp/presentation/views/user/setting/account_activity.dart';
 import 'package:fastapp/presentation/views/user/setting/authenticator_app.dart';
@@ -56,7 +55,7 @@ class Routes {
     register: (BuildContext context) => RegisterScreen(),
     forgotPassword: (BuildContext context) => ForgotPasswordScreen(),
     userCenter: (BuildContext context) => const UserCenterScreen(),
-    profile: (BuildContext context) => const ProfileScreen(),
+    profile: (BuildContext context) => const UserCenterScreen(),
     accountSecurity: (BuildContext context) => const AccountSecurityScreen(),
     accountActivity: (BuildContext context) => const AccountActivityScreen(),
     authenticatorApp: (BuildContext context) => const AuthenticatorAppScreen(),

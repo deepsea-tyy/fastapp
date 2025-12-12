@@ -80,10 +80,11 @@ return new class extends Migration {
             $table->unique('user_id');
             $table->timestamps();
         });
-        Schema::create('user_login_log', static function (Blueprint $table) {
-            $table->comment('用户登录日志');
+        Schema::create('user_account_log', static function (Blueprint $table) {
+            $table->comment('用户账户日志');
             $table->bigIncrements('id');
             $table->bigInteger('user_id')->comment('用户id');
+            $table->tinyInteger('type')->default(1)->comment('类型1:登录,2:注册,3:重置密码,4:绑定手机,5:绑定邮箱,6:解绑手机,7:解绑邮箱,8:禁用账户,9:删除账户,10:绑定2fa,11:解绑2fa');
             $table->ipAddress('ip');
             $table->string('os')->comment('操作系统');
             $table->string('device_id', 128)->nullable()->comment('设备唯一标识（iOS/Android/Web通用）');
@@ -208,7 +209,7 @@ return new class extends Migration {
         Schema::dropIfExists('user_admin_login_log');
         Schema::dropIfExists('user_admin_operation_log');
         Schema::dropIfExists('user_profile');
-        Schema::dropIfExists('user_login_log');
+        Schema::dropIfExists('user_account_log');
         Schema::dropIfExists('rules');
         Schema::dropIfExists('menu');
         Schema::dropIfExists('role');

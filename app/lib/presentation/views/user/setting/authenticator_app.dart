@@ -6,6 +6,7 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/domain/repository/user/user_repository.dart';
 import 'package:fastapp/core/services/message_service.dart';
+import 'package:fastapp/presentation/views/common/google_code_input.dart';
 import 'widgets.dart';
 
 /// 身份验证器App验证页面
@@ -25,6 +26,8 @@ class _AuthenticatorAppScreenState extends State<AuthenticatorAppScreen> {
   String? _qrcodeBase64;
   bool _isLoading = false;
   bool _isLoadingQrcode = false;
+  String? _currentAction; // 'reset' 或 'delete'，用于跟踪当前操作
+  final GlobalKey<CodeInputFieldState> _actionCodeInputKey = GlobalKey<CodeInputFieldState>(); // 用于操作时的验证码输入
 
   // 间距常量
   static const double _spacingSmall = 8.0;
@@ -150,6 +153,11 @@ class _AuthenticatorAppScreenState extends State<AuthenticatorAppScreen> {
 
   /// 构建已设置状态下的界面
   Widget _buildEnabledView(BuildContext context) {
+    // 如果正在显示验证码输入界面
+    if (_currentAction != null) {
+      return _buildVerificationCodeView(context);
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(_pagePadding),
       child: Column(
@@ -168,7 +176,7 @@ class _AuthenticatorAppScreenState extends State<AuthenticatorAppScreen> {
   /// 构建说明文字
   Widget _buildDescriptionText(BuildContext context) {
     return Text(
-      '使用身份验证器App可以增强账户安全性。请按照以下步骤设置：',
+      '使用身份验证器App可以增强安全设置性。请按照以下步骤设置：',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -597,45 +605,19 @@ class _AuthenticatorAppScreenState extends State<AuthenticatorAppScreen> {
   }
 
   /// 处理重置操作
-  Future<void> _handleReset(BuildContext context) async {
-    MessageService.confirm(
-      title: '确认重置',
-      message: '重置身份验证器后，您需要使用新的二维码重新设置。确定要继续吗？',
-      confirmText: '重置',
-      onConfirm: () async {
-        final code = await _showVerificationCodeDialog(context);
-        if (code == null || code.isEmpty) return;
-
-        await _performAction(
-          action: () => _userRepository.unbindGoogle2fa(code: code),
-          onSuccess: () {
-            MessageService.success('身份验证器已重置，请重新设置');
-            _loadQrcode();
-          },
-          refreshUser: true,
-        );
-      },
-    );
+  void _handleReset(BuildContext context) {
+    setState(() {
+      _currentAction = 'reset';
+      _actionCodeInputKey.currentState?.clear();
+    });
   }
 
   /// 处理删除操作
-  Future<void> _handleDelete(BuildContext context) async {
-    MessageService.confirm(
-      title: '确认删除',
-      message: '删除身份验证器后，您的账户安全性将降低。确定要删除吗？',
-      confirmText: '删除',
-      confirmColor: Colors.red,
-      onConfirm: () async {
-        final code = await _showVerificationCodeDialog(context);
-        if (code == null || code.isEmpty) return;
-
-        await _performAction(
-          action: () => _userRepository.unbindGoogle2fa(code: code),
-          onSuccess: () => MessageService.success('身份验证器已删除'),
-          refreshUser: true,
-        );
-      },
-    );
+  void _handleDelete(BuildContext context) {
+    setState(() {
+      _currentAction = 'delete';
+      _actionCodeInputKey.currentState?.clear();
+    });
   }
 
   /// 执行操作的通用方法
@@ -668,96 +650,115 @@ class _AuthenticatorAppScreenState extends State<AuthenticatorAppScreen> {
     }
   }
 
-  /// 显示验证码输入对话框
-  Future<String?> _showVerificationCodeDialog(BuildContext context) async {
-    final codeController = TextEditingController();
+  /// 构建验证码输入视图（页面内显示）
+  Widget _buildVerificationCodeView(BuildContext context) {
+    final isReset = _currentAction == 'reset';
+    final isDelete = _currentAction == 'delete';
     
-    return showDialog<String>(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 320),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 20.0,
-                offset: const Offset(0, 8.0),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '输入验证码',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(_pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 提示信息
+          Container(
+            padding: const EdgeInsets.all(_spacingMedium),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isDelete ? Icons.warning_amber_rounded : Icons.info_outline,
+                  color: isDelete ? Colors.orange : Theme.of(context).colorScheme.primary,
+                  size: 20,
                 ),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: codeController,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                decoration: _getCodeInputDecoration(),
-                style: _codeTextStyle,
-                textAlign: TextAlign.center,
-                autofocus: true,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text(
-                      '取消',
-                      style: TextStyle(fontSize: 15, color: Colors.black54),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isReset 
+                        ? '重置身份验证器后，您需要使用新的二维码重新设置。'
+                        : '删除身份验证器后，您的安全设置性将降低。',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () {
-                      final code = codeController.text.trim();
-                      if (code.length == 6) {
-                        Navigator.of(dialogContext).pop(code);
-                      } else {
-                        MessageService.error('请输入6位验证码');
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      backgroundColor: Colors.red.withValues(alpha: 0.1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text(
-                      '确定',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: _spacingLarge),
+          // 验证码输入框
+          SettingCard(
+            padding: const EdgeInsets.all(_spacingMedium),
+            child: CodeInputField(
+              key: _actionCodeInputKey,
+              label: '输入验证码',
+              autofocus: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return '请输入6位验证码';
+                }
+                if (value.length != 6) {
+                  return '验证码必须是6位数字';
+                }
+                return null;
+              },
+            ),
+          ),
+          const SizedBox(height: _spacingLarge),
+          // 操作按钮
+          _buildActionButton(
+            text: isReset ? '重置' : '删除',
+            onPressed: () => _handleConfirmAction(context),
+            isDanger: isDelete,
+          ),
+          const SizedBox(height: _spacingMedium),
+          // 取消按钮
+          _buildActionButton(
+            text: '取消',
+            onPressed: () {
+              setState(() {
+                _currentAction = null;
+                _actionCodeInputKey.currentState?.clear();
+              });
+            },
+            isOutlined: true,
+          ),
+        ],
       ),
+    );
+  }
+
+  /// 处理确认操作
+  Future<void> _handleConfirmAction(BuildContext context) async {
+    final code = _actionCodeInputKey.currentState?.value ?? '';
+    if (code.isEmpty || code.length != 6) {
+      MessageService.error('请输入6位验证码');
+      return;
+    }
+
+    final isReset = _currentAction == 'reset';
+    
+    await _performAction(
+      action: () => _userRepository.unbindGoogle2fa(code: code),
+      onSuccess: () {
+        if (isReset) {
+          MessageService.success('身份验证器已重置，请重新设置');
+          _loadQrcode();
+        } else {
+          MessageService.success('身份验证器已删除');
+        }
+        setState(() {
+          _currentAction = null;
+          _actionCodeInputKey.currentState?.clear();
+        });
+      },
+      refreshUser: true,
     );
   }
 }

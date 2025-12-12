@@ -40,7 +40,7 @@ class CodeInputFieldState extends State<CodeInputField> {
       _code = initialValue;
     }
     if (widget.autofocus) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _focusNodes[0].requestFocus());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _requestFocus(0));
     }
   }
 
@@ -51,64 +51,83 @@ class CodeInputFieldState extends State<CodeInputField> {
     super.dispose();
   }
 
+  /// 取消所有其他输入框的焦点
+  void _unfocusOthers(int excludeIndex) {
+    for (int i = 0; i < _codeLength; i++) {
+      if (i != excludeIndex && _focusNodes[i].hasFocus) {
+        _focusNodes[i].unfocus();
+      }
+    }
+  }
+
+  /// 请求焦点并选中文本（如果有值）
+  void _requestFocus(int index, {bool selectText = false}) {
+    Future.microtask(() {
+      if (!mounted) return;
+      _unfocusOthers(index);
+      _focusNodes[index].requestFocus();
+      if (selectText && _controllers[index].text.isNotEmpty) {
+        _controllers[index].selection = TextSelection(baseOffset: 0, extentOffset: 1);
+      }
+    });
+  }
+
   void _onChanged() {
     final code = _controllers.map((c) => c.text).join();
-    if (_code != code) {
-      _code = code;
-      widget.onChanged?.call(code);
-      // 触发 FormField 状态更新
-      if (mounted) {
-        final previousHasError = _formKey.currentState?.hasError ?? false;
-        _formKey.currentState?.didChange(code);
-        // 只在验证状态改变时才调用setState，避免不必要的重建
-        // 这样可以防止TextField内容闪烁
-        final currentHasError = _formKey.currentState?.hasError ?? false;
-        if (previousHasError != currentHasError) {
-          setState(() {});
-        }
-      }
+    if (_code == code) return;
+    
+    _code = code;
+    widget.onChanged?.call(code);
+    
+    if (!mounted) return;
+    final hadError = _formKey.currentState?.hasError ?? false;
+    _formKey.currentState?.didChange(code);
+    if (hadError != (_formKey.currentState?.hasError ?? false)) {
+      setState(() {});
     }
   }
 
   void _onTextChanged(int index, String value) {
     if (value.length > 1) {
       _handlePaste(index, value);
-    } else {
-      // 由于 maxLength: 1，value 应该已经是单个字符或空字符串
-      // 不需要再次设置 controller.text，因为 TextField 已经自动更新了
-      // 只需要更新内部状态和焦点
-      if (value.isNotEmpty && index < _codeLength - 1) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _focusNodes[index + 1].requestFocus();
-        });
-      }
+      return;
+    }
+    
+    if (value.isNotEmpty && index < _codeLength - 1) {
+      _focusNodes[index].unfocus();
+      _requestFocus(index + 1, selectText: true);
+    }
+    
+    _onChanged();
+  }
+
+  void _handleBackspace(int index) {
+    if (_controllers[index].text.isNotEmpty) {
+      _controllers[index].clear();
+    } else if (index > 0) {
+      _controllers[index - 1].clear();
+      _focusNodes[index].unfocus();
+      _requestFocus(index - 1);
     }
     _onChanged();
   }
 
   void _handlePaste(int index, String value) {
     final pastedCode = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (pastedCode.length >= _codeLength) {
-      for (int i = 0; i < _codeLength; i++) {
-        _controllers[i].text = pastedCode[i];
-        _controllers[i].selection = TextSelection.collapsed(offset: 1);
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _focusNodes[_codeLength - 1].requestFocus();
-      });
-    } else {
-      _controllers[index].text = pastedCode.isNotEmpty ? pastedCode[0] : '';
-      _controllers[index].selection = TextSelection.collapsed(offset: _controllers[index].text.length);
-      if (pastedCode.length > 1) {
-        for (int i = 1; i < pastedCode.length && (index + i) < _codeLength; i++) {
-          _controllers[index + i].text = pastedCode[i];
-          _controllers[index + i].selection = TextSelection.collapsed(offset: 1);
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _focusNodes[(index + pastedCode.length).clamp(0, _codeLength - 1)].requestFocus();
-        });
-      }
+    final endIndex = (index + pastedCode.length).clamp(0, _codeLength);
+    final count = endIndex - index;
+    
+    for (var focusNode in _focusNodes) {
+      if (focusNode.hasFocus) focusNode.unfocus();
     }
+    
+    for (int i = 0; i < count; i++) {
+      _controllers[index + i].text = pastedCode[i];
+    }
+    
+    final targetIndex = endIndex < _codeLength ? endIndex : _codeLength - 1;
+    _requestFocus(targetIndex);
+    _onChanged();
   }
 
   @override
@@ -118,7 +137,6 @@ class CodeInputFieldState extends State<CodeInputField> {
       initialValue: _code,
       validator: widget.validator,
       builder: (field) {
-        final hasError = field.hasError;
         final primaryColor = Theme.of(context).colorScheme.primary;
         
         return Column(
@@ -141,17 +159,11 @@ class CodeInputFieldState extends State<CodeInputField> {
                     left: index == 0 ? 0 : 4,
                     right: index == _codeLength - 1 ? 0 : 4,
                   ),
-                  child: _buildCodeInput(
-                    context,
-                    index,
-                    field: field,
-                    hasError: hasError,
-                    primaryColor: primaryColor,
-                  ),
+                  child: _buildCodeInput(index, field.hasError, primaryColor),
                 ),
               )),
             ),
-            if (hasError)
+            if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
@@ -165,74 +177,67 @@ class CodeInputFieldState extends State<CodeInputField> {
     );
   }
 
-  Widget _buildCodeInput(
-    BuildContext context,
-    int index, {
-    required FormFieldState<String> field,
-    required bool hasError,
-    required Color primaryColor,
-  }) {
+  Widget _buildCodeInput(int index, bool hasError, Color primaryColor) {
+    final isFocused = _focusNodes[index].hasFocus;
     final borderColor = hasError
         ? Colors.red
-        : (_focusNodes[index].hasFocus ? primaryColor : Colors.transparent);
+        : (isFocused ? primaryColor : Colors.grey.shade400);
+    
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
       borderSide: BorderSide(color: borderColor, width: 2),
     );
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minWidth: 40,
-        maxWidth: 50,
-      ),
+      constraints: const BoxConstraints(minWidth: 40, maxWidth: 50),
       child: SizedBox(
         height: 56,
-        child: TextField(
-        controller: _controllers[index],
-        focusNode: _focusNodes[index],
-        textAlign: TextAlign.center,
-        textAlignVertical: TextAlignVertical.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-          height: 1.0,
+        child: KeyboardListener(
+          focusNode: FocusNode(skipTraversal: true),
+          onKeyEvent: (KeyEvent event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.backspace) {
+              _handleBackspace(index);
+            }
+          },
+          child: TextField(
+            controller: _controllers[index],
+            focusNode: _focusNodes[index],
+            textAlign: TextAlign.center,
+            textAlignVertical: TextAlignVertical.center,
+            keyboardType: TextInputType.number,
+            maxLength: 1,
+            showCursor: false,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+              height: 1.0,
+            ),
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              counterText: '',
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              border: border.copyWith(borderSide: BorderSide.none),
+              enabledBorder: border,
+              focusedBorder: border.copyWith(borderSide: BorderSide(color: primaryColor, width: 2)),
+              errorBorder: border.copyWith(borderSide: const BorderSide(color: Colors.red, width: 2)),
+              focusedErrorBorder: border.copyWith(borderSide: const BorderSide(color: Colors.red, width: 2)),
+            ),
+            onChanged: (value) => _onTextChanged(index, value),
+            onTap: () => _requestFocus(index, selectText: true),
+          ),
         ),
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
-          border: border.copyWith(borderSide: BorderSide.none),
-          enabledBorder: border,
-          focusedBorder: border,
-          errorBorder: border.copyWith(borderSide: const BorderSide(color: Colors.red, width: 2)),
-          focusedErrorBorder: border.copyWith(borderSide: const BorderSide(color: Colors.red, width: 2)),
-        ),
-        onChanged: (value) => _onTextChanged(index, value),
-        onSubmitted: (_) {
-          if (index < _codeLength - 1) _focusNodes[index + 1].requestFocus();
-        },
-        onTap: () {
-          _controllers[index].selection = TextSelection.fromPosition(
-            TextPosition(offset: _controllers[index].text.length),
-          );
-        },
-      ),
       ),
     );
   }
 
   String get value => _code;
 
-  /// 清空所有输入框
   void clear() {
-    for (int i = 0; i < _codeLength; i++) {
-      _controllers[i].clear();
-    }
+    for (var controller in _controllers) controller.clear();
     _code = '';
     if (mounted) {
       setState(() {});

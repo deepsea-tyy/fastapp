@@ -9,9 +9,9 @@
 namespace App\Http\Api\Controller\User;
 
 use App\Common\AbstractController;
+use App\Common\Event\UserAccountEvent;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\TokenMiddleware;
-use App\Common\Request\Request;
 use App\Common\Result;
 use App\Common\Service\VerifyCodeService;
 use App\Common\Swagger\ResultResponse;
@@ -22,7 +22,8 @@ use App\Http\CurrentUser;
 use App\Model\Enums\User\LoginType;
 use App\Model\Enums\User\Status;
 use App\Model\Enums\User\Type;
-use App\Model\UserLoginLog;
+use App\Model\User;
+use App\Model\UserAccountLog;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\GDLibRenderer;
@@ -119,12 +120,13 @@ class UserController extends AbstractController
         tags: ['用户接口'],
     )]
     #[ResultResponse(instance: new Result())]
+    #[QueryParameter(name: 'code', description: 'code')]
     #[QueryParameter(name: 'mobile', description: 'mobile')]
     #[QueryParameter(name: 'username', description: 'username')]
     #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {"status": 0}}')]
-    public function isRegister(Request $request): Result
+    public function isRegister(): Result
     {
-        return $this->success(['status' => $this->userService->findUser($request->query()) ? 1 : 0]);
+        return $this->success(['status' => $this->userService->findUser($this->getRequestData()) ? 1 : 0]);
     }
 
     #[Get(
@@ -404,7 +406,7 @@ class UserController extends AbstractController
         if ($token) {
             $this->userService->setScene('api')->logout($token);
         }
-
+        $this->dispatchUserLoginEvent($user, $request, 8);
         return $this->success(message: trans('auth.account_disable_success'));
     }
 
@@ -442,7 +444,7 @@ class UserController extends AbstractController
         if ($token) {
             $this->userService->setScene('api')->logout($token);
         }
-
+        $this->dispatchUserLoginEvent($user, $request, 9);
         return $this->success(message: trans('auth.account_delete_success'));
     }
 
@@ -511,7 +513,7 @@ class UserController extends AbstractController
 
         $user->google2fa = $secret;
         $user->save();
-
+        $this->dispatchUserLoginEvent($user, $request, 10);
         return $this->success(message: trans('auth.bind_success'));
     }
 
@@ -543,6 +545,7 @@ class UserController extends AbstractController
         $this->verifyGoogle2fa($user->google2fa, $code);
         $user->google2fa = '';
         $user->save();
+        $this->dispatchUserLoginEvent($user, $request, 11);
         return $this->success(message: trans('auth.unbind_success'));
     }
 
@@ -596,7 +599,7 @@ class UserController extends AbstractController
 
         $user->email = $email;
         $user->save();
-
+        $this->dispatchUserLoginEvent($user, $request, 5);
         return $this->success(message: trans('auth.bind_success'));
     }
 
@@ -644,7 +647,7 @@ class UserController extends AbstractController
 
         $user->email = null;
         $user->save();
-
+        $this->dispatchUserLoginEvent($user, $request, 7);
         return $this->success(message: trans('auth.unbind_success'));
     }
 
@@ -700,7 +703,7 @@ class UserController extends AbstractController
 
         $user->mobile = $mobile;
         $user->save();
-
+        $this->dispatchUserLoginEvent($user, $request, 4);
         return $this->success(message: trans('auth.bind_success'));
     }
 
@@ -750,29 +753,35 @@ class UserController extends AbstractController
 
         $user->mobile = null;
         $user->save();
-
+        $this->dispatchUserLoginEvent($user, $request, 6);
         return $this->success(message: trans('auth.unbind_success'));
     }
 
     #[Get(
-        path: '/api/user/login-logs',
-        operationId: 'ApiUserLoginLogs',
-        summary: '获取登录日志',
+        path: '/api/user/accountLogs',
+        operationId: 'ApiUserAccountLogs',
+        summary: '获取账户日志',
         security: [['Bearer' => [], 'ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[QueryParameter(name: 'page', description: '页码', required: false, example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: '20')]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"list":[{"id":1,"ip":"192.168.1.1","os":"Android","device_id":"xxx","country":"中国","region":"北京","city":"北京","created_at":"2025-11-29 21:13:44"}],"total":10}}')]
+    #[QueryParameter(name: 'type', description: '日志类型：1:登录,2:注册,3:重置密码,4:绑定手机,5:绑定邮箱,6:解绑手机,7:解绑邮箱,8:禁用账户,9:删除账户,10:绑定2fa,11:解绑2fa', required: false, example: '1')]
+    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"list":[{"id":1,"type":1,"ip":"192.168.1.1","os":"Android","device_id":"xxx","country":"中国","region":"北京","city":"北京","created_at":"2025-11-29 21:13:44"}],"total":10}}')]
     #[Middleware(TokenMiddleware::class)]
-    public function loginLogs(): Result
+    public function accountLogs(UserRequest $request): Result
     {
-        $userId = $this->userService->id();
-        $query = UserLoginLog::query()->where('user_id', $userId);
+        $map['user_id'] = $this->userService->id();
+        $type = (int)$request->input('type');
+        if ($type) {
+            $map['type'] = $type;
+        }
+        $query = UserAccountLog::query()->where($map);
+        if (!$type) $query->where('type', '!=', 1);
         $logs = $query->orderByDesc('id')
             ->simplePaginate($this->getPageSize());
         return $this->success([
-            'list' => $logs,
+            'list' => $logs->items(),
         ]);
     }
 
@@ -858,7 +867,26 @@ class UserController extends AbstractController
         }
         $user->password = $validated['password'];
         $user->save();
+        $this->dispatchUserLoginEvent($user, $request, 3);
         return $this->success();
+    }
+
+    /**
+     * 分发用户登录事件
+     *
+     * @param User $user 用户对象
+     * @param UserRequest $request 请求对象
+     * @param int $type 事件类型
+     */
+    private function dispatchUserLoginEvent(\App\Model\User $user, UserRequest $request, int $type): void
+    {
+        Tools::eventDispatcher(new UserAccountEvent(
+            $user,
+            $request->ip(),
+            $request->header('User-Agent') ?: 'unknown',
+            $request->os(),
+            type: $type
+        ));
     }
 
     /**

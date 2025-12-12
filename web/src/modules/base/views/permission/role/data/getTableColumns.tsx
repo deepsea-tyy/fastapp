@@ -1,7 +1,7 @@
 
 import type { MaProTableColumns, MaProTableExpose } from '@/components/ma-pro-table'
 import type { RoleVo } from '~/base/api/role.ts'
-import type { UseDialogExpose } from '@/hooks/useDialog.ts'
+import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
 
 import { ElTag } from 'element-plus'
 import { useMessage } from '@/hooks/useMessage.ts'
@@ -9,7 +9,7 @@ import { deleteByIds } from '~/base/api/role.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import hasAuth from '@/utils/permission/hasAuth.ts'
 
-export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t: any): MaProTableColumns[] {
+export default function getTableColumns(drawer: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
   const dictStore = useDictStore()
   const msg = useMessage()
 
@@ -65,8 +65,8 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
             icon: 'material-symbols:checklist-rounded',
             text: () => t('baseRoleManage.setPermission'),
             onClick: ({ row }) => {
-              dialog.setTitle(t('baseRoleManage.setPermission'))
-              dialog.open({ formType: 'setPermission', data: row })
+              drawer.setTitle(t('baseRoleManage.setPermission'))
+              drawer.open({ formType: 'setPermission', data: row })
             },
           },
           {
@@ -75,8 +75,8 @@ export default function getTableColumns(dialog: UseDialogExpose, formRef: any, t
             show: ({ row }) => showBtn('permission:role:update', row),
             text: () => t('crud.edit'),
             onClick: ({ row }) => {
-              dialog.setTitle(t('crud.edit'))
-              dialog.open({ formType: 'edit', data: row })
+              drawer.setTitle(t('crud.edit'))
+              drawer.open({ formType: 'edit', data: row })
             },
           },
           {

@@ -6,6 +6,7 @@ import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/presentation/views/common/country_selector.dart';
 import 'package:fastapp/presentation/views/common/verify_code_button.dart';
+import 'package:fastapp/presentation/views/common/google_code_input.dart';
 import 'package:fastapp/utils/device/device_utils.dart';
 import 'package:fastapp/utils/device/device_id_utils.dart';
 import 'package:fastapp/utils/routes/routes.dart';
@@ -47,9 +48,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _google2faController = TextEditingController();
   final TextEditingController _emailCodeController = TextEditingController();
   final TextEditingController _mobileCodeController = TextEditingController();
+  
+  // Google 2FA Code Input
+  final GlobalKey<CodeInputFieldState> _google2faKey = GlobalKey<CodeInputFieldState>();
+  String _google2faCode = '';
   late final TabController _tabController;
 
   // Stores
@@ -88,7 +92,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _phoneController.clear();
     _emailController.clear();
     _passwordController.clear();
-    _google2faController.clear();
+    _google2faKey.currentState?.clear();
+    _google2faCode = '';
     _emailCodeController.clear();
     _mobileCodeController.clear();
     _selectedCountryCode = _defaultCountryCode;
@@ -122,38 +127,40 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Widget _buildTabBar() {
-    return TabBar(
-      controller: _tabController,
-      indicator: BoxDecoration(
-        color: Colors.amber,
+    return Container(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+        border: Border.all(color: Colors.grey[300]!, width: 1.0),
       ),
-      indicatorSize: TabBarIndicatorSize.tab,
-      dividerColor: Colors.transparent,
-      labelColor: Colors.black,
-      unselectedLabelColor: Colors.black54,
-      labelStyle: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.normal),
-      tabs: [
-        _buildTab(
-          text: _pageContent.getText('login.tab.phone', defaultValue: '手机号'),
-          isSelected: _tabController.index == 0,
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
         ),
-        _buildTab(
-          text: _pageContent.getText('login.tab.email', defaultValue: '邮箱'),
-          isSelected: _tabController.index == 1,
-        ),
-      ],
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: Colors.black,
+        unselectedLabelColor: Colors.black54,
+        labelStyle: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.normal),
+        tabs: [
+          _buildTab(
+            text: _pageContent.getText('login.tab.phone', defaultValue: '手机号'),
+            isSelected: _tabController.index == 0,
+          ),
+          _buildTab(
+            text: _pageContent.getText('login.tab.email', defaultValue: '邮箱'),
+            isSelected: _tabController.index == 1,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildTab({required String text, required bool isSelected}) {
     return Tab(
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-          border: isSelected ? null : Border.all(color: Colors.black54, width: 1.0),
-        ),
         alignment: Alignment.center,
         child: Text(text),
       ),
@@ -341,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   /// 构建验证码按钮的通用样式
-  static final _verifyCodeButtonStyle = _linkTextStyle.copyWith(color: Colors.orange);
+  static final _verifyCodeButtonStyle = _linkTextStyle.copyWith(color: Colors.grey[700]);
 
   /// 构建邮箱验证码按钮内容
   Widget _buildEmailCodeButtonContent() => VerifyCodeButton(
@@ -425,16 +432,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildGoogle2faField() => _buildTextField(
-        controller: _google2faController,
-        hintKey: 'login.input.google2fa.placeholder',
-        defaultValue: '请输入Google验证码（6位）',
-        keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(6),
-        ],
-      );
+  Widget _buildGoogle2faField() {
+    return CodeInputField(
+      key: _google2faKey,
+      label: _pageContent.getText('login.input.google2fa.label', defaultValue: 'Google验证码'),
+      autofocus: true,
+      onChanged: (value) {
+        setState(() {
+          _google2faCode = value;
+        });
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return _pageContent.getText('login.error.google2fa_required', defaultValue: '请输入Google验证码');
+        }
+        if (value.length != 6) {
+          return _pageContent.getText('login.error.google2fa_invalid', defaultValue: 'Google验证码格式错误');
+        }
+        return null;
+      },
+    );
+  }
 
   /// 构建带验证码按钮的输入框
   Widget _buildCodeField({
@@ -608,10 +626,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     switch (verifyType) {
       case 'google2fa_code':
-        if (_google2faController.text.isEmpty) {
+        if (_google2faCode.isEmpty || _google2faCode.length != 6) {
           errorMessage = _pageContent.getText('login.error.google2fa_required', defaultValue: '请输入Google验证码');
         } else {
-          final google2faCode = int.tryParse(_google2faController.text);
+          final google2faCode = int.tryParse(_google2faCode);
           if (google2faCode == null) {
             errorMessage = _pageContent.getText('login.error.google2fa_invalid', defaultValue: 'Google验证码格式错误');
           } else {
@@ -684,16 +702,44 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       builder: (_) {
         final isLoading = _userStore.isLoading;
         final isVerifyAgain = _userStore.needsVerifyAgain;
+        
+        // 判断按钮是否可用
+        bool isEnabled = !isLoading;
+        if (!isVerifyAgain) {
+          // 首次登录：需要账号和密码都不为空
+          final hasAccount = _isPhoneLogin 
+              ? _phoneController.text.trim().isNotEmpty 
+              : _emailController.text.trim().isNotEmpty;
+          final hasPassword = _passwordController.text.trim().isNotEmpty;
+          isEnabled = hasAccount && hasPassword;
+        } else {
+          // 二次验证：根据验证类型判断
+          switch (_userStore.verifyAgainType) {
+            case 'google2fa_code':
+              isEnabled = _google2faCode.length == 6;
+              break;
+            case 'email_code':
+              isEnabled = _emailCodeController.text.trim().isNotEmpty;
+              break;
+            case 'mobile_code':
+              isEnabled = _mobileCodeController.text.trim().isNotEmpty;
+              break;
+            default:
+              isEnabled = false;
+          }
+        }
+        
         return SizedBox(
           height: _buttonHeight,
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: isLoading ? null : _handleLogin,
+            onPressed: isEnabled ? _handleLogin : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber,
-              foregroundColor: Colors.black,
-              disabledBackgroundColor: Colors.amber.withValues(alpha: 0.6),
-              disabledForegroundColor: Colors.black54,
+              backgroundColor: Colors.grey[800],
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey[400],
+              disabledForegroundColor: Colors.white70,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
@@ -705,7 +751,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     height: 20.0,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.0,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 : Text(
@@ -735,7 +781,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           onPressed: () => Navigator.of(context).pushNamed(Routes.register),
           child: Text(
             _pageContent.getText('login.link.register', defaultValue: '立即注册'),
-            style: _linkTextStyle.copyWith(color: Colors.orange),
+            style: _linkTextStyle.copyWith(color: Colors.grey[700]),
           ),
         ),
       ],
@@ -861,7 +907,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _google2faController.dispose();
     _emailCodeController.dispose();
     _mobileCodeController.dispose();
     _tabController.dispose();

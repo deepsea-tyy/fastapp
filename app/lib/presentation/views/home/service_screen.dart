@@ -30,7 +30,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
     ServiceItem.simple(icon: Icons.payment, label: '支付'),
     ServiceItem.simple(icon: Icons.list_alt, label: '订单管理'),
     ServiceItem.simple(icon: Icons.sell_outlined, label: '卖出至法币'),
-    ServiceItem.simple(icon: Icons.security, label: '账户安全'),
+    ServiceItem.simple(icon: Icons.security, label: '安全设置'),
   ];
 
   // 活动和奖励列表

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/core/services/message_service.dart';
@@ -14,9 +15,13 @@ class AccountActivityScreen extends StatefulWidget {
 }
 
 class _AccountActivityScreenState extends State<AccountActivityScreen> {
+  static const _pageSize = 20;
+  static const _tabs = ['登录记录', '安全操作记录'];
+  static const _dateInputFormat = 'yyyy-MM-dd HH:mm:ss';
+  static const _dateOutputFormat = 'yyyy-MM-dd HH:mm';
+  
   final UserApi _userApi = getIt<UserApi>();
-  int _selectedTab = 0; // 0: 登录活动, 1: 安全操作记录
-  final List<ActivityItem> _securityActivities = [];
+  int _selectedTab = 0; // 0: 登录记录, 1: 安全操作记录
   
   late final PaginationController<ActivityItem> _paginationController;
 
@@ -24,7 +29,7 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
   void initState() {
     super.initState();
     _paginationController = PaginationController<ActivityItem>(
-      pageSize: 20,
+      pageSize: _pageSize,
       onStateChanged: () => setState(() {}),
       isMounted: () => mounted,
       loadDataCallback: _loadData,
@@ -41,60 +46,81 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
 
   Future<List<ActivityItem>> _loadData(int page, int pageSize) async {
     try {
-      final response = await _userApi.getLoginLogs(page: page, pageSize: pageSize);
-      final code = response['code'] as int?;
+      final response = await _userApi.getAccountLogs(
+        page: page,
+        pageSize: pageSize,
+        type: _selectedTab == 0 ? 1 : null,
+      );
       
-      if (code == 200) {
-        final data = response['data'] as Map<String, dynamic>?;
-        // 处理 simplePaginate 返回的数据结构
-        // 可能是 {list: {data: [...], has_more: true}} 或 {list: [...]}
-        dynamic listData = data?['list'];
-        List<dynamic> list = [];
-        
-        if (listData is Map) {
-          // 如果是 Paginator 对象，提取 data 数组
-          list = listData['data'] as List<dynamic>? ?? [];
-        } else if (listData is List) {
-          // 如果直接是数组
-          list = listData;
-        }
-        
-        return list.map((item) {
-          final map = item as Map<String, dynamic>;
-          // 构建来源信息（操作系统 + 位置）
-          final os = map['os'] as String? ?? '';
-          final country = map['country'] as String? ?? '';
-          final region = map['region'] as String? ?? '';
-          final city = map['city'] as String? ?? '';
-          
-          String source = os;
-          if (country.isNotEmpty || region.isNotEmpty || city.isNotEmpty) {
-            final locationParts = <String>[];
-            if (country.isNotEmpty) locationParts.add(country);
-            if (region.isNotEmpty) locationParts.add(region);
-            if (city.isNotEmpty) locationParts.add(city);
-            if (locationParts.isNotEmpty) {
-              source = '$os · ${locationParts.join(' ')}';
-            }
-          }
-          
-          return ActivityItem(
-            date: map['created_at'] as String? ?? '',
-            source: source.isEmpty ? '未知' : source,
-            status: '成功',
-            ipAddress: map['ip'] as String? ?? '',
-          );
-        }).toList();
+      if (response['code'] == 200) {
+        final listData = response['list'] ?? (response['data'] as Map<String, dynamic>?)?['list'];
+        final list = listData is List ? listData : (listData is Map ? listData['data'] as List<dynamic>? ?? [] : []);
+        return list.map(_parseActivityItem).toList();
       } else {
-        final message = response['message'] as String? ?? '获取登录日志失败';
-        MessageService.error(message);
+        MessageService.error(response['message'] as String? ?? '获取账户日志失败');
         return [];
       }
     } catch (e) {
-      MessageService.error('获取登录日志失败: ${e.toString()}');
+      MessageService.error('获取账户日志失败: ${e.toString()}');
       return [];
     }
   }
+
+  /// 解析活动项
+  ActivityItem _parseActivityItem(dynamic item) {
+    final map = item as Map<String, dynamic>;
+    final type = map['type'] as int? ?? 1;
+    
+    return ActivityItem(
+      date: _formatDate(map['created_at'] as String?),
+      source: _buildSource(map),
+      status: _getOperationType(type),
+      ipAddress: map['ip'] as String? ?? '',
+      type: type,
+    );
+  }
+
+  /// 格式化日期
+  String _formatDate(String? createdAt) {
+    if (createdAt == null || createdAt.isEmpty) return '';
+    try {
+      final dateTime = DateFormat(_dateInputFormat).parse(createdAt);
+      return DateFormat(_dateOutputFormat).format(dateTime);
+    } catch (e) {
+      return createdAt;
+    }
+  }
+
+  /// 构建来源信息
+  String _buildSource(Map<String, dynamic> map) {
+    final os = map['os'] as String? ?? '';
+    final locationParts = [
+      map['country'],
+      map['region'],
+      map['city'],
+    ].whereType<String>().where((part) => part.isNotEmpty);
+    
+    if (locationParts.isEmpty) return os.isEmpty ? '未知' : os;
+    return '$os · ${locationParts.join(' ')}';
+  }
+
+  /// 操作类型映射
+  static const Map<int, String> _operationTypes = {
+    1: '登录',
+    2: '注册',
+    3: '重置密码',
+    4: '绑定手机',
+    5: '绑定邮箱',
+    6: '解绑手机',
+    7: '解绑邮箱',
+    8: '禁用账户',
+    9: '删除账户',
+    10: '绑定2FA',
+    11: '解绑2FA',
+  };
+
+  /// 获取操作类型名称
+  String _getOperationType(int type) => _operationTypes[type] ?? '未知操作';
 
   @override
   Widget build(BuildContext context) {
@@ -103,13 +129,9 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            SettingAppBar(title: '账户活动'),
-            // 标签页
+            SettingAppBar(title: '安全记录'),
             _buildTabBar(),
-            // 活动列表
-            Expanded(
-              child: _buildActivityList(),
-            ),
+            Expanded(child: _buildActivityList()),
           ],
         ),
       ),
@@ -118,26 +140,28 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
 
   /// 构建标签页
   Widget _buildTabBar() {
-    final tabs = ['登录活动', '安全操作记录'];
-    
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
-        children: tabs.asMap().entries.map((entry) {
+        children: _tabs.asMap().entries.map((entry) {
           final index = entry.key;
-          final label = entry.value;
           final isSelected = _selectedTab == index;
           
           return Padding(
-            padding: EdgeInsets.only(right: index < tabs.length - 1 ? 24.0 : 0),
+            padding: EdgeInsets.only(right: index < _tabs.length - 1 ? 24.0 : 0),
             child: InkWell(
-              onTap: () => setState(() => _selectedTab = index),
+              onTap: () {
+                if (_selectedTab != index) {
+                  setState(() => _selectedTab = index);
+                  _paginationController.refresh();
+                }
+              },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    label,
+                    entry.value,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -147,18 +171,15 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: 28,
-                    height: 3,
-                    child: isSelected
-                        ? Container(
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          )
-                        : const SizedBox(),
-                  ),
+                  if (isSelected)
+                    Container(
+                      width: 28,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -170,49 +191,48 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
 
   /// 构建活动列表
   Widget _buildActivityList() {
-    final activities = _selectedTab == 0 
-        ? _paginationController.dataList 
-        : _securityActivities;
+    final activities = _paginationController.dataList;
     
     if (activities.isEmpty && !_paginationController.isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '暂无活动记录',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyState();
     }
 
     return RefreshIndicator(
-      onRefresh: _selectedTab == 0 
-          ? () => _paginationController.refresh() 
-          : () async {},
+      onRefresh: () => _paginationController.refresh(),
       child: ListView.builder(
-        controller: _selectedTab == 0 
-            ? _paginationController.scrollController 
-            : null,
+        controller: _paginationController.scrollController,
         padding: const EdgeInsets.all(16.0),
-        itemCount: activities.length + (_selectedTab == 0 ? 1 : 0),
+        itemCount: activities.length + 1,
         itemBuilder: (context, index) {
-          if (_selectedTab == 0 && index == activities.length) {
+          if (index == activities.length) {
             return _paginationController.buildLoadMoreIndicator();
           }
           return _buildActivityItem(activities[index]);
         },
+      ),
+    );
+  }
+
+  /// 构建空状态
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.history_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '暂无活动记录',
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -225,7 +245,6 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 状态和日期
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -234,12 +253,12 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
                   Container(
                     width: 20,
                     height: 20,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(item.type),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.check,
+                    child: Icon(
+                      _getStatusIcon(item.type),
                       color: Colors.white,
                       size: 14,
                     ),
@@ -264,45 +283,51 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // 来源
-          _buildInfoRow('来源', item.source),
+          InfoRow(label: '操作类型', value: item.status),
           const SizedBox(height: 8),
-          // 状态
-          _buildInfoRow('状态', item.status),
+          InfoRow(label: '来源', value: item.source),
           const SizedBox(height: 8),
-          // IP地址
-          _buildInfoRow('IP地址', item.ipAddress),
+          InfoRow(label: 'IP地址', value: item.ipAddress),
         ],
       ),
     );
   }
 
-  /// 构建信息行
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 60,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  /// 状态颜色映射
+  static const Map<int, Color> _statusColors = {
+    1: Colors.green,
+    2: Colors.green,
+    3: Colors.blue,
+    4: Colors.blue,
+    5: Colors.blue,
+    6: Colors.orange,
+    7: Colors.orange,
+    8: Colors.red,
+    9: Colors.red,
+    10: Colors.blue,
+    11: Colors.orange,
+  };
+
+  /// 状态图标映射
+  static const Map<int, IconData> _statusIcons = {
+    1: Icons.check,
+    2: Icons.check,
+    3: Icons.lock,
+    4: Icons.lock,
+    5: Icons.lock,
+    6: Icons.lock_open,
+    7: Icons.lock_open,
+    8: Icons.warning,
+    9: Icons.warning,
+    10: Icons.lock,
+    11: Icons.lock_open,
+  };
+
+  /// 获取状态颜色
+  Color _getStatusColor(int type) => _statusColors[type] ?? Colors.grey;
+
+  /// 获取状态图标
+  IconData _getStatusIcon(int type) => _statusIcons[type] ?? Icons.info;
 }
 
 /// 活动项数据模型
@@ -311,11 +336,13 @@ class ActivityItem {
   final String source;
   final String status;
   final String ipAddress;
+  final int type;
 
   ActivityItem({
     required this.date,
     required this.source,
     required this.status,
     required this.ipAddress,
+    required this.type,
   });
 }

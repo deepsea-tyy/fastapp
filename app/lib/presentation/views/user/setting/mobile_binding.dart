@@ -29,6 +29,9 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
   final GlobalKey<CodeInputFieldState> _google2faCodeKey = GlobalKey<CodeInputFieldState>();
   
   bool _isLoading = false;
+  bool _showUnbindView = false; // 是否显示解绑验证码输入界面
+  final GlobalKey<CodeInputFieldState> _unbindCodeInputKey = GlobalKey<CodeInputFieldState>();
+  final GlobalKey<CodeInputFieldState> _unbindGoogle2faCodeKey = GlobalKey<CodeInputFieldState>();
   String _selectedCountryCode = '+86';
   String _selectedCountryFlag = '🇨🇳';
 
@@ -114,9 +117,14 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
             const SettingAppBar(title: '手机号绑定'),
             Expanded(
               child: Observer(
-                builder: (_) => _isMobileBound 
-                    ? _buildBoundView(context) 
-                    : _buildUnboundView(context),
+                builder: (_) {
+                  if (_showUnbindView) {
+                    return _buildUnbindView(context);
+                  }
+                  return _isMobileBound 
+                      ? _buildBoundView(context) 
+                      : _buildUnboundView(context);
+                },
               ),
             ),
           ],
@@ -177,10 +185,197 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
     );
   }
 
+  /// 构建解绑验证码输入视图
+  Widget _buildUnbindView(BuildContext context) {
+    final mobile = _boundMobile ?? '';
+    final countryCode = _boundCountryCode ?? '+86';
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(_pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 提示信息
+          Container(
+            padding: const EdgeInsets.all(_spacingMedium),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '解绑手机号后，您将无法使用该手机号进行登录和安全验证。\n\n请点击下方按钮发送验证码到您的手机 $countryCode $mobile，然后输入手机验证码${_isGoogle2faEnabled ? '和Google验证码' : ''}。',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: _spacingLarge),
+          // 手机验证码输入框
+          SettingCard(
+            padding: const EdgeInsets.all(_spacingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CodeInputField(
+                  key: _unbindCodeInputKey,
+                  label: '手机验证码',
+                  autofocus: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '请输入6位验证码';
+                    }
+                    if (value.length != 6) {
+                      return '验证码必须是6位数字';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: _spacingMedium),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '验证码将发送到您的手机',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    RepaintBoundary(
+                      child: SizedBox(
+                        width: 100,
+                        height: 32,
+                        child: VerifyCodeButton(
+                          onSend: (recipient) async {
+                            try {
+                              final response = await _userApi.sendSms(
+                                mobile: recipient,
+                                code: countryCode.replaceFirst('+', ''),
+                                scene: 'bind',
+                              );
+                              MessageService.success(response['message'] ?? '验证码已发送');
+                              return true;
+                            } catch (e) {
+                              return false;
+                            }
+                          },
+                          recipient: mobile,
+                          type: VerifyCodeType.sms,
+                          scene: 'bind',
+                          disabled: _isLoading,
+                          minimumSize: const Size(100, 32),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Google2FA验证码输入框（如果需要）
+          if (_isGoogle2faEnabled) ...[
+            const SizedBox(height: _spacingMedium),
+            SettingCard(
+              padding: const EdgeInsets.all(_spacingMedium),
+              child: CodeInputField(
+                key: _unbindGoogle2faCodeKey,
+                label: 'Google验证码',
+                autofocus: false,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '请输入6位Google验证码';
+                  }
+                  if (value.length != 6) {
+                    return '验证码必须是6位数字';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+          const SizedBox(height: _spacingLarge),
+          // 操作按钮
+          _buildActionButton(
+            text: '解绑',
+            onPressed: () => _handleConfirmUnbind(context),
+            isDanger: true,
+          ),
+          const SizedBox(height: _spacingMedium),
+          // 取消按钮
+          _buildActionButton(
+            text: '取消',
+            onPressed: () {
+              setState(() {
+                _showUnbindView = false;
+                _unbindCodeInputKey.currentState?.clear();
+                _unbindGoogle2faCodeKey.currentState?.clear();
+              });
+            },
+            isOutlined: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 处理确认解绑操作
+  Future<void> _handleConfirmUnbind(BuildContext context) async {
+    final code = _unbindCodeInputKey.currentState?.value ?? '';
+    if (code.isEmpty || code.length != 6) {
+      MessageService.error('请输入6位验证码');
+      return;
+    }
+
+    final google2faCode = _isGoogle2faEnabled
+        ? (_unbindGoogle2faCodeKey.currentState?.value ?? '')
+        : null;
+    
+    if (_isGoogle2faEnabled && (google2faCode == null || google2faCode.isEmpty)) {
+      MessageService.error('请输入Google验证码');
+      return;
+    }
+
+    final countryCode = _boundCountryCode ?? '+86';
+    
+    // 执行解绑操作
+    final success = await _performUnbind(
+      code: countryCode.replaceFirst('+', ''),
+      vcode: code,
+      google2faCode: google2faCode,
+    );
+    
+    if (success) {
+      setState(() {
+        _showUnbindView = false;
+        _unbindCodeInputKey.currentState?.clear();
+        _unbindGoogle2faCodeKey.currentState?.clear();
+      });
+    }
+  }
+
   /// 构建说明文字
   Widget _buildDescriptionText(BuildContext context) {
     return Text(
-      '绑定手机号可以增强账户安全性，用于接收重要通知和验证码。',
+      '绑定手机号可以增强安全设置性，用于接收重要通知和验证码。',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -571,7 +766,7 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
   }
 
   /// 处理解绑操作
-  Future<void> _handleUnbind(BuildContext context) async {
+  void _handleUnbind(BuildContext context) {
     final mobile = _boundMobile ?? '';
     final countryCode = _boundCountryCode ?? '+86';
     if (mobile.isEmpty) {
@@ -579,34 +774,12 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
       return;
     }
 
-    // 发送验证码
-    final codeSent = await _sendUnbindCode(mobile, countryCode);
-    if (!codeSent) return;
-
-    // 循环显示对话框，直到解绑成功或用户取消
-    while (mounted) {
-      // 显示确认解绑和验证码输入对话框
-      final result = await _showUnbindConfirmDialog(
-        context,
-        mobile: mobile,
-        countryCode: countryCode,
-        needGoogle2fa: _isGoogle2faEnabled,
-      );
-      if (result == null) return; // 用户取消
-
-      final code = result['mobileCode'];
-      if (code == null || code.isEmpty) return;
-
-      // 执行解绑操作
-      final success = await _performUnbind(
-        code: countryCode.replaceFirst('+', ''),
-        vcode: code,
-        google2faCode: result['google2faCode'],
-      );
-      
-      // 如果解绑成功，退出循环；如果失败，继续显示对话框
-      if (success) break;
-    }
+    // 切换显示验证码输入界面
+    setState(() {
+      _showUnbindView = true;
+      _unbindCodeInputKey.currentState?.clear();
+      _unbindGoogle2faCodeKey.currentState?.clear();
+    });
   }
 
   /// 发送解绑验证码

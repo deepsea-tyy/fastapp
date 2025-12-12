@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/search_screen.dart';
 import 'package:fastapp/utils/routes/routes.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
 
 class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
@@ -19,11 +21,11 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
         icon: Icon(
-          Icons.menu,
+          Icons.person_outline,
           color: Theme.of(context).colorScheme.onSurface,
         ),
-        onPressed: onMenuPressed ?? () {
-          Scaffold.of(context).openEndDrawer();
+        onPressed: () {
+          _handleUserIconTap(context);
         },
       ),
       title: _buildSearchBar(context),
@@ -142,6 +144,24 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
         // TODO: 打开音频支持
       },
     );
+  }
+
+  /// 处理用户图标点击事件
+  void _handleUserIconTap(BuildContext context) {
+    final userStore = getIt<UserStore>();
+    
+    // 判断登录状态
+    if (userStore.isLoggedIn) {
+      // 已登录，执行回调或打开侧边栏
+      if (onMenuPressed != null) {
+        onMenuPressed!();
+      } else {
+        Scaffold.of(context).openEndDrawer();
+      }
+    } else {
+      // 未登录，跳转到登录页
+      Navigator.of(context).pushNamed(Routes.login);
+    }
   }
 
   @override

@@ -38,8 +38,8 @@ class ToLoginSection extends StatelessWidget {
                     Navigator.of(context).pushNamed('/login');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.blue.shade700,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
                       vertical: 16,
@@ -47,6 +47,7 @@ class ToLoginSection extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    elevation: 2,
                   ),
                   child: const Text(
                     '注册/登录',

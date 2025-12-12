@@ -106,11 +106,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+        border: Border.all(color: Colors.grey[300]!, width: 1.0),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: Colors.amber,
+          color: Colors.grey[200],
           borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
@@ -384,7 +385,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             type: _isPhoneRegister ? VerifyCodeType.sms : VerifyCodeType.email,
             scene: 'register',
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.amber),
+              side: BorderSide(color: Colors.grey[400]!),
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -392,7 +393,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
               ),
             ),
-            textStyle: const TextStyle(fontSize: 12.0, color: Colors.amber),
+            textStyle: TextStyle(fontSize: 12.0, color: Colors.grey[700]),
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -572,16 +573,29 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildRegisterButton() {
+    // 判断按钮是否可用
+    bool isEnabled = !_isLoading;
+    if (!_isCodeVerified) {
+      // 验证码阶段：需要账号和验证码都不为空
+      final accountController = _isPhoneRegister ? _phoneController : _emailController;
+      isEnabled = accountController.text.trim().isNotEmpty && 
+                  _codeController.text.trim().isNotEmpty;
+    } else {
+      // 注册阶段：需要密码验证通过
+      isEnabled = _validatePassword() == null;
+    }
+    
     return SizedBox(
       height: _buttonHeight,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleRegister,
+        onPressed: isEnabled ? _handleRegister : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber,
-          foregroundColor: Colors.black,
-          disabledBackgroundColor: Colors.amber.withValues(alpha: 0.6),
-          disabledForegroundColor: Colors.black54,
+          backgroundColor: Colors.grey[800],
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.grey[400],
+          disabledForegroundColor: Colors.white70,
+          elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
@@ -593,7 +607,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 height: 20.0,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.0,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : Text(
@@ -612,7 +626,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         },
         child: const Text(
           '已有账号？立即登录',
-          style: TextStyle(color: Colors.orange, fontSize: 14.0),
+          style: TextStyle(color: Colors.grey, fontSize: 14.0),
         ),
       ),
     );

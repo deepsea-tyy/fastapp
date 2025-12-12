@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Common\Event\UserAdminLoginEvent;
-use App\Common\Event\UserLoginEvent;
+use App\Common\Event\UserAccountEvent;
 use App\Common\Event\UserRegisterEvent;
 use App\Common\Jwt\JwtFactory;
 use App\Common\Jwt\JwtInterface;
@@ -61,7 +61,7 @@ class CurrentUser
                     'lang' => $user->profile?->lang ?? 'zh_CN',
                     'trans_password' => $user->profile?->trans_password ?: '',
                 ]);
-                Tools::eventDispatcher(new UserLoginEvent($user, $ip, $os, $browser, $deviceId));
+                Tools::eventDispatcher(new UserAccountEvent($user, $ip, $os, $browser, $deviceId, $user->wasRecentlyCreated ? 2 : 1));
             } else {
                 Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));
             }

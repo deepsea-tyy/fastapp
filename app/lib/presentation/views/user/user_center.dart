@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:mobx/mobx.dart';
-import 'package:fastapp/utils/routes/routes.dart';
+import 'package:flutter/services.dart';
+import 'package:fastapp/core/services/message_service.dart';
+import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/domain/entity/user/user.dart';
-import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/utils/routes/routes.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fastapp/presentation/views/user/setting/widgets.dart';
 
 /// 用户中心页面
 class UserCenterScreen extends StatefulWidget {
@@ -15,389 +18,376 @@ class UserCenterScreen extends StatefulWidget {
 }
 
 class _UserCenterScreenState extends State<UserCenterScreen> {
-  final UserStore _userStore = getIt<UserStore>();
-  ReactionDisposer? _loginStatusDisposer;
-
   // 常量配置
-  static const _iconButtonConstraints = BoxConstraints();
-  static const _iconButtonPadding = EdgeInsets.zero;
-  static const _quickAccessItems = [
-    _QuickAccessItem(icon: Icons.people_outline, label: 'C2C买币', color: Colors.amber),
-    _QuickAccessItem(icon: Icons.account_balance_wallet_outlined, label: '理财', color: Colors.black),
-    _QuickAccessItem(icon: Icons.local_fire_department, label: '热门活动', color: Colors.amber),
-    _QuickAccessItem(icon: Icons.person_add_outlined, label: '邀请奖励', color: Colors.amber),
-    _QuickAccessItem(icon: Icons.edit_outlined, label: '编辑', color: Colors.black),
-  ];
+  static const _cardMargin = EdgeInsets.all(16.0);
+  static const _cardPadding = EdgeInsets.all(16.0);
+  static const _avatarSize = 50.0;
+  static const _iconSize = 20.0;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserInfoIfNeeded();
-    // 监听登录状态变化，自动加载用户信息
-    _loginStatusDisposer = reaction(
-      (_) => _userStore.isLoggedIn,
-      (isLoggedIn) {
-        if (isLoggedIn && _userStore.currentUser == null) {
-          _userStore.getUserInfo();
-        }
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _loginStatusDisposer?.call();
-    super.dispose();
-  }
-
-  void _loadUserInfoIfNeeded() {
-    if (_userStore.isLoggedIn && _userStore.currentUser == null) {
-      _userStore.getUserInfo();
-    }
-  }
-
-  Future<void> _refreshUserInfo() async {
-    if (_userStore.isLoggedIn) await _userStore.getUserInfo();
-  }
-
-  /// 获取显示名称
-  String _getDisplayName(User? user, bool isLoggedIn) {
-    if (!isLoggedIn || user == null) {
-      return '未登录';
-    }
-    
-    // 优先显示昵称
-    if (user.profile?.nickname?.isNotEmpty == true) {
-      return user.profile!.nickname!;
-    }
-    
-    // 其次显示用户名
-    if (user.username?.isNotEmpty == true) {
-      return user.username!;
-    }
-    
-    // 最后显示手机号或邮箱
-    if (user.mobile?.isNotEmpty == true) {
-      return user.mobile!;
-    }
-    
-    if (user.email?.isNotEmpty == true) {
-      return user.email!;
-    }
-    
-    return '未设置';
-  }
+  // 是否显示完整的手机号
+  bool _showMobile = false;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildAppBar(context),
+            const SettingAppBar(title: '用户中心'),
             Expanded(
-              child: Observer(
-                builder: (_) {
-                  // 监听登录状态变化，如果已登录但用户信息为空，显示加载状态
-                  if (_userStore.isLoggedIn && _userStore.isUserInfoLoading && _userStore.currentUser == null) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return RefreshIndicator(
-                    onRefresh: _refreshUserInfo,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        children: [
-                          _buildUserInfoSection(context),
-                          _buildQuickAccessSection(context),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildUserProfileCard(context),
+                    _buildFeatureList(context),
+                  ],
+                ),
               ),
             ),
+            _buildLogoutButton(context),
           ],
         ),
       ),
     );
   }
 
-  /// 构建顶部标题栏
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          _buildIconButton(
-            icon: Icons.arrow_back,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          const Spacer(),
-          _buildIconButton(icon: Icons.crop_free, onPressed: () {}),
-          _buildIconButton(icon: Icons.headphones_outlined, onPressed: () {}),
-          _buildIconButton(
-            icon: Icons.settings,
-            onPressed: () => Navigator.of(context).pushNamed(Routes.settings),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建 IconButton（统一配置）
-  Widget _buildIconButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return IconButton(
-      icon: Icon(icon),
-      onPressed: onPressed,
-      padding: _iconButtonPadding,
-      constraints: _iconButtonConstraints,
-    );
-  }
-
-  /// 构建用户信息区域
-  Widget _buildUserInfoSection(BuildContext context) {
+  /// 构建用户资料卡片
+  Widget _buildUserProfileCard(BuildContext context) {
+    final userStore = getIt<UserStore>();
+    
     return Observer(
       builder: (_) {
-        final user = _userStore.currentUser;
+        final user = userStore.currentUser;
+        if (user == null) {
+          return Container(
+            margin: _cardMargin,
+            padding: _cardPadding,
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        
         final theme = Theme.of(context);
-        final colorScheme = theme.colorScheme;
-        final isLoggedIn = _userStore.isLoggedIn;
+        final displayName = _getDisplayName(user);
+        final userNo = user.no?.toString() ?? user.id.toString();
         
-        // 获取显示名称：优先显示昵称，如果没有则显示用户名，如果用户名为空则显示手机号或邮箱
-        final displayName = _getDisplayName(user, isLoggedIn);
-        
-        // 获取 KYC 认证状态
-        final isKycVerified = user?.isKyc == 1;
-        
-        return InkWell(
-          onTap: () async {
-            final route = isLoggedIn ? Routes.profile : Routes.login;
-            await Navigator.of(context).pushNamed(route);
-            // 从其他页面返回时刷新用户信息（特别是身份认证页面）
-            if (isLoggedIn && mounted) {
-              _refreshUserInfo();
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                _buildAvatar(user?.profile?.avatar, user?.code?.toString() ?? ''),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ID: ${user?.id ?? 0}',
-                        style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+        return Container(
+          margin: _cardMargin,
+          padding: _cardPadding,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _buildAvatar(user.profile?.avatar),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        displayName,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          _buildTag('普通用户', Colors.amber),
-                          if (isKycVerified) ...[
-                            const SizedBox(width: 8),
-                            _buildTag('已认证', Colors.green[300]!),
-                          ],
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: _iconSize),
+                    onPressed: () {
+                      _showEditNicknameDialog(context, userStore, user);
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildInfoRow(
+                context,
+                'ID',
+                userNo,
+                Icons.copy,
+                onIconTap: () {
+                  Clipboard.setData(ClipboardData(text: userNo));
+                  MessageService.snackBar('ID已复制');
+                },
+              ),
+              if (user.mobile?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  context,
+                  '注册信息',
+                  _showMobile ? user.mobile! : _maskMobile(user.mobile!),
+                  _showMobile ? Icons.visibility_off : Icons.visibility,
+                  onIconTap: () {
+                    setState(() {
+                      _showMobile = !_showMobile;
+                    });
+                  },
                 ),
-                Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
               ],
-            ),
+            ],
           ),
         );
       },
     );
   }
 
+  /// 获取显示名称
+  String _getDisplayName(User user) {
+    if (user.profile?.nickname?.isNotEmpty == true) {
+      return user.profile!.nickname!;
+    }
+    if (user.username?.isNotEmpty == true) {
+      return user.username!;
+    }
+    return user.mobile ?? user.email ?? '未设置';
+  }
+
+  /// 隐藏手机号中间部分
+  String _maskMobile(String mobile) {
+    if (mobile.length <= 7) {
+      return mobile;
+    }
+    // 显示前3位和后4位，中间用*代替
+    final prefix = mobile.substring(0, 3);
+    final suffix = mobile.substring(mobile.length - 4);
+    final middle = '*' * (mobile.length - 7);
+    return '$prefix$middle$suffix';
+  }
+  
   /// 构建头像
-  Widget _buildAvatar(String? avatarUrl, String userCode) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
-      child: Stack(
-        children: [
-          Center(
-            child: avatarUrl != null && avatarUrl.isNotEmpty
-                ? ClipOval(
-                    child: Image.network(
-                      avatarUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
-                    ),
-                  )
-                : _buildDefaultAvatar(),
+  Widget _buildAvatar(String? avatarUrl) {
+    final defaultAvatar = Container(
+      width: _avatarSize,
+      height: _avatarSize,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.person, size: 30, color: Colors.grey[600]),
+    );
+
+    if (avatarUrl?.isNotEmpty != true) return defaultAvatar;
+
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: avatarUrl!,
+        width: _avatarSize,
+        height: _avatarSize,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          width: _avatarSize,
+          height: _avatarSize,
+          color: Colors.grey[300],
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (_, __, ___) => defaultAvatar,
+      ),
+    );
+  }
+
+  /// 构建信息行
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    required VoidCallback onIconTap,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
           ),
-          if (userCode.isNotEmpty)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Colors.amber[700],
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    _getInitials(userCode),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+        ),
+        IconButton(
+          icon: Icon(icon, size: 18),
+          onPressed: onIconTap,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
+  }
+
+  /// 构建功能列表
+  Widget _buildFeatureList(BuildContext context) {
+    final userStore = getIt<UserStore>();
+    
+    return Observer(
+      builder: (_) {
+        final isKycVerified = userStore.currentUser?.isKyc == 1;
+        final theme = Theme.of(context);
+        
+        return Column(
+          children: [
+            _buildFeatureItem(
+              context,
+              icon: Icons.diamond,
+              title: 'VIP特权',
+              trailing: _buildStatusTag('普通用户', Colors.orange[300]!),
+              onTap: () => Navigator.of(context).pushNamed(Routes.vipPrivilege),
             ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建默认头像
-  Widget _buildDefaultAvatar() {
-    return const Icon(Icons.person, size: 40, color: Colors.white);
-  }
-
-  /// 获取首字母
-  static String _getInitials(String name) {
-    return name.isEmpty ? 'U' : name.substring(0, 1).toUpperCase();
-  }
-
-  /// 构建标签
-  Widget _buildTag(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-      ),
-    );
-  }
-
-  /// 构建快捷入口区域
-  Widget _buildQuickAccessSection(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '快捷入口',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.person,
+              title: '身份认证',
+              trailing: _buildStatusTag(
+                isKycVerified ? '已认证' : '未认证',
+                isKycVerified ? Colors.green[300]! : Colors.grey[400]!,
               ),
-              Row(
-                children: [
-                  const Checkbox(value: true, onChanged: null),
-                  Text(
-                    '添加到首页服务',
-                    style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildQuickAccessGrid(context),
-        ],
-      ),
-    );
-  }
-
-  /// 构建快捷入口网格
-  Widget _buildQuickAccessGrid(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: _quickAccessItems.length,
-      itemBuilder: (context, index) => _buildQuickAccessItem(context, _quickAccessItems[index]),
-    );
-  }
-
-  /// 构建单个快捷入口项
-  Widget _buildQuickAccessItem(BuildContext context, _QuickAccessItem item) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: () {
-        // TODO: 处理快捷入口点击
+              onTap: () => _navigateToIdentityVerification(context, userStore),
+            ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.lock,
+              title: '安全设置',
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).pushNamed(Routes.accountSecurity),
+            ),
+          ],
+        );
       },
-      borderRadius: BorderRadius.circular(8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(color: item.color, width: 2),
+    );
+  }
+
+  /// 导航到身份认证页面
+  Future<void> _navigateToIdentityVerification(BuildContext context, UserStore userStore) async {
+    await Navigator.of(context).pushNamed(Routes.identityVerification);
+    if (context.mounted) {
+      await userStore.getUserInfo();
+    }
+  }
+
+  /// 构建功能项
+  Widget _buildFeatureItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget trailing,
+    required VoidCallback onTap,
+  }) {
+    return SettingItem(
+      title: title,
+      leadingIcon: icon,
+      trailing: trailing,
+      onTap: onTap,
+    );
+  }
+
+  /// 构建状态标签
+  Widget _buildStatusTag(String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        StatusTag(text: text, color: color),
+        const SizedBox(width: 8),
+        const Icon(Icons.chevron_right),
+      ],
+    );
+  }
+
+  /// 构建退出按钮
+  Widget _buildLogoutButton(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: _cardMargin,
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () => _handleLogout(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[200],
+            foregroundColor: Colors.grey[800],
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.grey[300]!, width: 1),
             ),
-            child: Icon(item.icon, color: item.color, size: 24),
           ),
-          const SizedBox(height: 8),
-          Text(
-            item.label,
-            style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: const Text(
+            '退出登录',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-        ],
+        ),
       ),
     );
   }
-}
 
-/// 快捷入口项数据模型
-class _QuickAccessItem {
-  final IconData icon;
-  final String label;
-  final Color color;
+  /// 处理退出登录
+  void _handleLogout(BuildContext context) {
+    MessageService.confirm(
+      title: '确认退出',
+      message: '确定要退出登录吗？',
+      confirmText: '确定',
+      cancelText: '取消',
+      confirmColor: Colors.red,
+      onConfirm: () async {
+        final userStore = getIt<UserStore>();
+        await userStore.logout();
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            Routes.home,
+            (route) => false,
+          );
+        }
+      },
+    );
+  }
 
-  const _QuickAccessItem({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  /// 显示编辑昵称对话框
+  Future<void> _showEditNicknameDialog(BuildContext context, UserStore userStore, User user) async {
+    final result = await MessageService.inputDialog(
+      title: '编辑昵称',
+      fields: [
+        InputField(
+          label: '昵称',
+          hintText: '请输入昵称',
+          initialValue: user.profile?.nickname ?? '',
+          maxLength: 60,
+          autofocus: true,
+          validator: (value) {
+            if (value.isEmpty) {
+              MessageService.snackBar('昵称不能为空');
+              return false;
+            }
+            if (value.contains(' ')) {
+              MessageService.snackBar('昵称不能包含空格');
+              return false;
+            }
+            return true;
+          },
+        ),
+      ],
+    );
+
+    if (result != null && result['昵称'] != null) {
+      final nickname = result['昵称']!.trim();
+      await _updateNickname(context, userStore, nickname);
+    }
+  }
+
+  /// 更新昵称
+  Future<void> _updateNickname(BuildContext context, UserStore userStore, String nickname) async {
+    try {
+      await userStore.updateNickname(nickname);
+    } catch (e) {
+      if (context.mounted) {
+        MessageService.snackBar('更新失败: ${e.toString()}');
+      }
+    }
+  }
 }

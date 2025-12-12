@@ -48,12 +48,13 @@ class JourneySection extends StatelessWidget {
                 Navigator.of(context).pushNamed(Routes.register);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                elevation: 2,
               ),
               child: const Text(
                 '立即注册',

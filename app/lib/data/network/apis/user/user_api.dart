@@ -446,19 +446,25 @@ class UserApi {
     return response.data;
   }
 
-  /// 获取登录日志
+  /// 获取账户日志
   /// [page] 页码（可选，默认1）
   /// [pageSize] 每页数量（可选，默认20）
-  Future<Map<String, dynamic>> getLoginLogs({
+  /// [type] 日志类型（可选）：1:登录,2:注册,3:重置密码,4:绑定手机,5:绑定邮箱,6:解绑手机,7:解绑邮箱,8:禁用账户,9:删除账户,10:绑定2fa,11:解绑2fa
+  Future<Map<String, dynamic>> getAccountLogs({
     int page = 1,
     int pageSize = 20,
+    int? type,
   }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'page_size': pageSize,
+    };
+    if (type != null) {
+      queryParams['type'] = type;
+    }
     final response = await _dioClient.dio.get(
-      Endpoints.userLoginLogs,
-      queryParameters: {
-        'page': page,
-        'page_size': pageSize,
-      },
+      Endpoints.userAccountLogs,
+      queryParameters: queryParams,
     );
     return response.data;
   }

@@ -56,7 +56,7 @@ class YourController
 
 ```php
 use App\Common\Service\IpLocationService;
-use App\Common\Event\UserLoginEvent;
+use App\Common\Event\UserAccountEvent;
 use App\Common\Tools;
 use Swoole\Coroutine;
 
@@ -69,7 +69,7 @@ class IpLocationListener implements ListenerInterface
 
     public function process(object $event): void
     {
-        if ($event instanceof UserLoginEvent) {
+        if ($event instanceof UserAccountEvent) {
             // 异步查询，不阻塞主流程
             Coroutine::create(function () use ($event) {
                 $ip = $event->getIp();

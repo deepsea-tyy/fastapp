@@ -29,20 +29,52 @@ const dictionaryData = computed<Dictionary[] | null>(() => {
 const i18n = useTrans() as TransType
 const t = transScope === 'global' ? i18n.globalTrans : i18n.localTrans
 
-const model = defineModel<any>()
+const modelValue = defineModel<any>()
+
+// 类型转换：确保值与字典值类型一致（el-radio-group 使用严格相等比较）
+const model = computed({
+  get: () => {
+    const value = modelValue.value
+    if (value == null || !dictionaryData.value?.length) return value
+
+    const dictValueType = typeof dictionaryData.value[0].value
+    const valueType = typeof value
+
+    // 类型一致则直接返回
+    if (dictValueType === valueType) return value
+
+    // 字典值为数字，转换 modelValue 为数字
+    if (dictValueType === 'number') {
+      const num = Number(value)
+      return isNaN(num) ? value : num
+    }
+
+    // 字典值为字符串，转换 modelValue 为字符串
+    if (dictValueType === 'string') return String(value)
+
+    return value
+  },
+  set: (val) => {
+    modelValue.value = val
+  },
+})
 </script>
 
 <template>
   <el-radio-group v-model="model" v-bind="$attrs">
     <slot name="default">
       <template v-if="dictionaryData">
-        <template v-for="item in dictionaryData as Dictionary[]" :key="item">
-          <component :is="renderMode === 'normal' ? 'el-radio' : 'el-radio-button'" :value="item.value" :disabled="item.disabled">
-            <slot name="optionDefault">
-              {{ item?.i18n ? t(item.i18n) : item.label }}
-            </slot>
-          </component>
-        </template>
+        <component
+          v-for="item in dictionaryData"
+          :key="item.value"
+          :is="renderMode === 'normal' ? 'el-radio' : 'el-radio-button'"
+          :value="item.value"
+          :disabled="item.disabled"
+        >
+          <slot name="optionDefault">
+            {{ item?.i18n ? t(item.i18n) : item.label }}
+          </slot>
+        </component>
       </template>
     </slot>
   </el-radio-group>

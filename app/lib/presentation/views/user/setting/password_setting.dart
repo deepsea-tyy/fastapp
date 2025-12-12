@@ -197,8 +197,8 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   Widget _buildDescriptionText(BuildContext context, {required bool isSetPassword}) {
     return Text(
       isSetPassword
-          ? '设置密码可以增强账户安全性，用于用户名密码登录。'
-          : '修改密码可以增强账户安全性，请确保新密码强度足够。',
+          ? '设置密码可以增强安全设置性，用于用户名密码登录。'
+          : '修改密码可以增强安全设置性，请确保新密码强度足够。',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -655,7 +655,7 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: const Text('密码修改成功'),
-        content: const Text('您的密码已修改成功，为了账户安全，请重新登录。'),
+        content: const Text('您的密码已修改成功，为了安全设置，请重新登录。'),
         actions: [
           TextButton(
             onPressed: () {

@@ -3,12 +3,12 @@
 import type { MaProTableExpose, MaProTableOptions, MaProTableSchema } from '@/components/ma-pro-table'
 import type { Ref } from 'vue'
 import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
-import type { UseDialogExpose } from '@/hooks/useDialog.ts'
+import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
 
 import { deleteByIds, page } from '~/base/api/role'
 import getSearchItems from './data/getSearchItems.tsx'
 import getTableColumns from './data/getTableColumns.tsx'
-import useDialog from '@/hooks/useDialog.ts'
+import useDrawer from '@/hooks/useDrawer.ts'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 
@@ -25,9 +25,10 @@ const i18n = useTrans() as TransType
 const t = i18n.globalTrans
 const msg = useMessage()
 
-// 弹窗配置
-const maDialog: UseDialogExpose = useDialog({
-  lgWidth: '550px',
+// 抽屉配置
+const maDrawer: UseDrawerExpose = useDrawer({
+  size: '50%',
+  closeOnClickModal: true,
   // 保存数据
   ok: ({ formType }, okLoadingState: (state: boolean) => void) => {
     okLoadingState(true)
@@ -40,7 +41,7 @@ const maDialog: UseDialogExpose = useDialog({
           case 'add':
             formRef.value.add().then((res: any) => {
               res.code === ResultCode.SUCCESS ? msg.success(t('crud.createSuccess')) : msg.error(res.message)
-              maDialog.close()
+              maDrawer.close()
               proTableRef.value.refresh()
             }).catch((err: any) => {
               msg.alertError(err)
@@ -50,7 +51,7 @@ const maDialog: UseDialogExpose = useDialog({
           case 'edit':
             formRef.value.edit().then((res: any) => {
               res.code === 200 ? msg.success(t('crud.updateSuccess')) : msg.error(res.message)
-              maDialog.close()
+              maDrawer.close()
               proTableRef.value.refresh()
             }).catch((err: any) => {
               msg.alertError(err)
@@ -66,7 +67,7 @@ const maDialog: UseDialogExpose = useDialog({
         // 设置角色
         setFormRef.value.saveUserRole().then((res: any) => {
           res.code === ResultCode.SUCCESS ? msg.success(t('baseUserManage.setRoleSuccess')) : msg.error(res.message)
-          maDialog.close()
+          maDrawer.close()
         }).catch((err: any) => {
           msg.alertError(err)
         })
@@ -112,12 +113,12 @@ const options = ref<MaProTableOptions>({
     api: page,
   },
 })
-// 架构配置
+  // 架构配置
 const schema = ref<MaProTableSchema>({
   // 搜索项
   searchItems: getSearchItems(t),
   // 表格列
-  tableColumns: getTableColumns(maDialog, formRef, t),
+  tableColumns: getTableColumns(maDrawer, formRef, t),
 })
 
 // 批量删除
@@ -141,8 +142,8 @@ function handleDelete() {
           v-auth="['permission:role:save']"
           type="primary"
           @click="() => {
-            maDialog.setTitle(t('crud.add'))
-            maDialog.open({ formType: 'add' })
+            maDrawer.setTitle(t('crud.add'))
+            maDrawer.open({ formType: 'add' })
           }"
         >
           {{ t('crud.add') }}
@@ -167,8 +168,8 @@ function handleDelete() {
             v-auth="['permission:role:save']"
             type="primary"
             @click="() => {
-              maDialog.setTitle(t('crud.add'))
-              maDialog.open({ formType: 'add' })
+              maDrawer.setTitle(t('crud.add'))
+              maDrawer.open({ formType: 'add' })
             }"
           >
             {{ t('crud.add') }}
@@ -177,7 +178,7 @@ function handleDelete() {
       </template>
     </MaProTable>
 
-    <component :is="maDialog.Dialog">
+    <component :is="maDrawer.Drawer">
       <template #default="{ formType, data }">
         <!-- 新增、编辑表单 -->
         <RoleForm v-if="formType !== 'setPermission'" ref="formRef" :form-type="formType" :data="data" />

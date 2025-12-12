@@ -7,14 +7,14 @@ namespace App\Common\Subscriber;
 
 use App\Common\Event\RequestOperationEvent;
 use App\Common\Event\UserAdminLoginEvent;
-use App\Common\Event\UserLoginEvent;
+use App\Common\Event\UserAccountEvent;
 use App\Common\Event\UserRegisterEvent;
 use App\Common\Service\IpLocationService;
 use App\Common\Tools;
 use App\Http\Admin\Service\Logstash\UserAdminLoginLogService;
 use App\Http\Admin\Service\Logstash\UserAdminOperationLogService;
 use App\Http\Admin\Service\Permission\AdminUserService;
-use App\Model\UserLoginLog;
+use App\Model\UserAccountLog;
 use Hyperf\Engine\Coroutine;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Event\Contract\ListenerInterface;
@@ -34,7 +34,7 @@ class UserSubscriber implements ListenerInterface
     public function listen(): array
     {
         return [
-            UserLoginEvent::class,
+            UserAccountEvent::class,
             UserRegisterEvent::class,
             UserAdminLoginEvent::class,
             RequestOperationEvent::class,
@@ -45,14 +45,15 @@ class UserSubscriber implements ListenerInterface
     {
         Coroutine::create(function () use ($event) {
             try {
-                if ($event instanceof UserLoginEvent) {
+                if ($event instanceof UserAccountEvent) {
                     $user = $event->getUser();
                     if (\Hyperf\Config\config('env') == 'prod') $res = $this->ipLocationService->query($event->getIp(), Tools::lang($user->id, true));
                     $res['user_id'] = $user->id;
                     $res['ip'] = $event->getIp();
                     $res['os'] = $event->getOs(); // 操作系统
-                    $res['device_id'] = $event->getDeviceId(); // 设备唯一标识（iOS/Android/Web通用）
-                    UserLoginLog::create($res);
+                    $res['device_id'] = $event->getDeviceId();
+                    $res['type'] = $event->getType();
+                    UserAccountLog::create($res);
                 } else if ($event instanceof RequestOperationEvent) {
                     $userId = $event->getUserId();
                     $user = $this->userService->findById($userId);

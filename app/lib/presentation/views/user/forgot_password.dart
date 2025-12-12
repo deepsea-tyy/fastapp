@@ -26,8 +26,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
   
   // 按钮样式
   static final ButtonStyle _primaryButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: Colors.amber,
-    foregroundColor: Colors.black,
+    backgroundColor: Colors.grey[800],
+    foregroundColor: Colors.white,
+    elevation: 0,
     padding: const EdgeInsets.symmetric(horizontal: 24.0),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
@@ -129,11 +130,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+        border: Border.all(color: Colors.grey[300]!, width: 1.0),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: Colors.amber,
+          color: Colors.grey[200],
           borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
@@ -298,7 +300,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
 
   // 验证码按钮样式
   static final ButtonStyle _verifyCodeButtonStyle = OutlinedButton.styleFrom(
-    side: const BorderSide(color: Colors.amber),
+    side: BorderSide(color: Colors.grey[400]!),
     padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
     minimumSize: Size.zero,
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -307,7 +309,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
     ),
   );
 
-  static const TextStyle _verifyCodeTextStyle = TextStyle(fontSize: 12.0, color: Colors.amber);
+  static final TextStyle _verifyCodeTextStyle = TextStyle(fontSize: 12.0, color: Colors.grey[700]);
 
   Widget _buildPhoneField() {
     return _buildInputContainer(
@@ -574,9 +576,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
   }
 
   Widget _buildVerifySecondAuthButton() {
+    // 判断按钮是否可用
+    bool isEnabled = false;
+    if (_verifyAgainType != null) {
+      switch (_verifyAgainType) {
+        case 'google2fa_code':
+          final code = _google2faCodeKey.currentState?.value ?? '';
+          isEnabled = code.isNotEmpty && code.length == 6;
+          break;
+        case 'email_code':
+          isEnabled = _emailCodeController.text.trim().isNotEmpty;
+          break;
+        case 'mobile_code':
+          isEnabled = _mobileCodeController.text.trim().isNotEmpty;
+          break;
+        default:
+          isEnabled = false;
+      }
+    }
+    
     return _buildPrimaryButton(
       text: '验证',
-      onPressed: _verifySecondAuthCode,
+      onPressed: isEnabled ? _verifySecondAuthCode : null,
     );
   }
 
@@ -597,7 +618,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
         },
         child: const Text(
           '返回登录',
-          style: TextStyle(color: Colors.orange, fontSize: 14.0),
+          style: TextStyle(color: Colors.grey, fontSize: 14.0),
         ),
       ),
     );

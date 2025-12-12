@@ -238,7 +238,7 @@ class AccountBindingScreen extends StatelessWidget {
               Navigator.of(context).pushNamed('/account-activity');
             },
             child: Text(
-              '账户活动',
+              '安全记录',
               style: TextStyle(
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.primary,

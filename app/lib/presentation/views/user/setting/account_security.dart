@@ -4,14 +4,14 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'widgets.dart';
 
-/// 账户安全页面
+/// 安全设置页面
 class AccountSecurityScreen extends StatelessWidget {
   const AccountSecurityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BaseSettingScreen(
-      title: '账户安全',
+      title: '安全设置',
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +61,7 @@ class AccountSecurityScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '为保障账户安全,请至少启用两种双重身份验证形式。',
+                '为保障安全设置,请至少启用两种双重身份验证形式。',
                 style: TextStyle(
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -219,7 +219,7 @@ class AccountSecurityScreen extends StatelessWidget {
             },
           ),
           SettingItem(
-            title: '账户活动',
+            title: '安全记录',
             onTap: () {
               Navigator.of(context).pushNamed('/account-activity');
             },
