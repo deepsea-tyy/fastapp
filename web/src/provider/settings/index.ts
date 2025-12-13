@@ -44,7 +44,7 @@ const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
     dates: useDayjs().format('YYYY'),
     company: import.meta.env.VITE_APP_TITLE,
     website: '',
-    putOnRecord: '豫ICP备00000000号-1',
+    putOnRecord: 'ICP备xxx',
   },
 }
 

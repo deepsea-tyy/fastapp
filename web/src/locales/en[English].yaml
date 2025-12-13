@@ -72,8 +72,9 @@ base:
   uc:
     shortBackControl: Back
     backControl: Back to control panel
-    setAllRead: Set all to read
     title: User Center
+    google2faNotEnabled: You have not enabled Google 2FA two-factor authentication. For account security, we recommend enabling it in the settings page.
+    goToSettings: Go to Settings
   notification:
     todo: Todo
     allRead: All read
@@ -121,6 +122,7 @@ base:
     translate: International
 menu:
   uc:index: Home
+  uc:google2fa: Google 2FA Settings
   dashboard:analysis: Analysis Page
   pageError: The page error
   appstore: App store

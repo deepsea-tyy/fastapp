@@ -2,8 +2,14 @@
 <script setup lang="tsx">
 import type { MaTableExpose } from '@/components/ma-table'
 import useTable from '@/hooks/useTable.ts'
+import { ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 
 defineOptions({ name: 'welcome' })
+
+const userStore = useUserStore()
+const router = useRouter()
+const globalTrans = useTrans().globalTrans
 
 useTable('table').then((table: MaTableExpose) => {
   table.setColumns([
@@ -19,6 +25,30 @@ useTable('table').then((table: MaTableExpose) => {
   table.setData([
     { member: 'IT界-风清扬', dynamic: '上班不摸鱼，与咸鱼有什么区别。', timer: '2024-09-25 17:10:20' },
   ])
+})
+
+// 检查 Google 2FA 状态，如果未启用则提示
+onMounted(() => {
+  nextTick(() => {
+    const userInfo = userStore.getUserInfo()
+    if (userInfo && userInfo.is_google2fa === 0) {
+      setTimeout(() => {
+        ElMessageBox.confirm(
+          globalTrans('base.uc.google2faNotEnabled'),
+          globalTrans('crud.confirmTitle'),
+          {
+            confirmButtonText: globalTrans('base.uc.goToSettings'),
+            cancelButtonText: globalTrans('crud.cancel'),
+            type: 'warning',
+          }
+        ).then(() => {
+          router.push({ path: '/uc/google2fa' })
+        }).catch(() => {
+          // 用户取消，不做任何操作
+        })
+      }, 300)
+    }
+  })
 })
 </script>
 

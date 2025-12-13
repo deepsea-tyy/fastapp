@@ -9,10 +9,9 @@ use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Result;
 use App\Exception\BusinessException;
-use App\Http\Admin\Request\PassportLoginRequest;
+use App\Http\Admin\Request\PassportRequest;
 use App\Http\CurrentUser;
 use App\Model\Enums\User\Type;
-use Hyperf\Collection\Arr;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
 use Hyperf\HttpServer\Annotation\Controller;
@@ -21,6 +20,11 @@ use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\Redis\Redis;
 use PragmaRX\Google2FA\Google2FA;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
+use BaconQrCode\Renderer\GDLibRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 
 #[Controller]
 final class PassportController extends AbstractController
@@ -33,7 +37,7 @@ final class PassportController extends AbstractController
     }
 
     #[PostMapping(path: '/admin/passport/login')]
-    public function login(PassportLoginRequest $request): Result
+    public function login(PassportRequest $request): Result
     {
         $validated = $request->validated();
         $username = (string)$validated['username'];
@@ -98,12 +102,9 @@ final class PassportController extends AbstractController
     #[Middleware(AccessTokenMiddleware::class)]
     public function getInfo(): Result
     {
-        return $this->success(
-            Arr::only(
-                $this->currentUser->getInfo($this->currentUser->id())?->toArray() ?: [],
-                ['username', 'nickname', 'avatar', 'signed', 'backend_setting', 'phone', 'email']
-            )
-        );
+        $user = $this->currentUser->getInfo($this->currentUser->id());
+        $user->is_google2fa = $user->google2fa ? 1 : 0;
+        return $this->success($user);
     }
 
     #[PostMapping(path: '/admin/passport/refresh')]
@@ -131,6 +132,73 @@ final class PassportController extends AbstractController
         return $this->success([
             'image' => 'data:image/png;base64,' . base64_encode($image),
         ]);
+    }
+
+    #[GetMapping(path: '/admin/passport/google2fa/qrcode')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faQrcode(): Result
+    {
+        $user = $this->currentUser->user();
+        if (!empty($user->google2fa)) {
+            throw new BusinessException(message: trans('auth.google_code_bind'));
+        }
+
+        $google2fa = new Google2FA();
+        $appName = \Hyperf\Config\config('app_name', 'FastApp');
+        $secret = $google2fa->generateSecretKey();
+
+        $qrCodeUrl = $google2fa->getQRCodeUrl(
+            $appName,
+            $user->email ?: ($user->username ?: $user->mobile),
+            $secret
+        );
+
+        $qrcodeBase64 = $this->generateQrCodeBase64($qrCodeUrl);
+
+        return $this->success([
+            'google2fa' => $secret,
+            'qrcode' => $qrcodeBase64,
+        ]);
+    }
+
+    #[PostMapping(path: '/admin/passport/google2fa/bind')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faBind(PassportRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->currentUser->user();
+        $secret = $validated['google2fa'];
+        $code = $validated['google2fa_code'];
+
+        if (!empty($user->google2fa)) {
+            throw new BusinessException(message: trans('auth.google_code_bind'));
+        }
+
+        $this->verifyGoogle2fa($secret, $code);
+
+        $user->google2fa = $secret;
+        $user->save();
+
+        return $this->success(message: trans('auth.bind_success'));
+    }
+
+    #[PostMapping(path: '/admin/passport/google2fa/unbind')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faUnbind(PassportRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->currentUser->user();
+        $code = $validated['google2fa_code'];
+
+        if (empty($user->google2fa)) {
+            throw new BusinessException(message: trans('auth.google_code_unbind'));
+        }
+
+        $this->verifyGoogle2fa($user->google2fa, $code);
+        $user->google2fa = '';
+        $user->save();
+
+        return $this->success(message: trans('auth.unbind_success'));
     }
 
     /**
@@ -199,5 +267,55 @@ final class PassportController extends AbstractController
         imagedestroy($image);
 
         return $imageData;
+    }
+
+    /**
+     * 验证 Google2FA 验证码
+     */
+    private function verifyGoogle2fa(string $secret, string $code): void
+    {
+        if (\Hyperf\Config\config('env') == 'dev') {
+            return;
+        }
+        $google2fa = new Google2FA();
+        try {
+            $valid = $google2fa->verifyKey($secret, $code, 2);
+            if (!$valid) {
+                throw new BusinessException(message: trans('auth.google_code_invalid'));
+            }
+        } catch (\Throwable $e) {
+            if ($e instanceof BusinessException) {
+                throw $e;
+            }
+            throw new BusinessException(message: trans('auth.google_code_invalid'));
+        }
+    }
+
+    /**
+     * 生成二维码 Base64
+     */
+    private function generateQrCodeBase64(string $qrCodeUrl): ?string
+    {
+        if (extension_loaded('imagick')) {
+            try {
+                $renderer = new ImageRenderer(
+                    new RendererStyle(400),
+                    new ImagickImageBackEnd()
+                );
+                $writer = new Writer($renderer);
+                $qrcodePng = $writer->writeString($qrCodeUrl);
+                return 'data:image/png;base64,' . base64_encode($qrcodePng);
+            } catch (\Throwable) {
+            }
+        }
+
+        try {
+            $renderer = new GDLibRenderer(400);
+            $writer = new Writer($renderer);
+            $qrcodePng = $writer->writeString($qrCodeUrl);
+            return 'data:image/png;base64,' . base64_encode($qrcodePng);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

@@ -72,8 +72,9 @@ base:
   uc:
     shortBackControl: 返回
     backControl: 返回控制面板
-    setAllRead: 全部设为已读
     title: 用户中心
+    google2faNotEnabled: 您尚未启用 Google 2FA 双重验证，为了账户安全，建议您前往设置页面启用。
+    goToSettings: 前往设置
   notification:
     todo: 待办
     allRead: 全部已读
@@ -121,6 +122,7 @@ base:
     translate: 国际化
 menu:
   uc:index: 首页
+  uc:google2fa: Google 2FA 设置
   dashboard:analysis: 分析页
   pageError: 页面出错了
   appstore: 应用商店
