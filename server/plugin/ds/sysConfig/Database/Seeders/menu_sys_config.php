@@ -142,25 +142,46 @@ class MenuSysConfig extends Seeder
 
     public function create(array $data, int $parent_id = 0): void
     {
-        foreach ($data as $v) {
-            $_v = $v;
-            if (isset($v['children'])) {
-                unset($_v['children']);
-            }
-            $_v['parent_id'] = $parent_id;
+        foreach ($data as $menuItem) {
+            $children = $menuItem['children'] ?? null;
+            unset($menuItem['children']);
 
-            // 判断菜单是否已存在
-            $menu = Menu::where('name', $_v['name'])->where('parent_id', $parent_id)->first();
+            $menuData = array_merge(self::BASE_DATA, $menuItem, ['parent_id' => $parent_id]);
 
-            if (! $menu) {
-                // 不存在则创建
-                $menu = Menu::create(array_merge(self::BASE_DATA, $_v));
-            }
+            $menu = $this->findOrCreateMenu($menuData);
 
-            // 如果有子菜单，递归创建
-            if (isset($v['children']) && count($v['children'])) {
-                $this->create($v['children'], $menu->id);
+            if ($children && count($children) > 0) {
+                $this->create($children, $menu->id);
             }
         }
+    }
+
+    /**
+     * 查找或创建菜单
+     *
+     * @param array $menuData 菜单数据
+     * @return Menu
+     */
+    private function findOrCreateMenu(array $menuData): Menu
+    {
+        $menuName = $menuData['name'] ?? null;
+        $parentId = $menuData['parent_id'] ?? 0;
+
+        if (!$menuName) {
+            return Menu::create($menuData);
+        }
+
+        $menu = Menu::query()
+            ->where('name', $menuName)
+            ->where('parent_id', $parentId)
+            ->first();
+
+        if ($menu) {
+            $updateData = $menuData;
+            $menu->update($updateData);
+            return $menu;
+        }
+
+        return Menu::create($menuData);
     }
 }

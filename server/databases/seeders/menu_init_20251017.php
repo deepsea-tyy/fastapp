@@ -493,16 +493,46 @@ class MenuInit20251017 extends Seeder
 
     public function create(array $data, int $parent_id = 0): void
     {
-        foreach ($data as $v) {
-            $_v = $v;
-            if (isset($v['children'])) {
-                unset($_v['children']);
-            }
-            $_v['parent_id'] = $parent_id;
-            $menu = Menu::create(array_merge(self::BASE_DATA, $_v));
-            if (isset($v['children']) && count($v['children'])) {
-                $this->create($v['children'], $menu->id);
+        foreach ($data as $menuItem) {
+            $children = $menuItem['children'] ?? null;
+            unset($menuItem['children']);
+
+            $menuData = array_merge(self::BASE_DATA, $menuItem, ['parent_id' => $parent_id]);
+
+            $menu = $this->findOrCreateMenu($menuData);
+
+            if ($children && count($children) > 0) {
+                $this->create($children, $menu->id);
             }
         }
+    }
+
+    /**
+     * 查找或创建菜单
+     *
+     * @param array $menuData 菜单数据
+     * @return Menu
+     */
+    private function findOrCreateMenu(array $menuData): Menu
+    {
+        $menuName = $menuData['name'] ?? null;
+        $parentId = $menuData['parent_id'] ?? 0;
+
+        if (!$menuName) {
+            return Menu::create($menuData);
+        }
+
+        $menu = Menu::query()
+            ->where('name', $menuName)
+            ->where('parent_id', $parentId)
+            ->first();
+
+        if ($menu) {
+            $updateData = $menuData;
+            $menu->update($updateData);
+            return $menu;
+        }
+
+        return Menu::create($menuData);
     }
 }

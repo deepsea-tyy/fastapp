@@ -57,7 +57,7 @@
 -- 主菜单
 INSERT INTO `{{$dbPrefix}}menu`
 (`name`, `path`, `component`, `redirect`, `created_by`, `updated_by`, `remark`, `meta`, `parent_id`, `updated_at`, `created_at`)
-VALUES ('{{$permissionName}}', '/{{$path}}', '{{$componentPath}}', '', '0', '0', '', '{{$mainMenuMeta}}', {{$pid}}, '{{$time}}', '{{$time}}');
+VALUES ('{{$permissionName}}', '/{{$path}}', '{{$componentPath}}', '', '0', '0', '', '{!!$mainMenuMeta!!}', {{$pid}}, '{{$time}}', '{{$time}}');
 
 SET @LastInsertId := LAST_INSERT_ID();
 
@@ -72,7 +72,7 @@ SET @LastInsertId := LAST_INSERT_ID();
 @endphp
 INSERT INTO `{{$dbPrefix}}menu` (`name`, `meta`, `parent_id`, `updated_at`, `created_at`) VALUES (
     '{{$permissionName}}:{{$menu['action']}}',
-    '{{$menuMeta}}',
+    '{!!$menuMeta!!}',
     @LastInsertId,
     '{{$time}}',
     '{{$time}}'
