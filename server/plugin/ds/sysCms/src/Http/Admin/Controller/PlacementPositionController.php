@@ -23,7 +23,7 @@ use Hyperf\HttpServer\Annotation\DeleteMapping;
 /**
  * 投放位置控制器
  * 
- * @author 代码生成器
+ * @author FastApp代码生成器
  * @date 2025-12-08 07:41:23
  */
 #[Controller]

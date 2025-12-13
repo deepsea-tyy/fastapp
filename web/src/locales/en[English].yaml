@@ -7,7 +7,8 @@ loginForm:
   usernamePlaceholder: please input account
   passwordLabel: Password
   google2faLabel: Google 2FA
-  google2faPlaceholder: please input Google verification code
+  vcodePlaceholder: please input captcha
+  google2fa_codePlaceholder: please input Google verification code
   welcomeBack: Welcome Back
 base:
   goHome: Back to Home

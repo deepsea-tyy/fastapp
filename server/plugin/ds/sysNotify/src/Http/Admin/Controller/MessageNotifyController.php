@@ -23,7 +23,7 @@ use Hyperf\HttpServer\Annotation\PutMapping;
 /**
  * 消息通知控制器
  * 
- * @author 代码生成器
+ * @author FastApp代码生成器
  * @date 2025-11-06 10:28:18
  */
 #[Controller]

@@ -11,7 +11,7 @@ use Plugin\Ds\SysCms\Command\Service\AppPageContentGeneratorService;
 /**
  * 生成App页面内容数据库文件命令
  * 
- * @author 代码生成器
+ * @author FastApp代码生成器
  * @date 2025-12-08
  */
 #[AsCommand(

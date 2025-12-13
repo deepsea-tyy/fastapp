@@ -7,7 +7,8 @@ loginForm:
   usernamePlaceholder: 請輸入賬戶
   passwordLabel: 密碼
   google2faLabel: Google 2FA
-  google2faPlaceholder: 請輸入Google驗證碼
+  vcodePlaceholder: 請輸入驗證碼
+  google2fa_codePlaceholder: 請輸入Google驗證碼
   welcomeBack: 歡迎回來
 base:
   goHome: 回到首頁

@@ -16,9 +16,9 @@ use Hyperf\Validation\Request\FormRequest;
 #[Schema(title: '登录请求', description: '登录请求参数', properties: [
     new Property('username', description: '用户名', type: 'string'),
     new Property('password', description: '密码', type: 'string'),
-    new Property('type', description: '验证码类型：captcha(图形验证码) 或 google2fa(Google2FA)', type: 'string'),
+    new Property('type', description: '验证码类型：captcha(图形验证码) 或 google2fa_code(Google2FA)', type: 'string'),
     new Property('code', description: '图形验证码', type: 'string'),
-    new Property('google2fa', description: 'Google2FA验证码', type: 'string'),
+    new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
 ])]
 class PassportLoginRequest extends FormRequest
 {
@@ -28,21 +28,12 @@ class PassportLoginRequest extends FormRequest
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'username' => 'required|string|exists:user,username',
             'password' => 'required|string',
-            'type' => 'sometimes|string|in:captcha,google2fa',
+            'vcode' => 'nullable|string|max:6',
+            'google2fa_code' => 'nullable|string|max:6',
         ];
-
-        // 根据验证码类型添加验证规则
-        $type = $this->input('type');
-        if ($type === 'captcha') {
-            $rules['code'] = 'required|string';
-        } elseif ($type === 'google2fa') {
-            $rules['google2fa'] = 'required|string|size:6';
-        }
-
-        return $rules;
     }
 
     public function attributes(): array
@@ -50,9 +41,8 @@ class PassportLoginRequest extends FormRequest
         return [
             'username' => trans('user.username'),
             'password' => trans('user.password'),
-            'type' => '验证码类型',
-            'code' => '图形验证码',
-            'google2fa' => 'Google2FA验证码',
+            'vcode' => trans('user.vcode'),
+            'google2fa_code' => trans('user.vcode'),
         ];
     }
 

@@ -45,11 +45,10 @@ final class PassportController extends AbstractController
             throw new BusinessException(message: trans('user.password_error'));
         }
         // 开发环境无需验证
-        $isDev = config('env') === 'dev';
-        $type = config('captcha');
+        $isProd = \Hyperf\Config\config('env') === 'prod';
 
         // 根据验证码类型进行验证
-        if ($type === 'captcha' && !$isDev) {
+        if ($isProd) {
             // 验证图形验证码
             $code = $validated['code'] ?? '';
             $cacheKey = 'admin:captcha:' . $request->ip();
@@ -62,18 +61,17 @@ final class PassportController extends AbstractController
 
             // 验证成功后删除验证码
             $redis->del($cacheKey);
-        } elseif ($type === 'google2fa' && !$isDev) {
+        }
+        if (empty($validated['google2fa_code']) && $user->google2fa) {
+            return $this->success(['verify_again' => 'google2fa_code']);
+        }
+
+        if ($user->google2fa) {
             // 验证Google2FA
-            if (empty($user->google2fa)) {
-                throw new BusinessException(message: '未绑定Google2FA');
-            }
-
-            $google2faCode = $validated['google2fa'] ?? '';
             $google2fa = new Google2FA();
-            $valid = $google2fa->verifyKey($user->google2fa, $google2faCode, 2); // 允许2个时间窗口的误差
-
+            $valid = $google2fa->verifyKey($user->google2fa, $validated['google2fa_code'], 2); // 允许2个时间窗口的误差
             if (!$valid) {
-                throw new BusinessException(message: '验证码错误');
+                throw new BusinessException(message: trans('auth.google_code_invalid'));
             }
         }
 

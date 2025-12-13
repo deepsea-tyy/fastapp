@@ -172,7 +172,7 @@ final class AdminUserService extends IService
                 ->orWhere('mobile', 'like', $keyword . '%');
         }
         return $query->get()->map(function ($item) {
-            return ['label' => implode('|', [$item->id, $item->username, $item->email, $item->mobile]), 'value' => $item->id];
+            return ['label' => implode('|', array_filter([$item->id, $item->username, $item->email, $item->mobile])), 'value' => $item->id];
         });
     }
 

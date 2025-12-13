@@ -878,7 +878,7 @@ class UserController extends AbstractController
      * @param UserRequest $request 请求对象
      * @param int $type 事件类型
      */
-    private function dispatchUserLoginEvent(\App\Model\User $user, UserRequest $request, int $type): void
+    private function dispatchUserLoginEvent(User $user, UserRequest $request, int $type): void
     {
         Tools::eventDispatcher(new UserAccountEvent(
             $user,

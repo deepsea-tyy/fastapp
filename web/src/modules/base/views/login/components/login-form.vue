@@ -9,126 +9,131 @@ import type { ResponseStruct } from '#/global'
 
 const { t } = useI18n()
 const isProduction: boolean = import.meta.env.MODE === 'production'
-const isDev = !isProduction
 const userStore = useUserStore()
 const settingStore = useSettingStore()
 const router = useRouter()
 const isFormSubmit = ref(false)
-const isValidState = ref(true)
-
-// 从环境变量读取验证码配置
-const env = import.meta.env
-const captchaEnable = env.VITE_LOGIN_CAPTCHA_ENABLE === 'true' || env.VITE_LOGIN_CAPTCHA_ENABLE === true
-const captchaType = (env.VITE_LOGIN_CAPTCHA_TYPE || 'captcha') as 'captcha' | 'google2fa'
-
-const codeType = ref<string>(captchaType) // captcha 或 google2fa
+const needGoogle2fa = ref(false)
 const captchaImage = ref('')
+const google2faInputRef = ref<{ el: HTMLInputElement } | null>(null)
+
 const form = reactive<{
   username: string
   password: string
-  code: string
-  google2fa: string
+  vcode: string
+  google2fa_code: string
 }>({
   username: isProduction ? '' : 'admin',
   password: isProduction ? '' : '123456',
-  code: isProduction ? '' : '1234',
-  google2fa: '',
+  vcode: isProduction ? '' : '1234',
+  google2fa_code: '',
 })
 
-// 获取平台验证码图片
-async function getCaptcha() {
+const inputClass = '!bg-white !text-black !ring-gray-2 !focus-ring-[rgb(var(--ui-primary))] !placeholder-stone-4'
 
-  // 添加时间戳防止缓存
-  const timestamp = Date.now()
-  const res: ResponseStruct<{
-    code: string,
-    image: string
-  }> = await useHttp().get(`/admin/passport/captcha?t=${timestamp}`)
-  // 清空验证码输入框
-  form.code = ''
-  captchaImage.value =  res.data.image
+async function getCaptcha() {
+  const res: ResponseStruct<{ code: string; image: string }> = await useHttp().get(
+    `/admin/passport/captcha?t=${Date.now()}`
+  )
+  form.vcode = ''
+  captchaImage.value = res.data.image
 }
 
-
-// 初始化时获取验证码
-onMounted(() => {
-  if (captchaEnable && codeType.value === 'captcha') {
-    getCaptcha()
-  }
-})
-
-function easyValidate(event: Event) {
+function validateField(event: Event) {
   const dom = event?.target as HTMLInputElement
-  if (form[dom.name] === undefined || form[dom.name] === '') {
-    dom.classList.add('!ring-red-5')
-    Message.error(t(`loginForm.${dom.name}Placeholder`))
-    isValidState.value = false
+  const isEmpty = !form[dom.name as keyof typeof form]?.trim()
+  dom.classList.toggle('!ring-red-5', isEmpty)
+}
+
+function validateForm(): boolean {
+  const requiredFields = ['username', 'password']
+  
+  // 需要 Google 2FA 时，同时需要验证码和 Google 2FA 码
+  if (needGoogle2fa.value) {
+    requiredFields.push('vcode', 'google2fa_code')
+  } else if (isProduction) {
+    requiredFields.push('vcode')
   }
-  else {
-    dom.classList.remove('!ring-red-5')
-    isValidState.value = true
+
+  for (const key of requiredFields) {
+    if (!form[key as keyof typeof form]?.trim()) {
+      Message.error(t(`loginForm.${key}Placeholder`))
+      return false
+    }
+  }
+  return true
+}
+
+function buildSubmitData() {
+  const data: any = {
+    username: form.username,
+    password: form.password,
+  }
+  
+  // 需要 Google 2FA 时，同时提交验证码和 Google 2FA 码
+  if (needGoogle2fa.value) {
+    data.vcode = form.vcode
+    data.google2fa_code = form.google2fa_code
+  } else if (isProduction) {
+    data.vcode = form.vcode
+  }
+  return data
+}
+
+async function handleLoginSuccess(userData: any) {
+  if (userData?.verify_again === 'google2fa_code' && !needGoogle2fa.value) {
+    needGoogle2fa.value = true
+    // 切换到 Google 2FA 模式时，保留验证码，只清空 Google 2FA 码
+    form.google2fa_code = ''
+    // 如果验证码为空，重新获取
+    if (!form.vcode && isProduction) {
+      getCaptcha()
+    }
+    nextTick(() => google2faInputRef.value?.el?.focus())
+    return
+  }
+
+  if (userData && !userData.verify_again) {
+    const welcomePath = settingStore.getSettings('welcomePage').path ?? null
+    const redirect = router.currentRoute.value.query?.redirect ?? undefined
+    await router.push({ path: redirect ?? welcomePath ?? '/' })
+  }
+
+  needGoogle2fa.value = false
+  form.google2fa_code = ''
+  if (isProduction) getCaptcha()
+}
+
+function handleLoginError() {
+  if (needGoogle2fa.value) {
+    form.google2fa_code = ''
+  }
+  // 登录失败后刷新验证码
+  if (isProduction) {
+    getCaptcha()
   }
 }
 
 async function submit() {
-  const currentCodeType = codeType.value
-  const requiredFields = ['username', 'password']
-
-  // 根据配置决定是否需要验证码
-  if (captchaEnable) {
-    if (currentCodeType === 'captcha') {
-      requiredFields.push('code')
-    }
-    else if (currentCodeType === 'google2fa') {
-      requiredFields.push('google2fa')
-    }
-  }
-
-  requiredFields.forEach((key) => {
-    if (form[key] === undefined || form[key] === '') {
-      Message.error(t(`loginForm.${key}Placeholder`))
-      isValidState.value = false
-    }
-  })
-  if (!isValidState.value) {
-    return false
-  }
+  if (!validateForm()) return
 
   isFormSubmit.value = true
-  const submitData: any = {
-    username: form.username,
-    password: form.password,
-  }
-
-  // 根据配置决定是否添加验证码
-  if (captchaEnable && currentCodeType) {
-    submitData.type = currentCodeType
-    if (currentCodeType === 'captcha') {
-      submitData.code = form.code
-    } else if (currentCodeType === 'google2fa') {
-      submitData.google2fa = form.google2fa
-    }
-  }
-
-  userStore.login(submitData).then(async (userData: any) => {
-    const welcomePath = settingStore.getSettings('welcomePage').path ?? null
-    const redirect = router.currentRoute.value.query?.redirect ?? undefined
-    if (userData) {
-      await router.push({ path: redirect ?? welcomePath ?? '/' })
-    }
+  try {
+    const userData = await userStore.login(buildSubmitData())
     isFormSubmit.value = false
-    // 登录成功后刷新验证码
-    if (captchaEnable && codeType.value === 'captcha') {
-      getCaptcha()
-    }
-  }).catch(() => {
+    await handleLoginSuccess(userData)
+  } catch (error) {
     isFormSubmit.value = false
-    // 登录失败后刷新验证码
-    if (captchaEnable && codeType.value === 'captcha') {
-      getCaptcha()
-    }
-  })
+    handleLoginError()
+  }
 }
+
+onMounted(() => {
+  if (isProduction) {
+    getCaptcha()
+  }
+})
+
 </script>
 
 <template>
@@ -139,10 +144,10 @@ async function submit() {
       </div>
       <m-input
         v-model="form.username"
-        class="!bg-white !text-black !ring-gray-2 !focus-ring-[rgb(var(--ui-primary))] !placeholder-stone-4"
+        :class="inputClass"
         name="username"
         :placeholder="t('loginForm.usernamePlaceholder')"
-        @blur="easyValidate"
+        @blur="validateField"
       />
     </div>
     <div class="mine-login-form-item">
@@ -151,23 +156,23 @@ async function submit() {
       </div>
       <m-input
         v-model="form.password"
-        class="!bg-white !text-black !ring-gray-2 !focus-ring-[rgb(var(--ui-primary))] !placeholder-stone-4"
+        :class="inputClass"
         name="password"
         type="password"
         :placeholder="t('loginForm.passwordPlaceholder')"
-        @blur="easyValidate"
+        @blur="validateField"
       />
     </div>
-    <div v-if="captchaEnable && codeType === 'captcha'" class="mine-login-form-item">
+    <div v-if="isProduction" class="mine-login-form-item">
       <div class="mine-login-form-item-title">
         {{ t('loginForm.codeLabel') }}
       </div>
       <m-input
-        v-model="form.code"
-        class="!bg-white !text-black !ring-gray-2 !focus-ring-[rgb(var(--ui-primary))] !placeholder-stone-4"
-        name="code"
+        v-model="form.vcode"
+        :class="inputClass"
+        name="vcode"
         :placeholder="t('loginForm.codePlaceholder')"
-        @blur="easyValidate"
+        @blur="validateField"
       >
         <template #suffix>
           <div class="ml-0.5 w-30 flex items-center justify-center text-sm">
@@ -181,27 +186,25 @@ async function submit() {
         </template>
       </m-input>
     </div>
-    <div v-if="captchaEnable && codeType === 'google2fa'" class="mine-login-form-item">
+    <div v-if="needGoogle2fa" class="mine-login-form-item">
       <div class="mine-login-form-item-title">
         {{ t('loginForm.google2faLabel') }}
       </div>
       <m-input
-        v-model="form.google2fa"
-        class="!bg-white !text-black !ring-gray-2 !focus-ring-[rgb(var(--ui-primary))] !placeholder-stone-4"
-        name="google2fa"
+        ref="google2faInputRef"
+        v-model="form.google2fa_code"
+        :class="inputClass"
+        name="google2fa_code"
         :placeholder="t('loginForm.google2faPlaceholder')"
-        maxlength="6"
-        @blur="easyValidate"
+        :disabled="isFormSubmit"
+        @blur="validateField"
       />
     </div>
     <div class="mine-login-form-item mt-2">
       <m-button
         type="submit"
         class="!bg-[rgb(var(--ui-primary))] !text-gray-1 !active-bg-[rgb(var(--ui-primary))] !hover-bg-[rgb(var(--ui-primary)/.75)]"
-        :class="{
-          // 'py-3': userStore.getLanguage() === 'en',
-          loading: isFormSubmit,
-        }"
+        :class="{ loading: isFormSubmit }"
       >
         <ma-svg-icon name="formkit:submit" /> {{ t('loginForm.loginButton') }}
       </m-button>

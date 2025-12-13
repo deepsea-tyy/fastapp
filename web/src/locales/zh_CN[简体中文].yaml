@@ -7,7 +7,8 @@ loginForm:
   usernamePlaceholder: 请输入账户
   passwordLabel: 密码
   google2faLabel: Google 2FA
-  google2faPlaceholder: 请输入Google验证码
+  vcodePlaceholder: 请输入验证码
+  google2fa_codePlaceholder: 请输入Google验证码
   welcomeBack: 欢迎回来
 base:
   goHome: 回到首页

@@ -17,7 +17,7 @@ use Hyperf\Swagger\Annotation\QueryParameter;
 /**
  * App页面内容API控制器
  * 
- * @author 代码生成器
+ * @author FastApp代码生成器
  * @date 2025-12-08
  */
 #[HyperfServer(name: 'http')]
