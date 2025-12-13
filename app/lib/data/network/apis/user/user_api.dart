@@ -548,5 +548,13 @@ class UserApi {
     );
     return response.data;
   }
+
+  /// 获取VIP详细信息（包含VIP等级配置、费率、升级进度等）
+  Future<Map<String, dynamic>> getVipDetail() async {
+    final response = await _dioClient.dio.get(
+      Endpoints.vipDetail,
+    );
+    return response.data;
+  }
 }
 

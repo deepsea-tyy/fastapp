@@ -1,14 +1,19 @@
+import 'dart:async';
+import 'package:event_bus/event_bus.dart';
 import 'package:fastapp/constants/app_config.dart';
 import 'package:fastapp/presentation/views/main/main_screen.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 import 'package:fastapp/presentation/store/app/theme_store.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/core/services/page_content_manager.dart';
+import 'package:fastapp/core/data/network/dio/interceptors/token_refresh_interceptor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:mobx/mobx.dart';
 
 import 'package:fastapp/di/service_locator.dart';
 
@@ -23,6 +28,7 @@ class _AppState extends State<App> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late MessageService _messageService;
   bool _messageServiceInitialized = false;
+  StreamSubscription<ForceLogoutEvent>? _forceLogoutSubscription;
 
   @override
   void initState() {
@@ -30,6 +36,36 @@ class _AppState extends State<App> {
     _messageService = MessageService(getIt());
     // 启动时下载页面配置
     _downloadPageContent();
+    // 监听强制登出事件
+    _listenToForceLogout();
+  }
+
+  /// 监听强制登出事件
+  void _listenToForceLogout() {
+    final eventBus = getIt<EventBus>();
+    _forceLogoutSubscription = eventBus.on<ForceLogoutEvent>().listen((event) {
+      // 清除 UserStore 状态
+      try {
+        runInAction(() {
+          final userStore = getIt<UserStore>();
+          userStore.isLoggedIn = false;
+          userStore.currentUser = null;
+        });
+      } catch (e) {
+        // 忽略错误
+      }
+      
+      // 跳转到登录页
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigator = _navigatorKey.currentState;
+        if (navigator != null) {
+          navigator.pushNamedAndRemoveUntil(Routes.login, (route) => false);
+          if (event.message.isNotEmpty) {
+            MessageService.snackBar(event.message);
+          }
+        }
+      });
+    });
   }
 
   /// 下载页面配置（后台静默下载，不影响启动）
@@ -49,6 +85,7 @@ class _AppState extends State<App> {
 
   @override
   void dispose() {
+    _forceLogoutSubscription?.cancel();
     _messageService.dispose();
     super.dispose();
   }
@@ -57,10 +94,7 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) {
     return Observer(
       builder: (context) {
-        final localeParts = _languageStore.locale.split('_');
-        final locale = localeParts.length > 1
-            ? Locale(localeParts[0], localeParts[1])
-            : Locale(localeParts[0]);
+        final locale = _parseLocale(_languageStore.locale);
         
         return MaterialApp(
           key: const ValueKey('main_material_app'),
@@ -73,27 +107,39 @@ class _AppState extends State<App> {
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           builder: (context, child) {
-            // 初始化消息服务（只初始化一次）
-            if (!_messageServiceInitialized) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _messageService.init(context, navigatorKey: _navigatorKey);
-                  _messageServiceInitialized = true;
-                }
-              });
-            } else {
-              // 如果已经初始化，只更新 context
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _messageService.init(context, navigatorKey: _navigatorKey);
-                }
-              });
-            }
+            _initMessageService(context);
             return child ?? const SizedBox();
           },
           home: const MainScreen(),
         );
       },
     );
+  }
+
+  /// 解析 locale 字符串
+  Locale _parseLocale(String localeStr) {
+    final parts = localeStr.split('_');
+    return parts.length > 1 
+        ? Locale(parts[0], parts[1])
+        : Locale(parts[0]);
+  }
+
+  /// 初始化消息服务
+  void _initMessageService(BuildContext context) {
+    if (!_messageServiceInitialized) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _messageService.init(context, navigatorKey: _navigatorKey);
+          _messageServiceInitialized = true;
+        }
+      });
+    } else {
+      // 已初始化，只更新 context
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _messageService.init(context, navigatorKey: _navigatorKey);
+        }
+      });
+    }
   }
 }

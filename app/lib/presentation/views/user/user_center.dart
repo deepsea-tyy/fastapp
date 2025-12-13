@@ -8,6 +8,7 @@ import 'package:fastapp/utils/routes/routes.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fastapp/presentation/views/user/setting/widgets.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
 
 /// 用户中心页面
 class UserCenterScreen extends StatefulWidget {
@@ -26,6 +27,49 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
 
   // 是否显示完整的手机号
   bool _showMobile = false;
+  
+  // VIP等级信息
+  int? _vipLevel;
+  bool _isLoadingVip = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVipInfo();
+  }
+
+  /// 加载VIP信息
+  Future<void> _loadVipInfo() async {
+    if (_isLoadingVip) return;
+
+    setState(() {
+      _isLoadingVip = true;
+    });
+
+    try {
+      final userApi = getIt<UserApi>();
+      final response = await userApi.getVipDetail();
+
+      if (mounted) {
+        setState(() {
+          _vipLevel = response['level'] as int? ?? 0;
+        });
+      }
+    } catch (e) {
+      // 静默失败，不影响页面显示
+      if (mounted) {
+        setState(() {
+          _vipLevel = 0; // 默认普通用户
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingVip = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -231,14 +275,29 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
         final isKycVerified = userStore.currentUser?.isKyc == 1;
         final theme = Theme.of(context);
         
+        // 获取VIP显示文本和颜色
+        final vipText = _getVipText(_vipLevel);
+        final vipColor = _getVipColor(_vipLevel);
+        
         return Column(
           children: [
             _buildFeatureItem(
               context,
               icon: Icons.diamond,
               title: 'VIP特权',
-              trailing: _buildStatusTag('普通用户', Colors.orange[300]!),
-              onTap: () => Navigator.of(context).pushNamed(Routes.vipPrivilege),
+              trailing: _isLoadingVip 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : _buildStatusTag(vipText, vipColor),
+              onTap: () {
+                Navigator.of(context).pushNamed(Routes.vipPrivilege).then((_) {
+                  // 从VIP特权页面返回时刷新VIP信息
+                  _loadVipInfo();
+                });
+              },
             ),
             _buildFeatureItem(
               context,
@@ -389,5 +448,25 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
         MessageService.snackBar('更新失败: ${e.toString()}');
       }
     }
+  }
+
+  /// 获取VIP显示文本
+  String _getVipText(int? level) {
+    if (level == null) {
+      return '普通用户';
+    }
+    if (level == 0) {
+      return '普通用户';
+    }
+    return 'VIP$level';
+  }
+
+  /// 获取VIP显示颜色
+  Color _getVipColor(int? level) {
+    if (level == null || level == 0) {
+      return Colors.orange[300]!;
+    }
+    // VIP用户使用更鲜艳的颜色
+    return Colors.purple[400]!;
   }
 }

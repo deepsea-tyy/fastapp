@@ -13,40 +13,55 @@ class ResponseInterceptor extends Interceptor {
     try {
       final data = response.data;
       
-      if (data is! Map<String, dynamic>) {
-        return handler.next(response);
-      }
-      
-      if (!data.containsKey('code')) {
+      if (data is! Map<String, dynamic> || !data.containsKey('code')) {
         return handler.next(response);
       }
       
       final apiResponse = ApiResponse.fromJson(data);
       
       if (!apiResponse.isSuccess) {
-        if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
-          _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
-        }
-        
-        return handler.reject(
-          DioException(
+        if (apiResponse.code == 401) {
+          final dioException = DioException(
             requestOptions: response.requestOptions,
             response: Response(
               requestOptions: response.requestOptions,
               data: apiResponse.toJson(),
               headers: response.headers,
               isRedirect: response.isRedirect,
-              statusCode: response.statusCode,
+              statusCode: 401,
               statusMessage: response.statusMessage,
               redirects: response.redirects,
               extra: response.extra,
             ),
-            type: apiResponse.code == 422
-                ? DioExceptionType.badResponse
-                : DioExceptionType.unknown,
+            type: DioExceptionType.badResponse,
             error: apiResponse.message,
+          );
+          return handler.reject(dioException);
+        }
+        
+        if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
+          _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
+        }
+        
+        final dioException = DioException(
+          requestOptions: response.requestOptions,
+          response: Response(
+            requestOptions: response.requestOptions,
+            data: apiResponse.toJson(),
+            headers: response.headers,
+            isRedirect: response.isRedirect,
+            statusCode: response.statusCode,
+            statusMessage: response.statusMessage,
+            redirects: response.redirects,
+            extra: response.extra,
           ),
+          type: apiResponse.code == 422
+              ? DioExceptionType.badResponse
+              : DioExceptionType.unknown,
+          error: apiResponse.message,
         );
+        
+        return handler.reject(dioException);
       }
       
       final responseData = apiResponse.data ?? data;

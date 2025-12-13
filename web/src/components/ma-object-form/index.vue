@@ -6,6 +6,7 @@ import { ref, watch, computed, defineComponent, PropType, h } from 'vue'
 import { ElInput, ElSelect, ElOption, ElDatePicker } from 'element-plus'
 import MaEditor from '@/components/ma-editor/index.vue'
 import MaRemoteSelect from '@/components/ma-remote-select/index.vue'
+import MaDictSelect from '@/components/ma-dict-picker/ma-dict-select.vue'
 import type { ChildFormItem } from '@/components/ma-children-form/index.vue'
 
 defineOptions({ name: 'MaObjectForm' })
@@ -157,6 +158,10 @@ const getComponentProps = (item: ChildFormItem) => {
       if (item.dict && item.dict.data) {
         props.options = item.dict.data
       }
+      // 处理字典名称
+      if (item.dictName) {
+        props.dictName = item.dictName
+      }
       props.filterable = true
       break
     case 'date':
@@ -202,7 +207,7 @@ const getComponentProps = (item: ChildFormItem) => {
 
   // 添加其他自定义属性
   Object.keys(item).forEach(key => {
-    if (!['title', 'dataIndex', 'formType', 'dict', 'commonRules', 'addDefaultValue', 'labelWidth', 'width'].includes(key)) {
+    if (!['title', 'dataIndex', 'formType', 'dict', 'dictName', 'commonRules', 'addDefaultValue', 'labelWidth', 'width'].includes(key)) {
       props[key] = item[key]
     }
   })
@@ -260,7 +265,15 @@ const renderConfigItem = (item: ChildFormItem) => {
           ...componentProps
         }
 
-        if (item.formType === 'select' && item.dict && item.dict.data) {
+        if (item.formType === 'select' && item.dictName) {
+          // 使用字典名称
+          content = h(MaDictSelect, {
+            ...controlProps,
+            dictName: item.dictName,
+            transScope: 'local'
+          })
+        } else if (item.formType === 'select' && item.dict && item.dict.data) {
+          // 使用内联字典数据
           const options = item.dict.data.map((opt: any) => {
             const labelKey = item.dict?.props?.label || 'label'
             const valueKey = item.dict?.props?.value || 'value'

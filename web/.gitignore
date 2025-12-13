@@ -12,3 +12,4 @@ types/components.d.ts
 .idea
 src/plugins/*
 /mineadmin/*
+.claude

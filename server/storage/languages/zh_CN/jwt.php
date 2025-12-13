@@ -7,4 +7,5 @@ return [
     'forbidden' => '禁止访问',
     'validation_failed' => '用户信息验证失败',
     'expired' => '已过期',
+    'token_required' => '未传token',
 ];

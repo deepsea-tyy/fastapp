@@ -110,11 +110,11 @@ http.interceptors.response.use(
             }
 
             try {
-              const refreshTokenResponse = await createHttp(null, {
-                headers: {
-                  Authorization: `Bearer ${cache.get('refresh_token')}`,
+              const refreshTokenResponse = await createHttp().get('/admin/passport/refresh', {
+                params: {
+                  refresh_token: cache.get('refresh_token'),
                 },
-              }).post('/admin/passport/refresh')
+              })
 
               if (refreshTokenResponse.data.code !== 200) {
                 await logout()

@@ -71,12 +71,7 @@ final class PassportController extends AbstractController
         }
 
         if ($user->google2fa) {
-            // 验证Google2FA
-            $google2fa = new Google2FA();
-            $valid = $google2fa->verifyKey($user->google2fa, $validated['google2fa_code'], 2); // 允许2个时间窗口的误差
-            if (!$valid) {
-                throw new BusinessException(message: trans('auth.google_code_invalid'));
-            }
+            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $browser = $request->header('User-Agent') ?: 'unknown';
@@ -107,11 +102,16 @@ final class PassportController extends AbstractController
         return $this->success($user);
     }
 
-    #[PostMapping(path: '/admin/passport/refresh')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[GetMapping(path: '/admin/passport/refresh')]
     public function refresh(): Result
     {
-        return $this->success($this->currentUser->refreshToken($this->currentUser->getToken()));
+        $token = $this->getRequest()->input('refresh_token');
+        if (empty($token)) {
+            throw new BusinessException(message: trans('jwt.token_required'));
+        }
+        $pasToken = $this->currentUser->setScene('default')->getJwt()->parserRefreshToken($token);
+        $tokenData = $this->currentUser->setScene('default')->refreshToken($pasToken);
+        return $this->success($tokenData);
     }
 
     #[GetMapping(path: '/admin/passport/captcha')]

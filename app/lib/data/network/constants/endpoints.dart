@@ -78,4 +78,7 @@ class Endpoints {
 
   // 应用相关
   static const String pageContentDownload = '/api/app/page-content/download';
+
+  // VIP相关
+  static const String vipDetail = '/api/ex/vip/detail';
 }

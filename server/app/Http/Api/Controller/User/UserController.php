@@ -10,7 +10,6 @@ namespace App\Http\Api\Controller\User;
 
 use App\Common\AbstractController;
 use App\Common\Event\UserAccountEvent;
-use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Service\VerifyCodeService;
@@ -29,7 +28,6 @@ use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\GDLibRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use Hyperf\Context\RequestContext;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
@@ -133,7 +131,7 @@ class UserController extends AbstractController
         path: '/api/sms',
         operationId: 'ApiUserSms',
         summary: '获取验证码',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[QueryParameter(name: 'type', description: '验证码类型：sms(手机短信)或email(邮箱)', required: true, example: 'sms')]
@@ -197,7 +195,7 @@ class UserController extends AbstractController
         ref: UserRequest::class,
         title: '登录请求参数',
         required: ['type'],
-        example: '{ "username": "deepsea", "password": "123456", "mobile": "", "code": "", "google2fa_code": 1111, "type": 1 }'
+        example: '{ "username": "deepsea", "password": "123456", "mobile": "", "code": "86", "vcode": "86", "google2fa_code": "1111", "type": "1" }'
     ))]
     public function login(UserRequest $request): Result
     {
@@ -290,13 +288,14 @@ class UserController extends AbstractController
         path: '/api/user/logout',
         operationId: 'ApiUserLogout',
         summary: '登出',
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{}}')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(TokenMiddleware::class)]
     public function logout(): Result
     {
-        $this->userService->setScene('api')->logout(RequestContext::get()->getAttribute('token'));
+        $this->userService->setScene('api')->logout($this->userService->getToken());
         return $this->success();
     }
 
@@ -304,13 +303,24 @@ class UserController extends AbstractController
         path: '/api/user/refreshToken',
         operationId: 'ApiUserRefreshToken',
         summary: '刷新token',
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
+    #[RequestBody(content: new JsonContent(
+        ref: UserRequest::class,
+        title: '刷新token请求参数',
+        required: ['type'],
+        example: '{ "refresh_token": "exxxx" }'
+    ))]
     #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAi","refresh_token":"eyxxx", "expire_at":300}}')]
-    #[Middleware(TokenMiddleware::class)]
     public function refreshToken(): Result
     {
-        $tokenData = $this->userService->setScene('api')->refreshToken(RequestContext::get()->getAttribute('token'));
+        $token = $this->getRequest()->input('refresh_token');
+        if (empty($token)) {
+            throw new BusinessException(message: trans('jwt.token_required'));
+        }
+        $pasToken = $this->userService->setScene('api')->getJwt()->parserRefreshToken($token);
+        $tokenData = $this->userService->setScene('api')->refreshToken($pasToken);
         return $this->success($tokenData);
     }
 
@@ -318,7 +328,7 @@ class UserController extends AbstractController
         path: '/api/user/info',
         operationId: 'ApiUserGetInfo',
         summary: '用户信息',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[ResultResponse(instance: new Result())]
@@ -337,7 +347,7 @@ class UserController extends AbstractController
         path: '/api/user/password/change',
         operationId: 'ApiUserPasswordChange',
         summary: '修改密码',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -370,10 +380,7 @@ class UserController extends AbstractController
         $user->password = $validated['password'];
         $user->save();
 
-        $token = RequestContext::get()->getAttribute('token');
-        if ($token) {
-            $this->userService->setScene('api')->logout($token);
-        }
+        $this->userService->setScene('api')->logout($this->userService->getToken());
 
         return $this->success(message: trans('user.password_change_success'));
     }
@@ -382,7 +389,7 @@ class UserController extends AbstractController
         path: '/api/user/account/disable',
         operationId: 'ApiUserAccountDisable',
         summary: '禁用账户',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -402,10 +409,7 @@ class UserController extends AbstractController
         $user->status = Status::DISABLE->value;
         $user->save();
 
-        $token = RequestContext::get()->getAttribute('token');
-        if ($token) {
-            $this->userService->setScene('api')->logout($token);
-        }
+        $this->userService->setScene('api')->logout($this->userService->getToken());
         $this->dispatchUserLoginEvent($user, $request, 8);
         return $this->success(message: trans('auth.account_disable_success'));
     }
@@ -414,7 +418,7 @@ class UserController extends AbstractController
         path: '/api/user/account/delete',
         operationId: 'ApiUserAccountDelete',
         summary: '删除账户',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -440,10 +444,7 @@ class UserController extends AbstractController
         $user->status = Status::DISABLE->value;
         $user->save();
 
-        $token = RequestContext::get()->getAttribute('token');
-        if ($token) {
-            $this->userService->setScene('api')->logout($token);
-        }
+        $this->userService->setScene('api')->logout($this->userService->getToken());
         $this->dispatchUserLoginEvent($user, $request, 9);
         return $this->success(message: trans('auth.account_delete_success'));
     }
@@ -452,7 +453,7 @@ class UserController extends AbstractController
         path: '/api/user/google2fa/qrcode',
         operationId: 'ApiUserGoogle2faQrcode',
         summary: '获取Google2FA二维码',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"google2fa":"JBSWY3DPEHPK3PXP","qrcode":"data:image/svg+xml;base64,..."}}')]
@@ -487,7 +488,7 @@ class UserController extends AbstractController
         path: '/api/user/google2fa/bind',
         operationId: 'ApiUserGoogle2faBind',
         summary: '绑定Google2FA',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -521,7 +522,7 @@ class UserController extends AbstractController
         path: '/api/user/google2fa/unbind',
         operationId: 'ApiUserGoogle2faUnbind',
         summary: '解绑Google2FA',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -553,7 +554,7 @@ class UserController extends AbstractController
         path: '/api/user/email/bind',
         operationId: 'ApiUserEmailBind',
         summary: '绑定邮箱',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -607,7 +608,7 @@ class UserController extends AbstractController
         path: '/api/user/email/unbind',
         operationId: 'ApiUserEmailUnbind',
         summary: '解绑邮箱',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -655,7 +656,7 @@ class UserController extends AbstractController
         path: '/api/user/mobile/bind',
         operationId: 'ApiUserMobileBind',
         summary: '绑定手机号',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -711,7 +712,7 @@ class UserController extends AbstractController
         path: '/api/user/mobile/unbind',
         operationId: 'ApiUserMobileUnbind',
         summary: '解绑手机号',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -761,7 +762,7 @@ class UserController extends AbstractController
         path: '/api/user/accountLogs',
         operationId: 'ApiUserAccountLogs',
         summary: '获取账户日志',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[QueryParameter(name: 'page', description: '页码', required: false, example: '1')]
@@ -789,7 +790,7 @@ class UserController extends AbstractController
         path: '/api/user/profile/update',
         operationId: 'ApiUserProfileUpdate',
         summary: '更新用户资料',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(
@@ -813,7 +814,7 @@ class UserController extends AbstractController
         path: '/api/user/resetPassword',
         operationId: 'ApiUserResetPassword',
         summary: '重置密码',
-        security: [['Bearer' => [], 'ApiKey' => []]],
+        security: [['ApiKey' => []]],
         tags: ['用户接口'],
     )]
     #[RequestBody(content: new JsonContent(

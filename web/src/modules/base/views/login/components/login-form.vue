@@ -195,7 +195,7 @@ onMounted(() => {
         v-model="form.google2fa_code"
         :class="inputClass"
         name="google2fa_code"
-        :placeholder="t('loginForm.google2faPlaceholder')"
+        :placeholder="t('loginForm.google2fa_codePlaceholder')"
         :disabled="isFormSubmit"
         @blur="validateField"
       />
