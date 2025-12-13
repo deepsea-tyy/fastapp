@@ -21,6 +21,8 @@ import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/store/orders/order_store.dart';
+import 'package:fastapp/presentation/store/kyc/ex_kyc_store.dart';
+import 'package:fastapp/data/network/apis/kyc/ex_kyc_api.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
@@ -131,6 +133,13 @@ class StoreModule {
       OrderStore(
         getIt<GetOrdersUseCase>(),
         getIt<CancelOrderUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<ExKycStore>(
+      ExKycStore(
+        getIt<ExKycApi>(),
         getIt<ErrorStore>(),
       ),
     );

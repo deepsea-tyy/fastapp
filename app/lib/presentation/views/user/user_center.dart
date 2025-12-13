@@ -30,6 +30,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
   
   // VIP等级信息
   int? _vipLevel;
+  Map<String, dynamic>? _vipData;
   bool _isLoadingVip = false;
 
   @override
@@ -53,6 +54,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
       if (mounted) {
         setState(() {
           _vipLevel = response['level'] as int? ?? 0;
+          _vipData = response;
         });
       }
     } catch (e) {
@@ -60,6 +62,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
       if (mounted) {
         setState(() {
           _vipLevel = 0; // 默认普通用户
+          _vipData = null;
         });
       }
     } finally {
@@ -285,7 +288,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
               context,
               icon: Icons.diamond,
               title: 'VIP特权',
-              trailing: _isLoadingVip 
+              trailing: _isLoadingVip
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -293,7 +296,10 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
                   )
                 : _buildStatusTag(vipText, vipColor),
               onTap: () {
-                Navigator.of(context).pushNamed(Routes.vipPrivilege).then((_) {
+                Navigator.of(context).pushNamed(
+                  Routes.vipPrivilege,
+                  arguments: _vipData,
+                ).then((_) {
                   // 从VIP特权页面返回时刷新VIP信息
                   _loadVipInfo();
                 });

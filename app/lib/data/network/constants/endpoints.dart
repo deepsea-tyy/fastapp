@@ -81,4 +81,8 @@ class Endpoints {
 
   // VIP相关
   static const String vipDetail = '/api/ex/vip/detail';
+
+  // KYC认证相关
+  static const String kycSubmit = '/api/ex/kyc/submit';
+  static const String kycDetail = '/api/ex/kyc/detail';
 }
