@@ -309,7 +309,7 @@ class UserController extends AbstractController
     #[RequestBody(content: new JsonContent(
         ref: UserRequest::class,
         title: '刷新token请求参数',
-        required: ['type'],
+        required: ['refresh_token'],
         example: '{ "refresh_token": "exxxx" }'
     ))]
     #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAi","refresh_token":"eyxxx", "expire_at":300}}')]

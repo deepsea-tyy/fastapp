@@ -174,7 +174,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[Post(path: '/{{$urlPathPrefix}}/create', operationId: '{{$permissionName}}:create', summary: '{{$menuName}}新增', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
 @endif
-    public function create(): Result
+    public function create(Request $request): Result
     {
 @if($isAdminTarget)
         $this->service->create(array_merge($this->getRequestData(), [
@@ -192,7 +192,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[Put(path: '/{{$urlPathPrefix}}/save/{id}', operationId: '{{$permissionName}}:save', summary: '{{$menuName}}保存', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
     #[ResultResponse(instance: new Result())]
 @endif
-    public function save(int $id): Result
+    public function save(int $id, Request $request): Result
     {
 @if($isAdminTarget)
         $this->service->updateById($id, array_merge($this->getRequestData(), [
