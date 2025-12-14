@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'widgets.dart';
 
 /// VIP特权页面 - 展示VIP等级配置信息
@@ -100,6 +101,18 @@ class _VipPrivilegeScreenState extends State<VipPrivilegeScreen> {
                                 // VIP等级卡片
                                 _buildVipLevelCard(context),
                                 const SizedBox(height: 24),
+                                // VIP详细介绍（HTML格式）
+                                if (_vipData?['description'] != null && (_vipData!['description'] as String).isNotEmpty)
+                                  ...[
+                                    _buildVipDescription(context),
+                                    const SizedBox(height: 24),
+                                  ],
+                                // VIP升级进度（如果不是最高等级）
+                                if ((_vipData?['level'] as int? ?? 0) < 9)
+                                  ...[
+                                    _buildUpgradeProgress(context),
+                                    const SizedBox(height: 24),
+                                  ],
                                 // 费率部分
                                 _buildFeeRateSection(context),
                                 const SizedBox(height: 24),
@@ -152,10 +165,9 @@ class _VipPrivilegeScreenState extends State<VipPrivilegeScreen> {
   /// 构建VIP等级卡片
   Widget _buildVipLevelCard(BuildContext context) {
     final vipLevel = _vipData?['level'] as int? ?? 0;
-    final levelName = _getVipLevelName(vipLevel);
+    final levelName = _vipData?['name'] as String? ?? _getVipLevelName(vipLevel);
     final colorStr = _vipData?['color'] as String?;
     final vipColor = _parseColor(colorStr) ?? _getDefaultVipColor(vipLevel);
-    final icon = _vipData?['icon'] as String?;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -179,63 +191,293 @@ class _VipPrivilegeScreenState extends State<VipPrivilegeScreen> {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (icon != null && icon.isNotEmpty)
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        levelName,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        vipLevel == 0 ? '普通用户' : '尊享VIP专属特权',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Icon(
-                  Icons.diamond,
-                  size: 36,
-                  color: Colors.white,
-                ),
-              )
-            else
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  vipLevel > 0 ? Icons.diamond : Icons.person,
-                  size: 36,
-                  color: Colors.white,
-                ),
-              ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    levelName,
+                // VIP等级数字徽章
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    vipLevel == 0 ? 'LV0' : 'LV$vipLevel',
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    vipLevel == 0 ? '普通用户' : '尊享VIP专属特权',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+
+            // 降级保护提示（如果在保护期内）
+            if (_isInProtectionPeriod()) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.shield,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getProtectionText(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  /// 构建VIP详细介绍（HTML格式）
+  Widget _buildVipDescription(BuildContext context) {
+    final description = _vipData?['description'] as String? ?? '';
+
+    if (description.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'VIP介绍',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SettingCard(
+            padding: const EdgeInsets.all(16),
+            child: Html(
+              data: description,
+              style: {
+                "body": Style(
+                  margin: Margins.zero,
+                  padding: HtmlPaddings.zero,
+                  fontSize: FontSize(14),
+                  lineHeight: const LineHeight(1.6),
+                ),
+                "p": Style(
+                  margin: Margins.only(bottom: 8),
+                ),
+                "h1": Style(
+                  fontSize: FontSize(20),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(bottom: 8, top: 8),
+                ),
+                "h2": Style(
+                  fontSize: FontSize(18),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(bottom: 8, top: 8),
+                ),
+                "h3": Style(
+                  fontSize: FontSize(16),
+                  fontWeight: FontWeight.bold,
+                  margin: Margins.only(bottom: 6, top: 6),
+                ),
+                "ul": Style(
+                  margin: Margins.only(left: 16, bottom: 8),
+                ),
+                "ol": Style(
+                  margin: Margins.only(left: 16, bottom: 8),
+                ),
+                "li": Style(
+                  margin: Margins.only(bottom: 4),
+                ),
+                "strong": Style(
+                  fontWeight: FontWeight.bold,
+                ),
+                "em": Style(
+                  fontStyle: FontStyle.italic,
+                ),
+                "a": Style(
+                  color: Theme.of(context).colorScheme.primary,
+                  textDecoration: TextDecoration.underline,
+                ),
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建VIP升级进度
+  Widget _buildUpgradeProgress(BuildContext context) {
+    final currentLevel = _vipData?['level'] as int? ?? 0;
+    final holderLevel = _vipData?['holder_level'] as int? ?? 0;
+    final tradingLevel = _vipData?['trading_level'] as int? ?? 0;
+
+    // 如果已经是最高等级，不显示升级进度
+    if (currentLevel >= 9) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.trending_up,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'VIP升级进度',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SettingCard(
+            child: Column(
+              children: [
+                // 持有者计划等级
+                _buildLevelProgressItem(
+                  context,
+                  title: '持有者计划',
+                  icon: Icons.account_balance_wallet,
+                  currentLevel: holderLevel,
+                  color: Colors.blue,
+                ),
+                if (holderLevel != tradingLevel) const Divider(height: 24),
+                // 交易型VIP等级
+                if (holderLevel != tradingLevel)
+                  _buildLevelProgressItem(
+                    context,
+                    title: '交易型VIP',
+                    icon: Icons.show_chart,
+                    currentLevel: tradingLevel,
+                    color: Colors.orange,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建等级进度项
+  Widget _buildLevelProgressItem(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required int currentLevel,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 22, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                currentLevel == 0 ? '普通用户' : 'VIP$currentLevel',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'LV$currentLevel',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -641,6 +883,45 @@ class _VipPrivilegeScreenState extends State<VipPrivilegeScreen> {
       return '普通用户';
     }
     return 'VIP $level';
+  }
+
+  /// 判断是否在降级保护期内
+  bool _isInProtectionPeriod() {
+    final protectionUntil = _vipData?['protection_until'] as String?;
+    if (protectionUntil == null || protectionUntil.isEmpty) {
+      return false;
+    }
+
+    try {
+      final protectionDate = DateTime.parse(protectionUntil);
+      return protectionDate.isAfter(DateTime.now());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 获取降级保护文本
+  String _getProtectionText() {
+    final protectionUntil = _vipData?['protection_until'] as String?;
+    if (protectionUntil == null || protectionUntil.isEmpty) {
+      return '降级保护期已结束';
+    }
+
+    try {
+      final protectionDate = DateTime.parse(protectionUntil);
+      final now = DateTime.now();
+      final difference = protectionDate.difference(now);
+
+      if (difference.inDays > 0) {
+        return '降级保护期：剩余${difference.inDays}天';
+      } else if (difference.inHours > 0) {
+        return '降级保护期：剩余${difference.inHours}小时';
+      } else {
+        return '降级保护期即将结束';
+      }
+    } catch (e) {
+      return '降级保护期已结束';
+    }
   }
 
   /// 解析颜色字符串

@@ -433,6 +433,7 @@ onUnmounted(() => {
 .trigger-image {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .image-count {
@@ -476,8 +477,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   min-height: 60vh;
+  max-height: 75vh;
   background: #f5f7fa;
   padding: 20px;
+  overflow: hidden;
 }
 
 .image-container {
@@ -486,13 +489,32 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   max-width: calc(100% - 120px);
+  width: 100%;
   height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.image-container :deep(.el-image) {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+.image-container :deep(.el-image img) {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .preview-image {
   max-width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
 }
 
 .nav-button {
@@ -570,6 +592,7 @@ onUnmounted(() => {
 .thumbnail-image {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .keyboard-hint {

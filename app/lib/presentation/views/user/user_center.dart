@@ -9,6 +9,9 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fastapp/presentation/views/user/setting/widgets.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:fastapp/data/network/apis/attachment/attachment_api.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:fastapp/utils/image_utils.dart';
 
 /// 用户中心页面
 class UserCenterScreen extends StatefulWidget {
@@ -129,7 +132,11 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
             children: [
               Row(
                 children: [
-                  _buildAvatar(user.profile?.avatar),
+                  // 头像 - 点击可编辑
+                  GestureDetector(
+                    onTap: () => _showEditAvatarDialog(context, userStore),
+                    child: _buildAvatar(user.profile?.avatar),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -220,9 +227,12 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
 
     if (avatarUrl?.isNotEmpty != true) return defaultAvatar;
 
+    // 使用 ImageUtils 处理头像 URL
+    final imageUrl = ImageUtils.formatImagePath(avatarUrl);
+
     return ClipOval(
       child: CachedNetworkImage(
-        imageUrl: avatarUrl!,
+        imageUrl: imageUrl,
         width: _avatarSize,
         height: _avatarSize,
         fit: BoxFit.cover,
@@ -453,6 +463,131 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
     } catch (e) {
       if (context.mounted) {
         MessageService.snackBar('更新失败: ${e.toString()}');
+      }
+    }
+  }
+
+  /// 显示编辑头像对话框
+  Future<void> _showEditAvatarDialog(BuildContext context, UserStore userStore) async {
+    final ImagePicker picker = ImagePicker();
+
+    try {
+      // 显示底部选择框：拍照或从相册选择
+      final ImageSource? source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('拍照'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('从相册选择'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) return;
+
+      // 根据用户选择的方式获取图片
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      if (!context.mounted) return;
+
+      // 显示上传进度对话框
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('正在上传头像...'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      try {
+        // 上传图片
+        final attachmentApi = getIt<AttachmentApi>();
+        final uploadResult = await attachmentApi.upload(
+          filePath: image.path,
+          fileName: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          onSendProgress: (sent, total) {
+            final progress = (sent / total * 100).toStringAsFixed(0);
+            debugPrint('上传进度: $progress%');
+          },
+        );
+
+        // 获取上传后的图片URL
+        final avatarUrl = uploadResult['url'] as String?;
+
+        if (avatarUrl == null || avatarUrl.isEmpty) {
+          throw Exception('上传成功但未返回图片URL');
+        }
+
+        // 使用 ImageUtils 处理 URL，提取相对路径用于保存
+        final processedUrl = ImageUtils.processUrl(avatarUrl);
+
+        // 更新用户头像
+        await userStore.updateAvatar(processedUrl);
+
+        // 关闭加载对话框
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        if (context.mounted) {
+          MessageService.snackBar('头像更新成功');
+        }
+      } catch (e) {
+        // 关闭加载对话框
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        if (context.mounted) {
+          String errorMessage = '更新头像失败';
+
+          if (e.toString().contains('文件大小超过限制')) {
+            errorMessage = e.toString().replaceAll('Exception: ', '');
+          } else if (e.toString().contains('文件不存在')) {
+            errorMessage = '图片文件不存在';
+          } else {
+            errorMessage = '更新头像失败: ${e.toString()}';
+          }
+
+          MessageService.snackBar(errorMessage);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        MessageService.snackBar('选择图片失败: ${e.toString()}');
       }
     }
   }

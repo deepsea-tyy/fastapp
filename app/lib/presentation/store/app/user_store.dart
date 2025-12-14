@@ -292,6 +292,20 @@ abstract class _UserStore with Store {
     }
   }
 
+  /// 更新头像
+  @action
+  Future<void> updateAvatar(String avatarUrl) async {
+    try {
+      final userApi = getIt<UserApi>();
+      await userApi.updateProfile(avatar: avatarUrl);
+      // 更新成功后立即刷新用户信息，确保界面同步
+      await getUserInfo();
+    } catch (e) {
+      errorStore.setErrorMessage(e.toString());
+      rethrow;
+    }
+  }
+
   // general methods:-----------------------------------------------------------
   void dispose() {
     for (final d in _disposers) {

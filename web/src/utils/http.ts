@@ -163,7 +163,9 @@ http.interceptors.response.use(
           break
       }
 
-      return Promise.reject(response.data ? response.data : null)
+      // 添加标记表示错误已被处理，避免二次弹框
+      const errorData = response.data ? { ...response.data, _errorHandled: true } : { _errorHandled: true }
+      return Promise.reject(errorData)
     }
   },
   async (error: any) => {

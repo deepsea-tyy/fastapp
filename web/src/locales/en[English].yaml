@@ -168,6 +168,16 @@ crud:
   confirm: Confirm
   createFailed: Creation Failed
   noPermission: There is no permission to access or use this feature
+  view: View
+  approve: Approve
+  reject: Reject
+  approveConfirm: Are you sure to approve this application?
+  rejectConfirm: Are you sure to reject this application?
+  rejectReason: Please enter the rejection reason
+  approveSuccess: Approved successfully
+  approveFailed: Approval failed
+  rejectSuccess: Rejected successfully
+  rejectFailed: Rejection failed
   userNotAllow: This feature is not accessible or available to current users
   superAdminNoEdit: SuperAdmin not allow edit
   category: Category

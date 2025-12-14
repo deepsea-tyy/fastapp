@@ -62,6 +62,7 @@ class _IdentityVerificationScreenState
                           const SizedBox(height: 16),
                           // KYC 状态详情区域
                           _buildKycStatusSection(context),
+                          const SizedBox(height: 16),
                           // 升级认证区域
                           _buildUpgradeSection(context),
                           const SizedBox(height: 16),

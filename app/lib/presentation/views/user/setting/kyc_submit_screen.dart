@@ -71,6 +71,8 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
   // 常量
   static const _dateFormat = 'yyyy-MM-dd';
   static const _dateTimeFormat = 'yyyy-MM-dd HH:mm:ss';
+  static const _photoSize = 60.0;
+  static const _iconSize = 18.0;
 
   @override
   void initState() {
@@ -123,75 +125,55 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
 
     // 预填充基本信息
     if (kyc.countryCode != null) {
-      final country = Countries.all.firstWhere(
+      _selectedCountry = Countries.all.firstWhere(
         (c) => c.code == kyc.countryCode,
         orElse: () => Countries.defaultCountry,
       );
-      _selectedCountry = country;
     }
 
-    if (kyc.surname != null) _surnameController.text = kyc.surname!;
-    if (kyc.middleName != null) _middleNameController.text = kyc.middleName!;
-    if (kyc.name != null) _nameController.text = kyc.name!;
-    if (kyc.gender != null) _selectedGender = kyc.gender!;
+    _surnameController.text = kyc.surname ?? '';
+    _middleNameController.text = kyc.middleName ?? '';
+    _nameController.text = kyc.name ?? '';
+    _selectedGender = kyc.gender ?? 1;
 
-    if (kyc.birthday != null) {
-      try {
-        // 尝试解析带时间的日期格式（从后端返回）
-        DateTime date;
-        if (kyc.birthday!.contains(' ')) {
-          date = DateFormat('yyyy-MM-dd HH:mm:ss').parse(kyc.birthday!);
-        } else {
-          date = DateFormat(_dateFormat).parse(kyc.birthday!);
-        }
-        _birthday = date;
-        _birthdayController.text = DateFormat(_dateFormat).format(date);
-      } catch (e) {
-        // 解析失败，忽略
-      }
-    }
+    // 预填充日期
+    _parseAndSetDate(kyc.birthday, (date) {
+      _birthday = date;
+      _birthdayController.text = DateFormat(_dateFormat).format(date);
+    });
 
     // 预填充证件信息
-    if (kyc.idType != null) _selectedIdType = kyc.idType!;
-    if (kyc.idNumber != null) _idNumberController.text = kyc.idNumber!;
+    _selectedIdType = kyc.idType ?? 'ID_CARD';
+    _idNumberController.text = kyc.idNumber ?? '';
 
-    if (kyc.idIssueDate != null) {
-      try {
-        // 尝试解析带时间的日期格式（从后端返回）
-        DateTime date;
-        if (kyc.idIssueDate!.contains(' ')) {
-          date = DateFormat('yyyy-MM-dd HH:mm:ss').parse(kyc.idIssueDate!);
-        } else {
-          date = DateFormat(_dateFormat).parse(kyc.idIssueDate!);
-        }
-        _idIssueDate = date;
-        _idIssueDateController.text = DateFormat(_dateFormat).format(date);
-      } catch (e) {
-        // 解析失败，忽略
-      }
-    }
+    _parseAndSetDate(kyc.idIssueDate, (date) {
+      _idIssueDate = date;
+      _idIssueDateController.text = DateFormat(_dateFormat).format(date);
+    });
 
-    if (kyc.idExpiryDate != null) {
-      try {
-        // 尝试解析带时间的日期格式（从后端返回）
-        DateTime date;
-        if (kyc.idExpiryDate!.contains(' ')) {
-          date = DateFormat('yyyy-MM-dd HH:mm:ss').parse(kyc.idExpiryDate!);
-        } else {
-          date = DateFormat(_dateFormat).parse(kyc.idExpiryDate!);
-        }
-        _idExpiryDate = date;
-        _idExpiryDateController.text = DateFormat(_dateFormat).format(date);
-      } catch (e) {
-        // 解析失败，忽略
-      }
-    }
+    _parseAndSetDate(kyc.idExpiryDate, (date) {
+      _idExpiryDate = date;
+      _idExpiryDateController.text = DateFormat(_dateFormat).format(date);
+    });
 
     // 预填充地址和证件图片
-    if (kyc.address != null) _addressController.text = kyc.address!;
-    if (kyc.idFrontImage != null) _idFrontImage = kyc.idFrontImage;
-    if (kyc.idBackImage != null) _idBackImage = kyc.idBackImage;
-    if (kyc.idSelfieImage != null) _idSelfieImage = kyc.idSelfieImage;
+    _addressController.text = kyc.address ?? '';
+    _idFrontImage = kyc.idFrontImage;
+    _idBackImage = kyc.idBackImage;
+    _idSelfieImage = kyc.idSelfieImage;
+  }
+
+  /// 解析日期字符串并设置（支持带时间和不带时间的格式）
+  void _parseAndSetDate(String? dateString, Function(DateTime) onSuccess) {
+    if (dateString == null) return;
+    try {
+      final date = dateString.contains(' ')
+          ? DateFormat(_dateTimeFormat).parse(dateString)
+          : DateFormat(_dateFormat).parse(dateString);
+      onSuccess(date);
+    } catch (e) {
+      // 解析失败，忽略
+    }
   }
 
   @override
@@ -595,7 +577,7 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
         _buildSelectField(
           label: '国家/地区 *',
           value: _selectedCountry.countryDisplayText,
-          onTap: () => _showCountryPicker(context),
+          onTap: _showCountryPicker,
         ),
         const SizedBox(height: 16),
         _buildTextField(_surnameController, '姓 *', '请输入姓氏', required: true),
@@ -607,14 +589,14 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
         _buildSelectField(
           label: '性别 *',
           value: _getGenderText(_selectedGender),
-          onTap: () => _showGenderPicker(context),
+          onTap: _showGenderPicker,
           validator: (_) => _selectedGender == 0 ? '请选择性别' : null,
         ),
         const SizedBox(height: 16),
         _buildSelectField(
           label: '出生日期 *',
           value: _birthdayController.text.isEmpty ? '请选择出生日期' : _birthdayController.text,
-          onTap: () => _showBirthdayPicker(context),
+          onTap: _showBirthdayPicker,
           validator: (_) => _birthday == null ? '请选择出生日期' : null,
         ),
       ],
@@ -627,7 +609,7 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
         _buildSelectField(
           label: '证件类型 *',
           value: _getIdTypeText(_selectedIdType),
-          onTap: () => _showIdTypePicker(context),
+          onTap: _showIdTypePicker,
         ),
         const SizedBox(height: 16),
         _buildTextField(_idNumberController, '证件号码 *', '请输入证件号码', required: true),
@@ -635,14 +617,14 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
         _buildSelectField(
           label: '证件签发日期 *',
           value: _idIssueDateController.text.isEmpty ? '请选择签发日期' : _idIssueDateController.text,
-          onTap: () => _showIdIssueDatePicker(context),
+          onTap: _showIdIssueDatePicker,
           validator: (_) => _idIssueDate == null ? '请选择证件签发日期' : null,
         ),
         const SizedBox(height: 16),
         _buildSelectField(
           label: '证件有效期（可选）',
           value: _idExpiryDateController.text.isEmpty ? '请选择有效期' : _idExpiryDateController.text,
-          onTap: () => _showIdExpiryDatePicker(context),
+          onTap: _showIdExpiryDatePicker,
         ),
       ],
     );
@@ -723,39 +705,22 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
           const SizedBox(height: 8),
           Text('进阶认证需要提供真实的GPS定位信息以验证地址', style: TextStyle(fontSize: 13, color: Colors.blue[900])),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isLoadingLocation ? null : _getLocation,
-                  icon: _isLoadingLocation
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-                        )
-                      : const Icon(Icons.my_location, size: 18),
-                  label: Text(_isLoadingLocation ? '定位中...' : '获取当前位置'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (const bool.fromEnvironment('dart.vm.product') == false)
-                ElevatedButton(
-                  onPressed: _useTestLocation,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange[700],
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  ),
-                  child: const Icon(Icons.bug_report, size: 18),
-                ),
-            ],
+          ElevatedButton.icon(
+            onPressed: _isLoadingLocation ? null : _getLocation,
+            icon: _isLoadingLocation
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                  )
+                : const Icon(Icons.my_location, size: 18),
+            label: Text(_isLoadingLocation ? '定位中...' : '获取当前位置'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[700],
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size(double.infinity, 48),
+            ),
           ),
           if (_latitude != null && _longitude != null)
             Container(
@@ -893,8 +858,8 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
         child: Row(
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: _photoSize,
+              height: _photoSize,
               decoration: BoxDecoration(
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(6),
@@ -905,17 +870,9 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
                       child: Image.network(
                         ImageUtils.formatSingleImagePath(imagePath),
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Icon(Icons.image, color: Colors.grey[400], size: 30),
+                        loadingBuilder: (context, child, loadingProgress) =>
+                          loadingProgress == null ? child : const Center(child: CircularProgressIndicator()),
+                        errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.grey[400], size: 30),
                       ),
                     )
                   : Icon(Icons.add_photo_alternate, color: Colors.grey[400], size: 30),
@@ -946,41 +903,32 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
     );
   }
 
-  String _getGenderText(int gender) {
-    return const {1: '男', 2: '女', 3: '其他'}[gender] ?? '';
-  }
+  String _getGenderText(int gender) => const {1: '男', 2: '女', 3: '其他'}[gender] ?? '';
 
-  String _getIdTypeText(String idType) {
-    return const {
-      'ID_CARD': '身份证',
-      'PASSPORT': '护照',
-      'DRIVING_LICENSE': '驾驶证',
-      'OTHER': '其他',
-    }[idType] ?? '';
-  }
+  String _getIdTypeText(String idType) => const {
+    'ID_CARD': '身份证',
+    'PASSPORT': '护照',
+    'DRIVING_LICENSE': '驾驶证',
+    'OTHER': '其他',
+  }[idType] ?? '';
 
-  Future<void> _showGenderPicker(BuildContext context) async {
+  Future<void> _showGenderPicker() async {
     await showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => _buildBottomSheet(
-        '选择性别',
-        [
-          _buildListItem(1, '男', Icons.male, _selectedGender == 1, () {
-            setState(() => _selectedGender = 1);
-            Navigator.pop(context);
-          }),
-          _buildListItem(2, '女', Icons.female, _selectedGender == 2, () {
-            setState(() => _selectedGender = 2);
-            Navigator.pop(context);
-          }),
-        ],
-      ),
+      builder: (context) => _buildBottomSheet('选择性别', [
+        _buildListItem(1, '男', Icons.male, _selectedGender == 1, () => _selectAndPop(() => _selectedGender = 1)),
+        _buildListItem(2, '女', Icons.female, _selectedGender == 2, () => _selectAndPop(() => _selectedGender = 2)),
+      ]),
     );
   }
 
-  Future<void> _showCountryPicker(BuildContext context) async {
+  void _selectAndPop(VoidCallback onSelect) {
+    setState(onSelect);
+    Navigator.pop(context);
+  }
+
+  Future<void> _showCountryPicker() async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1037,72 +985,72 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
     );
   }
 
-  Future<void> _showIdTypePicker(BuildContext context) async {
+  Future<void> _showIdTypePicker() async {
+    final idTypes = [
+      ('ID_CARD', '身份证', '中华人民共和国居民身份证', Icons.credit_card),
+      ('PASSPORT', '护照', '国际旅行证件', Icons.travel_explore),
+      ('DRIVING_LICENSE', '驾驶证', '机动车驾驶证', Icons.drive_eta),
+      ('OTHER', '其他', '其他有效身份证件', Icons.description),
+    ];
+
     await showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => _buildBottomSheet(
         '选择证件类型',
-        [
-          _buildIdTypeItem('ID_CARD', '身份证', '中华人民共和国居民身份证', Icons.credit_card),
-          _buildIdTypeItem('PASSPORT', '护照', '国际旅行证件', Icons.travel_explore),
-          _buildIdTypeItem('DRIVING_LICENSE', '驾驶证', '机动车驾驶证', Icons.drive_eta),
-          _buildIdTypeItem('OTHER', '其他', '其他有效身份证件', Icons.description),
-        ],
+        idTypes.map((item) => _buildIdTypeItem(item.$1, item.$2, item.$3, item.$4)).toList(),
       ),
     );
   }
 
-  Future<void> _showBirthdayPicker(BuildContext context) async {
+  Future<void> _showBirthdayPicker() => _showDatePicker(
+    title: '选择出生日期',
+    initialDate: _birthday ?? DateTime(2000, 1, 1),
+    firstDate: DateTime(1971),
+    lastDate: DateTime.now(),
+    onSelected: (date) {
+      _birthday = date;
+      _birthdayController.text = DateFormat(_dateFormat).format(date);
+    },
+  );
+
+  Future<void> _showIdIssueDatePicker() => _showDatePicker(
+    title: '选择证件签发日期',
+    initialDate: _idIssueDate ?? DateTime.now(),
+    firstDate: DateTime(1900),
+    lastDate: DateTime.now(),
+    onSelected: (date) {
+      _idIssueDate = date;
+      _idIssueDateController.text = DateFormat(_dateFormat).format(date);
+    },
+  );
+
+  Future<void> _showIdExpiryDatePicker() => _showDatePicker(
+    title: '选择证件有效期',
+    initialDate: _idExpiryDate ?? DateTime.now().add(const Duration(days: 3650)),
+    firstDate: DateTime.now(),
+    lastDate: DateTime(2100),
+    onSelected: (date) {
+      _idExpiryDate = date;
+      _idExpiryDateController.text = DateFormat(_dateFormat).format(date);
+    },
+  );
+
+  Future<void> _showDatePicker({
+    required String title,
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    required Function(DateTime) onSelected,
+  }) async {
     final result = await DatePickerBottomSheet.show(
       context,
-      title: '选择出生日期',
-      initialDate: _birthday ?? DateTime(2000, 1, 1),
-      firstDate: DateTime(1971),
-      lastDate: DateTime.now(),
+      title: title,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
-
-    if (result != null) {
-      setState(() {
-        _birthday = result;
-        _birthdayController.text = DateFormat(_dateFormat).format(result);
-      });
-    }
-  }
-
-  Future<void> _showIdIssueDatePicker(BuildContext context) async {
-    final result = await DatePickerBottomSheet.show(
-      context,
-      title: '选择证件签发日期',
-      initialDate: _idIssueDate ?? DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-
-    if (result != null) {
-      setState(() {
-        _idIssueDate = result;
-        _idIssueDateController.text = DateFormat(_dateFormat).format(result);
-      });
-    }
-  }
-
-  Future<void> _showIdExpiryDatePicker(BuildContext context) async {
-    final result = await DatePickerBottomSheet.show(
-      context,
-      title: '选择证件有效期',
-      initialDate: _idExpiryDate ?? DateTime.now().add(const Duration(days: 3650)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-
-    if (result != null) {
-      setState(() {
-        _idExpiryDate = result;
-        _idExpiryDateController.text = DateFormat(_dateFormat).format(result);
-      });
-    }
+    if (result != null) setState(() => onSelected(result));
   }
 
   Widget _buildBottomSheet(String title, List<Widget> children) {
@@ -1150,23 +1098,28 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
 
   Widget _buildIdTypeItem(String value, String label, String description, IconData icon) {
     final isSelected = _selectedIdType == value;
+    final primaryColor = Theme.of(context).primaryColor;
+
     return ListTile(
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.15) : Colors.grey.shade100,
+          color: isSelected ? primaryColor.withOpacity(0.15) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 24, color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade600),
+        child: Icon(icon, size: 24, color: isSelected ? primaryColor : Colors.grey.shade600),
       ),
-      title: Text(label, style: TextStyle(fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal, color: isSelected ? Theme.of(context).primaryColor : Colors.black87)),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? primaryColor : Colors.black87,
+        ),
+      ),
       subtitle: Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-      trailing: isSelected ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor, size: 20) : null,
-      onTap: () {
-        setState(() => _selectedIdType = value);
-        Navigator.pop(context);
-      },
+      trailing: isSelected ? Icon(Icons.check_circle, color: primaryColor, size: 20) : null,
+      onTap: () => _selectAndPop(() => _selectedIdType = value),
     );
   }
 
@@ -1317,57 +1270,31 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
     }
   }
 
-  void _useTestLocation() {
-    setState(() {
-      _latitude = 39.9042;
-      _longitude = 116.4074;
-      _locationAccuracy = 10.0;
-      _locationAddress = '中国 北京市 东城区 天安门广场';
-      _locationTime = DateTime.now();
-    });
-    MessageService.info('已使用测试定位数据（北京天安门）');
-  }
-
   Future<void> _submitForm() async {
     final errors = <String>[];
 
     // Level 1 验证
     if (widget.kycLevel == 1) {
-      // 验证基本信息
       if (_surnameController.text.trim().isEmpty) errors.add('请输入姓氏');
       if (_nameController.text.trim().isEmpty) errors.add('请输入名字');
       if (_birthday == null) errors.add('请选择出生日期');
-
-      // 验证证件信息
       if (_idNumberController.text.trim().isEmpty) errors.add('请输入证件号码');
       if (_idIssueDate == null) errors.add('请选择证件签发日期');
-
-      // 验证地址
       if (_addressController.text.trim().isEmpty) errors.add('请输入详细地址');
-
-      // 验证图片
       if (_idFrontImage == null) errors.add('请上传证件正面照片');
       if (_idBackImage == null) errors.add('请上传证件背面照片');
       if (_idSelfieImage == null) errors.add('请上传手持证件自拍照');
     }
-
-    // Level 2 验证：只验证新增的必填项
-    if (widget.kycLevel == 2) {
-      final level1Kyc = _kycStore.level1Kyc;
-      final level2Kyc = _kycStore.level2Kyc;
-
-      // 如果 level2Kyc 存在，说明可以重新提交（不管 level1 是否存在）
-      // 如果 level2Kyc 不存在，需要检查 level1 是否已完成
-      if (level2Kyc == null && level1Kyc == null) {
+    // Level 2 验证
+    else {
+      if (_kycStore.level2Kyc == null && _kycStore.level1Kyc == null) {
         MessageService.error('请先完成标准身份认证');
         return;
       }
-
       if (_addressProofImage == null) errors.add('请上传地址证明文件');
       if (_latitude == null || _longitude == null) errors.add('请获取GPS定位信息');
     }
 
-    // 显示错误信息
     if (errors.isNotEmpty) {
       MessageService.error(errors.join('\n'));
       return;

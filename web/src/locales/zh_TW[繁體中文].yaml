@@ -168,6 +168,16 @@ crud:
   confirm: 確認
   createFailed: 創建失敗
   noPermission: 沒有權限訪問頁面或使用此功能
+  view: 查看
+  approve: 通過
+  reject: 拒絕
+  approveConfirm: 確認通過此申請嗎？
+  rejectConfirm: 確認拒絕此申請嗎？
+  rejectReason: 請輸入拒絕原因
+  approveSuccess: 通過成功
+  approveFailed: 通過失敗
+  rejectSuccess: 拒絕成功
+  rejectFailed: 拒絕失敗
   userNotAllow: 目前用戶無法訪問或使用此功能
   superAdminNoEdit: 超管不可修改
   category: 分类

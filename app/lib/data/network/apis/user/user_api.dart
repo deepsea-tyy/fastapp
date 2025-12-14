@@ -471,14 +471,19 @@ class UserApi {
 
   /// 更新用户资料
   /// [nickname] 昵称
+  /// [avatar] 头像URL
   Future<Map<String, dynamic>> updateProfile({
     String? nickname,
+    String? avatar,
   }) async {
     final data = <String, dynamic>{};
     if (nickname != null) {
       data['nickname'] = nickname;
     }
-    
+    if (avatar != null) {
+      data['avatar'] = avatar;
+    }
+
     final response = await _dioClient.dio.post(
       Endpoints.userProfileUpdate,
       data: data,

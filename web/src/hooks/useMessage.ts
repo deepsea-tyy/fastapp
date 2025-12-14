@@ -25,8 +25,19 @@ export function useMessage() {
       ElMessageBox.alert(content, t('crud.confirmTitle'))
     },
     // 错误提示
-    alertError(content: string) {
-      ElMessageBox.alert(content, t('crud.confirmTitle'), { type: 'error' })
+    alertError(content: string | any) {
+      // 如果错误已被 http 拦截器处理过，不再重复显示
+      if (typeof content === 'object' && content?._errorHandled) {
+        return
+      }
+
+      // 提取错误信息
+      let errorMessage = content
+      if (typeof content === 'object') {
+        errorMessage = content.message || content.msg || JSON.stringify(content)
+      }
+
+      ElMessageBox.alert(errorMessage, t('crud.confirmTitle'), { type: 'error' })
     },
     // 成功提示
     alertSuccess(content: string) {
