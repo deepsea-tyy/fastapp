@@ -85,4 +85,9 @@ class Endpoints {
   // KYC认证相关
   static const String kycSubmit = '/api/ex/kyc/submit';
   static const String kycDetail = '/api/ex/kyc/detail';
+
+  // 附件上传相关
+  static const String attachmentUpload = '/api/attachment/upload';
+  static const String attachmentList = '/api/attachment/list';
+  static const String attachmentDelete = '/api/attachment';
 }

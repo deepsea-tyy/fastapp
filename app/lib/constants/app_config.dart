@@ -74,17 +74,47 @@ class AppConfig {
   static const String futuresFundingRate = '/api/v1/futures/funding-rate';
 
   // ==================== 主题配置 ====================
-  
+
   /// 亮色主题种子颜色
   static const String seedColorLight = '#2196F3';
-  
+
   /// 暗色主题种子颜色
   static const String seedColorDark = '#2196F3';
+
+  /// 亮色主题 Scaffold 背景色
+  static const String scaffoldBackgroundColorLight = '#FFFFFF';
+
+  /// 暗色主题 Scaffold 背景色（null 表示使用系统默认）
+  static const String scaffoldBackgroundColorDark = '';
+
+  /// 亮色主题按钮背景色
+  static const String buttonBackgroundColorLight = '#424242';
+
+  /// 暗色主题按钮背景色
+  static const String buttonBackgroundColorDark = '#757575';
+
+  /// 亮色主题按钮前景色
+  static const String buttonForegroundColorLight = '#FFFFFF';
+
+  /// 暗色主题按钮前景色
+  static const String buttonForegroundColorDark = '#FFFFFF';
+
+  /// 亮色主题按钮禁用背景色
+  static const String buttonDisabledBackgroundColorLight = '#BDBDBD';
+
+  /// 暗色主题按钮禁用背景色
+  static const String buttonDisabledBackgroundColorDark = '#616161';
+
+  /// 亮色主题按钮禁用前景色
+  static const String buttonDisabledForegroundColorLight = '#B3FFFFFF';
+
+  /// 暗色主题按钮禁用前景色
+  static const String buttonDisabledForegroundColorDark = '#B3FFFFFF';
 
   // ==================== 资源配置 ====================
   
   /// 图片 CDN 基础 URL
-  static const String imageCdnBaseUrl = 'http://127.0.0.1:9501/api/file?path=';
+  static const String imageCdnBaseUrl = 'http://192.168.1.4:9501/api/file?path=';
 
   // ==================== UI 配置 ====================
   

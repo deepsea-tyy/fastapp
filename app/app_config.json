@@ -59,14 +59,24 @@
   },
   "theme": {
     "light": {
-      "seedColor": "#2196F3"
+      "seedColor": "#2196F3",
+      "scaffoldBackgroundColor": "#FFFFFF",
+      "buttonBackgroundColor": "#424242",
+      "buttonForegroundColor": "#FFFFFF",
+      "buttonDisabledBackgroundColor": "#BDBDBD",
+      "buttonDisabledForegroundColor": "#B3FFFFFF"
     },
     "dark": {
-      "seedColor": "#2196F3"
+      "seedColor": "#2196F3",
+      "scaffoldBackgroundColor": null,
+      "buttonBackgroundColor": "#757575",
+      "buttonForegroundColor": "#FFFFFF",
+      "buttonDisabledBackgroundColor": "#616161",
+      "buttonDisabledForegroundColor": "#B3FFFFFF"
     }
   },
   "resources": {
-    "imageCdnBaseUrl": "http://127.0.0.1:9501/api/file?path="
+    "imageCdnBaseUrl": "http://192.168.1.4:9501/api/file?path="
   },
   "assets": {
     "appLogo": {

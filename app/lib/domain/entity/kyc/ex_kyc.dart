@@ -26,9 +26,11 @@ class ExKyc {
   @JsonKey(name: 'id_expiry_date')
   final String? idExpiryDate;
   final String? address;
+  @JsonKey(fromJson: _stringToDouble)
   final double? latitude;
+  @JsonKey(fromJson: _stringToDouble)
   final double? longitude;
-  @JsonKey(name: 'location_accuracy')
+  @JsonKey(name: 'location_accuracy', fromJson: _stringToDouble)
   final double? locationAccuracy;
   @JsonKey(name: 'location_time')
   final String? locationTime;
@@ -42,10 +44,11 @@ class ExKyc {
   final String? idSelfieImage;
   @JsonKey(name: 'address_proof_image')
   final String? addressProofImage;
-  final int status; // 0=待审核,1=审核中,2=已通过,3=已拒绝,4=已取消
+  final int status; // 0=待审核,1=已通过,2=已拒绝,3=已取消
+  final String? remark; // 拒绝原因或备注
   @JsonKey(name: 'ocr_result')
   final Map<String, dynamic>? ocrResult;
-  @JsonKey(name: 'ocr_confidence')
+  @JsonKey(name: 'ocr_confidence', fromJson: _stringToDouble)
   final double? ocrConfidence;
   @JsonKey(name: 'created_at')
   final String? createdAt;
@@ -77,6 +80,7 @@ class ExKyc {
     this.idSelfieImage,
     this.addressProofImage,
     required this.status,
+    this.remark,
     this.ocrResult,
     this.ocrConfidence,
     this.createdAt,
@@ -93,12 +97,10 @@ class ExKyc {
       case 0:
         return '待审核';
       case 1:
-        return '审核中';
-      case 2:
         return '已通过';
-      case 3:
+      case 2:
         return '已拒绝';
-      case 4:
+      case 3:
         return '已取消';
       default:
         return '未知';
@@ -163,11 +165,22 @@ class ExKyc {
   }
 
   /// 是否已通过认证
-  bool get isApproved => status == 2;
+  bool get isApproved => status == 1;
 
-  /// 是否待审核或审核中
-  bool get isPending => status == 0 || status == 1;
+  /// 是否待审核
+  bool get isPending => status == 0;
 
   /// 是否已拒绝
-  bool get isRejected => status == 3;
+  bool get isRejected => status == 2;
+}
+
+/// 字符串转 double 的辅助方法
+double? _stringToDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
 }

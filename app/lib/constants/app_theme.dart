@@ -53,14 +53,42 @@ class AppTheme {
   /// 构建主题配置
   static ThemeData _buildTheme(AppThemeType themeType) {
     final brightness = themeType.brightness;
-    
+
     // 根据主题类型选择对应的种子颜色
-    final seedColorString = themeType == AppThemeType.light 
-        ? AppConfig.seedColorLight 
+    final seedColorString = themeType == AppThemeType.light
+        ? AppConfig.seedColorLight
         : AppConfig.seedColorDark;
     final seedColor = _hexToColor(seedColorString);
     final borderRadius = AppConfig.defaultBorderRadius;
-    
+
+    // 从配置读取主题颜色
+    final scaffoldBgColorString = themeType == AppThemeType.light
+        ? AppConfig.scaffoldBackgroundColorLight
+        : AppConfig.scaffoldBackgroundColorDark;
+    final scaffoldBgColor = scaffoldBgColorString.isNotEmpty
+        ? _hexToColor(scaffoldBgColorString)
+        : null;
+
+    final buttonBgColorString = themeType == AppThemeType.light
+        ? AppConfig.buttonBackgroundColorLight
+        : AppConfig.buttonBackgroundColorDark;
+    final buttonBgColor = _hexToColor(buttonBgColorString);
+
+    final buttonFgColorString = themeType == AppThemeType.light
+        ? AppConfig.buttonForegroundColorLight
+        : AppConfig.buttonForegroundColorDark;
+    final buttonFgColor = _hexToColor(buttonFgColorString);
+
+    final buttonDisabledBgColorString = themeType == AppThemeType.light
+        ? AppConfig.buttonDisabledBackgroundColorLight
+        : AppConfig.buttonDisabledBackgroundColorDark;
+    final buttonDisabledBgColor = _hexToColor(buttonDisabledBgColorString);
+
+    final buttonDisabledFgColorString = themeType == AppThemeType.light
+        ? AppConfig.buttonDisabledForegroundColorLight
+        : AppConfig.buttonDisabledForegroundColorDark;
+    final buttonDisabledFgColor = _hexToColor(buttonDisabledFgColorString);
+
     return ThemeData(
       brightness: brightness,
       useMaterial3: true,
@@ -68,6 +96,8 @@ class AppTheme {
         seedColor: seedColor,
         brightness: brightness,
       ),
+      // 设置 Scaffold 背景色
+      scaffoldBackgroundColor: scaffoldBgColor,
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
@@ -91,6 +121,10 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
+          backgroundColor: buttonBgColor,
+          foregroundColor: buttonFgColor,
+          disabledBackgroundColor: buttonDisabledBgColor,
+          disabledForegroundColor: buttonDisabledFgColor,
           padding: const EdgeInsets.symmetric(
             horizontal: 24,
             vertical: 16,

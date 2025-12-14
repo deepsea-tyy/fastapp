@@ -51,17 +51,13 @@ class _AccountActivityScreenState extends State<AccountActivityScreen> {
         pageSize: pageSize,
         type: _selectedTab == 0 ? 1 : null,
       );
-      
-      if (response['code'] == 200) {
-        final listData = response['list'] ?? (response['data'] as Map<String, dynamic>?)?['list'];
-        final list = listData is List ? listData : (listData is Map ? listData['data'] as List<dynamic>? ?? [] : []);
-        return list.map(_parseActivityItem).toList();
-      } else {
-        MessageService.error(response['message'] as String? ?? '获取账户日志失败');
-        return [];
-      }
+
+      // 响应拦截器已处理错误，到这里说明请求成功
+      final listData = response['list'] ?? (response['data'] as Map<String, dynamic>?)?['list'];
+      final list = listData is List ? listData : (listData is Map ? listData['data'] as List<dynamic>? ?? [] : []);
+      return list.map(_parseActivityItem).toList();
     } catch (e) {
-      MessageService.error('获取账户日志失败: ${e.toString()}');
+      // 错误已由拦截器处理
       return [];
     }
   }

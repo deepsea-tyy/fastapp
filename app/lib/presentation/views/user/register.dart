@@ -406,21 +406,21 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Future<bool> _sendVerificationCode(String recipient) async {
     try {
       if (_isPhoneRegister) {
-        final response = await _userApi.sendSms(
+        await _userApi.sendSms(
           mobile: recipient,
           code: _selectedCountryCode.replaceAll('+', ''),
           scene: 'register',
         );
-        return response['code'] == 200;
       } else {
-        final response = await _userApi.sendEmailCode(
+        await _userApi.sendEmailCode(
           email: recipient,
           scene: 'register',
         );
-        return response['code'] == 200;
       }
+      // 响应拦截器已处理错误，到这里说明发送成功
+      return true;
     } catch (e) {
-      MessageService.error('发送验证码失败：${e.toString()}');
+      // 错误已由拦截器处理
       return false;
     }
   }
@@ -450,7 +450,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _setLoading(true);
 
     try {
-      final response = await _userApi.smsCheck(
+      await _userApi.smsCheck(
         type: _isPhoneRegister ? 'sms' : 'email',
         to: accountController.text.trim(),
         vcode: _codeController.text.trim(),
@@ -458,19 +458,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         code: _isPhoneRegister ? _selectedCountryCode.replaceAll('+', '') : null,
       );
 
-      if (response['code'] == 200) {
-        setState(() {
-          _isCodeVerified = true;
-          _showPasswordFields = true;
-          _isLoading = false;
-        });
-      } else {
-        _setLoading(false);
-        _showErrorMessage(response['message'] ?? '验证码错误');
-      }
+      // 响应拦截器已处理错误，到这里说明验证成功
+      setState(() {
+        _isCodeVerified = true;
+        _showPasswordFields = true;
+        _isLoading = false;
+      });
     } catch (e) {
       _setLoading(false);
-      _showErrorMessage('验证码验证失败：${e.toString()}');
+      // 错误已由拦截器处理
     }
   }
 
@@ -508,15 +504,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         deviceId: deviceId,
       );
 
-      if (response['code'] == 200) {
-        await _handleRegisterSuccess(response);
-      } else {
-        _setLoading(false);
-        _showErrorMessage(response['message'] ?? '注册失败');
-      }
+      // 响应拦截器已处理错误，到这里说明注册成功
+      await _handleRegisterSuccess(response);
     } catch (e) {
       _setLoading(false);
-      _showErrorMessage('注册失败：${e.toString()}');
+      // 错误已由拦截器处理
     }
   }
 

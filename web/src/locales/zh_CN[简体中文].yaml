@@ -185,6 +185,72 @@ dictionary:
     yesNo:
       no: 否
       yes: 是
+    country:
+      CN: 中国
+      HK: 中国香港
+      MO: 中国澳门
+      TW: 中国台湾
+      JP: 日本
+      KR: 韩国
+      SG: 新加坡
+      MY: 马来西亚
+      TH: 泰国
+      VN: 越南
+      PH: 菲律宾
+      ID: 印度尼西亚
+      IN: 印度
+      PK: 巴基斯坦
+      BD: 孟加拉国
+      LK: 斯里兰卡
+      MM: 缅甸
+      KH: 柬埔寨
+      LA: 老挝
+      BN: 文莱
+      AE: 阿联酋
+      SA: 沙特阿拉伯
+      IL: 以色列
+      TR: 土耳其
+      IR: 伊朗
+      IQ: 伊拉克
+      GB: 英国
+      FR: 法国
+      DE: 德国
+      IT: 意大利
+      ES: 西班牙
+      PT: 葡萄牙
+      NL: 荷兰
+      BE: 比利时
+      CH: 瑞士
+      AT: 奥地利
+      SE: 瑞典
+      NO: 挪威
+      DK: 丹麦
+      FI: 芬兰
+      IE: 爱尔兰
+      PL: 波兰
+      CZ: 捷克
+      HU: 匈牙利
+      RU: 俄罗斯
+      UA: 乌克兰
+      GR: 希腊
+      RO: 罗马尼亚
+      US: 美国
+      CA: 加拿大
+      MX: 墨西哥
+      BR: 巴西
+      AR: 阿根廷
+      CL: 智利
+      CO: 哥伦比亚
+      PE: 秘鲁
+      VE: 委内瑞拉
+      AU: 澳大利亚
+      NZ: 新西兰
+      ZA: 南非
+      EG: 埃及
+      NG: 尼日利亚
+      KE: 肯尼亚
+      ET: 埃塞俄比亚
+      MA: 摩洛哥
   base:
     systemUser: 系统用户
     normalUser: 普通用户

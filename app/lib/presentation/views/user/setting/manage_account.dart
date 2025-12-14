@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/core/services/message_service.dart';
@@ -34,7 +33,6 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
   static const double _spacingMedium = 12.0;
   static const double _spacingLarge = 16.0;
   static const double _pagePadding = 12.0;
-  static const Duration _cacheClearDelay = Duration(milliseconds: 500);
 
   // 输入框边框样式
   static final _inputBorder = OutlineInputBorder(
@@ -372,16 +370,12 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
   /// 统一发送验证码方法
   Future<bool> _sendCode(Future<Map<String, dynamic>> Function() apiCall) async {
     try {
-      final response = await apiCall();
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? '验证码已发送');
-        return true;
-      } else {
-        MessageService.error(response['message'] ?? '验证码发送失败');
-        return false;
-      }
+      await apiCall();
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success('验证码已发送');
+      return true;
     } catch (e) {
-      MessageService.error(e.toString());
+      // 错误已由拦截器处理
       return false;
     }
   }
@@ -493,18 +487,12 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
               google2faCode: codes.google2faCode,
               vcode: codes.vcode,
             );
-      
-      final response = await apiCall;
-      final code = response['code'] as int?;
-      final message = response['message'] as String? ?? 
-          (code == 200 ? (_currentAction == 'disable' ? '账户已禁用' : '账户已删除') : '操作失败');
-      
-      if (code == 200) {
-        MessageService.success(message);
-        await _navigateToHomeAndClearCache();
-      } else {
-        MessageService.error(message);
-      }
+
+      await apiCall;
+      // 响应拦截器已处理错误，到这里说明操作成功
+      final message = _currentAction == 'disable' ? '账户已禁用' : '账户已删除';
+      MessageService.success(message);
+      await _navigateToHomeAndClearCache();
     } catch (e) {
       if (mounted) MessageService.error(e.toString());
     } finally {
@@ -514,30 +502,17 @@ class _ManageAccountScreenState extends State<ManageAccountScreen> {
 
   Future<void> _navigateToHomeAndClearCache() async {
     if (!mounted) return;
-    
+
     try {
-      // 先清除登录状态（logout 会在 finally 中清除状态，即使 API 失败）
-      await _userStore.logout();
-      
+      // 使用统一方法清除所有用户相关数据（包括登录状态、token、设备ID等）
+      await _userStore.clearAllUserCache();
+
       // 然后导航到首页
       final navigator = Navigator.of(context, rootNavigator: true);
       await navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const MainScreen()),
         (route) => false,
       );
-      
-      // 最后异步清除设备ID等其他缓存
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          await Future.delayed(_cacheClearDelay);
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('device_id');
-        } catch (e) {
-          if (kDebugMode) {
-            print('清除缓存失败: $e');
-          }
-        }
-      });
     } catch (e) {
       if (kDebugMode) {
         print('导航失败: $e');

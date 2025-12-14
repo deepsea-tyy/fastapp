@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../../../core/data/network/dio/dio_client.dart';
 import '../../constants/endpoints.dart';
 
@@ -25,6 +24,7 @@ class ExKycApi {
   /// [longitude] GPS经度（可选）
   /// [locationAccuracy] 定位精度（米，可选）
   /// [locationAddress] GPS反地理编码地址（可选）
+  /// [locationTime] 定位时间（格式：YYYY-MM-DD HH:mm:ss，可选）
   /// [idFrontImage] 证件正面照片URL
   /// [idBackImage] 证件背面照片URL
   /// [idSelfieImage] 手持证件自拍照片URL
@@ -46,6 +46,7 @@ class ExKycApi {
     double? longitude,
     double? locationAccuracy,
     String? locationAddress,
+    String? locationTime,
     required String idFrontImage,
     required String idBackImage,
     required String idSelfieImage,
@@ -79,6 +80,9 @@ class ExKycApi {
     if (locationAccuracy != null) data['location_accuracy'] = locationAccuracy;
     if (locationAddress != null && locationAddress.isNotEmpty) {
       data['location_address'] = locationAddress;
+    }
+    if (locationTime != null && locationTime.isNotEmpty) {
+      data['location_time'] = locationTime;
     }
     if (addressProofImage != null && addressProofImage.isNotEmpty) {
       data['address_proof_image'] = addressProofImage;

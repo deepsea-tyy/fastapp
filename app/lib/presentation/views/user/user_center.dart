@@ -272,16 +272,20 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
   /// 构建功能列表
   Widget _buildFeatureList(BuildContext context) {
     final userStore = getIt<UserStore>();
-    
+
     return Observer(
       builder: (_) {
-        final isKycVerified = userStore.currentUser?.isKyc == 1;
+        final isKyc = userStore.currentUser?.isKyc;
         final theme = Theme.of(context);
-        
+
         // 获取VIP显示文本和颜色
         final vipText = _getVipText(_vipLevel);
         final vipColor = _getVipColor(_vipLevel);
-        
+
+        // 获取KYC显示文本和颜色
+        final kycText = _getKycStatusText(isKyc);
+        final kycColor = _getKycStatusColor(isKyc);
+
         return Column(
           children: [
             _buildFeatureItem(
@@ -309,10 +313,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
               context,
               icon: Icons.person,
               title: '身份认证',
-              trailing: _buildStatusTag(
-                isKycVerified ? '已认证' : '未认证',
-                isKycVerified ? Colors.green[300]! : Colors.grey[400]!,
-              ),
+              trailing: _buildStatusTag(kycText, kycColor),
               onTap: () => _navigateToIdentityVerification(context, userStore),
             ),
             _buildFeatureItem(
@@ -474,5 +475,54 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
     }
     // VIP用户使用更鲜艳的颜色
     return Colors.purple[400]!;
+  }
+
+  /// 获取 KYC 状态显示文本
+  /// 0: 未认证
+  /// 1: 标准认证审核中
+  /// 2: 标准认证完成
+  /// 3: 标准认证未通过
+  /// 4: 进阶认证审核中
+  /// 5: 进阶认证完成
+  /// 6: 进阶认证未通过
+  String _getKycStatusText(int? isKyc) {
+    switch (isKyc) {
+      case 0:
+        return '未认证';
+      case 1:
+        return '审核中';
+      case 2:
+        return '标准认证';
+      case 3:
+        return '未通过';
+      case 4:
+        return '审核中';
+      case 5:
+        return '进阶认证';
+      case 6:
+        return '未通过';
+      default:
+        return '未认证';
+    }
+  }
+
+  /// 获取 KYC 状态颜色
+  Color _getKycStatusColor(int? isKyc) {
+    switch (isKyc) {
+      case 0:
+        return Colors.grey[400]!;
+      case 1:
+      case 4:
+        return Colors.orange[300]!; // 审核中
+      case 2:
+        return Colors.green[300]!; // 标准认证完成
+      case 5:
+        return Colors.green[400]!; // 进阶认证完成（更深的绿色）
+      case 3:
+      case 6:
+        return Colors.red[300]!; // 未通过
+      default:
+        return Colors.grey[400]!;
+    }
   }
 }

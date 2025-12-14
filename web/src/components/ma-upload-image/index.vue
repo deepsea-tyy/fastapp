@@ -94,7 +94,7 @@ function updateModelValue() {
 function handleSuccess(res: any) {
   const index = fileList.value.findIndex((item: any) => item.response?.data.id === res.data.id)
   fileList.value[index].name = res.data.origin_name
-  fileList.value[index].url = formatImagePath(res.data.url)
+  fileList.value[index].url = res.data.url
 
   updateModelValue()
 }
@@ -134,7 +134,7 @@ watch(
 const setPreviewData = useDebounceFn(() => {
   previewList.value = []
   fileList.value?.map((item: any) => {
-    previewList.value.push(item.url)
+    previewList.value.push(formatImagePath(item.url))  // 显示时才处理URL
   })
 })
 
@@ -207,7 +207,7 @@ watch(
         </div>
         <el-image
           ref="ElImageRefs"
-          :src="file?.url"
+          :src="formatImagePath(file?.url)"
           class="absolute rounded-md"
           :style="getSize"
           fit="cover"
@@ -238,7 +238,7 @@ watch(
       :limit="limit"
       @confirm="(selected) => {
         fileList = selected.map((item: any) => {
-          return { name: item.ogirin_name, url: item.url }
+          return { name: item.ogirin_name, url: item.url }  // 保存原始URL
         })
         updateModelValue()
       }"

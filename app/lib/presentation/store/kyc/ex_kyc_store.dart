@@ -1,6 +1,7 @@
 import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/data/network/apis/kyc/ex_kyc_api.dart';
 import 'package:fastapp/domain/entity/kyc/ex_kyc.dart';
+import 'package:fastapp/utils/data_validator.dart';
 import 'package:mobx/mobx.dart';
 
 part 'ex_kyc_store.g.dart';
@@ -79,10 +80,16 @@ abstract class _ExKycStore with Store {
     _errorStore.setErrorMessage('');
 
     try {
-      final response = await _kycApi.getKycDetail(kycLevel: kycLevel);
+      final data = await _kycApi.getKycDetail(kycLevel: kycLevel);
 
-      if (response['code'] == 1 && response['data'] != null) {
-        final kyc = ExKyc.fromJson(response['data']);
+      // 使用 DataValidator 提取单个对象
+      final kycData = DataValidator.extractObject(
+        data,
+        requiredFields: ['user_id', 'kyc_level', 'status'],
+      );
+
+      if (kycData != null) {
+        final kyc = ExKyc.fromJson(kycData);
         kycMap[kyc.kycLevel] = kyc;
       } else {
         // 没有KYC记录，清空对应等级
@@ -111,34 +118,26 @@ abstract class _ExKycStore with Store {
     _errorStore.setErrorMessage('');
 
     try {
-      // 并行获取Level 1和Level 2
-      final results = await Future.wait([
-        _kycApi.getKycDetail(kycLevel: 1).catchError((_) => null),
-        _kycApi.getKycDetail(kycLevel: 2).catchError((_) => null),
-      ]);
+      // 不传 kycLevel 参数，一次请求获取所有数据
+      final data = await _kycApi.getKycDetail();
 
-      // 处理Level 1结果
-      final level1Response = results[0];
-      if (level1Response != null &&
-          level1Response['code'] == 1 &&
-          level1Response['data'] != null) {
-        final kyc = ExKyc.fromJson(level1Response['data']);
-        kycMap[1] = kyc;
-      } else {
-        kycMap.remove(1);
-      }
+      // 使用 DataValidator 提取有效的 KYC 数据列表
+      final kycList = DataValidator.extractList(
+        data,
+        requiredFields: ['user_id', 'kyc_level', 'status'],
+      );
 
-      // 处理Level 2结果
-      final level2Response = results[1];
-      if (level2Response != null &&
-          level2Response['code'] == 1 &&
-          level2Response['data'] != null) {
-        final kyc = ExKyc.fromJson(level2Response['data']);
-        kycMap[2] = kyc;
-      } else {
-        kycMap.remove(2);
+      // 清空旧数据
+      kycMap.clear();
+
+      // 解析并存储有效数据
+      if (kycList.isNotEmpty) {
+        for (var item in kycList) {
+          final kyc = ExKyc.fromJson(item);
+          kycMap[kyc.kycLevel] = kyc;
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _errorStore.setErrorMessage(e.toString());
       // 不抛出错误，让界面可以继续使用
     } finally {
@@ -166,6 +165,7 @@ abstract class _ExKycStore with Store {
     double? longitude,
     double? locationAccuracy,
     String? locationAddress,
+    String? locationTime,
     required String idFrontImage,
     required String idBackImage,
     required String idSelfieImage,
@@ -176,7 +176,7 @@ abstract class _ExKycStore with Store {
     _errorStore.setErrorMessage('');
 
     try {
-      final response = await _kycApi.submitKyc(
+      final data = await _kycApi.submitKyc(
         kycLevel: kycLevel,
         countryCode: countryCode,
         surname: surname,
@@ -193,19 +193,17 @@ abstract class _ExKycStore with Store {
         longitude: longitude,
         locationAccuracy: locationAccuracy,
         locationAddress: locationAddress,
+        locationTime: locationTime,
         idFrontImage: idFrontImage,
         idBackImage: idBackImage,
         idSelfieImage: idSelfieImage,
         addressProofImage: addressProofImage,
       );
 
-      if (response['code'] == 1 && response['data'] != null) {
-        final kyc = ExKyc.fromJson(response['data']);
-        kycMap[kyc.kycLevel] = kyc;
-        submitSuccess = true;
-      } else {
-        throw Exception(response['msg'] ?? '提交失败');
-      }
+      // 提交成功，解析返回的 KYC 数据（响应拦截器已处理，直接使用 data）
+      final kyc = ExKyc.fromJson(data);
+      kycMap[kyc.kycLevel] = kyc;
+      submitSuccess = true;
     } catch (e) {
       _errorStore.setErrorMessage(e.toString());
       rethrow;

@@ -833,33 +833,29 @@ class _MobileBindingScreenState extends State<MobileBindingScreen> {
     VoidCallback? onSuccess,
     bool shouldClearMobile = false, // 是否需要在成功后清空手机号字段
   }) async {
-    if (response['code'] == 200) {
-      // 先显示成功消息
-      MessageService.success(response['message'] ?? successMessage);
-      // 执行成功回调
-      onSuccess?.call();
-      // 刷新用户信息并等待完成，确保界面切换
-      try {
-        await _userStore.getUserInfo();
-        // 如果解绑操作，确保手机号字段被清空
-        if (shouldClearMobile && _userStore.currentUser?.mobile != null) {
-          _clearUserMobile();
-        }
-      } catch (e) {
-        // 静默处理错误，避免影响用户体验
-        if (kDebugMode) {
-          print('刷新用户信息失败: $e');
-        }
-        // 即使刷新失败，如果是解绑操作，也要清空手机号字段
-        if (shouldClearMobile) {
-          _clearUserMobile();
-        }
+    // 响应拦截器已处理错误，到这里说明操作成功
+    // 先显示成功消息
+    MessageService.success(successMessage);
+    // 执行成功回调
+    onSuccess?.call();
+    // 刷新用户信息并等待完成，确保界面切换
+    try {
+      await _userStore.getUserInfo();
+      // 如果解绑操作，确保手机号字段被清空
+      if (shouldClearMobile && _userStore.currentUser?.mobile != null) {
+        _clearUserMobile();
       }
-      return true;
-    } else {
-      MessageService.error(response['message'] ?? errorMessage);
-      return false;
+    } catch (e) {
+      // 静默处理错误，避免影响用户体验
+      if (kDebugMode) {
+        print('刷新用户信息失败: $e');
+      }
+      // 即使刷新失败，如果是解绑操作，也要清空手机号字段
+      if (shouldClearMobile) {
+        _clearUserMobile();
+      }
     }
+    return true;
   }
 
   /// 清空用户手机号字段

@@ -485,19 +485,15 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   /// 发送邮箱验证码
   Future<bool> _sendEmailCode(String email) async {
     try {
-      final response = await _userApi.sendEmailCode(
+      await _userApi.sendEmailCode(
         email: email,
         scene: 'change',
       );
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? '验证码已发送');
-        return true;
-      } else {
-        MessageService.error(response['message'] ?? '验证码发送失败');
-        return false;
-      }
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success('验证码已发送');
+      return true;
     } catch (e) {
-      MessageService.error(e.toString());
+      // 错误已由拦截器处理
       return false;
     }
   }
@@ -505,20 +501,16 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   /// 发送手机验证码
   Future<bool> _sendMobileCode(String mobile) async {
     try {
-      final response = await _userApi.sendSms(
+      await _userApi.sendSms(
         mobile: mobile,
         code: _currentUser?.code?.toString(),
         scene: 'change',
       );
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? '验证码已发送');
-        return true;
-      } else {
-        MessageService.error(response['message'] ?? '验证码发送失败');
-        return false;
-      }
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success('验证码已发送');
+      return true;
     } catch (e) {
-      MessageService.error(e.toString());
+      // 错误已由拦截器处理
       return false;
     }
   }
@@ -696,32 +688,28 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     required String errorMessage,
     VoidCallback? onSuccess,
   }) async {
-    if (response['code'] == 200) {
-      // 先显示成功消息
-      MessageService.success(response['message'] ?? successMessage);
-      // 执行成功回调
-      onSuccess?.call();
-      
-      // 密码修改成功后，后端已将token加入黑名单，需要退出登录并清除数据
-      try {
-        // 退出登录（会清除本地token和用户数据）
-        await _userStore.logout();
-        // 延迟一下，确保消息显示
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // 显示提示弹框，让用户选择立即登录或跳转到首页
-        await _showPasswordChangeSuccessDialog();
-      } catch (e) {
-        // 即使退出登录失败，也要显示弹框
-        if (kDebugMode) {
-          print('退出登录失败: $e');
-        }
-        await _showPasswordChangeSuccessDialog();
+    // 响应拦截器已处理错误，到这里说明操作成功
+    // 先显示成功消息
+    MessageService.success(successMessage);
+    // 执行成功回调
+    onSuccess?.call();
+
+    // 密码修改成功后，后端已将token加入黑名单，需要退出登录并清除数据
+    try {
+      // 退出登录（会清除本地token和用户数据）
+      await _userStore.logout();
+      // 延迟一下，确保消息显示
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 显示提示弹框，让用户选择立即登录或跳转到首页
+      await _showPasswordChangeSuccessDialog();
+    } catch (e) {
+      // 即使退出登录失败，也要显示弹框
+      if (kDebugMode) {
+        print('退出登录失败: $e');
       }
-      return true;
-    } else {
-      MessageService.error(response['message'] ?? errorMessage);
-      return false;
+      await _showPasswordChangeSuccessDialog();
     }
+    return true;
   }
 }

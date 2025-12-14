@@ -21,10 +21,11 @@ class Result implements Arrayable
         #[OA\Property(ref: 'ResultCode', title: '响应码')]
         public ResultCode $code = ResultCode::SUCCESS,
         #[OA\Property(title: '响应消息', type: 'string')]
-        public ?string $message = null,
+        public ?string    $message = null,
         #[OA\Property(title: '响应数据', type: 'array')]
-        public mixed $data = []
-    ) {
+        public mixed      $data = null
+    )
+    {
         if ($this->message === null) {
             $this->message = ResultCode::getMessage($this->code->value);
         }
@@ -35,7 +36,7 @@ class Result implements Arrayable
         return [
             'code' => $this->code->value,
             'message' => $this->message,
-            'data' => is_array($this->data) && !$this->data ? new \StdClass() : $this->data,
+            'data' => $this->data ?: new \StdClass(),
         ];
     }
 }

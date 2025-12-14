@@ -18,7 +18,7 @@ class ResponseInterceptor extends Interceptor {
       }
       
       final apiResponse = ApiResponse.fromJson(data);
-      
+
       if (!apiResponse.isSuccess) {
         if (apiResponse.code == 401) {
           final dioException = DioException(
@@ -38,11 +38,11 @@ class ResponseInterceptor extends Interceptor {
           );
           return handler.reject(dioException);
         }
-        
+
         if (apiResponse.shouldShowError && apiResponse.message.isNotEmpty) {
           _eventBus.fire(ErrorMessageEvent(message: apiResponse.message));
         }
-        
+
         final dioException = DioException(
           requestOptions: response.requestOptions,
           response: Response(
@@ -60,18 +60,12 @@ class ResponseInterceptor extends Interceptor {
               : DioExceptionType.unknown,
           error: apiResponse.message,
         );
-        
+
         return handler.reject(dioException);
       }
-      
-      final responseData = apiResponse.data ?? data;
-      if (!responseData.containsKey('code')) {
-        responseData['code'] = apiResponse.code;
-      }
-      if (!responseData.containsKey('message')) {
-        responseData['message'] = apiResponse.message;
-      }
-      response.data = responseData;
+
+      // 成功时只返回 data 数据，不再携带 code 和 message
+      response.data = apiResponse.data ?? <String, dynamic>{};
     } catch (e) {
       return handler.reject(
         DioException(

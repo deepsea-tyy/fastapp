@@ -189,19 +189,15 @@ class _VerificationDialogState extends State<VerificationDialog> {
   /// 发送邮箱验证码
   Future<bool> _sendEmailCode(String email) async {
     try {
-      final response = await _userApi.sendEmailCode(
+      await _userApi.sendEmailCode(
         email: email,
         scene: 'change',
       );
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? '验证码已发送');
-        return true;
-      } else {
-        MessageService.error(response['message'] ?? '验证码发送失败');
-        return false;
-      }
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success('验证码已发送');
+      return true;
     } catch (e) {
-      MessageService.error(e.toString());
+      // 错误已由拦截器处理
       return false;
     }
   }
@@ -209,20 +205,16 @@ class _VerificationDialogState extends State<VerificationDialog> {
   /// 发送手机验证码
   Future<bool> _sendMobileCode(String mobile) async {
     try {
-      final response = await _userApi.sendSms(
+      await _userApi.sendSms(
         mobile: mobile,
         code: _currentUser?.code?.toString(),
         scene: 'change',
       );
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? '验证码已发送');
-        return true;
-      } else {
-        MessageService.error(response['message'] ?? '验证码发送失败');
-        return false;
-      }
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success('验证码已发送');
+      return true;
     } catch (e) {
-      MessageService.error(e.toString());
+      // 错误已由拦截器处理
       return false;
     }
   }

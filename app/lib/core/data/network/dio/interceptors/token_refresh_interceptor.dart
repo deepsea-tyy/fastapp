@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:fastapp/data/network/constants/endpoints.dart';
 import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenRefreshInterceptor extends Interceptor {
   final SharedPreferenceHelper _sharedPrefsHelper;
@@ -248,10 +247,8 @@ class TokenRefreshInterceptor extends Interceptor {
 
   Future<void> _clearAllUserData() async {
     try {
-      await _sharedPrefsHelper.clearAllTokens();
-      await _sharedPrefsHelper.saveIsLoggedIn(false);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('device_id');
+      // 使用统一方法清除所有用户相关数据（认证 + 用户数据）
+      await _sharedPrefsHelper.clearAllUserRelatedData();
     } catch (e) {
       // 忽略清除失败
     }

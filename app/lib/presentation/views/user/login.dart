@@ -14,7 +14,6 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -333,10 +332,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Observer(
       builder: (_) {
         if (_userStore.success) {
+          // 登录成功后导航到首页
+          // 注意: 登录状态已由 UserStore.handleLoginSuccess() 统一保存，无需在此重复保存
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            SharedPreferences.getInstance().then((prefs) {
-              prefs.setBool(Preferences.is_logged_in, true);
-            });
             if (mounted) {
               Navigator.of(context).pushNamedAndRemoveUntil(Routes.home, (_) => false);
             }
@@ -859,15 +857,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     required String failedDefault,
   }) async {
     try {
-      final response = await sendRequest();
-      if (response['code'] == 200) {
-        MessageService.success(response['message'] ?? _pageContent.getText(successKey, defaultValue: successDefault));
-        return true;
-      }
-      _showErrorMessage(response['message'] ?? _pageContent.getText(failedKey, defaultValue: failedDefault));
-      return false;
+      await sendRequest();
+      // 响应拦截器已处理错误，到这里说明发送成功
+      MessageService.success(_pageContent.getText(successKey, defaultValue: successDefault));
+      return true;
     } catch (e) {
-      _showErrorMessage(_pageContent.getText(failedKey, defaultValue: failedDefault));
+      // 错误已由拦截器处理
       return false;
     }
   }

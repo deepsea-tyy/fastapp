@@ -11,7 +11,9 @@ class DioClient {
     ..options.baseUrl = dioConfigs.baseUrl
     ..options.connectTimeout = Duration(milliseconds: dioConfigs.connectionTimeout)
     ..options.receiveTimeout = Duration(milliseconds: dioConfigs.receiveTimeout)
-    ..options.sendTimeout = Duration(milliseconds: dioConfigs.sendTimeout);
+    ..options.sendTimeout = Duration(milliseconds: dioConfigs.sendTimeout)
+    // 明确禁用响应解码,避免 Dio 自动添加 Accept-Encoding
+    ..options.responseDecoder = null;
 
   Dio get dio => _dio;
 

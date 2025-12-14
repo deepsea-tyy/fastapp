@@ -210,34 +210,23 @@ class MessageService {
 
   /// 构建居中消息 Widget
   Widget _buildCenterMessage(String message) {
-    return Material(
-      color: Colors.transparent,
-      child: SizedBox.expand(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {},
-                behavior: HitTestBehavior.opaque,
-                child: Container(color: Colors.transparent),
+    return IgnorePointer(
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: _animationDuration,
+            curve: Curves.easeOut,
+            builder: (_, value, child) => Opacity(
+              opacity: value,
+              child: Transform.scale(
+                scale: 0.8 + (value * 0.2),
+                child: child,
               ),
             ),
-            Center(
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: _animationDuration,
-                curve: Curves.easeOut,
-                builder: (_, value, child) => Opacity(
-                  opacity: value,
-                  child: Transform.scale(
-                    scale: 0.8 + (value * 0.2),
-                    child: child,
-                  ),
-                ),
-                child: _buildMessageContainer(message),
-              ),
-            ),
-          ],
+            child: _buildMessageContainer(message),
+          ),
         ),
       ),
     );

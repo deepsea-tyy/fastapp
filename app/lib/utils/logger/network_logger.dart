@@ -6,16 +6,12 @@ import 'package:dio/dio.dart';
 class NetworkLogger {
   NetworkLogger._();
 
-  static const String _indent = '  ';
-
   /// 打印请求信息
   static void logRequest(RequestOptions options) {
     if (!kDebugMode) return;
 
-    debugPrint('📤 [REQUEST] ${options.method} ${options.uri}');
-    if (options.data != null) {
-      _printData(options.data);
-    }
+    final dataStr = options.data != null ? _formatDataToJson(options.data) : '';
+    debugPrint('📤 [REQUEST] ${options.method} ${options.uri}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
   /// 打印响应信息
@@ -26,28 +22,22 @@ class NetworkLogger {
     final isSuccess = statusCode >= 200 && statusCode < 300;
     final icon = isSuccess ? '✅' : '⚠️';
 
-    debugPrint('$icon [RESPONSE] ${response.requestOptions.method} ${response.requestOptions.uri}');
-    if (response.data != null) {
-      _printData(response.data);
-    }
+    final dataStr = response.data != null ? _formatDataToJson(response.data) : '';
+    debugPrint('$icon [RESPONSE] ${response.requestOptions.method} ${response.requestOptions.uri} | Status: $statusCode${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
   /// 打印错误信息
   static void logError(DioException error) {
     if (!kDebugMode) return;
 
-    debugPrint('❌ [ERROR] ${error.requestOptions.method} ${error.requestOptions.uri}');
-
-    if (error.response != null && error.response!.data != null) {
-      _printData(error.response!.data);
-    }
+    final dataStr = error.response?.data != null ? _formatDataToJson(error.response!.data) : '';
+    debugPrint('❌ [ERROR] ${error.requestOptions.method} ${error.requestOptions.uri} | Error: ${error.message}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
-  /// 打印数据（统一格式化为 JSON 字符串，只打印数据本身）
-  static void _printData(dynamic data) {
+  /// 格式化数据为紧凑的 JSON 字符串（单行显示）
+  static String _formatDataToJson(dynamic data) {
     if (data is FormData) {
-      _printFormData(data);
-      return;
+      return _formatFormData(data);
     }
 
     // 尝试解析为 JSON
@@ -56,33 +46,33 @@ class NetworkLogger {
       try {
         jsonData = jsonDecode(data);
       } catch (_) {
-        debugPrint(data);
-        return;
+        return data;
       }
     } else {
       jsonData = data;
     }
 
-    // 格式化为 JSON 字符串打印，只打印数据本身
+    // 格式化为紧凑的 JSON 字符串（不带缩进）
     try {
-      const encoder = JsonEncoder.withIndent('  ');
-      final jsonString = encoder.convert(jsonData);
-      debugPrint(jsonString);
+      const encoder = JsonEncoder(); // 不带缩进，单行输出
+      return encoder.convert(jsonData);
     } catch (_) {
-      debugPrint(data.toString());
+      return data.toString();
     }
   }
 
-  /// 打印 FormData
-  static void _printFormData(FormData formData) {
-    formData.fields.forEach((field) {
-      debugPrint('${field.key}: ${field.value}');
-    });
-    if (formData.files.isNotEmpty) {
-      formData.files.forEach((file) {
-        debugPrint('${file.key}: ${file.value.filename}');
-      });
+  /// 格式化 FormData 为字符串
+  static String _formatFormData(FormData formData) {
+    final parts = <String>[];
+    for (var field in formData.fields) {
+      parts.add('${field.key}=${field.value}');
     }
+    if (formData.files.isNotEmpty) {
+      for (var file in formData.files) {
+        parts.add('${file.key}=${file.value.filename}');
+      }
+    }
+    return parts.join(', ');
   }
 }
 

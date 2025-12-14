@@ -25,32 +25,31 @@
 /// - 清除应用数据后会改变
 /// - 卸载重装后会改变（除非使用 Keychain/iCloud）
 import 'dart:math';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 
 class DeviceIdUtils {
-  static const String _deviceIdKey = 'device_id';
-
   /// 获取设备唯一标识
-  /// 
+  ///
   /// 返回值：
   /// - 格式: UUID v4 格式字符串（如：550e8400-e29b-41d4-a716-446655440000）
   /// - 首次调用时生成并存储，后续调用直接返回存储的值
-  /// 
+  ///
   /// 异常处理：
   /// - 如果存储失败，返回临时 UUID（仅本次会话有效）
   /// - 如果获取失败，返回空字符串，不影响登录流程
   static Future<String> getDeviceId() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      String? deviceId = prefs.getString(_deviceIdKey);
-      
+      final sharedPrefHelper = getIt<SharedPreferenceHelper>();
+      String? deviceId = await sharedPrefHelper.deviceId;
+
       if (deviceId == null || deviceId.isEmpty) {
         // 生成新的 UUID
         deviceId = _generateUUID();
         // 保存到本地存储
-        await prefs.setString(_deviceIdKey, deviceId);
+        await sharedPrefHelper.saveDeviceId(deviceId);
       }
-      
+
       return deviceId;
     } catch (e) {
       // 存储失败时，返回临时 UUID（仅本次会话有效）
@@ -59,13 +58,13 @@ class DeviceIdUtils {
   }
 
   /// 保存设备唯一标识
-  /// 
+  ///
   /// 当后端返回设备ID时，使用后端返回的ID更新本地存储
   /// 这样可以确保前后端使用相同的设备标识
   static Future<bool> saveDeviceId(String deviceId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return await prefs.setString(_deviceIdKey, deviceId);
+      final sharedPrefHelper = getIt<SharedPreferenceHelper>();
+      return await sharedPrefHelper.saveDeviceId(deviceId);
     } catch (e) {
       return false;
     }

@@ -185,6 +185,72 @@ dictionary:
     yesNo:
       no: No
       yes: Yes
+    country:
+      CN: China
+      HK: Hong Kong
+      MO: Macau
+      TW: Taiwan
+      JP: Japan
+      KR: South Korea
+      SG: Singapore
+      MY: Malaysia
+      TH: Thailand
+      VN: Vietnam
+      PH: Philippines
+      ID: Indonesia
+      IN: India
+      PK: Pakistan
+      BD: Bangladesh
+      LK: Sri Lanka
+      MM: Myanmar
+      KH: Cambodia
+      LA: Laos
+      BN: Brunei
+      AE: United Arab Emirates
+      SA: Saudi Arabia
+      IL: Israel
+      TR: Turkey
+      IR: Iran
+      IQ: Iraq
+      GB: United Kingdom
+      FR: France
+      DE: Germany
+      IT: Italy
+      ES: Spain
+      PT: Portugal
+      NL: Netherlands
+      BE: Belgium
+      CH: Switzerland
+      AT: Austria
+      SE: Sweden
+      NO: Norway
+      DK: Denmark
+      FI: Finland
+      IE: Ireland
+      PL: Poland
+      CZ: Czech Republic
+      HU: Hungary
+      RU: Russia
+      UA: Ukraine
+      GR: Greece
+      RO: Romania
+      US: United States
+      CA: Canada
+      MX: Mexico
+      BR: Brazil
+      AR: Argentina
+      CL: Chile
+      CO: Colombia
+      PE: Peru
+      VE: Venezuela
+      AU: Australia
+      NZ: New Zealand
+      ZA: South Africa
+      EG: Egypt
+      NG: Nigeria
+      KE: Kenya
+      ET: Ethiopia
+      MA: Morocco
   base:
     systemUser: System user
     normalUser: Normal user

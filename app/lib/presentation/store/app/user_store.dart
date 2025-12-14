@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/core/stores/form/form_store.dart';
 import 'package:fastapp/domain/usecase/user/is_logged_in_usecase.dart';
@@ -10,6 +9,8 @@ import 'package:fastapp/domain/usecase/user/refresh_token_usecase.dart';
 import 'package:fastapp/core/exceptions/verify_again_exception.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
+import 'package:fastapp/presentation/store/kyc/ex_kyc_store.dart';
 import 'package:mobx/mobx.dart';
 
 import 'package:fastapp/domain/entity/user/user.dart';
@@ -236,25 +237,16 @@ abstract class _UserStore with Store {
   Future<void> clearAllUserCache() async {
     // 先执行 logout 清除 token 和登录状态
     await logout();
-    
-    // 清除设备ID
-    try {
-      await _clearDeviceId();
-    } catch (e) {
-      // 清除设备ID失败不影响其他操作
-      if (kDebugMode) {
-        print('清除设备ID失败: $e');
-      }
-    }
-  }
 
-  /// 清除设备ID
-  Future<void> _clearDeviceId() async {
+    // 使用 SharedPreferenceHelper 清除所有用户相关数据
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('device_id');
+      final sharedPrefHelper = getIt<SharedPreferenceHelper>();
+      await sharedPrefHelper.clearAllUserRelatedData();
     } catch (e) {
-      // 忽略错误
+      // 清除失败不影响其他操作
+      if (kDebugMode) {
+        print('清除用户数据失败: $e');
+      }
     }
   }
 
@@ -263,6 +255,17 @@ abstract class _UserStore with Store {
     isLoggedIn = false;
     currentUser = null;
     _clearVerifyAgainState();
+
+    // 清除 KYC 数据
+    try {
+      final kycStore = getIt<ExKycStore>();
+      kycStore.clear();
+    } catch (e) {
+      // 清除失败不影响退出登录
+      if (kDebugMode) {
+        print('清除 KYC 数据失败: $e');
+      }
+    }
   }
 
   @action

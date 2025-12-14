@@ -339,7 +339,12 @@ class UserController extends AbstractController
         $user->is_google2fa = $user->google2fa ? 1 : 0;
         $user->is_trans_password = $user->profile?->trans_password ? 1 : 0;
         $user->is_password = $user->getOriginal('password') ? 1 : 0;
-        $user->is_kyc = 0; //0未填写1待认证2失败3成功
+        $kyc = \Plugin\Ds\Ex\Model\ExKyc::query()->where(['user_id' => $user->id])->first(['kyc_level', 'status']);
+        //0未认证 1标准认证审核中 2标准认证完成 3标准认证未通过 4进阶认证审核中 5进阶认证完成 6进阶认证未通过
+        if ($kyc) {
+            if ($kyc->kyc_level == 1) $user->is_kyc = $kyc->status == 2 ? 3 : ($kyc->status ? 2 : 1);
+            if ($kyc->kyc_level == 2) $user->is_kyc = $kyc->status == 2 ? 6 : ($kyc->status ? 5 : 4);
+        } else $user->is_kyc = 0;
         return $this->success($user);
     }
 
