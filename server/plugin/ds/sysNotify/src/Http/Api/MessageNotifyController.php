@@ -54,7 +54,7 @@ class MessageNotifyController extends AbstractController
         $userId = $this->currentUser->id();
         $params = $request->query();
 
-        $page = $this->getCurrentPage();
+        $page = $this->getPage();
         $pageSize = $this->getPageSize();
 
         // 验证 notify_type 参数

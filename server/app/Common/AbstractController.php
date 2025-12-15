@@ -28,7 +28,7 @@ abstract class AbstractController
     {
         return ApplicationContext::getContainer()->get(Request::class);
     }
-    protected function getCurrentPage(): int
+    protected function getPage(): int
     {
         return (int) $this->getRequest()->input('page', 1);
     }

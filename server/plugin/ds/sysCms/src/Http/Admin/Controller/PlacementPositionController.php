@@ -45,7 +45,7 @@ class PlacementPositionController extends AbstractController
                 array_merge($this->getRequestData(), [
                     'created_by' => $this->currentUser->id(),
                 ]),
-                $this->getCurrentPage(),
+                $this->getPage(),
                 $this->getPageSize()
             )
         );

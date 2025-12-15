@@ -38,7 +38,7 @@ final class KefuConversationController extends AbstractController
     {
         return $this->success(data: $this->service->page(array_merge([
             'created_by' => $this->currentUser->id()
-        ], $this->getRequestData()), $this->getCurrentPage(), $this->getPageSize()));
+        ], $this->getRequestData()), $this->getPage(), $this->getPageSize()));
     }
 
     #[DeleteMapping(path: '/admin/ds/sysKefu/kefuConversation')]

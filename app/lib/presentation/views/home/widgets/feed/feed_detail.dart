@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'feed_comment_list.dart';
+import 'feed_comment_input_sheet.dart';
 
 /// 信息流详情页面
 ///
 /// 显示完整的帖子内容、统计数据、评论等
-class FeedDetail extends StatelessWidget {
+class FeedDetail extends StatefulWidget {
   final String username;
   final String time;
   final String content;
@@ -18,6 +19,7 @@ class FeedDetail extends StatelessWidget {
   final String avatarAsset;
   final bool isVerified;
   final int viewCount;
+  final bool scrollToComments;
 
   const FeedDetail({
     super.key,
@@ -34,7 +36,43 @@ class FeedDetail extends StatelessWidget {
     this.avatarAsset = '',
     this.isVerified = false,
     this.viewCount = 0,
+    this.scrollToComments = false,
   });
+
+  @override
+  State<FeedDetail> createState() => _FeedDetailState();
+}
+
+class _FeedDetailState extends State<FeedDetail> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _commentsKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.scrollToComments) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToComments();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToComments() {
+    final context = _commentsKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,24 +86,41 @@ class FeedDetail extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade600,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              '+ 关注',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
+            icon: const Icon(Icons.flag_outlined, color: Colors.black),
             onPressed: () {
-              // TODO: 显示菜单
+              // TODO: 举报功能
             },
           ),
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildAuthorSection(),
             _buildTitle(),
             _buildContent(),
-            if (media != null && media!.isNotEmpty) ...[
+            if (widget.media != null && widget.media!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              ...media!,
+              ...widget.media!,
             ],
             const SizedBox(height: 24),
             _buildDisclaimer(),
@@ -74,7 +129,10 @@ class FeedDetail extends StatelessWidget {
             const SizedBox(height: 16),
             _buildStats(),
             const SizedBox(height: 24),
-            _buildCommentsSection(),
+            KeyedSubtree(
+              key: _commentsKey,
+              child: _buildCommentsSection(),
+            ),
           ],
         ),
       ),
@@ -96,16 +154,16 @@ class FeedDetail extends StatelessWidget {
                   color: Colors.grey.shade300,
                   shape: BoxShape.circle,
                 ),
-                child: avatarAsset.isNotEmpty
+                child: widget.avatarAsset.isNotEmpty
                     ? ClipOval(
                         child: Image.asset(
-                          avatarAsset,
+                          widget.avatarAsset,
                           fit: BoxFit.cover,
                         ),
                       )
                     : const Icon(Icons.person, color: Colors.grey),
               ),
-              if (isVerified)
+              if (widget.isVerified)
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -131,7 +189,7 @@ class FeedDetail extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  username,
+                  widget.username,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -139,7 +197,7 @@ class FeedDetail extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  time,
+                  widget.time,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -148,32 +206,17 @@ class FeedDetail extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.amber,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Text(
-              '关注',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildTitle() {
-    if (title == null) return const SizedBox.shrink();
+    if (widget.title == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Text(
-        title!,
+        widget.title!,
         style: const TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
@@ -188,7 +231,7 @@ class FeedDetail extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Text(
-        content,
+        widget.content,
         style: const TextStyle(
           fontSize: 16,
           color: Colors.black87,
@@ -264,49 +307,54 @@ class FeedDetail extends StatelessWidget {
   }
 
   Widget _buildShareButton(Color color, IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+    return Flexible(
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 24,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildStats() {
-    final viewCountText = viewCount >= 1000 
-        ? '${(viewCount / 1000).toStringAsFixed(1)}K 次浏览'
-        : '$viewCount 次浏览';
-    
+    final viewCountText = widget.viewCount >= 1000
+        ? '${(widget.viewCount / 1000).toStringAsFixed(1)}K 次浏览'
+        : '${widget.viewCount} 次浏览';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         children: [
           _buildStatItem(viewCountText),
           const SizedBox(width: 16),
-          _buildStatItem('$likeCount 次点赞'),
+          _buildStatItem('${widget.likeCount} 次点赞'),
           const SizedBox(width: 16),
-          _buildStatItem('$repostCount 次引用'),
+          _buildStatItem('${widget.repostCount} 次引用'),
           const SizedBox(width: 16),
-          _buildStatItem('$shareCount 次分享'),
+          _buildStatItem('${widget.shareCount} 次分享'),
         ],
       ),
     );
@@ -323,71 +371,119 @@ class FeedDetail extends StatelessWidget {
   }
 
   Widget _buildCommentsSection() {
-    return FeedCommentList(commentCount: commentCount);
+    return FeedCommentList(commentCount: widget.commentCount);
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: '分享你的想法...',
-                hintStyle: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 8.0,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200),
             ),
           ),
-          const SizedBox(width: 16),
-          _buildBottomIcon(Icons.comment, commentCount.toString()),
-          const SizedBox(width: 12),
-          _buildBottomIcon(Icons.thumb_up, likeCount.toString()),
-          const SizedBox(width: 12),
-          _buildBottomIcon(Icons.repeat, repostCount.toString()),
-          const SizedBox(width: 12),
-          _buildBottomIcon(Icons.share, shareCount.toString()),
-        ],
-      ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  onTap: () => _showCommentInput(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 8.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '分享你的想法...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildBottomIcon(
+                      Icons.comment_outlined,
+                      widget.commentCount,
+                      onTap: () => _showCommentInput(context),
+                    ),
+                    _buildBottomIcon(
+                      Icons.thumb_up_outlined,
+                      widget.likeCount,
+                      onTap: () {
+                        // TODO: 点赞功能
+                      },
+                    ),
+                    _buildBottomIcon(
+                      Icons.share,
+                      widget.shareCount,
+                      onTap: () {
+                        // TODO: 分享功能
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBottomIcon(IconData icon, String count) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
-        Text(
-          count,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
+  void _showCommentInput(BuildContext context) {
+    FeedCommentInputSheet.show(
+      context,
+      placeholder: '添加回复...',
+      onSend: () {
+        // TODO: 发送评论
+      },
+    );
+  }
+
+  void _showRepostSheet(BuildContext context) {
+    FeedCommentInputSheet.show(
+      context,
+      placeholder: '评论并转发...',
+      showRepostOption: true,
+      onSend: () {
+        // TODO: 转发功能
+      },
+    );
+  }
+
+  Widget _buildBottomIcon(IconData icon, int count, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade600),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

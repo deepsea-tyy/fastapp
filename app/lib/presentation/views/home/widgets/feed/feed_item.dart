@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
+import 'package:fastapp/presentation/views/home/widgets/feed/feed_action_bar.dart';
+import 'package:fastapp/presentation/views/home/widgets/feed/feed_comment_input_sheet.dart';
 
 /// 信息流帖子组件
 ///
@@ -63,7 +65,7 @@ class FeedItem extends StatelessWidget {
     );
   }
 
-  void _navigateToDetail(BuildContext context) {
+  void _navigateToDetail(BuildContext context, {bool scrollToComments = false}) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
@@ -80,6 +82,7 @@ class FeedItem extends StatelessWidget {
           avatarAsset: avatarAsset,
           isVerified: isVerified,
           viewCount: 15400,
+          scrollToComments: scrollToComments,
         ),
       ),
     );
@@ -257,37 +260,34 @@ class FeedItem extends StatelessWidget {
   }
 
   Widget _buildEngagementBar() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        // 阻止事件冒泡，互动栏点击不跳转
+    return Builder(
+      builder: (context) {
+        return FeedActionBar(
+          commentCount: commentCount,
+          likeCount: likeCount,
+          repostCount: repostCount,
+          shareCount: shareCount,
+          onCommentTap: () => _navigateToDetail(context, scrollToComments: true),
+          onLikeTap: () {
+            // TODO: 点赞功能
+          },
+          onRepostTap: () => _showRepostSheet(context),
+          onShareTap: () {
+            // TODO: 分享功能
+          },
+        );
       },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildEngagementItem(Icons.comment_outlined, commentCount),
-          _buildEngagementItem(Icons.thumb_up_outlined, likeCount),
-          _buildEngagementItem(Icons.repeat, repostCount),
-          _buildEngagementItem(Icons.share, shareCount),
-        ],
-      ),
     );
   }
 
-  Widget _buildEngagementItem(IconData icon, int count) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 18, color: Colors.grey.shade600),
-        const SizedBox(width: 4),
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
+  void _showRepostSheet(BuildContext context) {
+    FeedCommentInputSheet.show(
+      context,
+      placeholder: '评论并转发...',
+      showRepostOption: true,
+      onSend: () {
+        // TODO: 转发功能
+      },
     );
   }
 }

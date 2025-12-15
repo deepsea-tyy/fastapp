@@ -82,7 +82,7 @@ class UserInviteCodeController extends AbstractController
         return $this->success(
             $this->service->page(
                 $params,
-                $this->getCurrentPage(),
+                $this->getPage(),
                 $this->getPageSize()
             )
         );

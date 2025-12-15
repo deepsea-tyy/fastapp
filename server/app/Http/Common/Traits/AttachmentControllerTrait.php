@@ -25,7 +25,7 @@ trait AttachmentControllerTrait
             $params['suffix'] = explode(',', $params['suffix']);
         }
         return $this->success(
-            $this->service->page($params, $this->getCurrentPage(), $this->getPageSize())
+            $this->service->page($params, $this->getPage(), $this->getPageSize())
         );
     }
 

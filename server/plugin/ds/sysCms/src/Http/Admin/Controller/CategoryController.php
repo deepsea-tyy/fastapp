@@ -37,7 +37,7 @@ class CategoryController extends AbstractController
         return $this->success(
             $this->service->page(
                 $this->getRequestData(),
-                $this->getCurrentPage(),
+                $this->getPage(),
                 $this->getPageSize()
             )
         );

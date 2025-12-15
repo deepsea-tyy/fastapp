@@ -38,7 +38,7 @@ final class KefuController extends AbstractController
         return $this->success(
             $this->service->page(
                 array_merge(['created_by' => $this->currentUser->id()], $this->getRequestData()),
-                $this->getCurrentPage(),
+                $this->getPage(),
                 $this->getPageSize()
             )
         );

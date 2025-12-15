@@ -1,0 +1,225 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Plugin\Ds\SysCms\Http\Api\Controller;
+
+use App\Common\AbstractController;
+use App\Common\Result;
+use App\Http\CurrentUser;
+use App\Service\Feed\FeedCacheService;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\Swagger\Annotation\Get;
+use Hyperf\Swagger\Annotation\Post;
+use Hyperf\Swagger\Annotation\Delete;
+use Hyperf\Swagger\Annotation\HyperfServer;
+use Hyperf\Swagger\Annotation\PathParameter;
+use Hyperf\Swagger\Annotation\QueryParameter;
+use Hyperf\Swagger\Annotation\JsonContent;
+use Hyperf\Swagger\Annotation\RequestBody;
+use Plugin\Ds\SysCms\Model\Article;
+use Plugin\Ds\SysCms\Model\FeedComment;
+use Plugin\Ds\SysCms\Model\FeedPost;
+
+/**
+ * 信息流评论API控制器
+ */
+#[HyperfServer(name: 'http')]
+#[Controller(prefix: '/api/feed/comment')]
+class FeedCommentController extends AbstractController
+{
+    public function __construct(
+        private readonly FeedCacheService $cacheService,
+        private readonly CurrentUser $currentUser
+    ) {
+        // 设置为API场景
+        $this->currentUser->setScene('api');
+    }
+
+    #[Get(
+        path: '/comments-query',
+        operationId: 'getFeedCommentList',
+        summary: '获取评论列表',
+        tags: ['信息流-评论']
+    )]
+    #[QueryParameter(name: 'target_type', description: '目标类型：1帖子 2文章', required: true, example: '1')]
+    #[QueryParameter(name: 'target_id', description: '目标ID', required: true, example: '1')]
+    #[QueryParameter(name: 'page', description: '页码', example: '1')]
+    #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
+    public function getList(): Result
+    {
+        $params = $this->getRequestData();
+        $targetType = (int)$params['target_type'];
+        $targetId = (int)$params['target_id'];
+        $page = (int)($params['page'] ?? 1);
+        $pageSize = (int)($params['page_size'] ?? 20);
+
+        // 获取评论列表（自动使用缓存）
+        $comments = $this->cacheService->getCommentList($targetType, $targetId, $page, $pageSize);
+
+        // TODO: 批量获取用户信息
+
+        return $this->success($comments);
+    }
+
+    #[Get(
+        path: '/replies/{id}',
+        operationId: 'getFeedCommentReplies',
+        summary: '获取评论的回复列表',
+        tags: ['信息流-评论']
+    )]
+    #[PathParameter(name: 'id', description: '评论ID', example: '1')]
+    #[QueryParameter(name: 'page', description: '页码', example: '1')]
+    #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
+    public function replies(int $id): Result
+    {
+        $page = $this->getPage();
+        $pageSize = $this->getPageSize();
+        $offset = ($page - 1) * $pageSize;
+
+        $replies = FeedComment::query()
+            ->where('parent_id', $id)
+            ->where('status', 1)
+            ->orderBy('created_at', 'asc')
+            ->offset($offset)
+            ->limit($pageSize)
+            ->get();
+
+        $list = $replies->map(function ($reply) {
+            return [
+                'id' => $reply->id,
+                'user_id' => $reply->user_id,
+                'reply_to_user_id' => $reply->reply_to_user_id,
+                'content' => $reply->content,
+                'images' => json_decode($reply->images ?? '[]', true),
+                'like_count' => $reply->like_count,
+                'created_at' => $reply->created_at?->toDateTimeString(),
+            ];
+        })->toArray();
+
+        return $this->success($list);
+    }
+
+    #[Post(
+        path: '/comment-create',
+        operationId: 'createFeedComment',
+        summary: '创建评论',
+        tags: ['信息流-评论']
+    )]
+    #[RequestBody(content: new JsonContent(
+        required: ['target_type', 'target_id', 'content'],
+        properties: [
+            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章', 'example' => 1],
+            'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
+            'parent_id' => ['type' => 'integer', 'description' => '父评论ID，0为顶级评论', 'example' => 0],
+            'reply_to_user_id' => ['type' => 'integer', 'description' => '回复的用户ID'],
+            'content' => ['type' => 'string', 'description' => '评论内容', 'example' => '这是一条评论'],
+            'images' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => '图片URL列表'],
+        ]
+    ))]
+    public function create(): Result
+    {
+        $userId = $this->currentUser->id();
+        if (!$userId) {
+            return $this->error('请先登录', 401);
+        }
+
+        $data = $this->getRequestData();
+        $targetType = (int)$data['target_type'];
+        $targetId = (int)$data['target_id'];
+        $parentId = (int)($data['parent_id'] ?? 0);
+
+        // 确定root_id
+        $rootId = 0;
+        if ($parentId > 0) {
+            $parentComment = FeedComment::find($parentId);
+            if ($parentComment) {
+                $rootId = $parentComment->root_id ?: $parentId;
+            }
+        }
+
+        // 创建评论
+        $comment = FeedComment::create([
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+            'user_id' => $userId,
+            'parent_id' => $parentId,
+            'root_id' => $rootId,
+            'reply_to_user_id' => $data['reply_to_user_id'] ?? null,
+            'content' => $data['content'],
+            'images' => json_encode($data['images'] ?? []),
+            'status' => 1,
+        ]);
+
+        // 更新目标内容的评论数
+        $this->updateCommentCount($targetType, $targetId, 1);
+
+        // 更新父评论的回复数
+        if ($parentId > 0) {
+            FeedComment::query()->where('id', $parentId)->increment('reply_count');
+        }
+
+        // 清除评论列表缓存
+        $this->cacheService->clearCommentList($targetType, $targetId);
+
+        // 清除目标内容的统计数据缓存
+        $this->cacheService->clearStats($targetType, $targetId);
+
+        return $this->success([
+            'id' => $comment->id,
+            'message' => '评论成功'
+        ]);
+    }
+
+    #[Delete(
+        path: '/comment-detail/{id}',
+        operationId: 'deleteFeedComment',
+        summary: '删除评论',
+        tags: ['信息流-评论']
+    )]
+    #[PathParameter(name: 'id', description: '评论ID', example: '1')]
+    public function delete(int $id): Result
+    {
+        $userId = $this->currentUser->id();
+        if (!$userId) {
+            return $this->error('请先登录', 401);
+        }
+
+        $comment = FeedComment::find($id);
+        if (!$comment) {
+            return $this->error('评论不存在', 404);
+        }
+
+        // 只能删除自己的评论
+        if ($comment->user_id !== $userId) {
+            return $this->error('无权删除', 403);
+        }
+
+        // 更新目标内容的评论数
+        $this->updateCommentCount($comment->target_type, $comment->target_id, -1);
+
+        // 更新父评论的回复数
+        if ($comment->parent_id > 0) {
+            FeedComment::query()->where('id', $comment->parent_id)->decrement('reply_count');
+        }
+
+        $comment->delete();
+
+        // 清除评论列表缓存
+        $this->cacheService->clearCommentList($comment->target_type, $comment->target_id);
+
+        // 清除目标内容的统计数据缓存
+        $this->cacheService->clearStats($comment->target_type, $comment->target_id);
+
+        return $this->success(['message' => '删除成功']);
+    }
+
+    private function updateCommentCount(int $targetType, int $targetId, int $increment): void
+    {
+        if ($targetType === 1) {
+            FeedPost::query()->where('id', $targetId)->increment('comment_count', $increment);
+        } elseif ($targetType === 2) {
+            Article::query()->where('id', $targetId)->increment('comment', $increment);
+        }
+    }
+}
