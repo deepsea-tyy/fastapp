@@ -14,6 +14,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property string $signed 个人签名
  * @property string $lang 言语
  * @property string $trans_password 交易密码
+ * @property array|null $setting 用户设置
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -27,7 +28,7 @@ class UserProfile extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'user_id', 'nickname', 'avatar', 'signed', 'lang', 'trans_password', 'created_at', 'updated_at'];
+    protected array $fillable = ['id', 'user_id', 'nickname', 'avatar', 'signed', 'lang', 'trans_password', 'setting', 'created_at', 'updated_at'];
 
     /**
      * The attributes that should be cast to native types.
@@ -35,6 +36,7 @@ class UserProfile extends Model
     protected array $casts = [
         'id' => 'integer',
         'user_id' => 'integer',
+        'setting' => 'json',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

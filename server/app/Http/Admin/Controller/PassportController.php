@@ -8,6 +8,7 @@ namespace App\Http\Admin\Controller;
 use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Result;
+use App\Common\Service\TwoFactorAuthService;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\PassportRequest;
 use App\Http\CurrentUser;
@@ -19,12 +20,6 @@ use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\Redis\Redis;
-use PragmaRX\Google2FA\Google2FA;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
-use BaconQrCode\Renderer\GDLibRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 
 #[Controller]
 final class PassportController extends AbstractController
@@ -32,6 +27,7 @@ final class PassportController extends AbstractController
 
     public function __construct(
         private readonly CurrentUser $currentUser,
+        private readonly TwoFactorAuthService $twoFAService,
     )
     {
     }
@@ -71,7 +67,7 @@ final class PassportController extends AbstractController
         }
 
         if ($user->google2fa) {
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $browser = $request->header('User-Agent') ?: 'unknown';
@@ -139,21 +135,13 @@ final class PassportController extends AbstractController
     public function google2faQrcode(): Result
     {
         $user = $this->currentUser->user();
-        if (!empty($user->google2fa)) {
+        if ($user->google2fa) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
 
-        $google2fa = new Google2FA();
-        $appName = \Hyperf\Config\config('app_name', 'FastApp');
-        $secret = $google2fa->generateSecretKey();
-
-        $qrCodeUrl = $google2fa->getQRCodeUrl(
-            $appName,
-            $user->email ?: ($user->username ?: $user->mobile),
-            $secret
-        );
-
-        $qrcodeBase64 = $this->generateQrCodeBase64($qrCodeUrl);
+        $secret = $this->twoFAService->generateSecret();
+        $qrCodeUrl = $this->twoFAService->generateQrCodeUrl($secret, $user->email ?: ($user->username ?: $user->mobile));
+        $qrcodeBase64 = $this->twoFAService->generateQrCodeBase64($qrCodeUrl);
 
         return $this->success([
             'google2fa' => $secret,
@@ -170,12 +158,11 @@ final class PassportController extends AbstractController
         $secret = $validated['google2fa'];
         $code = $validated['google2fa_code'];
 
-        if (!empty($user->google2fa)) {
+        if ($user->google2fa) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
 
-        $this->verifyGoogle2fa($secret, $code);
-
+        $this->twoFAService->verifyGoogle2fa($secret, $code);
         $user->google2fa = $secret;
         $user->save();
 
@@ -194,7 +181,7 @@ final class PassportController extends AbstractController
             throw new BusinessException(message: trans('auth.google_code_unbind'));
         }
 
-        $this->verifyGoogle2fa($user->google2fa, $code);
+        $this->twoFAService->verifyGoogle2fa($user->google2fa, $code);
         $user->google2fa = '';
         $user->save();
 
@@ -269,53 +256,4 @@ final class PassportController extends AbstractController
         return $imageData;
     }
 
-    /**
-     * 验证 Google2FA 验证码
-     */
-    private function verifyGoogle2fa(string $secret, string $code): void
-    {
-        if (\Hyperf\Config\config('env') == 'dev') {
-            return;
-        }
-        $google2fa = new Google2FA();
-        try {
-            $valid = $google2fa->verifyKey($secret, $code, 2);
-            if (!$valid) {
-                throw new BusinessException(message: trans('auth.google_code_invalid'));
-            }
-        } catch (\Throwable $e) {
-            if ($e instanceof BusinessException) {
-                throw $e;
-            }
-            throw new BusinessException(message: trans('auth.google_code_invalid'));
-        }
-    }
-
-    /**
-     * 生成二维码 Base64
-     */
-    private function generateQrCodeBase64(string $qrCodeUrl): ?string
-    {
-        if (extension_loaded('imagick')) {
-            try {
-                $renderer = new ImageRenderer(
-                    new RendererStyle(400),
-                    new ImagickImageBackEnd()
-                );
-                $writer = new Writer($renderer);
-                $qrcodePng = $writer->writeString($qrCodeUrl);
-                return 'data:image/png;base64,' . base64_encode($qrcodePng);
-            } catch (\Throwable) {
-            }
-        }
-
-        try {
-            $renderer = new GDLibRenderer(400);
-            $writer = new Writer($renderer);
-            $qrcodePng = $writer->writeString($qrCodeUrl);
-            return 'data:image/png;base64,' . base64_encode($qrcodePng);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
 }

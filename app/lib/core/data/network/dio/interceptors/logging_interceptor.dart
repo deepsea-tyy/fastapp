@@ -118,10 +118,6 @@ class LoggingInterceptor extends Interceptor {
           '<-- ${response.statusCode} ${(response.statusMessage?.isNotEmpty ?? false) ? response.statusMessage : ''} ${response.requestOptions.uri}');
       return handler.next(response);
     }
-
-    // 使用封装的打印方法
-    NetworkLogger.logResponse(response);
-
     return handler.next(response);
   }
 
@@ -134,8 +130,10 @@ class LoggingInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    // 使用封装的打印方法
-    NetworkLogger.logError(err);
+    // 只打印真正的网络错误（无响应的情况）
+    if (err.response == null) {
+      NetworkLogger.logError(err);
+    }
 
     return handler.next(err);
   }

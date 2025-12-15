@@ -123,16 +123,21 @@ class CurrentUser
         });
     }
 
-    public function getInfo(int $id): ?User
+    public function getInfo(?int $id = null): ?User
     {
         return User::query()->with(['profile'])
             ->select(['id', 'username', 'mobile', 'email', 'code', 'google2fa', 'password'])
-            ->find($id);
+            ->find($id ?: $this->id());
     }
 
     public function user(): ?User
     {
-        return $this->getInfo($this->id());
+        return User::query()->find($this->id());
+    }
+
+    public function profile(): ?UserProfile
+    {
+        return UserProfile::query()->where(['user_id' => $this->id()])->first();
     }
 
     public function getToken(): ?\Lcobucci\JWT\UnencryptedToken

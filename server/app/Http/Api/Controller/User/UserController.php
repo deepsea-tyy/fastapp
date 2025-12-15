@@ -12,6 +12,7 @@ use App\Common\AbstractController;
 use App\Common\Event\UserAccountEvent;
 use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
+use App\Common\Service\TwoFactorAuthService;
 use App\Common\Service\VerifyCodeService;
 use App\Common\Swagger\ResultResponse;
 use App\Common\Tools;
@@ -23,11 +24,6 @@ use App\Model\Enums\User\Status;
 use App\Model\Enums\User\Type;
 use App\Model\User;
 use App\Model\UserAccountLog;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
-use BaconQrCode\Renderer\GDLibRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
@@ -35,15 +31,14 @@ use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
-use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
-use PragmaRX\Google2FA\Google2FA;
 use Ramsey\Uuid\Uuid;
 
 #[HyperfServer(name: 'http')]
 class UserController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser $userService,
+        private readonly CurrentUser          $userService,
+        private readonly TwoFactorAuthService $twoFAService,
     )
     {
     }
@@ -77,8 +72,9 @@ class UserController extends AbstractController
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_SMS,
                 $validated['mobile'],
-                $validated['code'] ?? '',
-                $scene
+                $validated['vcode'] ?? '',
+                $scene,
+                countryCode: (int)($validated['code'] ?? 86)
             )) {
                 throw new BusinessException(message: '验证码错误或已过期');
             }
@@ -219,6 +215,8 @@ class UserController extends AbstractController
         }
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
         if ($user->status == Status::DISABLE->value) throw new BusinessException(message: trans('result.disabled'));
+
+        // 密码登录
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value && !$user->verifyPassword($validated['password'])) {
             throw new BusinessException(message: trans('user.password_error'));
         }
@@ -227,27 +225,17 @@ class UserController extends AbstractController
         if (empty($deviceId)) {
             $deviceId = Uuid::uuid4()->toString();
         }
-        $verifyAgain = '';
-        $fa = CacheConfigHelper::getConfigByKey('user_2FA')['value'] ?? true;
-        if ($fa) {
-            if ($user->google2fa) {
-                $verifyAgain = 'google2fa_code';
-            } elseif ($user->email) {
-                $verifyAgain = 'email_code';
-            } elseif ($user->mobile) {
-                $verifyAgain = 'mobile_code';
-            }
-            if (empty($validated['google2fa_code']) && empty($validated['vcode']) && $verifyAgain) {
-                return $this->success([
-                    'verify_again' => $verifyAgain,
-                    'email' => $user->email,
-                    'mobile' => $user->mobile,
-                    'code' => (string)$user->code,
-                    'device_id' => $deviceId,
-                ]);
-            }
+
+        // 检测是否需要二次验证
+        $hasPassword = $validated['type'] == LoginType::USERNAME_PASSWORD->value;
+        if ($this->twoFAService->needsVerification($user, $validated)) {
+            $verifyInfo = $this->twoFAService->detectVerifyMethod($user, true, $hasPassword);
+            $verifyInfo['device_id'] = $deviceId;
+            return $this->success($verifyInfo);
         }
-        if ($validated['type'] == LoginType::EMAIL_CODE->value || $verifyAgain == 'email_code') {
+
+        // 验证码登录需要验证验证码
+        if ($validated['type'] == LoginType::EMAIL_CODE->value) {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_LOGIN;
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_EMAIL,
@@ -257,21 +245,21 @@ class UserController extends AbstractController
             )) {
                 throw new BusinessException(message: trans('auth.email_code_invalid'));
             }
-        }
-        if ($validated['type'] == LoginType::MOBILE_CODE->value || $verifyAgain == 'mobile_code') {
+        } else if ($validated['type'] == LoginType::MOBILE_CODE->value) {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_LOGIN;
             if (!VerifyCodeService::verify(
                 VerifyCodeService::TYPE_SMS,
                 $validated['mobile'],
                 $validated['vcode'],
-                $scene
+                $scene,
+                countryCode: (int)($validated['code'] ?? 86)
             )) {
                 throw new BusinessException(message: trans('auth.mobile_code_invalid'));
             }
         }
-        if ($user->google2fa && $verifyAgain == 'google2fa_code') {
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code'] ?? '');
-        }
+
+        // 验证二次认证
+        $this->twoFAService->verify($user, $validated, VerifyCodeService::SCENE_LOGIN);
 
         $tokenData = $this->userService->setScene('api')->formatToken(
             $user,
@@ -335,17 +323,16 @@ class UserController extends AbstractController
     #[Middleware(TokenMiddleware::class)]
     public function info(): Result
     {
-        $user = $this->userService->user();
-        $user->is_google2fa = $user->google2fa ? 1 : 0;
-        $user->is_trans_password = $user->profile?->trans_password ? 1 : 0;
-        $user->is_password = $user->getOriginal('password') ? 1 : 0;
-        $kyc = \Plugin\Ds\Ex\Model\ExKyc::query()->where(['user_id' => $user->id])->first(['kyc_level', 'status']);
-        //0未认证 1标准认证审核中 2标准认证完成 3标准认证未通过 4进阶认证审核中 5进阶认证完成 6进阶认证未通过
-        if ($kyc) {
-            if ($kyc->kyc_level == 1) $user->is_kyc = $kyc->status == 2 ? 3 : ($kyc->status ? 2 : 1);
-            if ($kyc->kyc_level == 2) $user->is_kyc = $kyc->status == 2 ? 6 : ($kyc->status ? 5 : 4);
-        } else $user->is_kyc = 0;
-        return $this->success($user);
+        $info = $this->userService->getInfo();
+        $info->is_google2fa = $info->google2fa ? 1 : 0;
+        $info->is_trans_password = $info->profile?->trans_password ? 1 : 0;
+        $info->is_password = $info->getOriginal('password') ? 1 : 0;
+        if (class_exists(\Plugin\Ds\Ex\Model\ExKyc::class)) {
+            $kyc = \Plugin\Ds\Ex\Model\ExKyc::query()->where(['user_id' => $info->id])->first(['kyc_level', 'status']);
+            //0未认证
+            $info->is_kyc = $kyc?->isKyc() ?? 0;
+        }
+        return $this->success($info);
     }
 
     #[Post(
@@ -380,7 +367,7 @@ class UserController extends AbstractController
         }
 
         $scene = VerifyCodeService::SCENE_CHANGE;
-        $this->verifyPasswordAndCode($user, $validated, $oldPassword, $scene);
+        $this->twoFAService->verifyPasswordAndTwoFactor($user, $validated, $oldPassword, $scene);
 
         $user->password = $validated['password'];
         $user->save();
@@ -409,7 +396,7 @@ class UserController extends AbstractController
         $validated = $request->validated();
         $user = $this->userService->user();
 
-        $this->verifyPasswordAndCode($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
+        $this->twoFAService->verifyPasswordAndTwoFactor($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
 
         $user->status = Status::DISABLE->value;
         $user->save();
@@ -438,7 +425,7 @@ class UserController extends AbstractController
         $validated = $request->validated();
         $user = $this->userService->user();
 
-        $this->verifyPasswordAndCode($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
+        $this->twoFAService->verifyPasswordAndTwoFactor($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
 
         $parts = array_filter([$user->username ?: '', $user->email ?: "", $user->mobile ?: '']);
         $newUsername = 'del' . implode('|', $parts);
@@ -467,21 +454,13 @@ class UserController extends AbstractController
     {
         $user = $this->userService->user();
 
+
         if (!empty($user->google2fa)) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
-
-        $google2fa = new Google2FA();
-        $appName = \Hyperf\Config\config('app_name', 'FastApp');
-        $secret = $google2fa->generateSecretKey();
-
-        $qrCodeUrl = $google2fa->getQRCodeUrl(
-            $appName,
-            $user->email ?: ($user->username ?: $user->mobile),
-            $secret
-        );
-
-        $qrcodeBase64 = $this->generateQrCodeBase64($qrCodeUrl);
+        $secret = $this->twoFAService->generateSecret();
+        $qrCodeUrl = $this->twoFAService->generateQrCodeUrl($secret, $user->email ?: ($user->username ?: $user->mobile));
+        $qrcodeBase64 = $this->twoFAService->generateQrCodeBase64($qrCodeUrl);
 
         return $this->success([
             'google2fa' => $secret,
@@ -515,7 +494,7 @@ class UserController extends AbstractController
             throw new BusinessException(message: trans('auth.google_code_bind'));
         }
 
-        $this->verifyGoogle2fa($secret, $code);
+        $this->twoFAService->verifyGoogle2fa($secret, $code);
 
         $user->google2fa = $secret;
         $user->save();
@@ -548,7 +527,7 @@ class UserController extends AbstractController
             throw new BusinessException(message: trans('auth.google_code_unbind'));
         }
 
-        $this->verifyGoogle2fa($user->google2fa, $code);
+        $this->twoFAService->verifyGoogle2fa($user->google2fa, $code);
         $user->google2fa = '';
         $user->save();
         $this->dispatchUserLoginEvent($user, $request, 11);
@@ -590,7 +569,7 @@ class UserController extends AbstractController
             if (empty($validated['google2fa_code'])) {
                 throw new BusinessException(message: trans('auth.google_code_required'));
             }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $scene = VerifyCodeService::SCENE_BIND;
@@ -638,7 +617,7 @@ class UserController extends AbstractController
             if (empty($validated['google2fa_code'])) {
                 throw new BusinessException(message: trans('auth.google_code_required'));
             }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $scene = VerifyCodeService::SCENE_BIND;
@@ -693,7 +672,7 @@ class UserController extends AbstractController
             if (empty($validated['google2fa_code'])) {
                 throw new BusinessException(message: trans('auth.google_code_required'));
             }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $scene = VerifyCodeService::SCENE_BIND;
@@ -742,7 +721,7 @@ class UserController extends AbstractController
             if (empty($validated['google2fa_code'])) {
                 throw new BusinessException(message: trans('auth.google_code_required'));
             }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $scene = VerifyCodeService::SCENE_BIND;
@@ -809,8 +788,11 @@ class UserController extends AbstractController
     {
         $validated = $request->validated();
         if (!$validated) return $this->success();
-        $user = $this->userService->user();
-        $user->profile->fill($validated)->save();
+        $profile = $this->userService->profile();
+        if (!empty($validated['setting'])) {
+            $validated['setting'] = array_merge($profile->setting, $validated['setting']);
+        }
+        $profile->fill($validated)->save();
 
         return $this->success(message: trans('user.profile_update_success'));
     }
@@ -848,7 +830,7 @@ class UserController extends AbstractController
             ]);
         }
         if ($validated['step'] == 2 && $user->google2fa) {
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
             return $this->success();
         }
         $scene = VerifyCodeService::SCENE_RESET_PASSWORD;
@@ -866,7 +848,8 @@ class UserController extends AbstractController
                 VerifyCodeService::TYPE_SMS,
                 $user->mobile,
                 $validated['vcode'],
-                $scene
+                $scene,
+                countryCode: (int)($validated['code'] ?? $user->code ?? 86)
             )) {
                 throw new BusinessException(message: trans('auth.mobile_code_invalid'));
             }
@@ -894,104 +877,4 @@ class UserController extends AbstractController
             type: $type
         ));
     }
-
-    /**
-     * 验证密码和验证码（通用方法）
-     *
-     * @param object $user 用户对象
-     * @param array $validated 验证后的请求数据
-     * @param string $password 密码（如果用户已设置密码则必填）
-     * @param string $scene 验证码场景
-     */
-    private function verifyPasswordAndCode(object $user, array $validated, string $password, string $scene = VerifyCodeService::SCENE_CHANGE): void
-    {
-        if (!empty($user->getOriginal('password'))) {
-            if (empty($password)) {
-                throw new BusinessException(message: trans('user.password_required'));
-            }
-            if (!$user->verifyPassword($password)) {
-                throw new BusinessException(message: trans('user.password_error'));
-            }
-        }
-
-        if (!empty($user->google2fa)) {
-            if (empty($validated['google2fa_code'])) {
-                throw new BusinessException(message: trans('auth.google_code_required'));
-            }
-            $this->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
-        } else if (!empty($user->email)) {
-            if (empty($validated['vcode'])) {
-                throw new BusinessException(message: trans('auth.email_code_required'));
-            }
-            if (!VerifyCodeService::verify(
-                VerifyCodeService::TYPE_EMAIL,
-                $user->email,
-                $validated['vcode'],
-                $scene
-            )) {
-                throw new BusinessException(message: trans('auth.email_code_invalid'));
-            }
-        } else if (!empty($user->mobile)) {
-            if (empty($validated['vcode'])) {
-                throw new BusinessException(message: trans('auth.mobile_code_required'));
-            }
-            if (!VerifyCodeService::verify(
-                VerifyCodeService::TYPE_SMS,
-                $user->mobile,
-                $validated['vcode'],
-                $scene
-            )) {
-                throw new BusinessException(message: trans('auth.mobile_code_invalid'));
-            }
-        }
-    }
-
-    /**
-     * 验证 Google2FA 验证码
-     */
-    private function verifyGoogle2fa(string $secret, string $code): void
-    {
-        if (\Hyperf\Config\config('env') == 'dev') return;
-        $google2fa = new Google2FA();
-        try {
-            $valid = $google2fa->verifyKey($secret, $code, 2);
-            if (!$valid) {
-                throw new BusinessException(message: trans('auth.google_code_invalid'));
-            }
-        } catch (\Throwable $e) {
-            if ($e instanceof BusinessException) {
-                throw $e;
-            }
-            throw new BusinessException(message: trans('auth.google_code_invalid'));
-        }
-    }
-
-    /**
-     * 生成二维码 Base64
-     */
-    private function generateQrCodeBase64(string $qrCodeUrl): ?string
-    {
-        if (extension_loaded('imagick')) {
-            try {
-                $renderer = new ImageRenderer(
-                    new RendererStyle(400),
-                    new ImagickImageBackEnd()
-                );
-                $writer = new Writer($renderer);
-                $qrcodePng = $writer->writeString($qrCodeUrl);
-                return 'data:image/png;base64,' . base64_encode($qrcodePng);
-            } catch (\Throwable) {
-            }
-        }
-
-        try {
-            $renderer = new GDLibRenderer(400);
-            $writer = new Writer($renderer);
-            $qrcodePng = $writer->writeString($qrCodeUrl);
-            return 'data:image/png;base64,' . base64_encode($qrcodePng);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
 }

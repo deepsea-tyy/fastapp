@@ -82,9 +82,6 @@ class VerifyCodeService
      * @param string $type 验证码类型：sms（手机短信）或 email（邮箱）
      * @param string $target 目标地址：手机号或邮箱地址
      * @param string $scene 使用场景，如：login, register, reset_password 等
-     * @param int $codeLength 验证码长度，默认6位
-     * @param int $ttl 验证码有效期（秒），默认600秒（10分钟）
-     * @param int $interval 发送间隔（秒），默认60秒
      * @param int $countryCode 国家代码（仅手机短信需要），默认86
      * @return array 返回结果 ['success' => bool, 'message' => string, 'code' => string|null]
      */
@@ -92,13 +89,13 @@ class VerifyCodeService
         string $type,
         string $target,
         string $scene = self::SCENE_DEFAULT,
-        int $codeLength = self::DEFAULT_CODE_LENGTH,
-        int $ttl = self::DEFAULT_TTL,
-        int $interval = self::DEFAULT_INTERVAL,
         int $countryCode = 86
     ): array {
+        $codeLength = self::DEFAULT_CODE_LENGTH;
+        $ttl = self::DEFAULT_TTL;
+        $interval = self::DEFAULT_INTERVAL;
         // 开发环境直接返回成功
-        if (config('env') == 'dev') {
+        if (\Hyperf\Config\config('env') == 'dev') {
             return [
                 'success' => true,
                 'message' => '验证码发送成功（开发环境）',
@@ -107,33 +104,18 @@ class VerifyCodeService
         }
 
         // 验证目标地址格式
-        if ($type === self::TYPE_SMS) {
-            if (!self::validateMobile($target)) {
-                return [
-                    'success' => false,
-                    'message' => '手机号格式不正确',
-                    'code' => null,
-                ];
-            }
-        } elseif ($type === self::TYPE_EMAIL) {
-            if (!self::validateEmail($target)) {
-                return [
-                    'success' => false,
-                    'message' => '邮箱格式不正确',
-                    'code' => null,
-                ];
-            }
-        } else {
+        $validationResult = self::validateTarget($type, $target);
+        if (!$validationResult['valid']) {
             return [
                 'success' => false,
-                'message' => '不支持的验证码类型',
+                'message' => $validationResult['message'],
                 'code' => null,
             ];
         }
 
         // 生成缓存键
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
+        $redis = self::getRedis();
 
         // 检查发送间隔（只有验证码存在且未过期时才检查）
         $ttlRemaining = (int)$redis->ttl($cacheKey);
@@ -185,22 +167,23 @@ class VerifyCodeService
      *
      * @param string $type 验证码类型：sms 或 email
      * @param string $target 目标地址：手机号或邮箱地址
-     * @param string $vcode 用户输入的验证码
+     * @param string|int $vcode 用户输入的验证码
      * @param string $scene 使用场景，必须与发送时一致
      * @param bool $clean 验证成功后是否删除验证码，默认true
      * @param int $countryCode 国家代码（仅手机短信需要），默认86
      * @return bool 验证是否成功
+     * @throws \RedisException
      */
     public static function verify(
         string $type,
         string $target,
-        string $vcode,
+        string|int $vcode,
         string $scene = self::SCENE_DEFAULT,
         bool   $clean = true,
         int    $countryCode = 86
     ): bool {
         // 开发环境直接返回成功
-        if (config('env') == 'dev') {
+        if (\Hyperf\Config\config('env') == 'dev') {
             return true;
         }
 
@@ -209,10 +192,10 @@ class VerifyCodeService
         }
 
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
+        $redis = self::getRedis();
         $storedCode = $redis->get($cacheKey);
 
-        if ($storedCode && $storedCode === $vcode) {
+        if ($storedCode && $storedCode == $vcode) {
             if ($clean) {
                 $redis->del($cacheKey);
             }
@@ -418,26 +401,40 @@ class VerifyCodeService
     }
 
     /**
-     * 验证手机号格式
+     * 获取Redis实例
      *
-     * @param string $mobile 手机号
-     * @return bool 是否有效
+     * @return Redis
      */
-    protected static function validateMobile(string $mobile): bool
+    protected static function getRedis(): Redis
     {
-        // 简单的手机号验证，可根据实际需求调整
-        return preg_match('/^1[3-9]\d{9}$/', $mobile) === 1;
+        return ApplicationContext::getContainer()->get(Redis::class);
     }
 
     /**
-     * 验证邮箱格式
+     * 验证目标地址格式
      *
-     * @param string $email 邮箱地址
-     * @return bool 是否有效
+     * @param string $type 验证码类型
+     * @param string $target 目标地址
+     * @return array ['valid' => bool, 'message' => string]
      */
-    protected static function validateEmail(string $email): bool
+    protected static function validateTarget(string $type, string $target): array
     {
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+        if ($type === self::TYPE_SMS) {
+            // 简单的手机号验证，可根据实际需求调整
+            if (preg_match('/^1[3-9]\d{9}$/', $target) !== 1) {
+                return ['valid' => false, 'message' => '手机号格式不正确'];
+            }
+            return ['valid' => true, 'message' => ''];
+        }
+
+        if ($type === self::TYPE_EMAIL) {
+            if (filter_var($target, FILTER_VALIDATE_EMAIL) === false) {
+                return ['valid' => false, 'message' => '邮箱格式不正确'];
+            }
+            return ['valid' => true, 'message' => ''];
+        }
+
+        return ['valid' => false, 'message' => '不支持的验证码类型'];
     }
 
     /**
@@ -493,8 +490,7 @@ class VerifyCodeService
     public static function exists(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): bool
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
-        return $redis->exists($cacheKey) > 0;
+        return self::getRedis()->exists($cacheKey) > 0;
     }
 
     /**
@@ -509,8 +505,7 @@ class VerifyCodeService
     public static function getRemainingTime(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): int
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
-        return (int)$redis->ttl($cacheKey);
+        return (int)self::getRedis()->ttl($cacheKey);
     }
 
     /**
@@ -525,8 +520,7 @@ class VerifyCodeService
     public static function delete(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): bool
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
-        return $redis->del($cacheKey) > 0;
+        return self::getRedis()->del($cacheKey) > 0;
     }
 }
 

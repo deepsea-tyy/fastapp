@@ -1,0 +1,39 @@
+{
+  "id": "light",
+  "name": "亮色",
+  "seedColor": "#2196F3",
+  "scaffoldBackground": "#FFFFFF",
+  "button": {
+    "background": "#424242",
+    "foreground": "#FFFFFF",
+    "disabledBackground": "#BDBDBD",
+    "disabledForeground": "#B3FFFFFF"
+  },
+  "text": {
+    "primary": "#212121",
+    "secondary": "#757575",
+    "hint": "#9E9E9E",
+    "disabled": "#BDBDBD"
+  },
+  "border": {
+    "default": "#E0E0E0",
+    "focused": "#2196F3",
+    "error": "#F44336"
+  },
+  "status": {
+    "success": "#4CAF50",
+    "error": "#F44336",
+    "warning": "#FF9800",
+    "info": "#2196F3"
+  },
+  "background": {
+    "scaffold": "#FFFFFF",
+    "page": "#F5F5F5",
+    "card": "#FFFFFF",
+    "section": "#FAFAFA",
+    "input": "#F5F5F5",
+    "dialog": "#FFFFFF",
+    "bottomSheet": "#FFFFFF",
+    "elevated": "#FFFFFF"
+  }
+}

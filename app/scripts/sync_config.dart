@@ -78,9 +78,6 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
   final android = _getMap(config, ['android']);
   final ios = _getMap(config, ['ios']);
   final network = _getMap(config, ['network']);
-  final theme = _getMap(config, ['theme']);
-  final themeLight = _getMap(config, ['theme', 'light']);
-  final themeDark = _getMap(config, ['theme', 'dark']);
   final resources = _getMap(config, ['resources']);
   final ui = _getMap(config, ['ui']);
   final assets = _getMap(config, ['assets']);
@@ -113,18 +110,6 @@ Future<void> syncAppConfig(Map<String, dynamic> config) async {
     r"static const String futuresPosition = '[^']*';": "static const String futuresPosition = '${_getMap(endpoints, ['futures'])['position'] ?? '/api/v1/futures/position'}';",
     r"static const String futuresLeverage = '[^']*';": "static const String futuresLeverage = '${_getMap(endpoints, ['futures'])['leverage'] ?? '/api/v1/futures/leverage'}';",
     r"static const String futuresFundingRate = '[^']*';": "static const String futuresFundingRate = '${_getMap(endpoints, ['futures'])['fundingRate'] ?? '/api/v1/futures/funding-rate'}';",
-    r"static const String seedColorLight = '[^']*';": "static const String seedColorLight = '${themeLight['seedColor'] ?? '#2196F3'}';",
-    r"static const String seedColorDark = '[^']*';": "static const String seedColorDark = '${themeDark['seedColor'] ?? '#2196F3'}';",
-    r"static const String scaffoldBackgroundColorLight = '[^']*';": "static const String scaffoldBackgroundColorLight = '${themeLight['scaffoldBackgroundColor'] ?? '#FFFFFF'}';",
-    r"static const String scaffoldBackgroundColorDark = '[^']*';": "static const String scaffoldBackgroundColorDark = '${themeDark['scaffoldBackgroundColor'] ?? ''}';",
-    r"static const String buttonBackgroundColorLight = '[^']*';": "static const String buttonBackgroundColorLight = '${themeLight['buttonBackgroundColor'] ?? '#424242'}';",
-    r"static const String buttonBackgroundColorDark = '[^']*';": "static const String buttonBackgroundColorDark = '${themeDark['buttonBackgroundColor'] ?? '#757575'}';",
-    r"static const String buttonForegroundColorLight = '[^']*';": "static const String buttonForegroundColorLight = '${themeLight['buttonForegroundColor'] ?? '#FFFFFF'}';",
-    r"static const String buttonForegroundColorDark = '[^']*';": "static const String buttonForegroundColorDark = '${themeDark['buttonForegroundColor'] ?? '#FFFFFF'}';",
-    r"static const String buttonDisabledBackgroundColorLight = '[^']*';": "static const String buttonDisabledBackgroundColorLight = '${themeLight['buttonDisabledBackgroundColor'] ?? '#BDBDBD'}';",
-    r"static const String buttonDisabledBackgroundColorDark = '[^']*';": "static const String buttonDisabledBackgroundColorDark = '${themeDark['buttonDisabledBackgroundColor'] ?? '#616161'}';",
-    r"static const String buttonDisabledForegroundColorLight = '[^']*';": "static const String buttonDisabledForegroundColorLight = '${themeLight['buttonDisabledForegroundColor'] ?? '#B3FFFFFF'}';",
-    r"static const String buttonDisabledForegroundColorDark = '[^']*';": "static const String buttonDisabledForegroundColorDark = '${themeDark['buttonDisabledForegroundColor'] ?? '#B3FFFFFF'}';",
     r"static const String imageCdnBaseUrl = '[^']*';": "static const String imageCdnBaseUrl = '${resources['imageCdnBaseUrl'] ?? ''}';",
     r"static const double defaultHorizontalPadding = [\d.]+;": "static const double defaultHorizontalPadding = ${ui['defaultHorizontalPadding'] ?? 12.0};",
     r"static const double defaultVerticalPadding = [\d.]+;": "static const double defaultVerticalPadding = ${ui['defaultVerticalPadding'] ?? 12.0};",

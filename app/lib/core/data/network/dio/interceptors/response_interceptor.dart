@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:event_bus/event_bus.dart';
+import 'package:fastapp/utils/logger/network_logger.dart';
 import '../../model/api_response.dart';
 
 /// 响应拦截器：统一处理 API 响应结构
@@ -10,6 +11,9 @@ class ResponseInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
+    // 先打印响应日志，确保所有响应都能被记录（包括非200）
+    NetworkLogger.logResponse(response);
+
     try {
       final data = response.data;
       

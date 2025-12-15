@@ -26,6 +26,7 @@ import 'package:fastapp/presentation/views/home/widgets/feed/feed_section.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/constants/app_backgrounds.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
@@ -75,66 +76,67 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final backgrounds = AppBackgrounds.of(context);
 
     return Scaffold(
-      // 使用浅灰色作为背景色
-      backgroundColor: Colors.grey[200],
-      
+      // 使用主题配置的页面背景色
+      backgroundColor: backgrounds.page,
+
       // 顶部导航栏
       appBar: TopBar(
         onMenuPressed: () {
           Navigator.of(context).pushNamed(Routes.userCenter);
         },
       ),
-      
+
       // 页面主体内容，使用可滚动视图
       body: Observer(
         builder: (_) {
           // 确保访问 observable，即使条件为 false
           final isLoggedIn = _userStore.isLoggedIn;
-          
+
           return SingleChildScrollView(
             child: Column(
               children: [
                 // 登录后显示快捷入口
                 if (isLoggedIn) ...[
                   const QuickEntranceSection(),
-                  
+
                   // 信息流区域
                   const FeedSection(),
                 ],
-                
+
                 // 未登录时显示的内容
                 if (!isLoggedIn) ...[
                   Container(
-                    color: Colors.white,
+                    color: backgrounds.card,
                     child: const ToLoginSection(),
                   ),
-                  
+
                   // 加密货币行情区域：热门榜、涨幅榜、新币榜
                   Container(
-                    color: Colors.white,
+                    color: backgrounds.card,
                     margin: const EdgeInsets.only(top: 8),
                     child: const MobileCryptoListSection(),
                   ),
-                  
+
                   // 开始您的加密货币之旅：功能介绍
                   Container(
-                    color: Colors.white,
+                    color: backgrounds.card,
                     margin: const EdgeInsets.only(top: 8),
                     child: const JourneySection(),
                   ),
-                  
+
                   // 交易"智"变跟单：跟单交易员展示
                   Container(
-                    color: Colors.white,
+                    color: backgrounds.card,
                     margin: const EdgeInsets.only(top: 8),
                     child: const CopyTradingSection(),
                   ),
-                  
+
                   // 值得您信赖的平台：安全特性
                   Container(
-                    color: Colors.white,
+                    color: backgrounds.card,
                     margin: const EdgeInsets.only(top: 8),
                     child: const TrustSection(),
                   ),
