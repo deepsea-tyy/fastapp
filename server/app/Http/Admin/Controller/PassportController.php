@@ -56,7 +56,7 @@ final class PassportController extends AbstractController
             $storedCode = $redis->get($cacheKey);
 
             if (!$storedCode || strtolower($storedCode) !== strtolower($code)) {
-                throw new BusinessException(message: '验证码错误无效');
+                throw new BusinessException(message: trans('user.vcode_invalid'));
             }
 
             // 验证成功后删除验证码

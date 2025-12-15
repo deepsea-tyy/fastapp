@@ -50,7 +50,7 @@ class UserRequest extends FormRequest
             'nickname' => ['required', 'string', 'max:60', 'regex:/^[^\s]+$/'],
             'phone' => 'nullable|sometimes|string|max:12',
             'email' => 'nullable|sometimes|string|max:60|email:rfc,dns',
-            'avatar' => 'nullable|sometimes|string|max:255|url',
+            'avatar' => 'nullable|sometimes|string|max:255',
             'signed' => 'nullable|sometimes|string|max:255',
             'status' => 'nullable|sometimes|integer',
             'backend_setting' => 'nullable|sometimes|array|max:255',

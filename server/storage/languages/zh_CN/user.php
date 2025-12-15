@@ -37,6 +37,7 @@ return [
         ],
     ],
     'vcode' => '验证码',
+    'vcode_invalid' => '验证码错误',
     'password' => '密码',
     'password_error' => '密码错误',
     'old_password_error' => '旧密码错误',

@@ -37,6 +37,7 @@ return [
         ],
     ],
     'vcode' => '驗證碼',
+    'vcode_invalid' => '驗證碼錯誤',
     'password' => '密碼',
     'password_error' => '密碼錯誤',
     'disable' => '賬號已停用',

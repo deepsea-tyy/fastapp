@@ -37,6 +37,7 @@ return [
         ],
     ],
     'vcode' => 'Verification code',
+    'vcode_invalid' => 'Verification code error',
     'password' => 'Password',
     'password_error' => 'Password error',
     'old_password_error' => 'Old password error',

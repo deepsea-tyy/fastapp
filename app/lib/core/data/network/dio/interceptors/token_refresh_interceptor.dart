@@ -8,9 +8,10 @@ class TokenRefreshInterceptor extends Interceptor {
   final SharedPreferenceHelper _sharedPrefsHelper;
   final Dio _dio;
   final EventBus _eventBus;
-  
+
   Completer<void>? _refreshTokenCompleter;
   bool _isRefreshing = false;
+  bool _hasTriggeredLogout = false; // 防止多次触发登出事件
 
   TokenRefreshInterceptor({
     required SharedPreferenceHelper sharedPrefsHelper,
@@ -22,9 +23,9 @@ class TokenRefreshInterceptor extends Interceptor {
 
   bool _shouldSkipRequest(String path) {
     return path == Endpoints.userRefreshToken ||
-           path == Endpoints.userLogin ||
-           path == Endpoints.userLogout ||
-           path == Endpoints.userRegister;
+        path == Endpoints.userLogin ||
+        path == Endpoints.userLogout ||
+        path == Endpoints.userRegister;
   }
 
   bool _isUnauthorizedResponse(Response response) {
@@ -34,23 +35,26 @@ class TokenRefreshInterceptor extends Interceptor {
   }
 
   Future<void> _refreshToken() async {
+    // 如果已经在刷新中，等待当前刷新完成
     if (_isRefreshing) {
-      return _refreshTokenCompleter?.future ?? Future.value();
+      await (_refreshTokenCompleter?.future ?? Future.value());
+      return;
     }
 
+    // 设置刷新标志，防止并发刷新
     _isRefreshing = true;
     _refreshTokenCompleter = Completer<void>();
 
     try {
       final refreshTokenValue = await _sharedPrefsHelper.refreshToken;
+      print('🔄 [TokenRefresh] 开始刷新token, refresh_token: ${refreshTokenValue?.substring(0, 20)}...');
       if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
-        print('❌ [TokenRefresh] 未找到refresh_token，无法刷新token');
         throw Exception('刷新token失败：未找到refresh_token');
       }
 
       final refreshDio = Dio(_dio.options);
       refreshDio.interceptors.clear();
-      
+
       final response = await refreshDio.post(
         Endpoints.userRefreshToken,
         data: {
@@ -62,27 +66,28 @@ class TokenRefreshInterceptor extends Interceptor {
           },
         ),
       );
-      
+
       final data = response.data;
       if (data is! Map<String, dynamic>) {
         throw Exception('刷新token失败：响应格式错误');
       }
-      
+
       if (data.containsKey('code') && data['code'] == 401) {
         final message = data['message'] as String? ?? '刷新token失败：refresh_token已过期';
-        print('❌ [TokenRefresh] 刷新token失败: $message');
         throw Exception(message);
       }
-      
+
       Map<String, dynamic> tokenData;
-      if (data.containsKey('code') && data['code'] == 200 && data.containsKey('data')) {
+      if (data.containsKey('code') &&
+          data['code'] == 200 &&
+          data.containsKey('data')) {
         tokenData = data['data'] as Map<String, dynamic>;
       } else if (data.containsKey('access_token')) {
         tokenData = data;
       } else {
         throw Exception(data['message'] as String? ?? '刷新token失败：响应格式错误');
       }
-      
+
       final accessToken = tokenData['access_token'] as String?;
       if (accessToken == null) {
         throw Exception('刷新token失败：未获取到访问令牌');
@@ -96,9 +101,9 @@ class TokenRefreshInterceptor extends Interceptor {
         await _sharedPrefsHelper.saveExpireAt(tokenData['expire_at'] as int);
       }
 
+      print('✅ [TokenRefresh] Token刷新成功，新token已保存');
       _refreshTokenCompleter!.complete();
     } catch (e) {
-      print('❌ [TokenRefresh] 刷新token失败: $e');
       _refreshTokenCompleter!.completeError(e);
       rethrow;
     } finally {
@@ -113,18 +118,16 @@ class TokenRefreshInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) async {
     final path = response.requestOptions.path;
-    
+
     if (_shouldSkipRequest(path) || !_isUnauthorizedResponse(response)) {
       return handler.next(response);
     }
 
     final refreshTokenValue = await _sharedPrefsHelper.refreshToken;
     if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
-      print('❌ [TokenRefresh] 未找到refresh_token，无法刷新token');
-      await _clearAllUserData();
-      _eventBus.fire(ForceLogoutEvent(message: '登录已过期，请重新登录'));
+      await _handleRefreshFailure();
       final data = response.data;
-      final errorMessage = (data is Map<String, dynamic>) 
+      final errorMessage = (data is Map<String, dynamic>)
           ? (data['message'] as String? ?? '未授权')
           : '未授权';
       return handler.reject(
@@ -146,7 +149,7 @@ class TokenRefreshInterceptor extends Interceptor {
 
       response.requestOptions.headers['Token'] = newToken;
       response.requestOptions.headers.remove('Authorization');
-      
+
       final retryResponse = await _dio.request(
         path,
         data: response.requestOptions.data,
@@ -173,11 +176,9 @@ class TokenRefreshInterceptor extends Interceptor {
 
       return handler.resolve(retryResponse);
     } catch (e) {
-      print('❌ [TokenRefresh] 刷新token流程失败: $e');
-      await _clearAllUserData();
-      _eventBus.fire(ForceLogoutEvent(message: '登录已过期，请重新登录'));
+      await _handleRefreshFailure();
       final data = response.data;
-      final errorMessage = (data is Map<String, dynamic>) 
+      final errorMessage = (data is Map<String, dynamic>)
           ? (data['message'] as String? ?? '未授权')
           : '未授权';
       return handler.reject(
@@ -197,11 +198,11 @@ class TokenRefreshInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final path = err.requestOptions.path;
-    
+
     if (_shouldSkipRequest(path) || err.response?.statusCode != 401) {
       return super.onError(err, handler);
     }
-    
+
     try {
       await _refreshToken();
       final newToken = await _sharedPrefsHelper.authToken;
@@ -211,7 +212,7 @@ class TokenRefreshInterceptor extends Interceptor {
 
       err.requestOptions.headers['Token'] = newToken;
       err.requestOptions.headers.remove('Authorization');
-      
+
       final response = await _dio.request(
         path,
         data: err.requestOptions.data,
@@ -238,10 +239,28 @@ class TokenRefreshInterceptor extends Interceptor {
 
       return handler.resolve(response);
     } catch (e) {
-      print('❌ [TokenRefresh] 刷新token流程失败: $e');
+      await _handleRefreshFailure();
+      return super.onError(err, handler);
+    }
+  }
+
+  /// 处理刷新失败，确保只触发一次登出事件
+  Future<void> _handleRefreshFailure() async {
+    if (_hasTriggeredLogout) {
+      return;
+    }
+
+    _hasTriggeredLogout = true;
+
+    try {
       await _clearAllUserData();
       _eventBus.fire(ForceLogoutEvent(message: '登录已过期，请重新登录'));
-      return super.onError(err, handler);
+    } catch (e) {
+    } finally {
+      // 延迟重置标志，防止在同一批次请求中重复触发
+      Future.delayed(const Duration(seconds: 2), () {
+        _hasTriggeredLogout = false;
+      });
     }
   }
 
@@ -250,7 +269,7 @@ class TokenRefreshInterceptor extends Interceptor {
       // 使用统一方法清除所有用户相关数据（认证 + 用户数据）
       await _sharedPrefsHelper.clearAllUserRelatedData();
     } catch (e) {
-      // 忽略清除失败
+      // 忽略清除失败，继续登出流程
     }
   }
 }

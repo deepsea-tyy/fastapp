@@ -56,6 +56,7 @@ export default function getTableColumns(drawer: UseDrawerExpose, formRef: any, t
     },
     { label: () => t('baseUserManage.nickname'), prop: 'nickname' },
     { label: () => t('baseUserManage.phone'), prop: 'phone' },
+    { label: () => t('baseMenuManage.remark'), prop: 'remark' },
     // 操作列
     {
       type: 'operation',
