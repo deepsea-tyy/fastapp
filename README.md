@@ -139,3 +139,10 @@ cd website && pnpm install && pnpm dev
   <img src="docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
 </div>
 
+## 📜 许可证
+
+本项目采用 **自定义专有许可证**，**禁止商业使用**，仅允许个人学习与非营利研究。
+
+👉 [查看完整许可协议](LICENSE.zh.md)
+
+如需商业授权，请联系 [@deepsea159](https://t.me/deepsea159)。

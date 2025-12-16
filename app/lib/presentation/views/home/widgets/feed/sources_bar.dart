@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/views/feed/following_page.dart';
 
 /// 关注源列表组件
 ///
@@ -119,31 +120,44 @@ class SourcesBar extends StatelessWidget {
   }
 
   Widget _buildFollowButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            shape: BoxShape.circle,
+    return Builder(
+      builder: (context) {
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const FollowingPage(),
+              ),
+            );
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.more_horiz,
+                  color: Colors.black87,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '关注',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.more_horiz,
-            color: Colors.black87,
-            size: 20,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '关注',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -90,4 +90,35 @@ class Endpoints {
   static const String attachmentUpload = '/api/attachment/upload';
   static const String attachmentList = '/api/attachment/list';
   static const String attachmentDelete = '/api/attachment';
+
+  // ==================== 信息流相关 ====================
+
+  // 信息流列表
+  static const String feedList = '/api/feed/list';
+  static const String feedListByTag = '/api/feed/list/byTag';
+  static const String feedListByFollowing = '/api/feed/list/byFollowing';
+  static const String feedListHot = '/api/feed/list/hot';
+  static const String feedTagsHot = '/api/feed/tags/hot';
+
+  // 帖子管理
+  static const String feedPostDetail = '/api/feed/post/detail';
+  static const String feedPostList = '/api/feed/post/list';
+  static const String feedPostCreate = '/api/feed/post/create';
+  static const String feedPostDelete = '/api/feed/post/delete';
+
+  // 评论管理
+  static const String feedCommentList = '/api/feed/comment/list';
+  static const String feedCommentReplies = '/api/feed/comment/replies';
+  static const String feedCommentCreate = '/api/feed/comment/create';
+  static const String feedCommentDelete = '/api/feed/comment/delete';
+
+  // 用户操作
+  static const String feedUserCollectToggle = '/api/feed/user/collectToggle';
+  static const String feedUserCollectList = '/api/feed/user/collectList';
+  static const String feedUserLikeToggle = '/api/feed/user/likeToggle';
+  static const String feedUserFollowToggle = '/api/feed/user/followToggle';
+  static const String feedUserFollowingList = '/api/feed/user/followingList';
+  static const String feedUserFollowersList = '/api/feed/user/followersList';
+  static const String feedUserStats = '/api/feed/user/stats';
+  static const String feedUserFollowStatus = '/api/feed/user/followStatus';
 }

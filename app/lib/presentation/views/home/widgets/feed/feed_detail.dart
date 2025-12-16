@@ -6,6 +6,7 @@ import 'feed_comment_input_sheet.dart';
 ///
 /// 显示完整的帖子内容、统计数据、评论等
 class FeedDetail extends StatefulWidget {
+  final int postId;
   final String username;
   final String time;
   final String content;
@@ -23,6 +24,7 @@ class FeedDetail extends StatefulWidget {
 
   const FeedDetail({
     super.key,
+    required this.postId,
     required this.username,
     required this.time,
     required this.content,
@@ -371,7 +373,10 @@ class _FeedDetailState extends State<FeedDetail> {
   }
 
   Widget _buildCommentsSection() {
-    return FeedCommentList(commentCount: widget.commentCount);
+    return FeedCommentList(
+      postId: widget.postId,
+      commentCount: widget.commentCount,
+    );
   }
 
   Widget _buildBottomBar() {

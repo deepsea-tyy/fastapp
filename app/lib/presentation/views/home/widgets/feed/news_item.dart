@@ -22,6 +22,7 @@ class NewsItem extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
+          postId: 0, // Placeholder for news items
           username: '新闻',
           time: time,
           content: title,

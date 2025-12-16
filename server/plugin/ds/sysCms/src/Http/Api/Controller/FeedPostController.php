@@ -5,49 +5,51 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysCms\Http\Api\Controller;
 
 use App\Common\AbstractController;
+use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
+use App\Common\Swagger\ResultResponse;
 use App\Http\CurrentUser;
 use App\Service\Feed\FeedCacheService;
-use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\Delete;
 use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\PathParameter;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\RequestBody;
 use Plugin\Ds\SysCms\Model\FeedPost;
 
 /**
- * 信息流帖子API控制器
+ * 信息流用户帖子API控制器
  */
 #[HyperfServer(name: 'http')]
-#[Controller(prefix: '/api/feed/post')]
 class FeedPostController extends AbstractController
 {
     public function __construct(
         private readonly FeedCacheService $cacheService,
-        private readonly CurrentUser $currentUser
-    ) {
+        private readonly CurrentUser      $currentUser
+    )
+    {
         // 设置为API场景
         $this->currentUser->setScene('api');
     }
 
     #[Get(
-        path: '/post-detail/{id}',
-        operationId: 'getFeedPostDetail',
+        path: '/api/feed/post/detail',
+        operationId: 'feedPostDetail',
         summary: '获取帖子详情',
         tags: ['信息流-帖子']
     )]
-    #[PathParameter(name: 'id', description: '帖子ID', example: '1')]
+    #[QueryParameter(name: 'id', description: '帖子ID', example: '1')]
+    #[ResultResponse(instance: new Result())]
     public function detail(int $id): Result
     {
         // 获取帖子详情（自动使用缓存）
         $post = $this->cacheService->getPost($id);
 
         if (!$post) {
-            return $this->error('帖子不存在', 404);
+            return $this->error('帖子不存在');
         }
 
         // 获取统计数据（自动使用缓存）
@@ -67,15 +69,16 @@ class FeedPostController extends AbstractController
     }
 
     #[Get(
-        path: '/user/{userId}',
-        operationId: 'getUserFeedPosts',
+        path: '/api/feed/post/list',
+        operationId: 'feedPostList',
         summary: '获取用户发布的帖子列表',
         tags: ['信息流-帖子']
     )]
-    #[PathParameter(name: 'userId', description: '用户ID', example: '1')]
+    #[QueryParameter(name: 'user_id', description: '用户ID', example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
-    public function userPosts(int $userId): Result
+    #[ResultResponse(instance: new Result())]
+    public function list(int $userId): Result
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
@@ -102,12 +105,12 @@ class FeedPostController extends AbstractController
             ];
         })->toArray();
 
-        return $this->success($list);
+        return $this->success(['list' => $list]);
     }
 
     #[Post(
-        path: '/post-create',
-        operationId: 'createFeedPost',
+        path: '/api/feed/post/create',
+        operationId: 'feedPostCreate',
         summary: '创建帖子',
         tags: ['信息流-帖子']
     )]
@@ -121,12 +124,11 @@ class FeedPostController extends AbstractController
             'videos' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => '视频URL列表'],
         ]
     ))]
+    #[Middleware(TokenMiddleware::class)]
+    #[ResultResponse(instance: new Result())]
     public function create(): Result
     {
         $userId = $this->currentUser->id();
-        if (!$userId) {
-            return $this->error('请先登录', 401);
-        }
 
         $data = $this->getRequestData();
 
@@ -153,27 +155,21 @@ class FeedPostController extends AbstractController
     }
 
     #[Delete(
-        path: '/post-detail/{id}',
-        operationId: 'deleteFeedPost',
+        path: '/api/feed/post/delete',
+        operationId: 'feedPostDelete',
         summary: '删除帖子',
         tags: ['信息流-帖子']
     )]
-    #[PathParameter(name: 'id', description: '帖子ID', example: '1')]
-    public function delete(int $id): Result
+    #[QueryParameter(name: 'id', description: '帖子ID', example: '1')]
+    #[Middleware(TokenMiddleware::class)]
+    #[ResultResponse(instance: new Result())]
+    public function delete(): Result
     {
         $userId = $this->currentUser->id();
-        if (!$userId) {
-            return $this->error('请先登录', 401);
-        }
-
-        $post = FeedPost::find($id);
+        $id = $this->getRequest()->input('id');
+        $post = FeedPost::where(['id' => $id, 'user_id' => $userId])->first();
         if (!$post) {
-            return $this->error('帖子不存在', 404);
-        }
-
-        // 只能删除自己的帖子
-        if ($post->user_id !== $userId) {
-            return $this->error('无权删除', 403);
+            return $this->success();
         }
 
         $post->delete();

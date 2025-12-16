@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_action_bar.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_comment_input_sheet.dart';
+import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:get_it/get_it.dart';
 
 /// 信息流帖子组件
 ///
 /// 显示用户发布的帖子，包含头像、用户名、时间、内容、图片/图表和互动按钮
-class FeedItem extends StatelessWidget {
+class FeedItem extends StatefulWidget {
+  final int postId;
   final String username;
   final String time;
   final String content;
@@ -21,9 +24,11 @@ class FeedItem extends StatelessWidget {
   final bool isVerified;
   final bool showMenu;
   final IconData? menuIcon;
+  final bool isLiked;
 
   const FeedItem({
     super.key,
+    required this.postId,
     required this.username,
     required this.time,
     required this.content,
@@ -38,7 +43,25 @@ class FeedItem extends StatelessWidget {
     this.isVerified = false,
     this.showMenu = true,
     this.menuIcon,
+    this.isLiked = false,
   });
+
+  @override
+  State<FeedItem> createState() => _FeedItemState();
+}
+
+class _FeedItemState extends State<FeedItem> {
+  final FeedRepository _feedRepository = GetIt.instance<FeedRepository>();
+  late bool _isLiked;
+  late int _likeCount;
+  bool _isLiking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = widget.isLiked;
+    _likeCount = widget.likeCount;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +76,7 @@ class FeedItem extends StatelessWidget {
             _buildHeader(context),
             const SizedBox(height: 12),
             _buildContent(context),
-            if (media != null && media!.isNotEmpty) ...[
+            if (widget.media != null && widget.media!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildMedia(context),
             ],
@@ -69,18 +92,19 @@ class FeedItem extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
-          username: username,
-          time: time,
-          content: content,
-          title: title,
-          originalLink: originalLink,
-          media: media,
-          commentCount: commentCount,
-          likeCount: likeCount,
-          repostCount: repostCount,
-          shareCount: shareCount,
-          avatarAsset: avatarAsset,
-          isVerified: isVerified,
+          postId: widget.postId,
+          username: widget.username,
+          time: widget.time,
+          content: widget.content,
+          title: widget.title,
+          originalLink: widget.originalLink,
+          media: widget.media,
+          commentCount: widget.commentCount,
+          likeCount: _likeCount,
+          repostCount: widget.repostCount,
+          shareCount: widget.shareCount,
+          avatarAsset: widget.avatarAsset,
+          isVerified: widget.isVerified,
           viewCount: 15400,
           scrollToComments: scrollToComments,
         ),
@@ -102,16 +126,16 @@ class FeedItem extends StatelessWidget {
                   color: Colors.grey.shade300,
                   shape: BoxShape.circle,
                 ),
-                child: avatarAsset.isNotEmpty
+                child: widget.avatarAsset.isNotEmpty
                     ? ClipOval(
                         child: Image.asset(
-                          avatarAsset,
+                          widget.avatarAsset,
                           fit: BoxFit.cover,
                         ),
                       )
                     : const Icon(Icons.person, color: Colors.grey),
               ),
-              if (isVerified)
+              if (widget.isVerified)
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -142,7 +166,7 @@ class FeedItem extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      username,
+                      widget.username,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -152,7 +176,7 @@ class FeedItem extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  time,
+                  widget.time,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -162,7 +186,7 @@ class FeedItem extends StatelessWidget {
             ),
           ),
         ),
-        if (showMenu)
+        if (widget.showMenu)
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
@@ -171,7 +195,7 @@ class FeedItem extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Icon(
-                menuIcon ?? Icons.close,
+                widget.menuIcon ?? Icons.close,
                 size: 16,
                 color: Colors.grey.shade500,
               ),
@@ -187,9 +211,9 @@ class FeedItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (title != null) ...[
+          if (widget.title != null) ...[
             Text(
-              title!,
+              widget.title!,
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -200,21 +224,21 @@ class FeedItem extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           Text(
-            content,
+            widget.content,
             style: TextStyle(
-              fontSize: title != null ? 14 : 15,
+              fontSize: widget.title != null ? 14 : 15,
               color: Colors.black87,
               height: 1.5,
             ),
           ),
-          if (originalLink != null) ...[
+          if (widget.originalLink != null) ...[
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () {
                 // TODO: 查看原文
               },
               child: Text(
-                originalLink!,
+                widget.originalLink!,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.blue.shade600,
@@ -229,14 +253,14 @@ class FeedItem extends StatelessWidget {
   }
 
   Widget _buildMedia(BuildContext context) {
-    if (media == null || media!.isEmpty) {
+    if (widget.media == null || widget.media!.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    if (media!.length == 1) {
+    if (widget.media!.length == 1) {
       return GestureDetector(
         onTap: () => _navigateToDetail(context),
-        child: media!.first,
+        child: widget.media!.first,
       );
     }
 
@@ -245,14 +269,14 @@ class FeedItem extends StatelessWidget {
         Expanded(
           child: GestureDetector(
             onTap: () => _navigateToDetail(context),
-            child: media![0],
+            child: widget.media![0],
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: GestureDetector(
             onTap: () => _navigateToDetail(context),
-            child: media![1],
+            child: widget.media![1],
           ),
         ),
       ],
@@ -263,14 +287,13 @@ class FeedItem extends StatelessWidget {
     return Builder(
       builder: (context) {
         return FeedActionBar(
-          commentCount: commentCount,
-          likeCount: likeCount,
-          repostCount: repostCount,
-          shareCount: shareCount,
+          commentCount: widget.commentCount,
+          likeCount: _likeCount,
+          repostCount: widget.repostCount,
+          shareCount: widget.shareCount,
+          isLiked: _isLiked,
           onCommentTap: () => _navigateToDetail(context, scrollToComments: true),
-          onLikeTap: () {
-            // TODO: 点赞功能
-          },
+          onLikeTap: _handleLike,
           onRepostTap: () => _showRepostSheet(context),
           onShareTap: () {
             // TODO: 分享功能
@@ -278,6 +301,33 @@ class FeedItem extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleLike() async {
+    if (_isLiking) return;
+
+    setState(() {
+      _isLiking = true;
+    });
+
+    try {
+      final result = await _feedRepository.toggleLike(
+        targetType: 1, // 1表示帖子
+        targetId: widget.postId,
+      );
+
+      setState(() {
+        _isLiked = result.isLiked;
+        _likeCount = result.likeCount;
+        _isLiking = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLiking = false;
+      });
+      debugPrint('点赞操作失败: $e');
+      // TODO: 显示错误提示
+    }
   }
 
   void _showRepostSheet(BuildContext context) {

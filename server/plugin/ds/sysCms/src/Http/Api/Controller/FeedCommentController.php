@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysCms\Http\Api\Controller;
 
 use App\Common\AbstractController;
+use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
+use App\Common\Swagger\ResultResponse;
 use App\Http\CurrentUser;
 use App\Service\Feed\FeedCacheService;
-use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\Delete;
 use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\PathParameter;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\RequestBody;
@@ -25,20 +26,18 @@ use Plugin\Ds\SysCms\Model\FeedPost;
  * 信息流评论API控制器
  */
 #[HyperfServer(name: 'http')]
-#[Controller(prefix: '/api/feed/comment')]
 class FeedCommentController extends AbstractController
 {
     public function __construct(
         private readonly FeedCacheService $cacheService,
-        private readonly CurrentUser $currentUser
-    ) {
-        // 设置为API场景
-        $this->currentUser->setScene('api');
+        private readonly CurrentUser      $currentUser
+    )
+    {
     }
 
     #[Get(
-        path: '/comments-query',
-        operationId: 'getFeedCommentList',
+        path: '/api/feed/comment/list',
+        operationId: 'feedCommentList',
         summary: '获取评论列表',
         tags: ['信息流-评论']
     )]
@@ -46,7 +45,8 @@ class FeedCommentController extends AbstractController
     #[QueryParameter(name: 'target_id', description: '目标ID', required: true, example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
-    public function getList(): Result
+    #[ResultResponse(instance: new Result())]
+    public function list(): Result
     {
         $params = $this->getRequestData();
         $targetType = (int)$params['target_type'];
@@ -59,26 +59,27 @@ class FeedCommentController extends AbstractController
 
         // TODO: 批量获取用户信息
 
-        return $this->success($comments);
+        return $this->success(['list' => $comments]);
     }
 
     #[Get(
-        path: '/replies/{id}',
-        operationId: 'getFeedCommentReplies',
+        path: '/api/feed/comment/replies',
+        operationId: 'feedCommentReplies',
         summary: '获取评论的回复列表',
         tags: ['信息流-评论']
     )]
-    #[PathParameter(name: 'id', description: '评论ID', example: '1')]
+    #[QueryParameter(name: 'id', description: '评论ID', example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
-    public function replies(int $id): Result
+    #[ResultResponse(instance: new Result())]
+    public function replies(): Result
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $offset = ($page - 1) * $pageSize;
 
         $replies = FeedComment::query()
-            ->where('parent_id', $id)
+            ->where('parent_id', $this->getRequest()->input('id'))
             ->where('status', 1)
             ->orderBy('created_at', 'asc')
             ->offset($offset)
@@ -97,12 +98,12 @@ class FeedCommentController extends AbstractController
             ];
         })->toArray();
 
-        return $this->success($list);
+        return $this->success(['list' => $list]);
     }
 
     #[Post(
-        path: '/comment-create',
-        operationId: 'createFeedComment',
+        path: '/api/feed/comment/create',
+        operationId: 'feedCommentCreate',
         summary: '创建评论',
         tags: ['信息流-评论']
     )]
@@ -117,12 +118,11 @@ class FeedCommentController extends AbstractController
             'images' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => '图片URL列表'],
         ]
     ))]
+    #[Middleware(TokenMiddleware::class)]
+    #[ResultResponse(instance: new Result())]
     public function create(): Result
     {
         $userId = $this->currentUser->id();
-        if (!$userId) {
-            return $this->error('请先登录', 401);
-        }
 
         $data = $this->getRequestData();
         $targetType = (int)$data['target_type'];
@@ -172,29 +172,22 @@ class FeedCommentController extends AbstractController
     }
 
     #[Delete(
-        path: '/comment-detail/{id}',
-        operationId: 'deleteFeedComment',
+        path: '/api/feed/comment/delete',
+        operationId: 'feedCommentDelete',
         summary: '删除评论',
         tags: ['信息流-评论']
     )]
-    #[PathParameter(name: 'id', description: '评论ID', example: '1')]
-    public function delete(int $id): Result
+    #[QueryParameter(name: 'id', description: '评论ID', example: '1')]
+    #[Middleware(TokenMiddleware::class)]
+    #[ResultResponse(instance: new Result())]
+    public function delete(): Result
     {
         $userId = $this->currentUser->id();
-        if (!$userId) {
-            return $this->error('请先登录', 401);
-        }
+        $comment = FeedComment::where(['id' => $this->getRequest()->input('id'), 'user_id' => $userId])->first();
 
-        $comment = FeedComment::find($id);
         if (!$comment) {
-            return $this->error('评论不存在', 404);
+            return $this->success();
         }
-
-        // 只能删除自己的评论
-        if ($comment->user_id !== $userId) {
-            return $this->error('无权删除', 403);
-        }
-
         // 更新目标内容的评论数
         $this->updateCommentCount($comment->target_type, $comment->target_id, -1);
 

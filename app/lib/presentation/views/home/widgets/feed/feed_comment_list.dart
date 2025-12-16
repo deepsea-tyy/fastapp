@@ -1,18 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/domain/entity/feed/feed_comment.dart';
+import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:get_it/get_it.dart';
 
 /// 信息流评论列表组件
-class FeedCommentList extends StatelessWidget {
+class FeedCommentList extends StatefulWidget {
+  final int postId;
   final int commentCount;
 
   const FeedCommentList({
     super.key,
+    required this.postId,
     required this.commentCount,
   });
 
   @override
+  State<FeedCommentList> createState() => _FeedCommentListState();
+}
+
+class _FeedCommentListState extends State<FeedCommentList> {
+  final FeedRepository _feedRepository = GetIt.instance<FeedRepository>();
+  List<FeedComment> _comments = [];
+  bool _isLoading = false;
+  String _sortBy = 'hot'; // hot: 热门, latest: 最新
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  Future<void> _loadComments() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final comments = await _feedRepository.getCommentList(
+        targetType: 1, // 1表示帖子
+        targetId: widget.postId,
+        page: 1,
+        pageSize: 20,
+      );
+
+      setState(() {
+        _comments = comments;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // TODO: 显示错误提示
+      debugPrint('加载评论失败: $e');
+    }
+  }
+
+  void _changeSortBy(String sortBy) {
+    if (_sortBy == sortBy) return;
+
+    setState(() {
+      _sortBy = sortBy;
+    });
+
+    _loadComments();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (commentCount == 0) {
+    if (widget.commentCount == 0 && _comments.isEmpty) {
       return _buildEmptyComments();
+    }
+
+    if (_isLoading && _comments.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     return Column(
@@ -27,12 +95,13 @@ class FeedCommentList extends StatelessWidget {
 
   /// 评论头部（数量和排序选项）
   Widget _buildCommentHeader() {
+    final count = _comments.isNotEmpty ? _comments.length : widget.commentCount;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         children: [
           Text(
-            '$commentCount条回复',
+            '${count}条回复',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -40,21 +109,25 @@ class FeedCommentList extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          _buildCommentTab('热门', isSelected: true),
+          _buildCommentTab('热门', sortBy: 'hot'),
           const SizedBox(width: 16),
-          _buildCommentTab('最新', isSelected: false),
+          _buildCommentTab('最新', sortBy: 'latest'),
         ],
       ),
     );
   }
 
-  Widget _buildCommentTab(String text, {required bool isSelected}) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 14,
-        color: isSelected ? Colors.black87 : Colors.grey.shade600,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+  Widget _buildCommentTab(String text, {required String sortBy}) {
+    final isSelected = _sortBy == sortBy;
+    return GestureDetector(
+      onTap: () => _changeSortBy(sortBy),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          color: isSelected ? Colors.black87 : Colors.grey.shade600,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
       ),
     );
   }
@@ -114,54 +187,41 @@ class FeedCommentList extends StatelessWidget {
 
   /// 评论列表
   Widget _buildComments() {
+    if (_comments.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       children: [
-        // 示例评论数据
-        FeedCommentItem(
-          username: 'pippin team',
-          time: '11 小时',
-          content: 'You are the reason why pippin is pumping',
-          likeCount: 4,
-          hasTranslation: true,
-          isAuthor: false,
-        ),
-        // 嵌套回复
-        FeedCommentItem(
-          username: '程小程',
-          time: '5 小时',
-          content: '这是大户，你敢这样和大户说话，你想爆仓了😂😂',
-          likeCount: 0,
-          replyToUser: '亏钱户',
-          isNested: true,
-          isAuthor: false,
-        ),
-        FeedCommentItem(
-          username: '亏钱户',
-          time: '11 小时',
-          content: '你是 bookmaker 吗? 你整天只是在要花招，然后你就会下注 \$1。',
-          likeCount: 2,
-          replyToUser: '程小程',
-          isNested: true,
-          isAuthor: true,
-          hasOriginal: true,
-        ),
-        // 查看更多按钮
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: TextButton(
-            onPressed: () {
-              // TODO: 加载更多评论
+        ..._comments.map((comment) {
+          return FeedCommentItem(
+            comment: comment,
+            onReply: () {
+              // TODO: 实现回复功能
             },
-            child: Text(
-              '查看更多',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.orange.shade700,
-                fontWeight: FontWeight.w500,
+            onLike: () {
+              // TODO: 实现点赞功能
+            },
+          );
+        }),
+        // 查看更多按钮
+        if (_comments.length >= 20)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: TextButton(
+              onPressed: () {
+                // TODO: 加载更多评论
+              },
+              child: Text(
+                '查看更多',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.orange.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -169,36 +229,24 @@ class FeedCommentList extends StatelessWidget {
 
 /// 评论项组件
 class FeedCommentItem extends StatelessWidget {
-  final String username;
-  final String time;
-  final String content;
-  final int likeCount;
-  final String? replyToUser;
-  final bool isNested;
-  final bool isAuthor;
-  final bool hasTranslation;
-  final bool hasOriginal;
+  final FeedComment comment;
+  final VoidCallback? onReply;
+  final VoidCallback? onLike;
 
   const FeedCommentItem({
     super.key,
-    required this.username,
-    required this.time,
-    required this.content,
-    required this.likeCount,
-    this.replyToUser,
-    this.isNested = false,
-    this.isAuthor = false,
-    this.hasTranslation = false,
-    this.hasOriginal = false,
+    required this.comment,
+    this.onReply,
+    this.onLike,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        left: isNested ? 48.0 : 0,
-        top: isNested ? 8.0 : 12.0,
-        bottom: isNested ? 0 : 12.0,
+        left: comment.isNested ? 48.0 : 0,
+        top: comment.isNested ? 8.0 : 12.0,
+        bottom: comment.isNested ? 0 : 12.0,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -234,7 +282,7 @@ class FeedCommentItem extends StatelessWidget {
       children: [
         _buildUserInfo(),
         const SizedBox(height: 4),
-        if (replyToUser != null) _buildReplyMark(),
+        if (comment.replyToUsername != null) _buildReplyMark(),
         _buildCommentText(),
         const SizedBox(height: 8),
         _buildActions(),
@@ -247,14 +295,14 @@ class FeedCommentItem extends StatelessWidget {
     return Row(
       children: [
         Text(
-          username,
+          comment.username ?? '未知用户',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
-        if (isAuthor) ...[
+        if (comment.isAuthor == true) ...[
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -276,7 +324,7 @@ class FeedCommentItem extends StatelessWidget {
         ],
         const Spacer(),
         Text(
-          time,
+          comment.getFormattedTime(),
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey.shade600,
@@ -301,7 +349,7 @@ class FeedCommentItem extends StatelessWidget {
             style: TextStyle(color: Colors.grey.shade600),
           ),
           TextSpan(
-            text: '@$replyToUser',
+            text: '@${comment.replyToUsername}',
             style: TextStyle(
               color: Colors.orange.shade700,
               fontWeight: FontWeight.w500,
@@ -316,7 +364,7 @@ class FeedCommentItem extends StatelessWidget {
   /// 评论文本
   Widget _buildCommentText() {
     return Text(
-      content,
+      comment.content,
       style: const TextStyle(
         fontSize: 14,
         color: Colors.black87,
@@ -329,27 +377,16 @@ class FeedCommentItem extends StatelessWidget {
   Widget _buildActions() {
     return Row(
       children: [
-        _buildAction('回复'),
+        _buildAction('回复', onPressed: onReply),
         const SizedBox(width: 16),
         _buildAction('引用'),
-        if (hasTranslation) ...[
-          const SizedBox(width: 16),
-          _buildAction('查看翻译'),
-        ],
-        if (hasOriginal) ...[
-          const SizedBox(width: 16),
-          _buildAction(
-            '查看原文',
-            color: Colors.orange.shade700,
-          ),
-        ],
       ],
     );
   }
 
-  Widget _buildAction(String text, {Color? color}) {
+  Widget _buildAction(String text, {Color? color, VoidCallback? onPressed}) {
     return TextButton(
-      onPressed: () {
+      onPressed: onPressed ?? () {
         // TODO: 处理评论操作
       },
       style: TextButton.styleFrom(
@@ -369,22 +406,26 @@ class FeedCommentItem extends StatelessWidget {
 
   /// 点赞按钮
   Widget _buildLikeButton() {
-    return Column(
-      children: [
-        Icon(
-          Icons.thumb_up_outlined,
-          size: 18,
-          color: Colors.grey.shade600,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          likeCount.toString(),
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+    final isLiked = comment.isLiked == true;
+    return GestureDetector(
+      onTap: onLike,
+      child: Column(
+        children: [
+          Icon(
+            isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+            size: 18,
+            color: isLiked ? Colors.orange.shade700 : Colors.grey.shade600,
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(
+            comment.likeCount.toString(),
+            style: TextStyle(
+              fontSize: 12,
+              color: isLiked ? Colors.orange.shade700 : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

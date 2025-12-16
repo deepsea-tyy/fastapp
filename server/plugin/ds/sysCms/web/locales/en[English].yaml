@@ -91,3 +91,87 @@ admin:
     record_count: Record Count
     generated_at: Generated At
     generate: Generate
+  FeedPost: FeedPost
+  FeedPostFields:
+    user_id: UserId
+    content_type: ContentType
+    title: Title
+    content: Content
+    images: Images
+    videos: Videos
+    link_url: LinkUrl
+    link_meta: LinkMeta
+    quoted_type: QuotedType
+    quoted_id: QuotedId
+    audit_status: AuditStatus
+    audited_at: AuditedAt
+    is_top: IsTop
+    is_hot: IsHot
+    status: Status
+    view_count: ViewCount
+    like_count: LikeCount
+    comment_count: CommentCount
+    share_count: ShareCount
+    collect_count: CollectCount
+    quote_count: QuoteCount
+    ip: Ip
+    device_type: DeviceType
+    deleted_at: DeletedAt
+  FeedTag: FeedTag
+  FeedTagFields:
+    name: Name
+    icon: Icon
+    color: Color
+    post_count: PostCount
+    follow_count: FollowCount
+    is_hot: IsHot
+    status: Status
+  FeedComment: FeedComment
+  FeedCommentFields:
+    target_type: TargetType
+    target_id: TargetId
+    user_id: UserId
+    parent_id: ParentId
+    root_id: RootId
+    reply_to_user_id: ReplyToUserId
+    content: Content
+    images: Images
+    like_count: LikeCount
+    reply_count: ReplyCount
+    status: Status
+    deleted_at: DeletedAt
+  FeedReport: Feed Report
+  FeedReportFields:
+    user_id: User ID
+    target_type: Target Type
+    target_id: Target ID
+    report_type: Report Type
+    content: Content
+    handle_status: Handle Status
+    handled_at: Handled At
+  FeedPostDict:
+    contentType:
+      text: Text
+      image: Image & Text
+      video: Video
+      link: Link
+    auditStatus:
+      pending: Pending
+      approved: Approved
+      rejected: Rejected
+  FeedDict:
+    targetType:
+      post: Post
+      article: Article
+      comment: Comment
+  FeedReportDict:
+    reportType:
+      spam: Spam
+      pornography: Pornography
+      illegal: Illegal Content
+      abuse: Abuse
+      other: Other
+    handleStatus:
+      pending: Pending
+      handled: Handled
+      ignored: Ignored

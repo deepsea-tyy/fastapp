@@ -6,8 +6,10 @@ import 'package:fastapp/data/network/apis/wallet/wallet_api.dart';
 import 'package:fastapp/data/network/apis/trade/trade_api.dart';
 import 'package:fastapp/data/network/apis/futures/futures_api.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:fastapp/data/network/apis/feed/feed_api.dart';
 import 'package:fastapp/data/repository/setting/setting_repository_impl.dart';
 import 'package:fastapp/data/repository/user/user_repository_impl.dart';
+import 'package:fastapp/data/repository/feed/feed_repository_impl.dart';
 import 'package:fastapp/data/repository/market/market_repository_impl.dart';
 import 'package:fastapp/data/repository/order/order_repository_impl.dart';
 import 'package:fastapp/data/repository/wallet/wallet_repository_impl.dart';
@@ -21,6 +23,7 @@ import 'package:fastapp/domain/repository/order_repository.dart';
 import 'package:fastapp/domain/repository/wallet_repository.dart';
 import 'package:fastapp/domain/repository/trade_repository.dart';
 import 'package:fastapp/domain/repository/futures_repository.dart';
+import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 
 import 'package:fastapp/di/service_locator.dart';
 
@@ -54,6 +57,10 @@ class RepositoryModule {
 
     getIt.registerSingleton<FuturesRepository>(FuturesRepositoryImpl(
       getIt<FuturesApi>(),
+    ));
+
+    getIt.registerSingleton<FeedRepository>(FeedRepositoryImpl(
+      getIt<FeedApi>(),
     ));
   }
 }

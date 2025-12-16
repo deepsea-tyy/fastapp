@@ -20,6 +20,7 @@ class AnnouncementItem extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
+          postId: 0, // 公告的postId为0
           username: '系统公告',
           time: timestamp,
           content: title,

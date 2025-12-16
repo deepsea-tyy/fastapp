@@ -353,6 +353,214 @@ class MenuSysCms extends Seeder
                             ],
                         ],
                     ],
+                    [
+                        'name' => 'ds:sysCms:feed_comment',
+                        'path' => '/ds/sysCms/admin/feedComment',
+                        'component' => 'ds/sysCms/views/feedComment/index',
+                        'meta' => new Meta([
+                            'title' => '评论（通用）',
+                            'i18n' => 'admin.FeedComment',
+                            'icon' => 'mdi:menu',
+                            'type' => 'M',
+                            'hidden' => false,
+                            'componentPath' => 'plugins/',
+                            'componentSuffix' => '.vue',
+                            'breadcrumbEnable' => true,
+                            'copyright' => true,
+                            'cache' => true,
+                            'affix' => false,
+                        ]),
+                        'children' => [
+                            [
+                                'name' => 'ds:sysCms:feed_comment:list',
+                                'meta' => new Meta([
+                                    'title' => 'List',
+                                    'i18n' => 'crud.list',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_comment:create',
+                                'meta' => new Meta([
+                                    'title' => 'Add',
+                                    'i18n' => 'crud.add',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_comment:save',
+                                'meta' => new Meta([
+                                    'title' => 'Edit',
+                                    'i18n' => 'crud.edit',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_comment:delete',
+                                'meta' => new Meta([
+                                    'title' => 'Delete',
+                                    'i18n' => 'crud.delete',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'ds:sysCms:feed_post',
+                        'path' => '/ds/sysCms/admin/feedPost',
+                        'component' => 'ds/sysCms/views/feedPost/index',
+                        'meta' => new Meta([
+                            'title' => '用户帖子（UGC）',
+                            'i18n' => 'admin.FeedPost',
+                            'icon' => 'mdi:menu',
+                            'type' => 'M',
+                            'hidden' => false,
+                            'componentPath' => 'plugins/',
+                            'componentSuffix' => '.vue',
+                            'breadcrumbEnable' => true,
+                            'copyright' => true,
+                            'cache' => true,
+                            'affix' => false,
+                        ]),
+                        'children' => [
+                            [
+                                'name' => 'ds:sysCms:feed_post:list',
+                                'meta' => new Meta([
+                                    'title' => 'List',
+                                    'i18n' => 'crud.list',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_post:create',
+                                'meta' => new Meta([
+                                    'title' => 'Add',
+                                    'i18n' => 'crud.add',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_post:save',
+                                'meta' => new Meta([
+                                    'title' => 'Edit',
+                                    'i18n' => 'crud.edit',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_post:delete',
+                                'meta' => new Meta([
+                                    'title' => 'Delete',
+                                    'i18n' => 'crud.delete',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'ds:sysCms:feed_report',
+                        'path' => '/ds/sysCms/admin/feedReport',
+                        'component' => 'ds/sysCms/views/feedReport/index',
+                        'meta' => new Meta([
+                            'title' => '举报（通用）',
+                            'i18n' => 'admin.FeedReport',
+                            'icon' => 'mdi:menu',
+                            'type' => 'M',
+                            'hidden' => false,
+                            'componentPath' => 'plugins/',
+                            'componentSuffix' => '.vue',
+                            'breadcrumbEnable' => true,
+                            'copyright' => true,
+                            'cache' => true,
+                            'affix' => false,
+                        ]),
+                        'children' => [
+                            [
+                                'name' => 'ds:sysCms:feed_report:list',
+                                'meta' => new Meta([
+                                    'title' => 'List',
+                                    'i18n' => 'crud.list',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_report:create',
+                                'meta' => new Meta([
+                                    'title' => 'Add',
+                                    'i18n' => 'crud.add',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_report:save',
+                                'meta' => new Meta([
+                                    'title' => 'Edit',
+                                    'i18n' => 'crud.edit',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_report:delete',
+                                'meta' => new Meta([
+                                    'title' => 'Delete',
+                                    'i18n' => 'crud.delete',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'ds:sysCms:feed_tag',
+                        'path' => '/ds/sysCms/admin/feedTag',
+                        'component' => 'ds/sysCms/views/feedTag/index',
+                        'meta' => new Meta([
+                            'title' => '标签',
+                            'i18n' => 'admin.FeedTag',
+                            'icon' => 'mdi:menu',
+                            'type' => 'M',
+                            'hidden' => false,
+                            'componentPath' => 'plugins/',
+                            'componentSuffix' => '.vue',
+                            'breadcrumbEnable' => true,
+                            'copyright' => true,
+                            'cache' => true,
+                            'affix' => false,
+                        ]),
+                        'children' => [
+                            [
+                                'name' => 'ds:sysCms:feed_tag:list',
+                                'meta' => new Meta([
+                                    'title' => 'List',
+                                    'i18n' => 'crud.list',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_tag:create',
+                                'meta' => new Meta([
+                                    'title' => 'Add',
+                                    'i18n' => 'crud.add',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_tag:save',
+                                'meta' => new Meta([
+                                    'title' => 'Edit',
+                                    'i18n' => 'crud.edit',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:sysCms:feed_tag:delete',
+                                'meta' => new Meta([
+                                    'title' => 'Delete',
+                                    'i18n' => 'crud.delete',
+                                    'type' => 'B',
+                                ]),
+                            ],
+                        ],
+                    ],
                 ]
             ],
         ];

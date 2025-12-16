@@ -147,6 +147,14 @@ class CurrentUser
 
     public function id(): int
     {
-        return (int)$this->getToken()->claims()->get(RegisteredClaims::ID);
+        $token = $this->getToken();
+        if (!$token) {
+            try {
+                $token = $this->jwtFactory->get($this->scene)->parserAccessToken(Tools::getHeader('token'));
+            } catch (\Exception $exception) {
+                return 0;
+            }
+        }
+        return (int)$token->claims()->get(RegisteredClaims::ID);
     }
 }
