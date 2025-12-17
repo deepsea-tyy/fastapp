@@ -71,7 +71,7 @@ function isFullUrl(url: string): boolean {
  * 格式化单个图片路径
  */
 function formatSingleImagePath(path: string | null | undefined, baseUrl: string): string {
-  if (!path || (typeof path === 'string' && !path.trim())) {
+  if (!path || (typeof path === 'string' && !path.trim()) || path === DEFAULT_IMAGE) {
     return DEFAULT_IMAGE
   }
   if (isFullUrl(path)) {

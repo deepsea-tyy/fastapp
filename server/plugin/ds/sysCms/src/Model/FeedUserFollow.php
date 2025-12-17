@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Model;
 
+use App\Model\UserProfile;
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\DbConnection\Model\Model;
 
 /**
@@ -22,4 +24,14 @@ class FeedUserFollow extends Model
     protected array $fillable = ['user_id', 'follow_user_id', 'created_at'];
 
     protected array $casts = ['user_id' => 'integer', 'follow_user_id' => 'integer'];
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
+    }
+
+    public function posts(): HasOne
+    {
+        return $this->hasOne(FeedPost::class, 'user_id', 'follow_user_id')->orderByDesc('id');
+    }
 }

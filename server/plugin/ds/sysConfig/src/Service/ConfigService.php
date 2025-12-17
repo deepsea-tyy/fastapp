@@ -15,7 +15,9 @@ final class ConfigService extends IService
 {
     public function __construct(
         protected readonly Repository $repository
-    ) {}
+    )
+    {
+    }
 
     // 查询数据
     public function getDetails($params)
@@ -44,22 +46,24 @@ final class ConfigService extends IService
     /**
      * 写入数据，使用 updateOrCreate 处理.
      */
-    public function upsertData(array $param): void
+    public function upsertData(array $params): void
     {
         $model = $this->repository->getModel();
-        foreach ($param as $params) {
-            // 仅处理checkbox类型的value字段
-            if ($params['input_type'] === 'checkbox' && \is_array($params['value'])) {
-                $params['value'] = implode(',', $params['value']);
+        foreach ($params as $param) {
+            if (!is_array($param)) {
+                continue;
             }
-            // 执行更新或插入操作
-            $model->getModel()->updateOrCreate(
-                [
-                    'group_code' => $params['group_code'],
-                    'key' => $params['key'],
-                ],
-                $params
-            );
+            if (empty($param['group_code']) || empty($param['key'])) {
+                continue;
+            }
+            $md = $model->where([
+                'group_code' => $param['group_code'],
+                'key' => $param['key'],
+            ])->first();
+            if (!$md) {
+                continue;
+            }
+            $md->fill($param)->save();
         }
     }
 }

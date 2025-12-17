@@ -97,6 +97,40 @@ class FeedApi {
     return response.data;
   }
 
+  /// 获取新闻列表
+  /// [page] 页码
+  /// [pageSize] 每页数量
+  Future<dynamic> getNewsList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedArticleNews,
+      queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return response.data;
+  }
+
+  /// 获取公告列表
+  /// [page] 页码
+  /// [pageSize] 每页数量
+  Future<dynamic> getAnnouncementList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedArticleNotice,
+      queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return response.data;
+  }
+
   // ==================== 帖子管理 ====================
 
   /// 获取帖子详情
@@ -354,6 +388,23 @@ class FeedApi {
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.feedUserFollowersList,
+      queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return response.data;
+  }
+
+  /// 获取可能感兴趣的人列表
+  /// [page] 页码
+  /// [pageSize] 每页数量
+  Future<dynamic> getMayInterestedList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedMayInterested,
       queryParameters: {
         'page': page,
         'page_size': pageSize,

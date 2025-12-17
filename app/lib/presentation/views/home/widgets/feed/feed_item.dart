@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_action_bar.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_comment_input_sheet.dart';
+import 'package:fastapp/presentation/views/user/user_profile_page.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:get_it/get_it.dart';
 
@@ -10,6 +11,7 @@ import 'package:get_it/get_it.dart';
 /// 显示用户发布的帖子，包含头像、用户名、时间、内容、图片/图表和互动按钮
 class FeedItem extends StatefulWidget {
   final int postId;
+  final int userId;
   final String username;
   final String time;
   final String content;
@@ -29,6 +31,7 @@ class FeedItem extends StatefulWidget {
   const FeedItem({
     super.key,
     required this.postId,
+    required this.userId,
     required this.username,
     required this.time,
     required this.content,
@@ -93,6 +96,7 @@ class _FeedItemState extends State<FeedItem> {
       MaterialPageRoute(
         builder: (context) => FeedDetail(
           postId: widget.postId,
+          userId: widget.userId,
           username: widget.username,
           time: widget.time,
           content: widget.content,
@@ -116,7 +120,7 @@ class _FeedItemState extends State<FeedItem> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => _navigateToDetail(context),
+          onTap: () => _navigateToUserProfile(context),
           child: Stack(
             children: [
               Container(
@@ -126,11 +130,15 @@ class _FeedItemState extends State<FeedItem> {
                   color: Colors.grey.shade300,
                   shape: BoxShape.circle,
                 ),
-                child: widget.avatarAsset.isNotEmpty
+                child: widget.avatarAsset.isNotEmpty &&
+                        widget.avatarAsset != '/404.png'
                     ? ClipOval(
-                        child: Image.asset(
+                        child: Image.network(
                           widget.avatarAsset,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.person, color: Colors.grey);
+                          },
                         ),
                       )
                     : const Icon(Icons.person, color: Colors.grey),
@@ -159,7 +167,7 @@ class _FeedItemState extends State<FeedItem> {
         const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
-            onTap: () => _navigateToDetail(context),
+            onTap: () => _navigateToUserProfile(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -202,6 +210,14 @@ class _FeedItemState extends State<FeedItem> {
             ),
           ),
       ],
+    );
+  }
+
+  void _navigateToUserProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => UserProfilePage(userId: widget.userId),
+      ),
     );
   }
 

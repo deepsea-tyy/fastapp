@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/entity/feed/feed_comment.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/presentation/views/user/user_profile_page.dart';
 import 'package:get_it/get_it.dart';
 
 /// 信息流评论列表组件
@@ -252,7 +253,7 @@ class FeedCommentItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildAvatar(),
+          _buildAvatar(context),
           const SizedBox(width: 12),
           Expanded(child: _buildContent()),
           const SizedBox(width: 12),
@@ -263,15 +264,24 @@ class FeedCommentItem extends StatelessWidget {
   }
 
   /// 用户头像
-  Widget _buildAvatar() {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        shape: BoxShape.circle,
+  Widget _buildAvatar(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => UserProfilePage(userId: comment.userId),
+          ),
+        );
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.person, size: 20, color: Colors.grey),
       ),
-      child: const Icon(Icons.person, size: 20, color: Colors.grey),
     );
   }
 

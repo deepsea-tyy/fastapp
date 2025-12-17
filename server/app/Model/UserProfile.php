@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Model;
 
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\DbConnection\Model\Model;
+use Plugin\Ds\SysCms\Model\FeedPost;
 
 /**
  * @property int $id
@@ -42,4 +44,10 @@ class UserProfile extends Model
     ];
 
     protected array $hidden = ['trans_password'];
+
+
+    public function posts(): HasOne
+    {
+        return $this->hasOne(FeedPost::class, 'user_id', 'user_id');
+    }
 }

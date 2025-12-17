@@ -17,19 +17,5 @@ DNS
 
 ## 信息流测试数据生成 (2025-12-16)
 
-快速运行：
-```bash
-cd server
-bash generate_feed_test_data.sh
-```
-
-或者直接运行：
-```bash
-cd server
-php bin/hyperf.php db:seed Plugin\\Ds\\SysCms\\Database\\Seeders\\FeedTestDataSeeder
-```
-
-详细文档：docs/server/信息流测试数据生成说明.md
-
 
 

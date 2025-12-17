@@ -5,8 +5,10 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Model;
 
+use App\Model\UserProfile;
 use Carbon\Carbon;
 use Hyperf\Database\Model\Relations\HasManyThrough;
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\DbConnection\Model\Model;
 
 /**
@@ -100,6 +102,12 @@ final class Article extends Model
      */
     protected array $hidden = [];
 
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class, 'user_id', 'created_by')->withDefault(function () {
+            return ['nickname' => 'xxx', 'avatar' => '/uploads/2025-12-14/ca1b5690-db12-4a1a-8e4f-82111da7231f.jpg'];
+        });
+    }
 
     public function categories(): HasManyThrough
     {

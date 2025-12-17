@@ -3,6 +3,7 @@ import '../../../domain/repository/feed/feed_repository.dart';
 import '../../../domain/entity/feed/feed_post.dart';
 import '../../../domain/entity/feed/feed_comment.dart';
 import '../../../domain/entity/feed/feed_operation_result.dart';
+import '../../../domain/entity/feed/feed_article.dart';
 import '../../../core/utils/error_handler.dart';
 import '../../network/apis/feed/feed_api.dart';
 
@@ -161,6 +162,66 @@ class FeedRepositoryImpl implements FeedRepository {
       return [];
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取热门标签失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<List<FeedArticle>> getNewsList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await _feedApi.getNewsList(
+        page: page,
+        pageSize: pageSize,
+      );
+
+      // 兼容两种返回格式：直接数组 或 {"list": [...]}
+      final dynamic data = response;
+      if (data is List) {
+        return data
+            .map((item) => FeedArticle.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else if (data is Map<String, dynamic> && data['list'] is List) {
+        return (data['list'] as List)
+            .map((item) => FeedArticle.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取新闻列表失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<List<FeedArticle>> getAnnouncementList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await _feedApi.getAnnouncementList(
+        page: page,
+        pageSize: pageSize,
+      );
+
+      // 兼容两种返回格式：直接数组 或 {"list": [...]}
+      final dynamic data = response;
+      if (data is List) {
+        return data
+            .map((item) => FeedArticle.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else if (data is Map<String, dynamic> && data['list'] is List) {
+        return (data['list'] as List)
+            .map((item) => FeedArticle.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取公告列表失败'));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -493,6 +554,45 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getFollowingUserList({
+    int page = 1,
+    int pageSize = 5,
+  }) async {
+    try {
+      final response = await _feedApi.getFollowingList(
+        page: page,
+        pageSize: pageSize,
+      );
+
+      // 解析返回数据，后端返回格式为：
+      // [
+      //   {
+      //     'follow_user_id' => ...,
+      //     'user_id' => ...,
+      //     'nickname' => ...,
+      //     'avatar' => ...,
+      //   },
+      //   ...
+      // ]
+      final dynamic data = response;
+      List<dynamic> list = [];
+      if (data is Map<String, dynamic> && data['list'] is List) {
+        list = data['list'] as List;
+      } else if (data is List) {
+        list = data;
+      }
+
+      return list
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取关注列表失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
   Future<List<int>> getFollowersList({
     int page = 1,
     int pageSize = 20,
@@ -553,6 +653,35 @@ class FeedRepositoryImpl implements FeedRepository {
       return false;
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '检查关注状态失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getMayInterestedList({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await _feedApi.getMayInterestedList(
+        page: page,
+        pageSize: pageSize,
+      );
+
+      final dynamic data = response;
+      List<dynamic> list = [];
+      if (data is Map<String, dynamic> && data['list'] is List) {
+        list = data['list'] as List;
+      } else if (data is List) {
+        list = data;
+      }
+
+      return list
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取感兴趣人列表失败'));
     } catch (e) {
       throw Exception(e.toString());
     }

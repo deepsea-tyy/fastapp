@@ -1,37 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
+import 'package:fastapp/domain/entity/user/user_profile.dart';
 
 /// 新闻项组件
 ///
 /// 显示时间戳和新闻标题，带时间线样式
 class NewsItem extends StatelessWidget {
   final String time;
-  final String title;
+  final String? title;
+  final UserProfile? profile;
   final VoidCallback? onTap;
   final bool isLast;
 
   const NewsItem({
     super.key,
     required this.time,
-    required this.title,
+    this.title,
+    this.profile,
     this.onTap,
     this.isLast = false,
   });
 
   void _navigateToDetail(BuildContext context) {
+    final userName = profile?.displayNickname ?? '新闻';
+    final userAvatar = profile?.displayAvatar ?? '';
+    final userId = profile?.userId ?? 0;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
           postId: 0, // Placeholder for news items
-          username: '新闻',
+          userId: userId,
+          username: userName,
           time: time,
-          content: title,
-          title: title,
+          content: title ?? '',
+          title: title ?? '',
           commentCount: 0,
           likeCount: 0,
           repostCount: 0,
           shareCount: 0,
           viewCount: 0,
+          avatarAsset: userAvatar,
         ),
       ),
     );
@@ -97,7 +106,7 @@ class NewsItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    title,
+                    title ?? '',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

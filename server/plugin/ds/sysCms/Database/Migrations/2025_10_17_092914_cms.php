@@ -36,6 +36,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->unique('code');
             $table->index('created_by');
+            $table->index('created_at');
         });
         Schema::create('category', function (Blueprint $table) {
             $table->engine = 'Innodb';

@@ -17,8 +17,24 @@ export default defineNuxtConfig({
   
   modules: [
     '@nuxtjs/tailwindcss',
-    '@nuxtjs/i18n'
+    '@nuxtjs/i18n',
+    '@nuxt/content'
   ],
+
+  // Nuxt Content 配置
+  content: {
+    // Markdown 配置
+    markdown: {
+      toc: { depth: 3, searchDepth: 3 },
+      remarkPlugins: [],
+      rehypePlugins: []
+    },
+    // 代码高亮配置
+    highlight: {
+      theme: 'github-dark',
+      preload: ['javascript', 'typescript', 'vue', 'bash', 'json', 'yaml', 'markdown']
+    }
+  },
 
   css: ['~/assets/css/main.css'],
 

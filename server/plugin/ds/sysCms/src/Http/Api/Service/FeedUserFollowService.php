@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Http\Api\Service;
 
+use App\Model\UserProfile;
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
 
 /**
@@ -64,15 +65,23 @@ class FeedUserFollowService
     public function getFollowingList(int $userId, int $page = 1, int $pageSize = 20): array
     {
         $offset = ($page - 1) * $pageSize;
-
-        $follows = FeedUserFollow::query()
+        return FeedUserFollow::query()
+            ->with(['profile:user_id,nickname,avatar,signed', 'posts:user_id,title,content'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->offset($offset)
             ->limit($pageSize)
-            ->get();
-
-        return $follows->pluck('follow_user_id')->toArray();
+            ->get()->map(function (FeedUserFollow $follow) {
+                return [
+                    'follow_user_id' => $follow->follow_user_id,
+                    'user_id' => $follow->user_id,
+                    'nickname' => $follow->profile?->nickname,
+                    'avatar' => $follow->profile?->avatar,
+                    'signed' => $follow->profile?->signed,
+                    'title' => $follow->posts?->title,
+                    'content' => $follow->posts?->content
+                ];
+            })->toArray();
     }
 
     /**
@@ -150,6 +159,7 @@ class FeedUserFollowService
         $offset = ($page - 1) * $pageSize;
 
         $posts = \Plugin\Ds\SysCms\Model\FeedPost::query()
+            ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('user_id', $followUserIds)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -161,6 +171,7 @@ class FeedUserFollowService
         return $posts->map(function ($post) {
             return [
                 'id' => $post->id,
+                'profile' => $post->profile,
                 'user_id' => $post->user_id,
                 'title' => $post->title,
                 'content' => $post->content,
@@ -170,5 +181,23 @@ class FeedUserFollowService
                 'created_at' => $post->created_at?->toDateTimeString(),
             ];
         })->toArray();
+    }
+
+    public function mayInterestedList(int $page, int $pageSize, int $userId): array
+    {
+        return UserProfile::query()->with(['posts:user_id,title,content'])
+            ->whereNotIn('user_id', [$userId])
+            ->offset(($page - 1) * $pageSize)
+            ->limit($pageSize)
+            ->get()->map(function (UserProfile $item) {
+                return [
+                    'user_id' => $item->user_id,
+                    'nickname' => $item->nickname,
+                    'avatar' => $item->avatar,
+                    'signed' => $item->signed,
+                    'title' => $item->posts?->title,
+                    'content' => $item->posts?->content
+                ];
+            })->toArray();
     }
 }

@@ -45,6 +45,7 @@ class FeedCacheService
     public function getPost(int $id): array
     {
         $post = FeedPost::query()
+            ->with(['profile:user_id,nickname,avatar'])
             ->where('id', $id)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -56,6 +57,7 @@ class FeedCacheService
 
         return [
             'id' => $post->id,
+            'profile' => $post->profile,
             'user_id' => $post->user_id,
             'content_type' => $post->content_type,
             'title' => $post->title ?? '',
@@ -83,6 +85,7 @@ class FeedCacheService
     public function getArticle(int $id): array
     {
         $article = Article::query()
+            ->with(['profile:user_id,nickname,avatar'])
             ->where('id', $id)
             ->where('status', 1)
             ->first();
@@ -94,6 +97,7 @@ class FeedCacheService
         // 存储原始数据（包含多语言JSON）
         return [
             'id' => $article->id,
+            'profile' => $article->profile,
             'title' => $article->title ?? [],
             'subtitle' => $article->subtitle ?? [],
             'brief' => $article->brief ?? [],
@@ -172,6 +176,7 @@ class FeedCacheService
 
         // 批量查询文章（避免N+1问题）
         $articles = Article::query()
+            ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('id', $articleIds)
             ->where('status', 1)
             ->get()
@@ -183,6 +188,7 @@ class FeedCacheService
             if ($article) {
                 $result[] = [
                     'id' => $article->id,
+                    'profile' => $article->profile,
                     'title' => Tools::formatLang($article->title ?? [], $userId),
                     'subtitle' => Tools::formatLang($article->subtitle ?? [], $userId),
                     'brief' => Tools::formatLang($article->brief ?? [], $userId),
@@ -495,6 +501,7 @@ class FeedCacheService
 
         // 这里简化处理，实际应该根据filter参数查询不同的数据
         $posts = FeedPost::query()
+            ->with(['profile:user_id,nickname,avatar'])
             ->where('status', 1)
             ->where('audit_status', 1)
             ->orderByDesc('is_top')
@@ -507,6 +514,7 @@ class FeedCacheService
             return [
                 'type' => 'post',
                 'id' => $post->id,
+                'profile' => $post->profile,
                 'user_id' => $post->user_id,
                 'title' => $post->title ?? '',
                 'content' => $post->content ?? '',

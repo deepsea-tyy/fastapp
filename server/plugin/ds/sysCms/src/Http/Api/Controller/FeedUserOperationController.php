@@ -274,18 +274,7 @@ class FeedUserOperationController extends AbstractController
         $pageSize = $this->getPageSize();
 
         $userId = $this->currentUser->id();
-
-        $followUserIds = $this->followService->getFollowingList($userId, $page, $pageSize);
-
-        // TODO: 批量获取用户信息
-        $list = [];
-        foreach ($followUserIds as $followUserId) {
-            $list[] = [
-                'user_id' => $followUserId,
-                // TODO: 添加用户详细信息
-            ];
-        }
-
+        $list = $this->followService->getFollowingList($userId, $page, $pageSize);
         return $this->success(['list' => $list]);
     }
 
@@ -325,7 +314,7 @@ class FeedUserOperationController extends AbstractController
 
     #[Get(
         path: '/api/feed/user/stats',
-        operationId: 'getUserFollowStats',
+        operationId: 'feedUserFollowStats',
         summary: '获取用户关注统计',
         tags: ['信息流-用户操作']
     )]
@@ -345,13 +334,13 @@ class FeedUserOperationController extends AbstractController
 
     #[Get(
         path: '/api/feed/user/followStatus',
-        operationId: 'checkUserFollowStatus',
+        operationId: 'feedUserFollowStatus',
         summary: '检查是否关注某用户',
         tags: ['信息流-用户操作']
     )]
     #[QueryParameter(name: 'follow_user_id', description: '被关注用户ID', example: '1')]
     #[ResultResponse(instance: new Result())]
-    public function checkStatus(): Result
+    public function followStatus(): Result
     {
         $userId = $this->currentUser->id();
 

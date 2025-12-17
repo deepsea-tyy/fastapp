@@ -8,6 +8,7 @@ use App\Common\AbstractController;
 use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
+use App\Common\Tools;
 use App\Http\CurrentUser;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Delete;
@@ -78,32 +79,68 @@ class FeedPostController extends AbstractController
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
-    public function list(int $userId): Result
+    public function list(): Result
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $offset = ($page - 1) * $pageSize;
+        $userId = (int)$this->getRequest()->input('user_id');
 
+        // 分别查询帖子和文章
         $posts = FeedPost::query()
             ->where('user_id', $userId)
             ->where('status', 1)
             ->where('audit_status', 1)
             ->orderBy('created_at', 'desc')
-            ->offset($offset)
-            ->limit($pageSize)
-            ->get();
+            ->limit(100)
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'type' => 'post', // 标记类型
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'images' => $post->images ?? [],
+                    'like_count' => $post->like_count,
+                    'comment_count' => $post->comment_count,
+                    'created_at' => $post->created_at?->toDateTimeString(),
+                    'created_timestamp' => $post->created_at?->timestamp ?? 0,
+                ];
+            });
 
-        $list = $posts->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'images' => $post->images ??[],
-                'like_count' => $post->like_count,
-                'comment_count' => $post->comment_count,
-                'created_at' => $post->created_at?->toDateTimeString(),
-            ];
-        })->toArray();
+
+        // 如果用户是平台账户（created_by），则查询文章
+        $articles = \Plugin\Ds\SysCms\Model\Article::query()
+            ->where('created_by', $userId)
+            ->where('status', 1)
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get()
+            ->map(function ($article) {
+                return [
+                    'type' => 'article', // 标记类型
+                    'id' => $article->id,
+                    'title' => Tools::lang($article->title ?: []),
+                    'content' => Tools::lang($article->brief ?: []) ?: Tools::lang($article->content ?: []),
+                    'images' => $article->cover ?? [],
+                    'like_count' => $article->like_count,
+                    'comment_count' => $article->comment_count,
+                    'created_at' => $article->created_at?->toDateTimeString(),
+                    'created_timestamp' => $article->created_at?->timestamp ?? 0,
+                ];
+            });
+
+        // 合并帖子和文章
+        $combined = $posts->concat($articles);
+
+        // 按创建时间倒序排序
+        $sorted = $combined->sortByDesc('created_timestamp')->values();
+
+        // 分页
+        $list = $sorted->slice($offset, $pageSize)->map(function ($item) {
+            unset($item['created_timestamp']); // 移除临时字段
+            return $item;
+        })->values()->toArray();
 
         return $this->success(['list' => $list]);
     }

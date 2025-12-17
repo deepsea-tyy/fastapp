@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Model;
 
+use App\Model\UserProfile;
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\Database\Model\SoftDeletes;
 use Hyperf\DbConnection\Model\Model;
 
@@ -13,10 +15,10 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $content_type 内容类型：1纯文本 2图文 3视频 4链接
  * @property string $title 标题（可选）
  * @property string $content 内容
- * @property string $images 图片列表（JSON数组）
- * @property string $videos 视频列表（JSON数组）
+ * @property array $images 图片列表（JSON数组）
+ * @property array $videos 视频列表（JSON数组）
  * @property string $link_url 外链地址
- * @property string $link_meta 链接元数据（标题、描述、封面等）
+ * @property array $link_meta 链接元数据（标题、描述、封面等）
  * @property int $quoted_type 引用类型：1帖子 2文章
  * @property int $quoted_id 引用的内容ID
  * @property int $audit_status 审核状态：0待审核 1已通过 2已拒绝
@@ -32,13 +34,14 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $quote_count 引用数
  * @property string $ip 发布IP
  * @property string $device_type 设备类型：ios, android, web
- * @property \Carbon\Carbon $created_at 
- * @property \Carbon\Carbon $updated_at 
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  * @property string $deleted_at 软删除
  */
 class FeedPost extends Model
 {
     use SoftDeletes;
+
     /**
      * The table associated with the model.
      */
@@ -75,4 +78,11 @@ class FeedPost extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class, 'user_id', 'user_id')->withDefault(function () {
+            return ['nickname' => 'xxx', 'avatar' => '/uploads/2025-12-14/ca1b5690-db12-4a1a-8e4f-82111da7231f.jpg'];
+        });
+    }
 }

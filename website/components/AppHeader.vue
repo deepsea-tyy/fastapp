@@ -2,7 +2,7 @@
   <header class="bg-white shadow-sm sticky top-0 z-50">
     <nav class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
-        <NuxtLink :to="localePath('/')" prefetch class="flex items-center gap-2 text-2xl font-bold text-blue-600">
+        <NuxtLink :to="localePath('/site')" prefetch class="flex items-center gap-2 text-2xl font-bold text-blue-600">
           <img :src="logoUrl" alt="FastApp" class="h-8 w-auto" />
           <span>FastApp</span>
         </NuxtLink>
@@ -25,12 +25,12 @@
           >
             <li>
               <NuxtLink
-                :to="localePath('/')"
+                :to="localePath('/site')"
                 prefetch
                 @click="closeMobileMenu"
                 :class="[
                   'block md:inline transition py-2 md:py-0',
-                  isActive('/') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
+                  isActive('/site') || isActive('/') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
                 ]"
               >
                 {{ $t('nav.home') }}
@@ -38,12 +38,12 @@
             </li>
             <li>
               <NuxtLink
-                :to="localePath('/about')"
+                :to="localePath('/site/about')"
                 prefetch
                 @click="closeMobileMenu"
                 :class="[
                   'block md:inline transition py-2 md:py-0',
-                  isActive('/about') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
+                  isActive('/site/about') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
                 ]"
               >
                 {{ $t('nav.about') }}
@@ -51,12 +51,12 @@
             </li>
             <li>
               <NuxtLink
-                :to="localePath('/products')"
+                :to="localePath('/site/products')"
                 prefetch
                 @click="closeMobileMenu"
                 :class="[
                   'block md:inline transition py-2 md:py-0',
-                  isActive('/products') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
+                  isActive('/site/products') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
                 ]"
               >
                 {{ $t('nav.products') }}
@@ -64,27 +64,29 @@
             </li>
             <li>
               <NuxtLink
-                :to="localePath('/contact')"
+                :to="localePath('/site/contact')"
                 prefetch
                 @click="closeMobileMenu"
                 :class="[
                   'block md:inline transition py-2 md:py-0',
-                  isActive('/contact') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
+                  isActive('/site/contact') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
                 ]"
               >
                 {{ $t('nav.contact') }}
               </NuxtLink>
             </li>
             <li>
-              <a
-                href="/docs/index.html"
-                target="_blank"
-                rel="noopener noreferrer"
+              <NuxtLink
+                :to="localePath('/help')"
+                prefetch
                 @click="closeMobileMenu"
-                class="block md:inline text-gray-700 hover:text-blue-600 transition py-2 md:py-0"
+                :class="[
+                  'block md:inline transition py-2 md:py-0',
+                  isActive('/help') ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600'
+                ]"
               >
                 {{ $t('footer.docs') }}
-              </a>
+              </NuxtLink>
             </li>
           </ul>
 
@@ -158,6 +160,14 @@ const isActive = (path: string) => {
   // 移除语言前缀进行比较
   const normalizedCurrentPath = currentPath.replace(/^\/[a-z]{2}(\/|$)/, '/') || '/'
   const normalizedPath = path === '/' ? '/' : path
+  // 支持根路径和 /site 路径都激活首页
+  if (path === '/site' && (normalizedCurrentPath === '/' || normalizedCurrentPath === '/site')) {
+    return true
+  }
+  // 支持 /help 路径激活
+  if (path === '/help' && normalizedCurrentPath.startsWith('/help')) {
+    return true
+  }
   return normalizedCurrentPath === normalizedPath
 }
 

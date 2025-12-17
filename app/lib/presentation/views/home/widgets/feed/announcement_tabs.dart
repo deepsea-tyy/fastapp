@@ -42,6 +42,10 @@ class _AnnouncementTabsState extends State<AnnouncementTabs> {
 
               return InkWell(
                 onTap: () {
+                  // 如果点击的是已选中的标签，则不触发任何操作
+                  if (_selectedIndex == index) {
+                    return;
+                  }
                   setState(() => _selectedIndex = index);
                   widget.onTabChanged?.call(index);
                 },

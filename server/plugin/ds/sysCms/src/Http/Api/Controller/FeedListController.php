@@ -33,7 +33,7 @@ class FeedListController extends AbstractController
 
     #[Get(
         path: '/api/feed/list',
-        operationId: 'getFeedList',
+        operationId: 'feedFeedList',
         summary: '获取信息流列表',
         tags: ['信息流-列表']
     )]
@@ -66,6 +66,7 @@ class FeedListController extends AbstractController
         summary: '获取指定标签的信息流',
         tags: ['信息流-列表']
     )]
+    #[QueryParameter(name: 'tag_id', description: '标签ID', required: true, example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
@@ -74,43 +75,50 @@ class FeedListController extends AbstractController
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $offset = ($page - 1) * $pageSize;
+        $tagId = (int)$this->getRequest()->input('tag_id');
 
-        // 查询带有该标签的内容
-        $posts = \Hyperf\DbConnection\Db::table('feed_content_tag')
-            ->join('feed_post', function ($join) {
-                $join->on('feed_content_tag.target_id', '=', 'feed_post.id')
-                    ->where('feed_content_tag.target_type', '=', 1);
-            })
-            ->where('feed_content_tag.tag_id', $this->getRequest()->input('tag_id'))
-            ->where('feed_post.status', 1)
-            ->where('feed_post.audit_status', 1)
-            ->orderBy('feed_post.created_at', 'desc')
+        // 获取带有该标签的帖子ID列表
+        $postIds = \Hyperf\DbConnection\Db::table('feed_content_tag')
+            ->where('tag_id', $tagId)
+            ->where('target_type', 1)
+            ->orderByDesc('target_id')
             ->offset($offset)
             ->limit($pageSize)
-            ->select([
-                'feed_post.id',
-                'feed_post.user_id',
-                'feed_post.title',
-                'feed_post.content',
-                'feed_post.images',
-                'feed_post.like_count',
-                'feed_post.comment_count',
-                'feed_post.created_at',
-            ])
-            ->get();
+            ->pluck('target_id')
+            ->toArray();
 
-        $list = $posts->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'user_id' => $post->user_id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'images' => $post->images ??[],
-                'like_count' => $post->like_count,
-                'comment_count' => $post->comment_count,
-                'created_at' => $post->created_at,
-            ];
-        })->toArray();
+        if (empty($postIds)) {
+            return $this->success(['list' => []]);
+        }
+
+        // 使用模型查询以便加载关联和自动处理JSON字段
+        $posts = \Plugin\Ds\SysCms\Model\FeedPost::query()
+            ->with(['profile:user_id,nickname,avatar'])
+            ->whereIn('id', $postIds)
+            ->where('status', 1)
+            ->where('audit_status', 1)
+            ->get()
+            ->keyBy('id');
+
+        // 按照原始顺序组装结果
+        $list = [];
+        foreach ($postIds as $postId) {
+            $post = $posts->get($postId);
+            if ($post) {
+                $list[] = [
+                    'type' => 'post',
+                    'id' => $post->id,
+                    'profile' => $post->profile,
+                    'user_id' => $post->user_id,
+                    'title' => $post->title ?? '',
+                    'content' => $post->content ?? '',
+                    'images' => $post->images ?? [],
+                    'like_count' => $post->like_count ?? 0,
+                    'comment_count' => $post->comment_count ?? 0,
+                    'created_at' => $post->created_at->toDateTimeString(),
+                ];
+            }
+        }
 
         // 如果用户已登录，批量获取用户动作状态
         $userId = $this->currentUser->id();
@@ -126,7 +134,7 @@ class FeedListController extends AbstractController
 
     #[Get(
         path: '/api/feed/list/byFollowing',
-        operationId: 'getFollowingFeedList',
+        operationId: 'feedFollowingFeedList',
         summary: '获取关注用户的信息流',
         tags: ['信息流-列表']
     )]
@@ -152,7 +160,7 @@ class FeedListController extends AbstractController
 
     #[Get(
         path: '/api/feed/list/hot',
-        operationId: 'getHotFeedList',
+        operationId: 'feedHotFeedList',
         summary: '获取热门信息流',
         tags: ['信息流-列表']
     )]
@@ -166,15 +174,29 @@ class FeedListController extends AbstractController
 
     #[Get(
         path: '/api/feed/tags/hot',
-        operationId: 'getHotTags',
+        operationId: 'feedHotTags',
         summary: '获取热门标签',
         tags: ['信息流-列表']
     )]
     #[QueryParameter(name: 'limit', description: '数量限制', example: '10')]
     #[ResultResponse(instance: new Result())]
-    public function hotTags(int $limit = 10): Result
+    public function hotTags(): Result
     {
-        $tags = $this->cacheService->getHotTags($limit);
+        $tags = $this->cacheService->getHotTags((int)$this->getRequest()->input('limit', 10));
         return $this->success(['list' => $tags]);
+    }
+
+    #[Get(
+        path: '/api/feed/mayInterested',
+        operationId: 'feedMayInterested',
+        summary: '可能感兴趣的人',
+        tags: ['信息流-列表']
+    )]
+    #[QueryParameter(name: 'page', description: '页码', example: '1')]
+    #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
+    #[ResultResponse(instance: new Result())]
+    public function mayInterested(): Result
+    {
+        return $this->success(['list' => (new FeedUserFollowService())->mayInterestedList($this->getPage(), $this->getPageSize(), $this->currentUser->id())]);
     }
 }

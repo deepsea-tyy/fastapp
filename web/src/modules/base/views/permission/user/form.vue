@@ -26,7 +26,7 @@ useForm('userForm').then((form: MaFormExpose) => {
   }
   form.setItems(getFormItems(formType, t, userModel.value))
   form.setOptions({
-    labelWidth: '80px',
+    labelWidth: '100px',
   })
 })
 

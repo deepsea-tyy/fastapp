@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/views/user/user_profile_page.dart';
 import 'feed_comment_list.dart';
 import 'feed_comment_input_sheet.dart';
 
@@ -7,6 +8,7 @@ import 'feed_comment_input_sheet.dart';
 /// 显示完整的帖子内容、统计数据、评论等
 class FeedDetail extends StatefulWidget {
   final int postId;
+  final int userId;
   final String username;
   final String time;
   final String content;
@@ -25,6 +27,7 @@ class FeedDetail extends StatefulWidget {
   const FeedDetail({
     super.key,
     required this.postId,
+    required this.userId,
     required this.username,
     required this.time,
     required this.content,
@@ -147,65 +150,87 @@ class _FeedDetailState extends State<FeedDetail> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => UserProfilePage(userId: widget.userId),
                 ),
-                child: widget.avatarAsset.isNotEmpty
-                    ? ClipOval(
-                        child: Image.asset(
-                          widget.avatarAsset,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : const Icon(Icons.person, color: Colors.grey),
-              ),
-              if (widget.isVerified)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      size: 10,
-                      color: Colors.white,
+              );
+            },
+            child: Stack(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                  ),
+                  child: widget.avatarAsset.isNotEmpty &&
+                          widget.avatarAsset != '/404.png'
+                      ? ClipOval(
+                          child: Image.network(
+                            widget.avatarAsset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, color: Colors.grey);
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.person, color: Colors.grey),
+                ),
+                if (widget.isVerified)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.username,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => UserProfilePage(userId: widget.userId),
                   ),
-                ),
-                Text(
-                  widget.time,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    widget.time,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

@@ -43,10 +43,16 @@ class CategoryController extends AbstractController
         );
     }
     #[GetMapping(path: '/admin/article/category/selectCategory')]
-    #[Permission(code: 'article:category:selectCategory')]
+    #[Permission(code: 'article:category:create')]
     public function selectCategory(Request $request): Result
     {
         return $this->success($this->service->selectCategory($request->all()));
+    }
+    #[GetMapping(path: '/admin/article/category/selectCreator')]
+    #[Permission(code: 'article:category:create')]
+    public function selectCreator(Request $request): Result
+    {
+        return $this->success($this->service->selectCreator());
     }
 
     #[PostMapping(path: '/admin/article/category/create')]

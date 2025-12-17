@@ -8,6 +8,7 @@ import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/core/widgets/common_empty_state.dart';
+import 'package:fastapp/utils/image_utils.dart';
 
 /// 信息流区域组件
 ///
@@ -23,6 +24,12 @@ class _FeedSectionState extends State<FeedSection> {
   final FeedRepository _feedRepository = getIt<FeedRepository>();
 
   int _currentTab = 0;
+
+  // 为每个tab缓存数据，避免切换时闪烁
+  final Map<int, List<FeedPost>> _tabDataCache = {};
+  final Map<int, int> _tabPageCache = {};
+  final Map<int, bool> _tabHasMoreCache = {};
+
   List<FeedPost> _feedList = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -62,11 +69,11 @@ class _FeedSectionState extends State<FeedSection> {
       _hasMore = true;
     }
 
+    // 只有在列表为空时才显示loading状态，避免刷新时的闪烁
     setState(() {
-      if (refresh) {
-        _feedList = [];
+      if (_feedList.isEmpty) {
+        _isLoading = true;
       }
-      _isLoading = true;
       _errorMessage = null;
     });
 
@@ -100,6 +107,11 @@ class _FeedSectionState extends State<FeedSection> {
         }
         _hasMore = newList.length >= _pageSize;
         _isLoading = false;
+
+        // 更新当前tab的缓存
+        _tabDataCache[_currentTab] = _feedList;
+        _tabPageCache[_currentTab] = _currentPage;
+        _tabHasMoreCache[_currentTab] = _hasMore;
       });
     } catch (e) {
       setState(() {
@@ -140,6 +152,11 @@ class _FeedSectionState extends State<FeedSection> {
         _feedList.addAll(newList);
         _hasMore = newList.length >= _pageSize;
         _isLoadingMore = false;
+
+        // 更新当前tab的缓存
+        _tabDataCache[_currentTab] = _feedList;
+        _tabPageCache[_currentTab] = _currentPage;
+        _tabHasMoreCache[_currentTab] = _hasMore;
       });
     } catch (e) {
       setState(() {
@@ -169,34 +186,63 @@ class _FeedSectionState extends State<FeedSection> {
             initialIndex: _currentTab,
             onTabChanged: (index) {
               setState(() {
+                // 保存当前tab的数据到缓存
+                _tabDataCache[_currentTab] = _feedList;
+                _tabPageCache[_currentTab] = _currentPage;
+                _tabHasMoreCache[_currentTab] = _hasMore;
+
+                // 切换到新tab
                 _currentTab = index;
-                _feedList = [];
-                _currentPage = 1;
-                _hasMore = true;
+
+                // 从缓存恢复新tab的数据，如果有的话
+                if (_tabDataCache.containsKey(index)) {
+                  _feedList = _tabDataCache[index]!;
+                  _currentPage = _tabPageCache[index] ?? 1;
+                  _hasMore = _tabHasMoreCache[index] ?? true;
+                } else {
+                  // 新tab没有缓存，清空列表
+                  _feedList = [];
+                  _currentPage = 1;
+                  _hasMore = true;
+                }
               });
-              _loadFeedList(refresh: true);
+
+              // 如果新tab没有数据，加载数据
+              if (_feedList.isEmpty) {
+                _loadFeedList(refresh: true);
+              }
             },
           ),
+          // 关注tab显示SourcesBar
           if (_currentTab == 1) ...[
             const SourcesBar(),
           ],
-          if (_currentTab == 2) ...[
-            const Expanded(
-              child: SingleChildScrollView(
-                child: AnnouncementList(),
-              ),
+          // 使用Stack让所有tab内容同时存在，通过Offstage控制显示
+          Expanded(
+            child: Stack(
+              children: [
+                // Tab 0和1：发现和关注（共用同一个列表视图）
+                Offstage(
+                  offstage: _currentTab != 0 && _currentTab != 1,
+                  child: _buildFeedListView(),
+                ),
+                // Tab 2: 公告（保持状态）
+                Offstage(
+                  offstage: _currentTab != 2,
+                  child: const SingleChildScrollView(
+                    child: AnnouncementList(),
+                  ),
+                ),
+                // Tab 3: 新闻（保持状态）
+                Offstage(
+                  offstage: _currentTab != 3,
+                  child: const SingleChildScrollView(
+                    child: NewsList(),
+                  ),
+                ),
+              ],
             ),
-          ] else if (_currentTab == 3) ...[
-            const Expanded(
-              child: SingleChildScrollView(
-                child: NewsList(),
-              ),
-            ),
-          ] else ...[
-            Expanded(
-              child: _buildFeedListView(),
-            ),
-          ],
+          ),
         ],
       ),
     );
@@ -283,20 +329,47 @@ class _FeedSectionState extends State<FeedSection> {
           }
 
           final post = _feedList[index];
+          // 优先使用 profile 数据，否则使用平铺字段
+          final username = post.profile?.displayNickname ?? post.username ?? '用户${post.userId}';
+          final avatar = post.profile?.displayAvatar ?? post.avatar ?? '';
+
+          // 转换图片列表为 Widget（使用 formattedImages getter）
+          List<Widget>? mediaWidgets;
+          final formattedImages = post.formattedImages;
+          if (formattedImages.isNotEmpty) {
+            mediaWidgets = formattedImages.map((imageUrl) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }).toList();
+          }
+
           return FeedItem(
             postId: post.id,
-            username: post.username ?? '用户${post.userId}',
-            avatarAsset: post.avatar ?? '',
+            userId: post.userId ?? 0,
+            username: username,
+            avatarAsset: avatar,
             time: post.getFormattedTime(),
             title: post.title,
-            content: post.content,
-            // TODO: 转换images为Widget列表
-            media: null,
+            content: post.content ?? '',
+            media: mediaWidgets,
             isVerified: post.isVerified ?? false,
             commentCount: post.commentCount,
             likeCount: post.likeCount,
-            repostCount: post.quoteCount,  // 使用quoteCount作为repostCount
-            shareCount: post.shareCount,
+            repostCount: post.quoteCount ?? 0,  // 使用quoteCount作为repostCount
+            shareCount: post.shareCount ?? 0,
             isLiked: post.isLiked ?? false,
             menuIcon: Icons.more_horiz,
           );

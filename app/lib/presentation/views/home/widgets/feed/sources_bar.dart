@@ -1,115 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/feed/following_page.dart';
+import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/utils/image_utils.dart';
 
 /// 关注源列表组件
 ///
-/// 横向滚动显示已关注的源（如 Binance News、Binance Academy）和"关注"按钮
-class SourcesBar extends StatelessWidget {
+/// 横向滚动显示已关注的源和"关注"按钮
+class SourcesBar extends StatefulWidget {
   const SourcesBar({super.key});
+
+  @override
+  State<SourcesBar> createState() => _SourcesBarState();
+}
+
+class _SourcesBarState extends State<SourcesBar> {
+  final FeedRepository _feedRepository = getIt<FeedRepository>();
+  List<Map<String, dynamic>> _followingUsers = [];
+  bool _isLoading = true;
+
+  static const double _avatarSize = 30.0;
+  static const double _itemSpacing = 0.0;
+  static const double _textWidth = 60.0;
+  static const int _pageSize = 3;
+  static const double _horizontalPadding = 2.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFollowingList();
+  }
+
+  /// 加载关注列表
+  Future<void> _loadFollowingList() async {
+    setState(() => _isLoading = true);
+    try {
+      final followingUsers = await _feedRepository.getFollowingUserList(
+        page: 1,
+        pageSize: _pageSize,
+      );
+      setState(() {
+        _followingUsers = followingUsers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      debugPrint('加载关注列表失败: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          _buildSourceItem(
-            'Binance News',
-            Colors.amber.shade700,
-            'B',
-            'BINANCE\nNEWS',
-            isVerified: true,
-          ),
-          const SizedBox(width: 12),
-          _buildSourceItem(
-            'Binance Academy',
-            Colors.amber.shade700,
-            'B',
-            'ACADEMY',
-            isVerified: true,
-          ),
-          const SizedBox(width: 12),
-          _buildFollowButton(),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: _isLoading
+          ? const SizedBox(
+              height: 50,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : Padding(
+              padding: const EdgeInsets.only(left: _horizontalPadding),
+              child: Row(
+                children: [
+                  ..._followingUsers.map((item) {
+                    final userId = item['follow_user_id'] as int? ?? item['user_id'] as int? ?? 0;
+                    final nickname = item['nickname'] as String? ?? '用户$userId';
+                    final avatar = item['avatar'] as String? ?? '';
+                    return Padding(
+                      padding: const EdgeInsets.only(right: _itemSpacing),
+                      child: _buildSourceItem(nickname, avatar),
+                    );
+                  }),
+                  const SizedBox(width: 4),
+                  _buildFollowButton(),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildSourceItem(
-    String name,
-    Color logoColor,
-    String logoText,
-    String logoSubtext, {
-    bool isVerified = false,
-  }) {
+  Widget _buildSourceItem(String name, String avatar) {
+    final avatarUrl = avatar.isNotEmpty && ImageUtils.isValidImagePath(avatar)
+        ? ImageUtils.formatSingleImagePath(avatar)
+        : null;
+    final firstChar = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade800,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      logoText,
-                      style: TextStyle(
-                        color: logoColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      logoSubtext,
-                      style: TextStyle(
-                        color: logoColor,
-                        fontSize: 5,
-                        fontWeight: FontWeight.bold,
-                        height: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (isVerified)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 10,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-          ],
-        ),
+        _buildAvatar(avatarUrl, firstChar),
         const SizedBox(height: 6),
         SizedBox(
-          width: 60,
+          width: _textWidth,
           child: Text(
             name,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontSize: 11, color: Colors.black87),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -119,45 +105,65 @@ class SourcesBar extends StatelessWidget {
     );
   }
 
+  Widget _buildAvatar(String? avatarUrl, String firstChar) {
+    return Container(
+      width: _avatarSize,
+      height: _avatarSize,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        shape: BoxShape.circle,
+      ),
+      child: avatarUrl != null
+          ? ClipOval(
+              child: Image.network(
+                avatarUrl,
+                width: _avatarSize,
+                height: _avatarSize,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildDefaultAvatar(firstChar),
+              ),
+            )
+          : _buildDefaultAvatar(firstChar),
+    );
+  }
+
+  Widget _buildDefaultAvatar(String firstChar) {
+    return Center(
+      child: Text(
+        firstChar,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Widget _buildFollowButton() {
-    return Builder(
-      builder: (context) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const FollowingPage(),
-              ),
-            );
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.more_horiz,
-                  color: Colors.black87,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '关注',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const FollowingPage()),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: _avatarSize,
+            height: _avatarSize,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.more_horiz, color: Colors.black87, size: 20),
           ),
-        );
-      },
+          const SizedBox(height: 6),
+          const Text(
+            '关注',
+            style: TextStyle(fontSize: 11, color: Colors.black87),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -99,6 +99,11 @@ class Endpoints {
   static const String feedListByFollowing = '/api/feed/list/byFollowing';
   static const String feedListHot = '/api/feed/list/hot';
   static const String feedTagsHot = '/api/feed/tags/hot';
+  static const String feedMayInterested = '/api/feed/mayInterested';
+
+  // 文章相关（新闻、公告）
+  static const String feedArticleNews = '/api/feed/article/news';
+  static const String feedArticleNotice = '/api/feed/article/notice';
 
   // 帖子管理
   static const String feedPostDetail = '/api/feed/post/detail';

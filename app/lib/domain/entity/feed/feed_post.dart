@@ -1,4 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:fastapp/domain/entity/user/user_profile.dart';
+import 'package:fastapp/utils/image_utils.dart';
 
 part 'feed_post.g.dart';
 
@@ -12,7 +14,7 @@ class FeedPost {
 
   /// 发布用户ID
   @JsonKey(name: 'user_id')
-  final int userId;
+  final int? userId;
 
   /// 用户名（需要额外获取）
   final String? username;
@@ -24,15 +26,18 @@ class FeedPost {
   @JsonKey(name: 'is_verified')
   final bool? isVerified;
 
+  /// 用户资料
+  final UserProfile? profile;
+
   /// 内容类型：1纯文本 2图文 3视频 4链接
   @JsonKey(name: 'content_type')
-  final int contentType;
+  final int? contentType;
 
   /// 标题（可选）
   final String? title;
 
   /// 内容
-  final String content;
+  final String? content;
 
   /// 图片列表
   final List<String>? images;
@@ -66,7 +71,7 @@ class FeedPost {
 
   /// 浏览次数
   @JsonKey(name: 'view_count')
-  final int viewCount;
+  final int? viewCount;
 
   /// 点赞数
   @JsonKey(name: 'like_count')
@@ -78,15 +83,15 @@ class FeedPost {
 
   /// 分享数
   @JsonKey(name: 'share_count')
-  final int shareCount;
+  final int? shareCount;
 
   /// 收藏数
   @JsonKey(name: 'collect_count')
-  final int collectCount;
+  final int? collectCount;
 
   /// 引用数（注意：不是repost_count）
   @JsonKey(name: 'quote_count')
-  final int quoteCount;
+  final int? quoteCount;
 
   /// 是否已点赞（登录后附加）
   @JsonKey(name: 'is_liked')
@@ -105,13 +110,14 @@ class FeedPost {
 
   FeedPost({
     required this.id,
-    required this.userId,
+    this.userId,
     this.username,
     this.avatar,
     this.isVerified,
-    this.contentType = 1,
+    this.profile,
+    this.contentType,
     this.title,
-    required this.content,
+    this.content,
     this.images,
     this.videos,
     this.linkUrl,
@@ -120,12 +126,12 @@ class FeedPost {
     this.quotedId,
     this.isTop,
     this.isHot,
-    this.viewCount = 0,
+    this.viewCount,
     this.likeCount = 0,
     this.commentCount = 0,
-    this.shareCount = 0,
-    this.collectCount = 0,
-    this.quoteCount = 0,
+    this.shareCount,
+    this.collectCount,
+    this.quoteCount,
     this.isLiked,
     this.isCollected,
     this.createdAt,
@@ -144,6 +150,7 @@ class FeedPost {
     String? username,
     String? avatar,
     bool? isVerified,
+    UserProfile? profile,
     int? contentType,
     String? title,
     String? content,
@@ -172,6 +179,7 @@ class FeedPost {
       username: username ?? this.username,
       avatar: avatar ?? this.avatar,
       isVerified: isVerified ?? this.isVerified,
+      profile: profile ?? this.profile,
       contentType: contentType ?? this.contentType,
       title: title ?? this.title,
       content: content ?? this.content,
@@ -221,4 +229,20 @@ class FeedPost {
 
   /// 是否热门
   bool get isHotPost => isHot == 1;
+
+  /// 获取格式化后的图片列表
+  List<String> get formattedImages {
+    if (images == null || images!.isEmpty) {
+      return [];
+    }
+    return images!
+        .map((url) => ImageUtils.formatSingleImagePath(url))
+        .toList();
+  }
+
+  /// 获取第一张图片
+  String? get firstImage {
+    final imgs = formattedImages;
+    return imgs.isEmpty ? null : imgs.first;
+  }
 }

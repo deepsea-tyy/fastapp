@@ -86,6 +86,7 @@ class ConfigController extends AbstractController
 
     #[PostMapping(path: '/system/Config/batchUpdate')]
     #[Permission(code: 'ds:sysConfig:batchUpdate')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function batchUpdate(): Result
     {
         $this->service->upsertData($this->getRequestData());

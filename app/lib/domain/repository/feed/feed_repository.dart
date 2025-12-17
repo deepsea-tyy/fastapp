@@ -1,6 +1,7 @@
 import '../../entity/feed/feed_post.dart';
 import '../../entity/feed/feed_comment.dart';
 import '../../entity/feed/feed_operation_result.dart';
+import '../../entity/feed/feed_article.dart';
 
 /// 信息流Repository抽象接口
 abstract class FeedRepository {
@@ -38,6 +39,18 @@ abstract class FeedRepository {
   /// 获取热门标签
   Future<List<FeedTag>> getHotTags({
     int limit = 10,
+  });
+
+  /// 获取新闻列表
+  Future<List<FeedArticle>> getNewsList({
+    int page = 1,
+    int pageSize = 20,
+  });
+
+  /// 获取公告列表
+  Future<List<FeedArticle>> getAnnouncementList({
+    int page = 1,
+    int pageSize = 20,
   });
 
   // ==================== 帖子管理 ====================
@@ -131,6 +144,12 @@ abstract class FeedRepository {
     int pageSize = 20,
   });
 
+  /// 获取关注用户详细信息列表（包含profile）
+  Future<List<Map<String, dynamic>>> getFollowingUserList({
+    int page = 1,
+    int pageSize = 5,
+  });
+
   /// 获取粉丝列表
   Future<List<int>> getFollowersList({
     int page = 1,
@@ -143,5 +162,11 @@ abstract class FeedRepository {
   /// 检查是否关注某用户
   Future<bool> checkFollowStatus({
     required int followUserId,
+  });
+
+  /// 获取可能感兴趣的人列表
+  Future<List<Map<String, dynamic>>> getMayInterestedList({
+    int page = 1,
+    int pageSize = 20,
   });
 }

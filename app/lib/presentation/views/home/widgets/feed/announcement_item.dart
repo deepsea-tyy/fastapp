@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
+import 'package:fastapp/domain/entity/user/user_profile.dart';
 
 /// 公告项组件
 ///
 /// 显示公告的标题和时间戳
 class AnnouncementItem extends StatelessWidget {
-  final String title;
+  final String? title;
   final String timestamp;
+  final UserProfile? profile;
   final VoidCallback? onTap;
 
   const AnnouncementItem({
     super.key,
-    required this.title,
+    this.title,
     required this.timestamp,
+    this.profile,
     this.onTap,
   });
 
   void _navigateToDetail(BuildContext context) {
+    final userName = profile?.displayNickname ?? '系统公告';
+    final userAvatar = profile?.displayAvatar ?? '';
+    final userId = profile?.userId ?? 0;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
           postId: 0, // 公告的postId为0
-          username: '系统公告',
+          userId: userId,
+          username: userName,
           time: timestamp,
-          content: title,
-          title: title,
+          content: title ?? '',
+          title: title ?? '',
           commentCount: 0,
           likeCount: 0,
           repostCount: 0,
           shareCount: 0,
           viewCount: 0,
+          avatarAsset: userAvatar,
         ),
       ),
     );
@@ -56,7 +65,7 @@ class AnnouncementItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    title ?? '',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
