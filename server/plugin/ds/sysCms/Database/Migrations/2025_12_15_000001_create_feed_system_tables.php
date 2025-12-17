@@ -266,9 +266,8 @@ return new class extends Migration {
             $table->engine = 'Innodb';
             $table->comment('用户已读位置表');
             $table->bigInteger('user_id')->unsigned()->comment('用户ID');
-            $table->tinyInteger('feed_type')->comment('信息流类型：1帖子 2文章')->unsigned();
-            $table->timestamp('last_read_at')->comment('最后阅读时间');
-            $table->timestamp('updated_at')->nullable()->comment('更新时间');
+            $table->tinyInteger('feed_type')->comment('信息流类型：1帖子 2公告 3新闻')->unsigned();
+            $table->timestamp('last_read_at')->nullable()->comment('最后阅读时间');
 
             $table->primary(['user_id', 'feed_type']);
         });

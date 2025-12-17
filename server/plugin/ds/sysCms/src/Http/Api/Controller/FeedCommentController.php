@@ -9,15 +9,15 @@ use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
 use App\Http\CurrentUser;
-use App\Service\Feed\FeedCacheService;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\Delete;
+use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\JsonContent;
+use Hyperf\Swagger\Annotation\Post;
+use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedComment;
 use Plugin\Ds\SysCms\Model\FeedPost;
@@ -92,7 +92,7 @@ class FeedCommentController extends AbstractController
                 'user_id' => $reply->user_id,
                 'reply_to_user_id' => $reply->reply_to_user_id,
                 'content' => $reply->content,
-                'images' => json_decode($reply->images ?? '[]', true),
+                'images' => $post->images ??[],
                 'like_count' => $reply->like_count,
                 'created_at' => $reply->created_at?->toDateTimeString(),
             ];

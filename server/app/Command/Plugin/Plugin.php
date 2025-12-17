@@ -193,13 +193,60 @@ class Plugin
         }
 
         // Handling database migration
-        $migrator = ApplicationContext::getContainer()->get(Migrator::class);
-        $seeder = ApplicationContext::getContainer()->get(Seed::class);
+        // IMPORTANT: Only run migrations from plugin directory, not from root databases directory
+        $migrationsPath = $pluginPath . '/Database/Migrations';
+        if (is_dir($migrationsPath)) {
+            $migrationFiles = Finder::create()
+                ->files()
+                ->name('*.php')
+                ->in($migrationsPath)
+                ->sortByName();
 
-        // Perform migration
-        $migrator->run($pluginPath . '/Database/Migrations');
-        // Perform Data Filling
-        $seeder->run($pluginPath . '/Database/Seeders');
+            if (iterator_count($migrationFiles) > 0) {
+                // Create fresh migrator instance and only pass plugin migration paths
+                $migrator = ApplicationContext::getContainer()->get(Migrator::class);
+                $migrationPaths = [];
+                foreach ($migrationFiles as $migrationFile) {
+                    $realPath = $migrationFile->getRealPath();
+                    // Verify the file is actually in the plugin directory
+                    if (str_starts_with($realPath, $pluginPath)) {
+                        $migrationPaths[] = $realPath;
+                    }
+                }
+                // Run all plugin migrations in one call to prevent multiple context switches
+                if (!empty($migrationPaths)) {
+                    $migrator->run($migrationPaths);
+                }
+            }
+        }
+
+        // Perform Data Filling - read files explicitly and execute one by one
+        // IMPORTANT: Only run seeders from plugin directory, not from root databases directory
+        $seedersPath = $pluginPath . '/Database/Seeders';
+        if (is_dir($seedersPath)) {
+            $seederFiles = Finder::create()
+                ->files()
+                ->name('*.php')
+                ->in($seedersPath)
+                ->sortByName();
+
+            if (iterator_count($seederFiles) > 0) {
+                // Create fresh seeder instance and only pass plugin seeder paths
+                $seeder = ApplicationContext::getContainer()->get(Seed::class);
+                $seederPaths = [];
+                foreach ($seederFiles as $seederFile) {
+                    $realPath = $seederFile->getRealPath();
+                    // Verify the file is actually in the plugin directory
+                    if (str_starts_with($realPath, $pluginPath)) {
+                        $seederPaths[] = $realPath;
+                    }
+                }
+                // Run all plugin seeders in one call
+                if (!empty($seederPaths)) {
+                    $seeder->run($seederPaths);
+                }
+            }
+        }
         
         // If the plugin exists in the web directory, perform the migration of the front-end files
         $frontDirectory = self::getConfig('front_directory', BASE_PATH . '/web');
@@ -259,11 +306,50 @@ class Plugin
             self::handleFrontendDependencies($info['package']['dependencies'], $info['name'], false);
         }
 
-        // Handling database migration
-        $migrator = ApplicationContext::getContainer()->get(Migrator::class);
+        // Rollback plugin database migrations
+        $migrationsPath = $pluginPath . '/Database/Migrations';
+        if (is_dir($migrationsPath)) {
+            $migrator = ApplicationContext::getContainer()->get(Migrator::class);
+            $repository = $migrator->getRepository();
 
-        // Perform migration rollback
-        $migrator->rollback($pluginPath . '/Database/Migrations');
+            // Collect plugin migration names and file paths
+            $pluginMigrations = [];
+            foreach (Finder::create()->files()->name('*.php')->in($migrationsPath) as $file) {
+                $realPath = $file->getRealPath();
+                if (str_starts_with($realPath, $pluginPath)) {
+                    $name = $migrator->getMigrationName($realPath);
+                    $pluginMigrations[$name] = $realPath;
+                }
+            }
+
+            if (!empty($pluginMigrations)) {
+                // Get plugin migrations that have been run, sorted by batch DESC
+                $ranMigrations = array_intersect_key(
+                    $repository->getMigrationBatches(),
+                    $pluginMigrations
+                );
+                arsort($ranMigrations); // Sort by batch descending
+
+                // Rollback each migration
+                foreach ($ranMigrations as $name => $batch) {
+                    try {
+                        // Load migration instance (supports both named and anonymous classes)
+                        $instance = class_exists($className = \Hyperf\Stringable\Str::studly(
+                            implode('_', array_slice(explode('_', $name), 4))
+                        )) ? new $className() : require $pluginMigrations[$name];
+
+                        if (method_exists($instance, 'down')) {
+                            $instance->down();
+                            $repository->delete((object) ['migration' => $name, 'batch' => $batch]);
+                        }
+                    } catch (\Throwable $e) {
+                        throw new \RuntimeException(
+                            \sprintf('Failed to rollback migration %s: %s', $name, $e->getMessage())
+                        );
+                    }
+                }
+            }
+        }
         
         // If the plugin exists in the web directory, perform the migration of the front-end files
         $frontDirectory = self::getConfig('front_directory', BASE_PATH . '/web');

@@ -22,12 +22,16 @@ export interface ArticleVo {
   remark: string
   // 排序
   sort: number
-  // 评论数
-  comment: number
   // 浏览数
-  views: number
+  view_count: number
   // 点赞数
-  like: number
+  like_count: number
+  // 评论数
+  comment_count: number
+  // 分享数
+  share_count: number
+  // 收藏数
+  collect_count: number
   // 1显示
   status: number
   // 调用代码

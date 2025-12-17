@@ -26,7 +26,6 @@ class MenuInit20251017 extends Seeder
      */
     public function run(): void
     {
-        Menu::truncate();
         if (env('DB_DRIVER') === 'odbc-sql-server') {
             Db::unprepared('SET IDENTITY_INSERT [' . Menu::getModel()->getTable() . '] ON;');
         }
@@ -34,23 +33,19 @@ class MenuInit20251017 extends Seeder
         if (env('DB_DRIVER') === 'odbc-sql-server') {
             Db::unprepared('SET IDENTITY_INSERT [' . Menu::getModel()->getTable() . '] OFF;');
         }
-        User::truncate();
-        Role::truncate();
-        $entity = User::create([
+        $entity = User::query()->firstOrCreate([
             'username' => 'admin',
             'email' => '649909457@qq.com',
             'password' => '123456',
             'user_type' => '100',
             'status' => 1,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
         ]);
-        $role = Role::create([
+        $role = Role::query()->firstOrCreate([
             'name' => '超级管理员',
             'code' => 'SuperAdmin',
         ]);
         $entity->roles()->sync($role);
-        Db::table('rules')->insert([
+        Db::table('rules')->firstOrCreate([
             'v0' => 'admin',
             'v1' => 'superAdmin',
             'ptype' => 'g',

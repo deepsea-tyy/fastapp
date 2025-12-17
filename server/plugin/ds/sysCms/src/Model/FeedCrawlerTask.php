@@ -33,5 +33,14 @@ class FeedCrawlerTask extends Model
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'source_id' => 'integer', 'task_status' => 'integer', 'success_count' => 'integer', 'fail_count' => 'integer'];
+    protected array $casts = [
+        'id' => 'integer',
+        'source_id' => 'integer',
+        'task_status' => 'integer',
+        'success_count' => 'integer',
+        'fail_count' => 'integer',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'created_at' => 'datetime',
+    ];
 }

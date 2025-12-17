@@ -48,29 +48,47 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
             cols: { lg: 12, md: 24 },
         },
         {
-            label: () => t('article.ArticleFields.comment'), // '评论数'
-            prop: 'comment',
+            label: () => t('article.ArticleFields.view_count'), // '浏览数'
+            prop: 'view_count',
             render: () => <el-input/>,
             renderProps: {
-                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.comment')}),
+                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.view_count')}),
             },
             cols: { lg: 12, md: 24 },
         },
         {
-            label: () => t('article.ArticleFields.views'), // '浏览数'
-            prop: 'views',
+            label: () => t('article.ArticleFields.like_count'), // '点赞数'
+            prop: 'like_count',
             render: () => <el-input/>,
             renderProps: {
-                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.views')}),
+                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.like_count')}),
             },
             cols: { lg: 12, md: 24 },
         },
         {
-            label: () => t('article.ArticleFields.like'), // '点赞数'
-            prop: 'like',
+            label: () => t('article.ArticleFields.comment_count'), // '评论数'
+            prop: 'comment_count',
             render: () => <el-input/>,
             renderProps: {
-                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.like')}),
+                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.comment_count')}),
+            },
+            cols: { lg: 12, md: 24 },
+        },
+        {
+            label: () => t('article.ArticleFields.share_count'), // '分享数'
+            prop: 'share_count',
+            render: () => <el-input/>,
+            renderProps: {
+                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.share_count')}),
+            },
+            cols: { lg: 12, md: 24 },
+        },
+        {
+            label: () => t('article.ArticleFields.collect_count'), // '收藏数'
+            prop: 'collect_count',
+            render: () => <el-input/>,
+            renderProps: {
+                placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.collect_count')}),
             },
             cols: { lg: 12, md: 24 },
         },

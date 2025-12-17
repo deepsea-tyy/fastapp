@@ -10,9 +10,11 @@ article:
     release_at: ReleaseAt
     brief: Brief
     content: Content
-    comment: Comment
-    views: Views
-    like: Like
+    view_count: View Count
+    like_count: Like Count
+    comment_count: Comment Count
+    share_count: Share Count
+    collect_count: Collect Count
     code: Code
     name: Name
     icon: Icon

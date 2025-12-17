@@ -23,11 +23,18 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
     { type: 'index' },
     // 普通列
     {
-      label: () => t('admin.FeedCommentFields.target_type'), // '目标类型：1帖子 2文章'
-      minWidth: 150,
+      label: () => t('admin.FeedCommentFields.target_type'), // '目标类型'
+      minWidth: 120,
       prop: 'target_type',
       sortable: 'custom',
-      cellRender: ({ row }) => row.target_type,
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('feed-target-type', row.target_type, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-target-type', row.target_type, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
       label: () => t('admin.FeedCommentFields.target_id'), // '目标ID'
@@ -77,11 +84,18 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       sortable: 'custom',
     },
     {
-      label: () => t('crud.status'), // '状态：1显示 0隐藏'
-      minWidth: 150,
+      label: () => t('crud.status'), // '状态'
+      minWidth: 100,
       prop: 'status',
       sortable: 'custom',
-      cellRender: ({ row }) => row.status,
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('feed-status', row.status, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-status', row.status, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     // 操作列
     {

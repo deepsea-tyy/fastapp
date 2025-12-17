@@ -30,6 +30,20 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       cellRender: ({ row }) => row.user_id,
     },
     {
+      label: () => t('admin.FeedPostFields.content_type'), // '内容类型'
+      minWidth: 120,
+      prop: 'content_type',
+      sortable: 'custom',
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('feed-content-type', row.content_type, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-content-type', row.content_type, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
+    },
+    {
       label: () => t('admin.FeedPostFields.title'), // '标题（可选）'
       minWidth: 150,
       prop: 'title',
@@ -40,11 +54,19 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'link_url',
     },
     {
-      label: () => t('admin.FeedPostFields.quoted_type'), // '引用类型：1帖子 2文章'
-      minWidth: 150,
+      label: () => t('admin.FeedPostFields.quoted_type'), // '引用类型'
+      minWidth: 120,
       prop: 'quoted_type',
       sortable: 'custom',
-      cellRender: ({ row }) => row.quoted_type,
+      cellRender: ({ row }) => {
+        if (!row.quoted_type) return '-'
+        const i18nKey = dictStore.t('feed-target-type', row.quoted_type, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-target-type', row.quoted_type, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
       label: () => t('admin.FeedPostFields.quoted_id'), // '引用的内容ID'
@@ -54,11 +76,18 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       cellRender: ({ row }) => row.quoted_id,
     },
     {
-      label: () => t('admin.FeedPostFields.audit_status'), // '审核状态：0待审核 1已通过 2已拒绝'
-      minWidth: 150,
+      label: () => t('admin.FeedPostFields.audit_status'), // '审核状态'
+      minWidth: 120,
       prop: 'audit_status',
       sortable: 'custom',
-      cellRender: ({ row }) => row.audit_status,
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('feed-audit-status', row.audit_status, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-audit-status', row.audit_status, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
       label: () => t('admin.FeedPostFields.audited_at'), // '审核时间'
@@ -67,33 +96,46 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       sortable: 'custom',
     },
     {
-      label: () => t('admin.FeedPostFields.is_top'), // '是否置顶：0否 1是'
-      minWidth: 150,
+      label: () => t('admin.FeedPostFields.is_top'), // '是否置顶'
+      minWidth: 100,
       prop: 'is_top',
       sortable: 'custom',
-      cellRender: ({ row }) => (
-        <ElTag type={row.is_top == 1 ? 'success' : 'danger'}>
-          {row.is_top}
-        </ElTag>
-      ),
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('system-yes-no', row.is_top, 'i18n')
+        return (
+          <ElTag type={dictStore.t('system-yes-no', row.is_top, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
-      label: () => t('admin.FeedPostFields.is_hot'), // '是否热门：0否 1是'
-      minWidth: 150,
+      label: () => t('admin.FeedPostFields.is_hot'), // '是否热门'
+      minWidth: 100,
       prop: 'is_hot',
       sortable: 'custom',
-      cellRender: ({ row }) => (
-        <ElTag type={row.is_hot == 1 ? 'success' : 'danger'}>
-          {row.is_hot}
-        </ElTag>
-      ),
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('system-yes-no', row.is_hot, 'i18n')
+        return (
+          <ElTag type={dictStore.t('system-yes-no', row.is_hot, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
-      label: () => t('crud.status'), // '状态：1显示 0隐藏'
-      minWidth: 150,
+      label: () => t('crud.status'), // '状态'
+      minWidth: 100,
       prop: 'status',
       sortable: 'custom',
-      cellRender: ({ row }) => row.status,
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('feed-status', row.status, 'i18n')
+        return (
+          <ElTag type={dictStore.t('feed-status', row.status, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
       label: () => t('admin.FeedPostFields.view_count'), // '浏览次数'
@@ -131,7 +173,7 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'quote_count',
       sortable: 'custom',
     },
-    {
+    /*{
       label: () => t('admin.FeedPostFields.ip'), // '发布IP'
       minWidth: 150,
       prop: 'ip',
@@ -141,7 +183,7 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       minWidth: 150,
       prop: 'device_type',
       cellRender: ({ row }) => row.device_type,
-    },
+    },*/
     // 操作列
     {
       type: 'operation',

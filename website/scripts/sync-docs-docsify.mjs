@@ -34,7 +34,7 @@ const sortConfig = {
   files: {
     'server/getting-started': ['开发指南.md', '快速开始.md'],
     'server/development': ['开发规范.md', '配置说明.md', 'AI辅助开发流程指南.md', 'AI开发提示词模板.md'],
-    'server/features': ['核心功能.md', '代码生成器.md', '插件系统使用指南.md', 'WebSocket开发文档.md', '数据库迁移工具使用指南.md', 'IP地理位置查询服务使用指南.md', 'Hyperf监听器与异步操作指南.md'],
+    'server/features': ['核心功能.md', '代码生成器.md', '插件使用文档.md', 'WS使用文档.md', '数据库迁移工具.md', 'IP位置查询.md', '监听与异步文档.md'],
     'server/permission': ['权限系统使用文档.md', '用户部门与角色部门配合使用详解.md', 'Casbin权限规则表说明.md']
   }
 }

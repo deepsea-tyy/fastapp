@@ -24,9 +24,11 @@ return new class extends Migration {
             $table->json('content')->nullable()->comment('内容');
             $table->string('remark')->nullable()->comment('备注');
             $table->integer('sort')->comment('排序')->default(100);
-            $table->integer('comment')->comment('评论数')->default(0);
-            $table->integer('views')->comment('浏览数')->default(0);
-            $table->integer('like')->comment('点赞数')->default(0);
+            $table->integer('view_count')->comment('浏览数')->unsigned()->default(0);
+            $table->integer('like_count')->comment('点赞数')->unsigned()->default(0);
+            $table->integer('comment_count')->comment('评论数')->unsigned()->default(0);
+            $table->integer('share_count')->comment('分享数')->unsigned()->default(0);
+            $table->integer('collect_count')->comment('收藏数')->unsigned()->default(0);
             $table->tinyInteger('status')->comment('1显示')->default(1);
             $table->char('code', 32)->nullable()->comment('调用代码');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
@@ -73,7 +75,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->unique('code');
         });
-        
+
         // 投放内容表（具体的投放内容，如文章、链接、视频等）
         Schema::create('placement_content', function (Blueprint $table) {
             $table->engine = 'Innodb';
@@ -109,7 +111,7 @@ return new class extends Migration {
             $table->unique('code');
             $table->index(['object_type', 'object_id']);
         });
-        
+
         // 投放位置与内容关联表（多对多关系）
         Schema::create('placement_position_content', function (Blueprint $table) {
             $table->engine = 'Innodb';
@@ -161,6 +163,7 @@ return new class extends Migration {
             $table->index('platform');
             $table->index('version');
         });
+
     }
 
     /**

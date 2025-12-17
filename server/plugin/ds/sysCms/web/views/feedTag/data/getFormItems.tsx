@@ -1,5 +1,7 @@
+import MaChildrenForm from '@/components/ma-children-form/index.vue'
 import type { MaFormItem } from '@/components/ma-form'
 import type { FeedTagVo } from '$/ds/syscms/api/feedTag.ts'
+import {lang} from "@/utils/common.ts";
 
 export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, model: FeedTagVo): MaFormItem[] {
   // 新增默认值
@@ -23,8 +25,34 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
     {
       label: () => t('admin.FeedTagFields.name'), // '标签名称（多语言）'
       prop: 'name',
-      render: () => <el-input />,
+      render: () => MaChildrenForm,
       renderProps: {
+        options: {
+          showAddButton: true,
+          showDeleteButton: true,
+          minItems: 1,
+          emptyRow: 1,
+          itemTitle: t('common.language'),
+          itemLabelWidth: '80px',
+          itemWidth: '100%'
+        },
+        formList: [
+          {
+            title: t('common.language'),
+            dataIndex: 'lang',
+            formType: 'select',
+            dict: {
+              data: lang(t),
+            },
+            addDefaultValue: 'zh_CN',
+          },
+          {
+            title: t('common.content'),
+            dataIndex: 'text',
+            formType: 'textarea',
+          }
+        ],
+        defaultItemValue: {lang: 'zh_CN', text: ''},
 placeholder: t('admin.FeedTagFields.name'),
             },
       itemProps: {
@@ -77,6 +105,7 @@ placeholder: t('admin.FeedTagFields.follow_count'),
       prop: 'is_hot',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'system-yes-no',
 placeholder: t('admin.FeedTagFields.is_hot'),
             },
       cols: { lg: 12, md: 24 },
@@ -86,6 +115,7 @@ placeholder: t('admin.FeedTagFields.is_hot'),
       prop: 'status',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'system-display',
 placeholder: t('crud.status'),
             },
       cols: { lg: 12, md: 24 },

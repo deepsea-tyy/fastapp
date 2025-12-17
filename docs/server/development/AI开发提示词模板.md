@@ -234,7 +234,7 @@
 - 返回：{返回数据说明}
 
 **开发步骤：**
-1. 阅读 [WebSocket开发文档](../features/WebSocket开发文档.md)
+1. 阅读 [WS使用文档](../features/WS使用文档.md)
 2. 创建 WebSocket 消息处理器类
 3. 实现 WsMessageHandlerInterface 接口
 4. 实现处理方法（使用 protected 访问修饰符）

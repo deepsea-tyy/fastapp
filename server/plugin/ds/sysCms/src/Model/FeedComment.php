@@ -40,5 +40,19 @@ class FeedComment extends Model
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'target_type' => 'integer', 'target_id' => 'integer', 'user_id' => 'integer', 'parent_id' => 'integer', 'root_id' => 'integer', 'reply_to_user_id' => 'integer', 'like_count' => 'integer', 'reply_count' => 'integer', 'status' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
+    protected array $casts = [
+        'id' => 'integer',
+        'target_type' => 'integer',
+        'target_id' => 'integer',
+        'user_id' => 'integer',
+        'parent_id' => 'integer',
+        'root_id' => 'integer',
+        'reply_to_user_id' => 'integer',
+        'like_count' => 'integer',
+        'reply_count' => 'integer',
+        'status' => 'integer',
+        'images' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 }

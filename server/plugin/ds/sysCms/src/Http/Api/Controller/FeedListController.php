@@ -8,11 +8,12 @@ use App\Common\AbstractController;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
 use App\Http\CurrentUser;
-use App\Service\Feed\FeedCacheService;
-use App\Service\Feed\FeedUserFollowService;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\QueryParameter;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 
 /**
  * 信息流列表API控制器
@@ -104,7 +105,7 @@ class FeedListController extends AbstractController
                 'user_id' => $post->user_id,
                 'title' => $post->title,
                 'content' => $post->content,
-                'images' => json_decode($post->images ?? '[]', true),
+                'images' => $post->images ??[],
                 'like_count' => $post->like_count,
                 'comment_count' => $post->comment_count,
                 'created_at' => $post->created_at,
@@ -138,10 +139,6 @@ class FeedListController extends AbstractController
         $pageSize = $this->getPageSize();
 
         $userId = $this->currentUser->id();
-        if (!$userId) {
-            return $this->success();
-        }
-        // 获取关注用户的帖子
         $posts = $this->followService->getFollowingUserPosts($userId, $page, $pageSize);
 
         // 批量获取用户动作状态
@@ -149,8 +146,8 @@ class FeedListController extends AbstractController
             $post['is_liked'] = $this->cacheService->getUserLikeStatus($userId, 1, $post['id']);
             $post['is_collected'] = $this->cacheService->getUserCollectStatus($userId, 1, $post['id']);
         }
-
-        return $this->success($posts);
+        FeedService::readMessage($userId, 1);
+        return $this->success(['list' => $posts]);
     }
 
     #[Get(

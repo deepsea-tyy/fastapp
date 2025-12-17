@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 
 namespace App\Common;
+
 use App\Common\Request\Request;
 use Hyperf\Context\ApplicationContext;
 
@@ -28,14 +29,15 @@ abstract class AbstractController
     {
         return ApplicationContext::getContainer()->get(Request::class);
     }
+
     protected function getPage(): int
     {
-        return (int) $this->getRequest()->input('page', 1);
+        return (int)$this->getRequest()->input('page', 1);
     }
 
     protected function getPageSize(): int
     {
-        return (int) $this->getRequest()->input('page_size', 10);
+        return (int)$this->getRequest()->input('page_size', 10);
     }
 
     protected function getRequestData(): array

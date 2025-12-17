@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-namespace Plugin\Ds\SysCms\Database\Seeders;
-
 use Carbon\Carbon;
 use Faker\Factory;
 use Faker\Generator;
@@ -48,6 +46,7 @@ class FeedTestDataSeeder extends Seeder
      */
     public function run(): void
     {
+        if (\Hyperf\Config\config('env') == 'prod') return;
         echo "🚀 开始生成信息流测试数据...\n\n";
 
         // 1. 生成标签
@@ -103,7 +102,7 @@ class FeedTestDataSeeder extends Seeder
 
         foreach (array_slice($tagNames, 0, self::TAG_COUNT) as $index => $name) {
             $tag = FeedTag::create([
-                'name' => json_encode(['zh-CN' => $name]),
+                'name' => [['lang' => 'zh_CN', 'text' => $name]],
                 'icon' => null,
                 'color' => $this->faker->hexColor(),
                 'post_count' => 0,
@@ -152,14 +151,14 @@ class FeedTestDataSeeder extends Seeder
                 'content_type' => $contentType,
                 'title' => $title,
                 'content' => $content,
-                'images' => json_encode($images),
-                'videos' => json_encode($videos),
+                'images' => $images,
+                'videos' => $videos,
                 'link_url' => $contentType === 4 ? $this->faker->url() : null,
-                'link_meta' => $contentType === 4 ? json_encode([
+                'link_meta' => $contentType === 4 ? [
                     'title' => $this->faker->sentence(),
                     'description' => $this->faker->paragraph(),
                     'image' => $this->faker->imageUrl(),
-                ]) : null,
+                ] : null,
                 'quoted_type' => null,
                 'quoted_id' => null,
                 'audit_status' => 1,  // 已审核通过
@@ -230,7 +229,7 @@ class FeedTestDataSeeder extends Seeder
     private function generateComments(array $posts): array
     {
         $comments = [];
-        $commentsPerPost = (int) (self::COMMENT_COUNT / count($posts));
+        $commentsPerPost = (int)(self::COMMENT_COUNT / count($posts));
 
         foreach ($posts as $post) {
             // 每个帖子生成随机数量的评论
@@ -263,7 +262,6 @@ class FeedTestDataSeeder extends Seeder
                     'root_id' => $rootId,
                     'reply_to_user_id' => $replyToUserId,
                     'content' => $this->generateCommentContent(),
-                    'images' => json_encode([]),
                     'like_count' => 0,  // 后续通过点赞生成
                     'reply_count' => 0,
                     'status' => 1,

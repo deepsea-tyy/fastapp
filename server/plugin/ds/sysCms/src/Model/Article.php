@@ -22,9 +22,11 @@ use Hyperf\DbConnection\Model\Model;
  * @property array $content 内容
  * @property string $remark 备注
  * @property int $sort 排序
- * @property int $comment 评论数
- * @property int $views 浏览数
- * @property int $like 点赞数
+ * @property int $view_count 浏览数
+ * @property int $like_count 点赞数
+ * @property int $comment_count 评论数
+ * @property int $share_count 分享数
+ * @property int $collect_count 收藏数
  * @property int $status 1显示
  * @property string $code 调用代码
  * @property int $created_by 创建者
@@ -53,9 +55,11 @@ final class Article extends Model
         'content',
         'remark',
         'sort',
-        'comment',
-        'views',
-        'like',
+        'view_count',
+        'like_count',
+        'comment_count',
+        'share_count',
+        'collect_count',
         'status',
         'code',
         'created_by',
@@ -78,9 +82,11 @@ final class Article extends Model
         'content' => 'array',
         'remark' => 'string',
         'sort' => 'integer',
-        'comment' => 'integer',
-        'views' => 'integer',
-        'like' => 'integer',
+        'view_count' => 'integer',
+        'like_count' => 'integer',
+        'comment_count' => 'integer',
+        'share_count' => 'integer',
+        'collect_count' => 'integer',
         'status' => 'integer',
         'code' => 'string',
         'created_by' => 'integer',

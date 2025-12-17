@@ -149,11 +149,11 @@ class CurrentUser
     {
         $token = $this->getToken();
         if (!$token) {
-            try {
-                $token = $this->jwtFactory->get($this->scene)->parserAccessToken(Tools::getHeader('token'));
-            } catch (\Exception $exception) {
+            $tokenStr = Tools::getHeader('token');
+            if (!$tokenStr) {
                 return 0;
             }
+            $token = $this->jwtFactory->get($this->scene)->parserAccessToken($tokenStr);
         }
         return (int)$token->claims()->get(RegisteredClaims::ID);
     }

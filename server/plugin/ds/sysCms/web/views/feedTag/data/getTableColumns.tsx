@@ -7,6 +7,7 @@ import { deleteByIds } from '$/ds/syscms/api/feedTag.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import hasAuth from '@/utils/permission/hasAuth.ts'
 import { ElTag } from 'element-plus'
+import {formatLang} from "@/utils/common.ts";
 
 export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
   const dictStore = useDictStore()
@@ -22,6 +23,12 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
     // 索引序号列
     { type: 'index' },
     // 普通列
+    {
+      label: () => t('article.CategoryFields.name'),
+      minWidth: 120,
+      prop: 'name',
+      cellRender: ({ row }) => formatLang(row.name)
+    },
     {
       label: () => t('admin.FeedTagFields.icon'), // '标签图标'
       minWidth: 150,
@@ -51,21 +58,31 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
     },
     {
       label: () => t('admin.FeedTagFields.is_hot'), // '是否热门'
-      minWidth: 150,
+      minWidth: 100,
       prop: 'is_hot',
       sortable: 'custom',
-      cellRender: ({ row }) => (
-        <ElTag type={row.is_hot == 1 ? 'success' : 'danger'}>
-          {row.is_hot}
-        </ElTag>
-      ),
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('system-yes-no', row.is_hot, 'i18n')
+        return (
+          <ElTag type={dictStore.t('system-yes-no', row.is_hot, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     {
-      label: () => t('crud.status'), // '状态：1启用 0禁用'
-      minWidth: 150,
+      label: () => t('crud.status'), // '状态'
+      minWidth: 100,
       prop: 'status',
       sortable: 'custom',
-      cellRender: ({ row }) => row.status,
+      cellRender: ({ row }) => {
+        const i18nKey = dictStore.t('system-display', row.status, 'i18n')
+        return (
+          <ElTag type={dictStore.t('system-display', row.status, 'color') || undefined}>
+            {i18nKey ? t(i18nKey) : ''}
+          </ElTag>
+        )
+      },
     },
     // 操作列
     {

@@ -9,15 +9,15 @@ use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
 use App\Http\CurrentUser;
-use App\Service\Feed\FeedCacheService;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\Delete;
+use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\JsonContent;
+use Hyperf\Swagger\Annotation\Post;
+use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
 use Plugin\Ds\SysCms\Model\FeedPost;
 
 /**
@@ -98,7 +98,7 @@ class FeedPostController extends AbstractController
                 'id' => $post->id,
                 'title' => $post->title,
                 'content' => $post->content,
-                'images' => json_decode($post->images ?? '[]', true),
+                'images' => $post->images ??[],
                 'like_count' => $post->like_count,
                 'comment_count' => $post->comment_count,
                 'created_at' => $post->created_at?->toDateTimeString(),

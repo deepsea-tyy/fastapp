@@ -52,5 +52,27 @@ class FeedPost extends Model
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'user_id' => 'integer', 'content_type' => 'integer', 'quoted_type' => 'integer', 'quoted_id' => 'integer', 'audit_status' => 'integer', 'is_top' => 'integer', 'is_hot' => 'integer', 'status' => 'integer', 'view_count' => 'integer', 'like_count' => 'integer', 'comment_count' => 'integer', 'share_count' => 'integer', 'collect_count' => 'integer', 'quote_count' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
+    protected array $casts = [
+        'id' => 'integer',
+        'user_id' => 'integer',
+        'content_type' => 'integer',
+        'quoted_type' => 'integer',
+        'quoted_id' => 'integer',
+        'audit_status' => 'integer',
+        'is_top' => 'integer',
+        'is_hot' => 'integer',
+        'status' => 'integer',
+        'view_count' => 'integer',
+        'like_count' => 'integer',
+        'comment_count' => 'integer',
+        'share_count' => 'integer',
+        'collect_count' => 'integer',
+        'quote_count' => 'integer',
+        'images' => 'array',
+        'videos' => 'array',
+        'link_meta' => 'array',
+        'audited_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 }

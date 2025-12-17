@@ -129,8 +129,13 @@ LUA;
             // 如果 Lua 脚本执行失败，尝试直接删除（降级处理）
             try {
                 $redis->del($lockKey);
-            } catch (\Throwable) {
-                // 忽略删除失败
+            } catch (\Throwable $delException) {
+                Tools::logAsync(
+                    "Failed to delete lock key for fd {$fd}: " . $delException->getMessage(),
+                    'error',
+                    'error',
+                    'websocket'
+                );
             }
         } finally {
             unset(self::$lockValues[$fd]);
@@ -152,10 +157,11 @@ LUA;
                 $this->sendResponse($frame->fd, WsResponse::error('Invalid JSON format'));
                 return;
             }
-            switch ($params['action'] ?? 'error') {
+            switch ($params['action'] ?? '') {
                 case 'ping':
                 case 'heartbeat':
-                case 'error':
+                    // 更新心跳时间
+                    WsConnectionManager::updatePingTime($frame->fd);
                     return;
                 case 'login':
                     $this->login($server, $frame->fd, $params);
@@ -205,7 +211,22 @@ LUA;
 
     public function onClose($server, int $fd, int $reactorId): void
     {
+        // 获取用户ID用于后续清理
+        $userId = $this->getUserIdByFd($fd);
+
+        // 移除连接映射
         $this->removeConnection($fd);
+
+        // 从连接管理器中移除
+        WsConnectionManager::removeConnection($fd, $userId);
+
+        // 离开所有房间
+        WsRoomManager::leaveAllRooms($fd, $userId);
+
+        // 清理锁值记录，防止内存泄漏
+        if (isset(self::$lockValues[$fd])) {
+            unset(self::$lockValues[$fd]);
+        }
     }
 
     public function onOpen($server, $request): void
@@ -265,8 +286,18 @@ LUA;
             $method = $handler['method'];
             $instance = $handler['instance'];
 
-            // 使用反射来调用方法，支持 protected 和 private 方法
+            // 验证方法是否为 public
             $reflection = new \ReflectionMethod($instance, $method);
+            if (!$reflection->isPublic()) {
+                Tools::logAsync(
+                    "Security: Attempted to call non-public method {$method} for action {$action}",
+                    'error',
+                    'error',
+                    'websocket'
+                );
+                return WsResponse::error('Internal error');
+            }
+
             /* @var WsResponse|bool $res */
             return $reflection->invokeArgs($instance, [$data, $userId]);
         } catch (\Throwable $e) {
@@ -402,10 +433,18 @@ LUA;
      * 添加连接映射（使用分布式锁保证原子性）
      * @param int $fd 文件描述符
      * @param int|string $userId 用户ID或visitor标识
+     * @param string $ip 客户端IP
+     * @param string $userAgent User-Agent
+     * @param string $deviceType 设备类型
      * @return bool 是否成功添加连接
      */
-    private function addConnection(int $fd, int|string $userId): bool
-    {
+    private function addConnection(
+        int $fd,
+        int|string $userId,
+        string $ip = '',
+        string $userAgent = '',
+        string $deviceType = 'unknown'
+    ): bool {
         if (!$this->acquireLock($fd)) {
             return false;
         }
@@ -418,24 +457,27 @@ LUA;
             $oldUserId = $redis->get($fdKey);
             if ($oldUserId !== false) {
                 $oldUserId = (string)$oldUserId;
-                if ($oldUserId !== (string)$userId) {
-                    $oldUserFdsKey = self::REDIS_KEY_USER_FDS . $oldUserId;
-                    $redis->sRem($oldUserFdsKey, (string)$fd);
-                    $oldUserFdsCount = $redis->sCard($oldUserFdsKey);
-                    if ($oldUserFdsCount === 0) {
-                        $redis->del($oldUserFdsKey);
-                        Tools::eventDispatcher(new WsCloseEvent($oldUserId));
-                    }
-                } else {
-                    // 如果 oldUserId === userId，确保 fdKey 存在，并添加到 Set
-                    $redis->set($fdKey, (string)$userId);
-                    $redis->sAdd($userFdsKey, (string)$fd);
+                if ($oldUserId === (string)$userId) {
+                    // 映射已存在且相同，直接返回
                     return true;
+                }
+
+                // 清理旧用户的映射
+                $oldUserFdsKey = self::REDIS_KEY_USER_FDS . $oldUserId;
+                $redis->sRem($oldUserFdsKey, (string)$fd);
+                $oldUserFdsCount = $redis->sCard($oldUserFdsKey);
+                if ($oldUserFdsCount === 0) {
+                    $redis->del($oldUserFdsKey);
+                    Tools::eventDispatcher(new WsCloseEvent($oldUserId));
                 }
             }
 
             $redis->set($fdKey, (string)$userId);
             $redis->sAdd($userFdsKey, (string)$fd);
+
+            // 记录连接信息到连接管理器
+            WsConnectionManager::recordConnection($fd, $userId, $ip, $userAgent, $deviceType);
+
             return true;
         } catch (\Throwable $e) {
             Tools::logAsync(
@@ -456,44 +498,37 @@ LUA;
     private function removeConnection(int $fd): void
     {
         if (!$this->acquireLock($fd)) {
-            // 即使获取锁失败，也尝试直接清理（降级处理）
-            try {
-                $this->removeConnectionInternalUnlocked($fd);
-            } catch (\Throwable $e) {
-            }
+            Tools::logAsync(
+                "Failed to acquire lock for removing connection fd {$fd}, operation aborted to avoid data inconsistency",
+                'warning',
+                'warning',
+                'websocket'
+            );
             return;
         }
 
         try {
-            $this->removeConnectionInternalUnlocked($fd);
+            $redis = self::getRedis();
+            $fdKey = self::REDIS_KEY_FD_USER . $fd;
+
+            $userId = $redis->get($fdKey);
+            if ($userId === false) {
+                return;
+            }
+
+            $userId = (string)$userId;
+            $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+
+            $redis->sRem($userFdsKey, (string)$fd);
+            $redis->del($fdKey);
+
+            $fdsCount = $redis->sCard($userFdsKey);
+            if ($fdsCount === 0) {
+                $redis->del($userFdsKey);
+                Tools::eventDispatcher(new WsCloseEvent($userId));
+            }
         } finally {
             $this->releaseLock($fd);
-        }
-    }
-
-    /**
-     * 移除连接映射（内部实现，需要调用者持有锁）
-     */
-    private function removeConnectionInternalUnlocked(int $fd): void
-    {
-        $redis = self::getRedis();
-        $fdKey = self::REDIS_KEY_FD_USER . $fd;
-
-        $userId = $redis->get($fdKey);
-        if ($userId === false) {
-            return;
-        }
-
-        $userId = (string)$userId;
-        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
-
-        $redis->sRem($userFdsKey, (string)$fd);
-        $redis->del($fdKey);
-
-        $fdsCount = $redis->sCard($userFdsKey);
-        if ($fdsCount === 0) {
-            $redis->del($userFdsKey);
-            Tools::eventDispatcher(new WsCloseEvent($userId));
         }
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Feed;
+namespace Plugin\Ds\SysCms\Http\Api\Service;
 
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
 
@@ -164,7 +164,7 @@ class FeedUserFollowService
                 'user_id' => $post->user_id,
                 'title' => $post->title,
                 'content' => $post->content,
-                'images' => json_decode($post->images ?? '[]', true),
+                'images' => $post->images ?? [],
                 'like_count' => $post->like_count,
                 'comment_count' => $post->comment_count,
                 'created_at' => $post->created_at?->toDateTimeString(),

@@ -39,6 +39,7 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
       prop: 'content_type',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'feed-content-type',
 placeholder: t('admin.FeedPostFields.content_type'),
             },
       cols: { lg: 12, md: 24 },
@@ -95,6 +96,7 @@ placeholder: t('admin.FeedPostFields.link_meta'),
       prop: 'quoted_type',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'feed-target-type',
 placeholder: t('admin.FeedPostFields.quoted_type'),
             },
       cols: { lg: 12, md: 24 },
@@ -122,6 +124,7 @@ placeholder: t('admin.FeedPostFields.audited_at'),
       prop: 'is_top',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'feed-audit-status',
 placeholder: t('admin.FeedPostFields.is_top'),
             },
       cols: { lg: 12, md: 24 },
@@ -131,6 +134,7 @@ placeholder: t('admin.FeedPostFields.is_top'),
       prop: 'is_hot',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'system-yes-no',
 placeholder: t('admin.FeedPostFields.is_hot'),
             },
       cols: { lg: 12, md: 24 },
@@ -140,6 +144,7 @@ placeholder: t('admin.FeedPostFields.is_hot'),
       prop: 'status',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:'system-display',
 placeholder: t('crud.status'),
             },
       cols: { lg: 12, md: 24 },
@@ -210,7 +215,7 @@ placeholder: t('admin.FeedPostFields.quote_count'),
             },
       cols: { lg: 12, md: 24 },
     },
-    {
+    /*{
       label: () => t('admin.FeedPostFields.ip'), // '发布IP'
       prop: 'ip',
       render: () => <el-input />,
@@ -227,6 +232,6 @@ placeholder: t('admin.FeedPostFields.ip'),
 placeholder: t('admin.FeedPostFields.device_type'),
             },
       cols: { lg: 12, md: 24 },
-    },
+    },*/
   ]
 }

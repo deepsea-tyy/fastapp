@@ -33,5 +33,14 @@ class FeedTag extends Model
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'post_count' => 'integer', 'follow_count' => 'integer', 'is_hot' => 'integer', 'status' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
+    protected array $casts = [
+        'id' => 'integer',
+        'name' => 'array',
+        'post_count' => 'integer',
+        'follow_count' => 'integer',
+        'is_hot' => 'integer',
+        'status' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 }

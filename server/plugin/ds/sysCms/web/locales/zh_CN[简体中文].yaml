@@ -10,9 +10,11 @@ article:
     release_at: 发布日期
     brief: 摘要
     content: 内容
-    comment: 评论数
-    views: 浏览数
-    like: 点赞数
+    view_count: 浏览数
+    like_count: 点赞数
+    comment_count: 评论数
+    share_count: 分享数
+    collect_count: 收藏数
     code: 调用代码
     name: 名称
     icon: icon

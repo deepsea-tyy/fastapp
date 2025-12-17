@@ -36,5 +36,16 @@ class FeedCrawlerSource extends Model
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'source_type' => 'integer', 'category_id' => 'integer', 'auto_publish' => 'integer', 'fetch_interval' => 'integer', 'status' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
+    protected array $casts = [
+        'id' => 'integer',
+        'source_type' => 'integer',
+        'category_id' => 'integer',
+        'config' => 'array',
+        'auto_publish' => 'integer',
+        'fetch_interval' => 'integer',
+        'status' => 'integer',
+        'last_fetch_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 }

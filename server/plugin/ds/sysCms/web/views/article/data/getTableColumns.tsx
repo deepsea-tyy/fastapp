@@ -73,21 +73,33 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       sortable: 'custom',
     },
     {
-      label: () => t('article.ArticleFields.comment'), // '评论数'
+      label: () => t('article.ArticleFields.view_count'), // '浏览数'
       minWidth: 120,
-      prop: 'comment',
+      prop: 'view_count',
       sortable: 'custom',
     },
     {
-      label: () => t('article.ArticleFields.views'), // '浏览数'
+      label: () => t('article.ArticleFields.like_count'), // '点赞数'
       minWidth: 120,
-      prop: 'views',
+      prop: 'like_count',
       sortable: 'custom',
     },
     {
-      label: () => t('article.ArticleFields.like'), // '点赞数'
+      label: () => t('article.ArticleFields.comment_count'), // '评论数'
       minWidth: 120,
-      prop: 'like',
+      prop: 'comment_count',
+      sortable: 'custom',
+    },
+    {
+      label: () => t('article.ArticleFields.share_count'), // '分享数'
+      minWidth: 120,
+      prop: 'share_count',
+      sortable: 'custom',
+    },
+    {
+      label: () => t('article.ArticleFields.collect_count'), // '收藏数'
+      minWidth: 120,
+      prop: 'collect_count',
       sortable: 'custom',
     },
     {
