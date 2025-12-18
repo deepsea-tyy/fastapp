@@ -19,12 +19,12 @@ use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 use Plugin\Ds\SysCms\Model\Category;
 
-#[HyperfServer(name: 'http')    ]
+#[HyperfServer(name: 'http')]
 class FeedArticleController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser $currentUser,
-        private readonly FeedService $feedService,
+        private readonly CurrentUser      $currentUser,
+        private readonly FeedService      $feedService,
         private readonly FeedCacheService $cacheService,
     )
     {
@@ -36,7 +36,7 @@ class FeedArticleController extends AbstractController
         path: '/api/feed/article/news',
         operationId: 'getArticleNews',
         summary: '获取新闻列表',
-        tags: ['信息流-列表']
+        tags: ['信息流-文章']
     )]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
@@ -63,7 +63,7 @@ class FeedArticleController extends AbstractController
         path: '/api/feed/article/notice',
         operationId: 'getArticleNotice',
         summary: '获取公告列表',
-        tags: ['信息流-列表']
+        tags: ['信息流-文章']
     )]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
@@ -90,7 +90,7 @@ class FeedArticleController extends AbstractController
         path: '/api/feed/article/helpManual',
         operationId: 'getArticleHelpManual',
         summary: '获取帮助手册分类列表',
-        tags: ['信息流-列表']
+        tags: ['信息流-文章']
     )]
     #[ResultResponse(instance: new Result())]
     public function helpManual(): Result
@@ -106,7 +106,7 @@ class FeedArticleController extends AbstractController
         path: '/api/feed/article/categoryList',
         operationId: 'getArticleCategoryList',
         summary: '获取分类文章列表',
-        tags: ['信息流-列表']
+        tags: ['信息流-文章']
     )]
     #[QueryParameter(name: 'category_id', description: '分类 id', example: '2')]
     #[ResultResponse(instance: new Result())]

@@ -3,7 +3,7 @@ import MaChildrenForm from '@/components/ma-children-form/index.vue'
 import type {ArticleVo} from '$/ds/sysCms/api/article.ts'
 import {lang} from "@/utils/common.ts";
 import MaRemoteSelect from '@/components/ma-remote-select/index.vue'
-import {selectCategory} from "$/ds/sysCms/api/category.ts";
+import {selectCategory, selectCreator} from "$/ds/sysCms/api/category.ts";
 
 export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, model: ArticleVo): MaFormItem[] {
     return [
@@ -15,6 +15,16 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
                 api: selectCategory,
                 multiple:true,
                 placeholder: t('form.pleaseSelect', {msg: t('crud.category')}),
+            },
+            cols: { lg: 12, md: 24 },
+        },
+        {
+            label: () => t('crud.createdBy'), // '发布人'
+            prop: 'created_by',
+            render: () => MaRemoteSelect,
+            renderProps: {
+                api: selectCreator,
+                placeholder: t('form.pleaseSelect', {msg: t('crud.createdBy')}),
             },
             cols: { lg: 12, md: 24 },
         },
@@ -108,13 +118,6 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
             renderProps: {
                 placeholder: t('form.pleaseSelect', {msg: t('article.ArticleFields.release_at')}),
             },
-            cols: { lg: 12, md: 24 },
-        },
-        {
-            label: () => t('crud.remark'), // '备注'
-            prop: 'remark',
-            render: () => <el-input/>,
-            renderProps: {placeholder: t('crud.remark')},
             cols: { lg: 12, md: 24 },
         },
         {
@@ -256,6 +259,13 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
                 placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.subtitle')}),
             },
             cols: { lg: 12, md: 24 },
+        },
+        {
+            label: () => t('crud.remark'), // '备注'
+            prop: 'remark',
+            render: () => <el-input/>,
+            renderProps: {placeholder: t('crud.remark')},
+            cols: { lg: 24, md: 24 },
         },
         {
             label: () => t('article.ArticleFields.brief'), // '摘要'

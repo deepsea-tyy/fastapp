@@ -50,3 +50,6 @@ export function deleteByIds(ids: number[]): Promise<ResponseStruct<null>> {
 export function selectCategory(params:any): Promise<ResponseStruct<null>> {
   return useHttp().get('/admin/article/category/selectCategory', { params })
 }
+export function selectCreator(): Promise<ResponseStruct<null>> {
+  return useHttp().get('/admin/article/category/selectCreator')
+}

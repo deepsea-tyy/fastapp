@@ -105,8 +105,8 @@ class FeedPost {
   @JsonKey(name: 'created_at')
   final String? createdAt;
 
-  /// 内容类型（信息流列表返回）
-  final String? type;
+  /// 帖子类型：1帖子 2文章
+  final int? type;
 
   FeedPost({
     required this.id,
@@ -171,7 +171,7 @@ class FeedPost {
     bool? isLiked,
     bool? isCollected,
     String? createdAt,
-    String? type,
+    int? type,
   }) {
     return FeedPost(
       id: id ?? this.id,

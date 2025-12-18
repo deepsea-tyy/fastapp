@@ -54,24 +54,13 @@ placeholder: t('admin.FeedPostFields.title'),
       cols: { lg: 12, md: 24 },
     },
     {
-      label: () => t('admin.FeedPostFields.content'), // '内容'
-      prop: 'content',
-      render: () => <el-input />,
-      renderProps: {
-placeholder: t('admin.FeedPostFields.content'),
-        type: 'textarea',
-        rows: 3,
-            },
-      cols: { lg: 12, md: 24 },
-    },
-    {
       label: () => t('admin.FeedPostFields.images'), // '图片列表（JSON数组）'
       prop: 'images',
       render: () => <ma-upload-image />,
       renderProps: {
+          multiple:true,
 placeholder: t('admin.FeedPostFields.images'),
             },
-      cols: { lg: 12, md: 24 },
     },
     {
       label: () => t('admin.FeedPostFields.link_url'), // '外链地址'
@@ -215,7 +204,7 @@ placeholder: t('admin.FeedPostFields.quote_count'),
             },
       cols: { lg: 12, md: 24 },
     },
-    /*{
+    {
       label: () => t('admin.FeedPostFields.ip'), // '发布IP'
       prop: 'ip',
       render: () => <el-input />,
@@ -232,6 +221,16 @@ placeholder: t('admin.FeedPostFields.ip'),
 placeholder: t('admin.FeedPostFields.device_type'),
             },
       cols: { lg: 12, md: 24 },
-    },*/
+    },
+    {
+      label: () => t('admin.FeedPostFields.content'), // '内容'
+      prop: 'content',
+      render: () => <ma-editor />,
+      renderProps: {
+placeholder: t('admin.FeedPostFields.content'),
+        type: 'textarea',
+        rows: 3,
+            },
+    },
   ]
 }

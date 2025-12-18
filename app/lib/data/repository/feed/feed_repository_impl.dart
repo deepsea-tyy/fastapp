@@ -281,6 +281,7 @@ class FeedRepositoryImpl implements FeedRepository {
 
   @override
   Future<Map<String, dynamic>> createPost({
+    int type = 1,
     int contentType = 1,
     String? title,
     required String content,
@@ -289,6 +290,7 @@ class FeedRepositoryImpl implements FeedRepository {
   }) async {
     try {
       final response = await _feedApi.createPost(
+        type: type,
         contentType: contentType,
         title: title,
         content: content,
@@ -627,10 +629,7 @@ class FeedRepositoryImpl implements FeedRepository {
     try {
       final response = await _feedApi.getUserFollowStats();
 
-      if (response is Map<String, dynamic>) {
-        return UserFollowStats.fromJson(response);
-      }
-      return null;
+      return UserFollowStats.fromJson(response);
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取关注统计失败'));
     } catch (e) {
@@ -639,7 +638,7 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
-  Future<bool> checkFollowStatus({
+  Future<Map<String, dynamic>> checkFollowStatus({
     required int followUserId,
   }) async {
     try {
@@ -647,10 +646,7 @@ class FeedRepositoryImpl implements FeedRepository {
         followUserId: followUserId,
       );
 
-      if (response is Map<String, dynamic>) {
-        return response['is_following'] as bool? ?? false;
-      }
-      return false;
+      return response;
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '检查关注状态失败'));
     } catch (e) {
@@ -682,6 +678,33 @@ class FeedRepositoryImpl implements FeedRepository {
           .toList();
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取感兴趣人列表失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // ==================== 举报管理 ====================
+
+  @override
+  Future<Map<String, dynamic>> submitReport({
+    required int targetType,
+    required int targetId,
+    required int reportType,
+    String? content,
+    List<String>? images,
+  }) async {
+    try {
+      final response = await _feedApi.submitReport(
+        targetType: targetType,
+        targetId: targetId,
+        reportType: reportType,
+        content: content,
+        images: images,
+      );
+
+      return response;
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '提交举报失败'));
     } catch (e) {
       throw Exception(e.toString());
     }

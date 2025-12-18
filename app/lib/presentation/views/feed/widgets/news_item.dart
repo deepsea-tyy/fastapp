@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/feed_detail.dart';
+import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
 import 'package:fastapp/domain/entity/user/user_profile.dart';
 
 /// 新闻项组件

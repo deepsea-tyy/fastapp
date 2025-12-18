@@ -168,12 +168,14 @@ class FeedApi {
   }
 
   /// 创建帖子
+  /// [type] 帖子类型：1帖子 2文章
   /// [contentType] 内容类型：1纯文本 2图文 3视频 4链接
   /// [title] 标题（可选）
   /// [content] 内容
   /// [images] 图片URL列表
   /// [videos] 视频URL列表
   Future<Map<String, dynamic>> createPost({
+    int type = 1,
     int contentType = 1,
     String? title,
     required String content,
@@ -183,6 +185,7 @@ class FeedApi {
     final response = await _dioClient.dio.post(
       Endpoints.feedPostCreate,
       data: {
+        'type': type,
         'content_type': contentType,
         if (title != null) 'title': title,
         'content': content,
@@ -428,6 +431,34 @@ class FeedApi {
       Endpoints.feedUserFollowStatus,
       queryParameters: {
         'follow_user_id': followUserId,
+      },
+    );
+    return response.data;
+  }
+
+  // ==================== 举报管理 ====================
+
+  /// 提交举报
+  /// [targetType] 目标类型：1帖子 2文章 3评论
+  /// [targetId] 目标ID
+  /// [reportType] 举报类型：1垃圾广告 2色情低俗 3违法违规 4侮辱谩骂 5其他
+  /// [content] 举报说明（可选）
+  /// [images] 举报图片（可选）
+  Future<Map<String, dynamic>> submitReport({
+    required int targetType,
+    required int targetId,
+    required int reportType,
+    String? content,
+    List<String>? images,
+  }) async {
+    final response = await _dioClient.dio.post(
+      Endpoints.feedReportSubmit,
+      data: {
+        'target_type': targetType,
+        'target_id': targetId,
+        'report_type': reportType,
+        if (content != null && content.isNotEmpty) 'content': content,
+        if (images != null && images.isNotEmpty) 'images': images,
       },
     );
     return response.data;

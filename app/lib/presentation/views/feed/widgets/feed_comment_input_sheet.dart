@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:fastapp/presentation/widgets/image_source_picker.dart';
+import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
 
 /// Feed 评论输入底部弹框（通用组件）
 ///
@@ -44,7 +43,7 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isRepostChecked = false;
-  final List<String> _selectedImages = []; // 已选择的图片路径
+  List<String> _uploadedImages = [];
   String? _selectedLocation; // 已选择的位置
 
   @override
@@ -83,7 +82,7 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildInputField(),
-                if (_selectedImages.isNotEmpty || _selectedLocation != null) ...[
+                if (_uploadedImages.isNotEmpty || _selectedLocation != null) ...[
                   const SizedBox(height: 8),
                   _buildAttachments(),
                 ],
@@ -147,78 +146,24 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 已选择的图片
-        if (_selectedImages.isNotEmpty)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
+        if (_uploadedImages.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ImageUploadGrid(
+              maxCount: 9,
+              imageSize: 80,
               spacing: 8,
-              runSpacing: 8,
-              children: _selectedImages.map((imagePath) {
-                return _buildImageItem(imagePath);
-              }).toList(),
+              showCount: false,
+              initialImages: _uploadedImages,
+              onImagesChanged: (images) {
+                setState(() {
+                  _uploadedImages = images;
+                });
+              },
             ),
           ),
         // 已选择的位置
-        if (_selectedLocation != null) ...[
-          if (_selectedImages.isNotEmpty) const SizedBox(height: 8),
-          _buildLocationItem(),
-        ],
-      ],
-    );
-  }
-
-  /// 图片项
-  Widget _buildImageItem(String imagePath) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            File(imagePath),
-            width: 80,
-            height: 80,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.image,
-                  size: 32,
-                  color: Colors.grey.shade600,
-                ),
-              );
-            },
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedImages.remove(imagePath);
-              });
-            },
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
+        if (_selectedLocation != null) _buildLocationItem(),
       ],
     );
   }
@@ -274,7 +219,13 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
         }),
         const SizedBox(width: 16),
         _buildActionIcon(Icons.image_outlined, onTap: () {
-          _addTestImage();
+          // 触发图片上传
+          if (_uploadedImages.isEmpty) {
+            // 首次添加时，展开图片上传组件
+            setState(() {
+              _uploadedImages = [];
+            });
+          }
         }),
         const SizedBox(width: 16),
         _buildActionIcon(Icons.alternate_email, onTap: () {
@@ -363,15 +314,5 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
         color: Colors.black87,
       ),
     );
-  }
-
-  /// 选择图片（拍照或从相册）
-  Future<void> _addTestImage() async {
-    final imagePath = await ImageSourcePicker.pickImage(context);
-    if (imagePath != null) {
-      setState(() {
-        _selectedImages.add(imagePath);
-      });
-    }
   }
 }

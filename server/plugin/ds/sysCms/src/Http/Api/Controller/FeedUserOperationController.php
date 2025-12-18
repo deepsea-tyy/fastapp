@@ -344,10 +344,7 @@ class FeedUserOperationController extends AbstractController
     {
         $userId = $this->currentUser->id();
 
-        $isFollowing = $this->followService->isFollowing($userId, (int)$this->getRequest()->input('follow_user_id'));
-
-        return $this->success([
-            'is_following' => $isFollowing
-        ]);
+        $res = $this->followService->isFollowing($userId, (int)$this->getRequest()->input('follow_user_id'));
+        return $this->success($res);
     }
 }

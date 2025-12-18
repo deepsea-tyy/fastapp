@@ -11,6 +11,7 @@ import 'package:fastapp/utils/image_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:fastapp/presentation/views/common/image_picker_sheet.dart';
 import 'widgets.dart';
 import '../../common/date_picker_bottom_sheet.dart';
 
@@ -1154,26 +1155,7 @@ class _KycSubmitScreenState extends State<KycSubmitScreen> {
 
   Future<void> _pickImage(Function(String) onPicked) async {
     try {
-      final ImageSource? source = await showModalBottomSheet<ImageSource>(
-        context: context,
-        builder: (context) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('拍照'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('从相册选择'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      );
+      final ImageSource? source = await ImagePickerSheet.show(context);
 
       if (source == null) return;
 

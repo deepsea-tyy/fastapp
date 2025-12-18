@@ -69,6 +69,7 @@ abstract class FeedRepository {
 
   /// 创建帖子
   Future<Map<String, dynamic>> createPost({
+    int type = 1,
     int contentType = 1,
     String? title,
     required String content,
@@ -159,8 +160,8 @@ abstract class FeedRepository {
   /// 获取用户关注统计
   Future<UserFollowStats?> getUserFollowStats();
 
-  /// 检查是否关注某用户
-  Future<bool> checkFollowStatus({
+  /// 检查是否关注某用户（返回关注状态和用户资料）
+  Future<Map<String, dynamic>> checkFollowStatus({
     required int followUserId,
   });
 
@@ -168,5 +169,21 @@ abstract class FeedRepository {
   Future<List<Map<String, dynamic>>> getMayInterestedList({
     int page = 1,
     int pageSize = 20,
+  });
+
+  // ==================== 举报管理 ====================
+
+  /// 提交举报
+  /// [targetType] 目标类型：1帖子 2文章 3评论
+  /// [targetId] 目标ID
+  /// [reportType] 举报类型：1垃圾广告 2色情低俗 3违法违规 4侮辱谩骂 5其他
+  /// [content] 举报说明（可选）
+  /// [images] 举报图片（可选）
+  Future<Map<String, dynamic>> submitReport({
+    required int targetType,
+    required int targetId,
+    required int reportType,
+    String? content,
+    List<String>? images,
   });
 }

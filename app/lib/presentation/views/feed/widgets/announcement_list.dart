@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/announcement_tabs.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/announcement_item.dart';
+import 'package:fastapp/presentation/views/feed/widgets/announcement_tabs.dart';
+import 'package:fastapp/presentation/views/feed/widgets/announcement_item.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_article.dart';
 import 'package:fastapp/di/service_locator.dart';

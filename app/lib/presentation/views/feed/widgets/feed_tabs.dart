@@ -34,12 +34,12 @@ class _FeedTabsState extends State<FeedTabs> {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 9.0),
       child: Row(
         children: List.generate(
           _tabs.length,
           (index) => Padding(
-            padding: EdgeInsets.only(right: index < _tabs.length - 1 ? 16.0 : 0),
+            padding: EdgeInsets.only(right: index < _tabs.length - 1 ? 20.0 : 0),
             child: _buildTabItem(index),
           ),
         ),
@@ -70,18 +70,19 @@ class _FeedTabsState extends State<FeedTabs> {
               Text(
                 _tabs[index],
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   color: isSelected ? Colors.black87 : Colors.black54,
+                  height: 1.2,
                 ),
               ),
               if (hasNotification && !isSelected)
                 Positioned(
-                  top: 3,
-                  right: -6,
+                  top: 0,
+                  right: -8,
                   child: Container(
-                    width: 6,
-                    height: 6,
+                    width: 7,
+                    height: 7,
                     decoration: const BoxDecoration(
                       color: Colors.orange,
                       shape: BoxShape.circle,
@@ -90,7 +91,7 @@ class _FeedTabsState extends State<FeedTabs> {
                 ),
             ],
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 5),
           SizedBox(
             width: 28,
             height: 3,

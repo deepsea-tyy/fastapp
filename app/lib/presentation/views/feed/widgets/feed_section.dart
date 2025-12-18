@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/feed_tabs.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/feed_item.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/sources_bar.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/announcement_list.dart';
-import 'package:fastapp/presentation/views/home/widgets/feed/news_list.dart';
+import 'package:fastapp/presentation/views/feed/widgets/feed_tabs.dart';
+import 'package:fastapp/presentation/views/feed/widgets/feed_item.dart';
+import 'package:fastapp/presentation/views/feed/widgets/sources_bar.dart';
+import 'package:fastapp/presentation/views/feed/widgets/announcement_list.dart';
+import 'package:fastapp/presentation/views/feed/widgets/news_list.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
 import 'package:fastapp/di/service_locator.dart';
@@ -333,29 +333,6 @@ class _FeedSectionState extends State<FeedSection> {
           final username = post.profile?.displayNickname ?? post.username ?? '用户${post.userId}';
           final avatar = post.profile?.displayAvatar ?? post.avatar ?? '';
 
-          // 转换图片列表为 Widget（使用 formattedImages getter）
-          List<Widget>? mediaWidgets;
-          final formattedImages = post.formattedImages;
-          if (formattedImages.isNotEmpty) {
-            mediaWidgets = formattedImages.map((imageUrl) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }).toList();
-          }
-
           return FeedItem(
             postId: post.id,
             userId: post.userId ?? 0,
@@ -364,13 +341,14 @@ class _FeedSectionState extends State<FeedSection> {
             time: post.getFormattedTime(),
             title: post.title,
             content: post.content ?? '',
-            media: mediaWidgets,
+            mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
             isVerified: post.isVerified ?? false,
             commentCount: post.commentCount,
             likeCount: post.likeCount,
             repostCount: post.quoteCount ?? 0,  // 使用quoteCount作为repostCount
             shareCount: post.shareCount ?? 0,
             isLiked: post.isLiked ?? false,
+            type: post.type ?? 1, // 默认为帖子
             menuIcon: Icons.more_horiz,
           );
         },

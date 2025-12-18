@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->comment('用户帖子表（UGC）');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('发布用户ID');
+            $table->tinyInteger('type')->comment('帖子类型：1帖子 2文章')->unsigned()->default(1);
             $table->tinyInteger('content_type')->comment('内容类型：1纯文本 2图文 3视频 4链接')->unsigned()->default(1);
 
             // 内容字段
@@ -55,6 +56,7 @@ return new class extends Migration {
             $table->softDeletes()->comment('软删除');
 
             $table->index('user_id');
+            $table->index('type');
             $table->index('audit_status');
             $table->index(['is_top', 'is_hot']);
             $table->index(['quoted_type', 'quoted_id']);
@@ -211,6 +213,7 @@ return new class extends Migration {
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->tinyInteger('report_type')->comment('举报原因：1垃圾广告 2色情低俗 3违法违规 4侮辱谩骂 5其他')->unsigned();
             $table->text('content')->nullable()->comment('举报说明');
+            $table->json('images')->nullable()->comment('举报图片');
             $table->tinyInteger('handle_status')->comment('处理状态：0待处理 1已处理 2已忽略')->unsigned()->default(0);
             $table->timestamp('handled_at')->nullable()->comment('处理时间');
             $table->timestamps();

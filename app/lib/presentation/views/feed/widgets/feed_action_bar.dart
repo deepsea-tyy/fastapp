@@ -108,7 +108,7 @@ class FeedActionBar extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    size: 20,
+                    size: 24,
                     color: isActive ? Colors.blue : Colors.grey.shade600,
                   ),
                   const SizedBox(height: 4),
@@ -126,7 +126,7 @@ class FeedActionBar extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    size: 18,
+                    size: 20,
                     color: isActive ? Colors.blue : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 4),

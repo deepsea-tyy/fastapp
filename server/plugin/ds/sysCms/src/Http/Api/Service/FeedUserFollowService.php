@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Http\Api\Service;
 
+use App\Common\Tools;
 use App\Model\UserProfile;
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
 
@@ -51,12 +52,18 @@ class FeedUserFollowService
     /**
      * 检查是否已关注
      */
-    public function isFollowing(int $userId, int $followUserId): bool
+    public function isFollowing(int $userId, int $followUserId): array
     {
-        return FeedUserFollow::query()
+
+        $is_following = FeedUserFollow::query()
             ->where('user_id', $userId)
             ->where('follow_user_id', $followUserId)
             ->exists();
+        $profile = UserProfile::query()->where('user_id', $userId)->first(['user_id', 'nickname', 'avatar', 'signed']);
+        return [
+            'is_following' => $is_following,
+            'profile' => $profile,
+        ];
     }
 
     /**
@@ -141,7 +148,7 @@ class FeedUserFollowService
     }
 
     /**
-     * 获取关注用户的帖子（信息流）
+     * 获取关注用户的帖子和文章（信息流）
      */
     public function getFollowingUserPosts(int $userId, int $page = 1, int $pageSize = 20): array
     {
@@ -158,7 +165,7 @@ class FeedUserFollowService
         // 查询这些用户的帖子
         $offset = ($page - 1) * $pageSize;
 
-        $posts = \Plugin\Ds\SysCms\Model\FeedPost::query()
+        return \Plugin\Ds\SysCms\Model\FeedPost::query()
             ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('user_id', $followUserIds)
             ->where('status', 1)
@@ -166,21 +173,22 @@ class FeedUserFollowService
             ->orderBy('created_at', 'desc')
             ->offset($offset)
             ->limit($pageSize)
-            ->get();
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'type' => $post->type ?? 1,
+                    'id' => $post->id,
+                    'profile' => $post->profile,
+                    'user_id' => $post->user_id,
+                    'title' => $post->title ?? '',
+                    'content' => $post->content ?? '',
+                    'images' => $post->images ?? [],
+                    'like_count' => $post->like_count ?? 0,
+                    'comment_count' => $post->comment_count ?? 0,
+                    'created_at' => $post->created_at->toDateTimeString(),
+                ];
+            })->toArray();
 
-        return $posts->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'profile' => $post->profile,
-                'user_id' => $post->user_id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'images' => $post->images ?? [],
-                'like_count' => $post->like_count,
-                'comment_count' => $post->comment_count,
-                'created_at' => $post->created_at?->toDateTimeString(),
-            ];
-        })->toArray();
     }
 
     public function mayInterestedList(int $page, int $pageSize, int $userId): array

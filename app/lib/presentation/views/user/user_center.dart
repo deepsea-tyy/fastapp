@@ -12,6 +12,7 @@ import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/data/network/apis/attachment/attachment_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fastapp/utils/image_utils.dart';
+import 'package:fastapp/presentation/views/common/image_picker_sheet.dart';
 
 /// 用户中心页面
 class UserCenterScreen extends StatefulWidget {
@@ -473,26 +474,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
 
     try {
       // 显示底部选择框：拍照或从相册选择
-      final ImageSource? source = await showModalBottomSheet<ImageSource>(
-        context: context,
-        builder: (context) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('拍照'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('从相册选择'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      );
+      final ImageSource? source = await ImagePickerSheet.show(context);
 
       if (source == null) return;
 

@@ -38,7 +38,7 @@ class MainScreen extends StatelessWidget {
           ),
 
           // 悬浮按钮（使用 Positioned 固定在右下角）
-          Positioned(
+          /*Positioned(
             right: 16,
             bottom: 80, // 底部导航栏高度 + 间距
             child: Observer(
@@ -50,7 +50,7 @@ class MainScreen extends StatelessWidget {
                 ),
               ),
             ),
-          ),
+          ),*/
         ],
       ),
       bottomNavigationBar: const BottomNavBar(),

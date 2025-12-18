@@ -19,7 +19,13 @@ class FeedService
             if (!$userId) return;
             $t = date('Y-m-d H:i:s');
             $map = ['user_id' => $userId, 'feed_type' => $feed_type];
-            if (!FeedUserReadPosition::query()->where($map)->update(['last_read_at' => $t])) FeedUserReadPosition::query()->create($map);
+            // 用户hash表存储
+            if (!FeedUserReadPosition::query()->where($map)->update(['last_read_at' => $t])) {
+                try {
+                    FeedUserReadPosition::query()->create($map);
+                } catch (\Exception) {
+                }
+            }
         });
     }
 }

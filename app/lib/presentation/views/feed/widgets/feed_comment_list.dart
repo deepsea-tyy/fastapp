@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/entity/feed/feed_comment.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
-import 'package:fastapp/presentation/views/user/user_profile_page.dart';
+import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:get_it/get_it.dart';
 
 /// 信息流评论列表组件

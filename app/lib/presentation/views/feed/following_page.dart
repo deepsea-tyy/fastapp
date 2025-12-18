@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/views/feed/notification_settings_page.dart';
-import 'package:fastapp/presentation/views/user/user_profile_page.dart';
+import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:fastapp/core/services/message_service.dart';
 

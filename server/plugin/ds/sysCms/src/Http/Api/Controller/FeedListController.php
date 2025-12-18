@@ -41,7 +41,7 @@ class FeedListController extends AbstractController
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
-    public function getList(string $filter = 'latest'): Result
+    public function list(string $filter = 'latest'): Result
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
@@ -106,7 +106,7 @@ class FeedListController extends AbstractController
             $post = $posts->get($postId);
             if ($post) {
                 $list[] = [
-                    'type' => 'post',
+                    'type' => $post->type ?? 1,
                     'id' => $post->id,
                     'profile' => $post->profile,
                     'user_id' => $post->user_id,
@@ -148,12 +148,6 @@ class FeedListController extends AbstractController
 
         $userId = $this->currentUser->id();
         $posts = $this->followService->getFollowingUserPosts($userId, $page, $pageSize);
-
-        // 批量获取用户动作状态
-        foreach ($posts as &$post) {
-            $post['is_liked'] = $this->cacheService->getUserLikeStatus($userId, 1, $post['id']);
-            $post['is_collected'] = $this->cacheService->getUserCollectStatus($userId, 1, $post['id']);
-        }
         FeedService::readMessage($userId, 1);
         return $this->success(['list' => $posts]);
     }

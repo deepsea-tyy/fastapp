@@ -12,6 +12,7 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * @property int $id 主键
  * @property int $user_id 发布用户ID
+ * @property int $type 帖子类型：1帖子 2文章
  * @property int $content_type 内容类型：1纯文本 2图文 3视频 4链接
  * @property string $title 标题（可选）
  * @property string $content 内容
@@ -50,7 +51,7 @@ class FeedPost extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'user_id', 'content_type', 'title', 'content', 'images', 'videos', 'link_url', 'link_meta', 'quoted_type', 'quoted_id', 'audit_status', 'audited_at', 'is_top', 'is_hot', 'status', 'view_count', 'like_count', 'comment_count', 'share_count', 'collect_count', 'quote_count', 'ip', 'device_type', 'created_at', 'updated_at', 'deleted_at'];
+    protected array $fillable = ['id', 'user_id', 'type', 'content_type', 'title', 'content', 'images', 'videos', 'link_url', 'link_meta', 'quoted_type', 'quoted_id', 'audit_status', 'audited_at', 'is_top', 'is_hot', 'status', 'view_count', 'like_count', 'comment_count', 'share_count', 'collect_count', 'quote_count', 'ip', 'device_type', 'created_at', 'updated_at', 'deleted_at'];
 
     /**
      * The attributes that should be cast to native types.
@@ -58,6 +59,7 @@ class FeedPost extends Model
     protected array $casts = [
         'id' => 'integer',
         'user_id' => 'integer',
+        'type' => 'integer',
         'content_type' => 'integer',
         'quoted_type' => 'integer',
         'quoted_id' => 'integer',

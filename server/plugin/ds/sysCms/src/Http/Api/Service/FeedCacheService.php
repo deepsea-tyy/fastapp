@@ -134,7 +134,7 @@ class FeedCacheService
             'subtitle' => Tools::formatLang($article['subtitle'] ?? [], $userId),
             'brief' => Tools::formatLang($article['brief'] ?? [], $userId),
             'content' => Tools::formatLang($article['content'] ?? [], $userId),
-            'cover' => $article['cover'] ?? [],
+            'cover' => Tools::formatLang($article['cover'] ?? [], $userId),
             'author' => $article['author'] ?? '',
             'view_count' => $article['view_count'] ?? 0,
             'like_count' => $article['like_count'] ?? 0,
@@ -493,14 +493,13 @@ class FeedCacheService
 
     /**
      * 获取信息流列表（带缓存）
+     * 合并帖子和文章，按时间倒序排列
      */
     #[Cacheable(prefix: 'content:feed:list', value: '_#{filter}_#{page}', ttl: self::TTL_LIST)]
     public function getFeedList(string $filter, int $page = 1, int $pageSize = 20): array
     {
         $offset = ($page - 1) * $pageSize;
-
-        // 这里简化处理，实际应该根据filter参数查询不同的数据
-        $posts = FeedPost::query()
+        return FeedPost::query()
             ->with(['profile:user_id,nickname,avatar'])
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -508,22 +507,21 @@ class FeedCacheService
             ->orderByDesc('created_at')
             ->offset($offset)
             ->limit($pageSize)
-            ->get();
-
-        return $posts->map(function ($post) {
-            return [
-                'type' => 'post',
-                'id' => $post->id,
-                'profile' => $post->profile,
-                'user_id' => $post->user_id,
-                'title' => $post->title ?? '',
-                'content' => $post->content ?? '',
-                'images' => $post->images ?? [],
-                'like_count' => $post->like_count ?? 0,
-                'comment_count' => $post->comment_count ?? 0,
-                'created_at' => $post->created_at->toDateTimeString(),
-            ];
-        })->toArray();
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'type' => $post->type ?? 1,
+                    'id' => $post->id,
+                    'profile' => $post->profile,
+                    'user_id' => $post->user_id,
+                    'title' => $post->title ?? '',
+                    'content' => $post->content ?? '',
+                    'images' => $post->images ?? [],
+                    'like_count' => $post->like_count ?? 0,
+                    'comment_count' => $post->comment_count ?? 0,
+                    'created_at' => $post->created_at->toDateTimeString(),
+                ];
+            })->toArray();
     }
 
     /**

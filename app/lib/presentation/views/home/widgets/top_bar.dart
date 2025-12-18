@@ -6,23 +6,28 @@ import 'package:fastapp/presentation/store/app/user_store.dart';
 
 class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
+  final int unreadMessageCount; // 未读消息数
 
   const TopBar({
     super.key,
     this.onMenuPressed,
+    this.unreadMessageCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return AppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
         icon: Icon(
           Icons.person_outline,
-          color: Theme.of(context).colorScheme.onSurface,
+          color: colorScheme.onSurface,
         ),
         onPressed: () {
           _handleUserIconTap(context);
@@ -30,7 +35,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: _buildSearchBar(context),
       actions: [
-        _buildChatIcon(context),
+        _buildNotificationIcon(context),
         _buildHeadphonesIcon(context),
         const SizedBox(width: 8),
       ],
@@ -38,6 +43,9 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -50,7 +58,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       child: Container(
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: theme.inputDecorationTheme.fillColor,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -60,14 +68,14 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
             Icon(
               Icons.local_fire_department,
               size: 18,
-              color: Colors.deepOrange,
+              color: colorScheme.primary,
             ),
             const SizedBox(width: 8),
             // MBL 文字
             Text(
               'MBL',
               style: TextStyle(
-                color: Colors.grey[700],
+                color: theme.textTheme.bodySmall?.color,
                 fontSize: 14,
               ),
             ),
@@ -76,7 +84,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
             Icon(
               Icons.search,
               size: 18,
-              color: Colors.grey[600],
+              color: theme.hintColor,
             ),
             const SizedBox(width: 12),
           ],
@@ -85,7 +93,9 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildChatIcon(BuildContext context) {
+  Widget _buildNotificationIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: () {
         Navigator.of(context).pushNamed(Routes.message);
@@ -96,49 +106,52 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           IconButton(
             icon: Icon(
-              Icons.chat_bubble_outline,
-              color: Theme.of(context).colorScheme.onSurface,
+              Icons.notifications_outlined,
+              color: colorScheme.onSurface,
             ),
             onPressed: () {
               Navigator.of(context).pushNamed(Routes.message);
             },
           ),
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              constraints: const BoxConstraints(
-                minWidth: 14,
-                minHeight: 12,
-              ),
-              child: const Center(
-                child: Text(
-                  '58',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                    height: 1.0,
+          if (unreadMessageCount > 0)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: Center(
+                  child: Text(
+                    unreadMessageCount > 99 ? '99+' : '$unreadMessageCount',
+                    style: TextStyle(
+                      color: colorScheme.onError,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      height: 1.0,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildHeadphonesIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return IconButton(
       icon: Icon(
         Icons.headphones_outlined,
-        color: Theme.of(context).colorScheme.onSurface,
+        color: colorScheme.onSurface,
       ),
       onPressed: () {
         // TODO: 打开音频支持

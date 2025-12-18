@@ -34,6 +34,7 @@ dependencies:
   http: ^0.13.5
   flutter_html: ^3.0.0-beta.2
   html: ^0.15.4
+  html_editor_enhanced: ^2.5.1
   # I
   intl: ^0.20.2
   image_picker: ^1.0.7

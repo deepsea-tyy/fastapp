@@ -1,7 +1,8 @@
 {
   "id": "light",
   "name": "亮色",
-  "seedColor": "#2196F3",
+  "seedColor": "#FF9500",
+  "primaryColor": "#FF9500",
   "scaffoldBackground": "#FFFFFF",
   "button": {
     "background": "#424242",
@@ -17,7 +18,7 @@
   },
   "border": {
     "default": "#E0E0E0",
-    "focused": "#2196F3",
+    "focused": "#FF9500",
     "error": "#F44336"
   },
   "status": {

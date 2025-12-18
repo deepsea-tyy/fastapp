@@ -126,4 +126,7 @@ class Endpoints {
   static const String feedUserFollowersList = '/api/feed/user/followersList';
   static const String feedUserStats = '/api/feed/user/stats';
   static const String feedUserFollowStatus = '/api/feed/user/followStatus';
+
+  // 举报管理
+  static const String feedReportSubmit = '/api/feed/report/submit';
 }
