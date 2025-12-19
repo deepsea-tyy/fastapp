@@ -9,7 +9,7 @@ use Hyperf\DbConnection\Model\Model;
 
 /**
  * @property int $id 主键
- * @property int $target_type 目标类型：1帖子 2文章
+ * @property int $target_type 目标类型：1帖子 2文章 3公告 4新闻
  * @property int $target_id 目标ID
  * @property int $user_id 评论用户ID
  * @property int $parent_id 父评论ID（0为顶级评论）
@@ -20,8 +20,8 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $like_count 点赞数
  * @property int $reply_count 回复数
  * @property int $status 状态：1显示 0隐藏
- * @property \Carbon\Carbon $created_at 
- * @property \Carbon\Carbon $updated_at 
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  * @property string $deleted_at 软删除
  */
 class FeedComment extends Model

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
+import 'package:fastapp/domain/entity/feed/feed_user_profile.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_item.dart';
+import 'package:fastapp/presentation/views/feed/content_management_page.dart';
+import 'package:fastapp/presentation/views/feed/profile_settings_page.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/utils/image_utils.dart';
@@ -21,19 +25,19 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final FeedRepository _feedRepository = getIt<FeedRepository>();
+  final UserStore _userStore = getIt<UserStore>();
   final ScrollController _scrollController = ScrollController();
 
   List<FeedPost> _allPosts = []; // 所有内容（帖子+文章）
   List<FeedPost> _displayPosts = []; // 当前显示的内容
   bool _isInitialLoading = true; // 初次加载
   bool _isLoadingMore = false; // 加载更多
-  bool _isRefreshing = false; // 下拉刷新
   bool _hasMore = true; // 是否还有更多数据
   bool _isFollowing = false;
   bool _isCheckingFollow = true;
 
-  // 当前选中的内容类型：0-帖子，1-文章
-  int _selectedContentType = 0;
+  // 当前选中的内容类型：null-全部，1-帖子，2-文章
+  int? _selectedContentType;
 
   // 分页参数
   int _currentPage = 1;
@@ -51,23 +55,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   // 判断是否是本人
   bool get _isCurrentUser {
-    // TODO: 从用户store获取当前登录用户ID进行比较
-    // 临时方案：假设当前用户ID为1
-    return widget.userId == 1;
+    // 从 UserStore 获取当前登录用户ID进行比较
+    final currentUserId = _userStore.currentUser?.id;
+    return currentUserId != null && currentUserId == widget.userId;
   }
 
   @override
   void initState() {
     super.initState();
 
-    // 加载用户信息
-    if (!_isCurrentUser) {
-      // 非本人时检查关注状态并获取用户信息
-      _checkFollowStatus();
-    } else {
-      // 本人时也调用 checkFollowStatus 获取自己的信息
-      _checkFollowStatus();
-    }
+    // 加载用户资料（本人获取资料，他人获取资料+关注状态）
+    _checkFollowStatus();
+
+    // 加载用户统计数据
+    _loadUserStats();
 
     // 加载帖子列表
     _loadUserPosts();
@@ -92,35 +93,49 @@ class _UserProfilePageState extends State<UserProfilePage> {
   /// 检查关注状态并获取用户信息
   Future<void> _checkFollowStatus() async {
     try {
+      // 使用 checkFollowStatus 接口获取用户资料和关注状态
       final response = await _feedRepository.checkFollowStatus(
         followUserId: widget.userId,
       );
 
-      // 解析关注状态
-      final isFollowing = response['is_following'] as bool? ?? false;
+      // 解析返回的数据
+      final profile = FeedUserProfile.fromJson(response['profile']);
 
-      // 解析用户 profile 信息
-      if (response['profile'] != null && response['profile'] is Map<String, dynamic>) {
-        final profileData = response['profile'] as Map<String, dynamic>;
+      // is_following 和 profile 是两个独立的字段
+      final isFollowingValue = response['is_following'];
+      final isFollowing = isFollowingValue is int ? isFollowingValue == 1 : (isFollowingValue as bool);
 
+      setState(() {
+        _isFollowing = isFollowing;
+        _isCheckingFollow = false;
+
+        // 用户基本信息
+        _nickname = profile.nickname;
+        _avatar = profile.avatar ?? '';
+        _signed = profile.displaySigned;
+        _isVerified = profile.isVerified;
+      });
+    } catch (e) {
+      setState(() => _isCheckingFollow = false);
+      debugPrint('获取用户资料失败: $e');
+    }
+  }
+
+  /// 加载用户统计数据
+  Future<void> _loadUserStats() async {
+    try {
+      final stats = await _feedRepository.getUserFollowStats(userId: widget.userId);
+
+      if (stats != null) {
         setState(() {
-          _isFollowing = isFollowing;
-          _isCheckingFollow = false;
-
-          // 使用接口返回的用户信息
-          _nickname = profileData['nickname'] as String? ?? '用户${widget.userId}';
-          _avatar = profileData['avatar'] as String? ?? '';
-          _signed = profileData['signed'] as String? ?? 'Follow $_nickname to stay on top of industry trends & news';
-        });
-      } else {
-        setState(() {
-          _isFollowing = isFollowing;
-          _isCheckingFollow = false;
+          _followingCount = stats.followingCount;
+          _followersCount = stats.followersCount;
+          _likeCount = stats.totalLikes;
+          _shareCount = stats.totalShares;
         });
       }
     } catch (e) {
-      setState(() => _isCheckingFollow = false);
-      debugPrint('检查关注状态失败: $e');
+      debugPrint('获取用户统计失败: $e');
     }
   }
 
@@ -128,7 +143,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Future<void> _loadUserPosts({bool isRefresh = false}) async {
     if (isRefresh) {
       setState(() {
-        _isRefreshing = true;
         _currentPage = 1;
         _hasMore = true;
       });
@@ -139,6 +153,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     try {
       final posts = await _feedRepository.getUserPostList(
         userId: widget.userId,
+        type: _selectedContentType,
         page: _currentPage,
         pageSize: _pageSize,
       );
@@ -156,18 +171,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _nickname = firstPost.profile?.nickname ?? firstPost.username ?? '用户${widget.userId}';
           _avatar = firstPost.profile?.avatar ?? firstPost.avatar ?? '';
           _isVerified = firstPost.isVerified ?? false;
-          if (_signed.isEmpty) {
-            _signed = 'Follow $_nickname to stay on top of industry trends & news';
-          }
-        }
-
-        // 统计数据：从所有帖子聚合计算
-        if (_allPosts.isNotEmpty) {
-          _likeCount = _allPosts.fold<int>(0, (sum, post) => sum + (post.likeCount ?? 0));
-          _shareCount = _allPosts.fold<int>(0, (sum, post) => sum + (post.shareCount ?? 0));
-          // TODO: 关注和粉丝数需要从专门的接口获取
-          _followingCount = 9;
-          _followersCount = 2100000;
+          // 签名为空时不设置默认值
         }
 
         // 根据当前选中的类型过滤内容
@@ -175,12 +179,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
         _hasMore = posts.length >= _pageSize;
         _isInitialLoading = false;
-        _isRefreshing = false;
       });
     } catch (e) {
       setState(() {
         _isInitialLoading = false;
-        _isRefreshing = false;
       });
       if (mounted) {
         MessageService.error('加载失败: ${e.toString()}');
@@ -199,6 +201,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       _currentPage++;
       final posts = await _feedRepository.getUserPostList(
         userId: widget.userId,
+        type: _selectedContentType,
         page: _currentPage,
         pageSize: _pageSize,
       );
@@ -223,19 +226,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     await _loadUserPosts(isRefresh: true);
   }
 
-  /// 根据选中的类型过滤帖子
+  /// 更新显示列表（不再需要过滤，后端已根据 type 筛选）
   void _filterPosts() {
-    if (_selectedContentType == 0) {
-      // 显示帖子：type 为 'post' 或者没有 type 字段的数据
-      _displayPosts = _allPosts.where((post) {
-        return post.type == null || post.type == 'post';
-      }).toList();
-    } else {
-      // 显示文章：type 为 'article'
-      _displayPosts = _allPosts.where((post) {
-        return post.type == 'article';
-      }).toList();
-    }
+    _displayPosts = _allPosts;
   }
 
   /// 切换关注状态
@@ -263,60 +256,85 @@ class _UserProfilePageState extends State<UserProfilePage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          _nickname.isNotEmpty ? _nickname : '个人主页',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
         centerTitle: true,
         actions: [
-          // 本人时显示菜单按钮，非本人时显示菜单和关注按钮
+          // 本人时显示设置按钮和分享图标
           if (_isCurrentUser) ...[
-            IconButton(
-              icon: const Icon(Icons.more_horiz, color: Colors.black),
+            TextButton(
               onPressed: () {
-                // TODO: 显示菜单选项
-                MessageService.warning('菜单');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ContentManagementPage(),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.grey.shade200,
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                minimumSize: const Size(80, 36),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: const Text(
+                '管理',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.black),
+              onPressed: () {
+                // TODO: 分享功能
+                MessageService.warning('分享');
               },
             ),
           ] else ...[
-            IconButton(
-              icon: const Icon(Icons.more_horiz, color: Colors.black),
-              onPressed: () {
-                // TODO: 显示菜单选项
-                MessageService.warning('菜单');
-              },
-            ),
-            if (!_isCheckingFollow)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: TextButton(
-                  onPressed: _toggleFollow,
-                  style: TextButton.styleFrom(
-                    backgroundColor: _isFollowing
-                        ? Colors.grey.shade200
-                        : Colors.orange.shade600,
-                    foregroundColor: _isFollowing
-                        ? Colors.black87
-                        : Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    minimumSize: const Size(80, 36),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    _isFollowing ? '已关注' : '关注',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            // 非本人时显示关注按钮和分享图标
+            TextButton(
+              onPressed: _isCheckingFollow ? null : _toggleFollow,
+              style: TextButton.styleFrom(
+                backgroundColor: _isFollowing
+                    ? Colors.grey.shade200
+                    : Colors.orange.shade600,
+                foregroundColor: _isFollowing
+                    ? Colors.black87
+                    : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                minimumSize: const Size(80, 36),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
+              child: _isCheckingFollow
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _isFollowing ? Colors.black87 : Colors.white,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      _isFollowing ? '已关注' : '关注',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.black),
+              onPressed: () {
+                // TODO: 分享功能
+                MessageService.warning('分享');
+              },
+            ),
           ],
         ],
       ),
@@ -365,42 +383,52 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   children: [
                     // 昵称和认证标志
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Flexible(
-                          child: Text(
-                            _nickname.isNotEmpty ? _nickname : '用户${widget.userId}',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _nickname.isNotEmpty ? _nickname : '用户${widget.userId}',
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              // 认证标志
+                              if (_isVerified) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade800,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    size: 14,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        // 认证标志
-                        if (_isVerified) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade800,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 14,
-                              color: Colors.amber,
-                            ),
-                          ),
-                        ],
-                        // 本人时显示编辑按钮
+                        // 本人时显示设置按钮
                         if (_isCurrentUser) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           InkWell(
                             onTap: () {
-                              // TODO: 跳转到编辑个人资料页面
-                              MessageService.warning('编辑个人资料');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const ProfileSettingsPage(),
+                                ),
+                              );
                             },
                             child: Container(
                               padding: const EdgeInsets.all(4),
@@ -409,8 +437,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Icon(
-                                Icons.edit,
-                                size: 16,
+                                Icons.settings_outlined,
+                                size: 18,
                                 color: Colors.grey.shade700,
                               ),
                             ),
@@ -420,19 +448,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
 
                     // 个性签名
-                    if (_signed.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _signed,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 8),
+                    Text(
+                      _signed.isNotEmpty ? _signed : '什么也没有..',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        height: 1.4,
                       ),
-                    ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -555,9 +581,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
           // 帖子和文章切换按钮
           Row(
             children: [
-              _buildContentTypeButton('帖子', 0),
+              _buildContentTypeButton('帖子', 1),
               const SizedBox(width: 8),
-              _buildContentTypeButton('文章', 1),
+              _buildContentTypeButton('文章', 2),
             ],
           ),
         ],
@@ -566,14 +592,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   /// 内容类型切换按钮
-  Widget _buildContentTypeButton(String label, int type) {
+  Widget _buildContentTypeButton(String label, int? type) {
     final isSelected = _selectedContentType == type;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedContentType = type;
-          _filterPosts(); // 切换类型时重新过滤
-        });
+        if (_selectedContentType == type) {
+          // 如果点击的是当前已选中的，则取消选择
+          setState(() {
+            _selectedContentType = null;
+          });
+        } else {
+          // 否则选中新类型
+          setState(() {
+            _selectedContentType = type;
+          });
+        }
+        // 重新加载第一页数据
+        _currentPage = 1;
+        _loadUserPosts(isRefresh: true);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -602,6 +638,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     // 没有数据时显示空状态
     if (_displayPosts.isEmpty) {
+      String emptyText = '暂无内容';
+      if (_selectedContentType == 1) {
+        emptyText = '暂无帖子';
+      } else if (_selectedContentType == 2) {
+        emptyText = '暂无文章';
+      }
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -609,7 +652,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             Icon(Icons.article_outlined, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              _selectedContentType == 0 ? '暂无帖子' : '暂无文章',
+              emptyText,
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
@@ -651,40 +694,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   /// 帖子项 - 使用 FeedItem 组件
   Widget _buildPostItem(FeedPost post) {
-    // 优先使用 profile 数据，否则使用平铺字段，最后使用页面缓存的数据
-    final username = post.profile?.displayNickname ??
-                     post.username ??
-                     (_nickname.isNotEmpty ? _nickname : '用户${widget.userId}');
-
-    // 头像处理：优先使用 profile 的 displayAvatar（已格式化），否则格式化其他来源
-    String avatar;
-    if (post.profile != null && post.profile!.hasAvatar) {
-      avatar = post.profile!.displayAvatar;
-    } else if (post.avatar != null && post.avatar!.isNotEmpty) {
-      avatar = ImageUtils.formatSingleImagePath(post.avatar);
-    } else if (_avatar.isNotEmpty) {
-      avatar = ImageUtils.formatSingleImagePath(_avatar);
-    } else {
-      avatar = '';
-    }
-
     return FeedItem(
       postId: post.id,
-      userId: post.userId ?? widget.userId, // 使用 post.userId，如果为空则使用页面 userId
-      username: username,
-      avatarAsset: avatar,
+      profile: post.profile!,
       time: post.getFormattedTime(),
       title: post.title,
       content: post.content ?? '',
       mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
-      isVerified: post.isVerified ?? false,
       commentCount: post.commentCount,
       likeCount: post.likeCount,
       repostCount: post.quoteCount ?? 0,
       shareCount: post.shareCount ?? 0,
       isLiked: post.isLiked ?? false,
-      type: post.type ?? 1, // 默认为帖子
+      type: post.type ?? 1,
       menuIcon: Icons.more_horiz,
+      onRemove: () {
+        // 个人主页删除回调：从列表中移除该帖子
+        setState(() {
+          _displayPosts.removeWhere((p) => p.id == post.id);
+        });
+      },
     );
   }
 }

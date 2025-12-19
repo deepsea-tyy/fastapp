@@ -109,7 +109,9 @@ class Endpoints {
   static const String feedPostDetail = '/api/feed/post/detail';
   static const String feedPostList = '/api/feed/post/list';
   static const String feedPostCreate = '/api/feed/post/create';
+  static const String feedPostUpdate = '/api/feed/post/update';
   static const String feedPostDelete = '/api/feed/post/delete';
+  static const String feedPostView = '/api/feed/post/view';
 
   // 评论管理
   static const String feedCommentList = '/api/feed/comment/list';
@@ -120,12 +122,14 @@ class Endpoints {
   // 用户操作
   static const String feedUserCollectToggle = '/api/feed/user/collectToggle';
   static const String feedUserCollectList = '/api/feed/user/collectList';
+  static const String feedUserCollectStatus = '/api/feed/user/collectStatus';
   static const String feedUserLikeToggle = '/api/feed/user/likeToggle';
   static const String feedUserFollowToggle = '/api/feed/user/followToggle';
   static const String feedUserFollowingList = '/api/feed/user/followingList';
   static const String feedUserFollowersList = '/api/feed/user/followersList';
   static const String feedUserStats = '/api/feed/user/stats';
   static const String feedUserFollowStatus = '/api/feed/user/followStatus';
+  static const String feedQualityFeedback = '/api/feed/user/qualityFeedback';
 
   // 举报管理
   static const String feedReportSubmit = '/api/feed/report/submit';

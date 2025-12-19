@@ -9,7 +9,7 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * @property int $id 主键
  * @property int $user_id 分享用户ID
- * @property int $target_type 目标类型：1帖子 2文章
+ * @property int $target_type 目标类型：1帖子 2文章 3公告 4新闻
  * @property int $target_id 目标ID
  * @property int $share_type 分享类型：1复制链接 2分享平台 3站内引用
  * @property string $platform 分享平台

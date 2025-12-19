@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:fastapp/domain/entity/user/user_profile.dart';
 import 'package:fastapp/utils/image_utils.dart';
+import 'package:fastapp/utils/json_converters.dart';
 
 part 'feed_post.g.dart';
 
@@ -94,11 +95,11 @@ class FeedPost {
   final int? quoteCount;
 
   /// 是否已点赞（登录后附加）
-  @JsonKey(name: 'is_liked')
+  @JsonKey(name: 'is_liked', fromJson: intToBoolNullable)
   final bool? isLiked;
 
   /// 是否已收藏（登录后附加）
-  @JsonKey(name: 'is_collected')
+  @JsonKey(name: 'is_collected', fromJson: intToBoolNullable)
   final bool? isCollected;
 
   /// 创建时间
@@ -107,6 +108,9 @@ class FeedPost {
 
   /// 帖子类型：1帖子 2文章
   final int? type;
+
+  /// 帖子状态：0草稿 1已发布 2已删除
+  final int? status;
 
   FeedPost({
     required this.id,
@@ -136,6 +140,7 @@ class FeedPost {
     this.isCollected,
     this.createdAt,
     this.type,
+    this.status,
   });
 
   factory FeedPost.fromJson(Map<String, dynamic> json) =>
@@ -172,6 +177,7 @@ class FeedPost {
     bool? isCollected,
     String? createdAt,
     int? type,
+    int? status,
   }) {
     return FeedPost(
       id: id ?? this.id,
@@ -201,6 +207,7 @@ class FeedPost {
       isCollected: isCollected ?? this.isCollected,
       createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
+      status: status ?? this.status,
     );
   }
 

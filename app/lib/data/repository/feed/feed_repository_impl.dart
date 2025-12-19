@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../domain/repository/feed/feed_repository.dart';
 import '../../../domain/entity/feed/feed_post.dart';
 import '../../../domain/entity/feed/feed_comment.dart';
 import '../../../domain/entity/feed/feed_operation_result.dart';
 import '../../../domain/entity/feed/feed_article.dart';
+import '../../../domain/entity/feed/feed_user_profile.dart';
 import '../../../core/utils/error_handler.dart';
 import '../../network/apis/feed/feed_api.dart';
 
@@ -250,12 +252,16 @@ class FeedRepositoryImpl implements FeedRepository {
   @override
   Future<List<FeedPost>> getUserPostList({
     required int userId,
+    int? type,
+    int? status,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
       final response = await _feedApi.getUserPostList(
         userId: userId,
+        type: type,
+        status: status,
         page: page,
         pageSize: pageSize,
       );
@@ -280,7 +286,7 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> createPost({
+  Future<FeedPost> createPost({
     int type = 1,
     int contentType = 1,
     String? title,
@@ -298,9 +304,30 @@ class FeedRepositoryImpl implements FeedRepository {
         videos: videos,
       );
 
-      return response;
+      if (response is Map<String, dynamic>) {
+        return FeedPost.fromJson(response);
+      }
+      throw Exception('发布帖子失败：返回数据格式错误');
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '发布帖子失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updatePost({
+    required int id,
+    int? status,
+  }) async {
+    try {
+      final response = await _feedApi.updatePost(
+        id: id,
+        status: status,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '更新帖子失败'));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -317,6 +344,21 @@ class FeedRepositoryImpl implements FeedRepository {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '删除帖子失败'));
     } catch (e) {
       throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<void> incrementPostView({
+    required int id,
+    int targetType = 1,
+  }) async {
+    try {
+      await _feedApi.incrementPostView(id: id, targetType: targetType);
+    } on DioException catch (e) {
+      // 浏览数更新失败不影响用户体验，只记录日志
+      debugPrint('增加浏览数失败: ${ErrorHandler.getErrorMessage(e)}');
+    } catch (e) {
+      debugPrint('增加浏览数失败: $e');
     }
   }
 
@@ -625,9 +667,9 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
-  Future<UserFollowStats?> getUserFollowStats() async {
+  Future<UserFollowStats?> getUserFollowStats({int? userId}) async {
     try {
-      final response = await _feedApi.getUserFollowStats();
+      final response = await _feedApi.getUserFollowStats(userId: userId);
 
       return UserFollowStats.fromJson(response);
     } on DioException catch (e) {

@@ -171,20 +171,32 @@ class _FeedReportPageState extends State<FeedReportPage> {
       maxLength: 500,
       decoration: InputDecoration(
         hintText: '请详细描述问题...',
-        hintStyle: TextStyle(color: Colors.grey.shade400),
+        hintStyle: TextStyle(
+          fontSize: 14,
+          color: Colors.grey.shade600,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+      ),
+      style: const TextStyle(
+        fontSize: 14,
+        color: Colors.black87,
       ),
     );
   }

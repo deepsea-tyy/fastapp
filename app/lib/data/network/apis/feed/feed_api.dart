@@ -149,10 +149,14 @@ class FeedApi {
 
   /// 获取用户发布的帖子列表
   /// [userId] 用户ID
+  /// [type] 内容类型：1帖子 2文章，不传则返回全部
+  /// [status] 状态：0草稿 1已发布 2已下架，不传则返回全部
   /// [page] 页码
   /// [pageSize] 每页数量
   Future<dynamic> getUserPostList({
     required int userId,
+    int? type,
+    int? status,
     int page = 1,
     int pageSize = 20,
   }) async {
@@ -160,6 +164,8 @@ class FeedApi {
       Endpoints.feedPostList,
       queryParameters: {
         'user_id': userId,
+        if (type != null) 'type': type,
+        if (status != null) 'status': status,
         'page': page,
         'page_size': pageSize,
       },
@@ -196,6 +202,23 @@ class FeedApi {
     return response.data;
   }
 
+  /// 更新帖子
+  /// [id] 帖子ID
+  /// [status] 状态：0草稿 1已发布 2已下架
+  Future<Map<String, dynamic>> updatePost({
+    required int id,
+    int? status,
+  }) async {
+    final response = await _dioClient.dio.post(
+      Endpoints.feedPostUpdate,
+      data: {
+        'id': id,
+        if (status != null) 'status': status,
+      },
+    );
+    return response.data;
+  }
+
   /// 删除帖子
   /// [id] 帖子ID
   Future<Map<String, dynamic>> deletePost({
@@ -205,6 +228,23 @@ class FeedApi {
       Endpoints.feedPostDelete,
       queryParameters: {
         'id': id,
+      },
+    );
+    return response.data;
+  }
+
+  /// 增加帖子浏览数
+  /// [id] 帖子ID
+  /// [targetType] 目标类型：1帖子 2文章
+  Future<Map<String, dynamic>> incrementPostView({
+    required int id,
+    int targetType = 1,
+  }) async {
+    final response = await _dioClient.dio.post(
+      Endpoints.feedPostView,
+      data: {
+        'id': id,
+        'target_type': targetType,
       },
     );
     return response.data;
@@ -417,8 +457,14 @@ class FeedApi {
   }
 
   /// 获取用户关注统计
-  Future<Map<String, dynamic>> getUserFollowStats() async {
-    final response = await _dioClient.dio.get(Endpoints.feedUserStats);
+  /// [userId] 用户ID（可选，不传则获取当前登录用户）
+  Future<Map<String, dynamic>> getUserFollowStats({int? userId}) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedUserStats,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
     return response.data;
   }
 

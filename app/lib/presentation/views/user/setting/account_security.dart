@@ -59,10 +59,10 @@ class AccountSecurityScreen extends StatelessWidget {
         final totalCount = 4;
         final securityLevel = enabledCount >= 2 ? '良好' : enabledCount == 1 ? '一般' : '较弱';
         final securityColor = enabledCount >= 2
-            ? Colors.green
+            ? Colors.grey.shade700
             : enabledCount == 1
-                ? Colors.orange
-                : Colors.red;
+                ? Colors.grey.shade600
+                : Colors.grey.shade500;
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -125,7 +125,7 @@ class AccountSecurityScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: securityColor.withOpacity(0.15),
+                            color: securityColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -247,31 +247,17 @@ class AccountSecurityScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
-            // 图标
+            // 图标 - 统一灰色样式
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isEnabled
-                      ? [
-                          Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                          Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        ]
-                      : [
-                          Theme.of(context).colorScheme.surfaceVariant,
-                          Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: isEnabled
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: Colors.grey.shade700,
                 size: 24,
               ),
             ),
@@ -297,7 +283,7 @@ class AccountSecurityScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.amber[100],
+                            color: Colors.grey.shade200,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -305,7 +291,7 @@ class AccountSecurityScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: Colors.amber[800],
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ),
@@ -328,7 +314,7 @@ class AccountSecurityScreen extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // 状态标识
+            // 状态标识 - 统一样式
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -336,16 +322,16 @@ class AccountSecurityScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
+                      color: Colors.grey.shade100,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.green[200]!,
+                        color: Colors.grey.shade300,
                         width: 1.5,
                       ),
                     ),
                     child: Icon(
                       Icons.check,
-                      color: Colors.green[700],
+                      color: Colors.grey.shade700,
                       size: 16,
                     ),
                   )
@@ -353,14 +339,14 @@ class AccountSecurityScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
+                      color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '未设置',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red[700],
+                        color: Colors.grey.shade700,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -449,17 +435,17 @@ class AccountSecurityScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Row(
           children: [
-            // 图标
+            // 图标 - 统一灰色样式
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: iconColor,
+                color: Colors.grey.shade700,
                 size: 24,
               ),
             ),

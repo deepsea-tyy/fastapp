@@ -83,8 +83,6 @@ class FeedPost extends Model
 
     public function profile(): HasOne
     {
-        return $this->hasOne(UserProfile::class, 'user_id', 'user_id')->withDefault(function () {
-            return ['nickname' => 'xxx', 'avatar' => '/uploads/2025-12-14/ca1b5690-db12-4a1a-8e4f-82111da7231f.jpg'];
-        });
+        return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
     }
 }

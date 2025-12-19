@@ -13,6 +13,7 @@ import 'package:fastapp/data/network/apis/attachment/attachment_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:fastapp/presentation/views/common/image_picker_sheet.dart';
+import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 
 /// 用户中心页面
 class UserCenterScreen extends StatefulWidget {
@@ -117,7 +118,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
             child: const Center(child: CircularProgressIndicator()),
           );
         }
-        
+
         final theme = Theme.of(context);
         final displayName = _getDisplayName(user);
         final userNo = user.no?.toString() ?? user.id.toString();
@@ -148,14 +149,6 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: _iconSize),
-                    onPressed: () {
-                      _showEditNicknameDialog(context, userStore, user);
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -193,9 +186,6 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
 
   /// 获取显示名称
   String _getDisplayName(User user) {
-    if (user.profile?.nickname?.isNotEmpty == true) {
-      return user.profile!.nickname!;
-    }
     if (user.username?.isNotEmpty == true) {
       return user.username!;
     }
@@ -301,6 +291,13 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
           children: [
             _buildFeatureItem(
               context,
+              icon: Icons.person_outline,
+              title: '我的主页',
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _navigateToMyProfile(context, userStore),
+            ),
+            _buildFeatureItem(
+              context,
               icon: Icons.diamond,
               title: 'VIP特权',
               trailing: _isLoadingVip
@@ -346,6 +343,18 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
     if (context.mounted) {
       await userStore.getUserInfo();
     }
+  }
+
+  /// 导航到我的主页
+  void _navigateToMyProfile(BuildContext context, UserStore userStore) {
+    final user = userStore.currentUser;
+    if (user == null) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => UserProfilePage(userId: user.id),
+      ),
+    );
   }
 
   /// 构建功能项
@@ -423,49 +432,6 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
         }
       },
     );
-  }
-
-  /// 显示编辑昵称对话框
-  Future<void> _showEditNicknameDialog(BuildContext context, UserStore userStore, User user) async {
-    final result = await MessageService.inputDialog(
-      title: '编辑昵称',
-      fields: [
-        InputField(
-          label: '昵称',
-          hintText: '请输入昵称',
-          initialValue: user.profile?.nickname ?? '',
-          maxLength: 60,
-          autofocus: true,
-          validator: (value) {
-            if (value.isEmpty) {
-              MessageService.snackBar('昵称不能为空');
-              return false;
-            }
-            if (value.contains(' ')) {
-              MessageService.snackBar('昵称不能包含空格');
-              return false;
-            }
-            return true;
-          },
-        ),
-      ],
-    );
-
-    if (result != null && result['昵称'] != null) {
-      final nickname = result['昵称']!.trim();
-      await _updateNickname(context, userStore, nickname);
-    }
-  }
-
-  /// 更新昵称
-  Future<void> _updateNickname(BuildContext context, UserStore userStore, String nickname) async {
-    try {
-      await userStore.updateNickname(nickname);
-    } catch (e) {
-      if (context.mounted) {
-        MessageService.snackBar('更新失败: ${e.toString()}');
-      }
-    }
   }
 
   /// 显示编辑头像对话框

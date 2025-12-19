@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:get_it/get_it.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/domain/entity/user/user_profile.dart';
 import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/presentation/views/common/image_preview_page.dart';
 import 'package:fastapp/presentation/views/common/safe_network_image.dart';
@@ -13,8 +14,7 @@ import 'user_avatar.dart';
 
 class FeedItem extends StatefulWidget {
   final int postId;
-  final int userId;
-  final String username;
+  final UserProfile profile;
   final String time;
   final String content;
   final String? title;
@@ -24,18 +24,16 @@ class FeedItem extends StatefulWidget {
   final int likeCount;
   final int repostCount;
   final int shareCount;
-  final String avatarAsset;
-  final bool isVerified;
   final bool showMenu;
   final IconData? menuIcon;
   final bool isLiked;
   final int type; // 帖子类型：1帖子 2文章
+  final VoidCallback? onRemove; // 删除回调
 
   const FeedItem({
     super.key,
     required this.postId,
-    required this.userId,
-    required this.username,
+    required this.profile,
     required this.time,
     required this.content,
     this.title,
@@ -45,12 +43,11 @@ class FeedItem extends StatefulWidget {
     this.likeCount = 0,
     this.repostCount = 0,
     this.shareCount = 0,
-    this.avatarAsset = '',
-    this.isVerified = false,
     this.showMenu = true,
     this.menuIcon,
     this.isLiked = false,
     this.type = 1, // 默认为帖子
+    this.onRemove,
   });
 
   @override
@@ -92,13 +89,13 @@ class _FeedItemState extends State<FeedItem> {
     );
   }
 
-  void _navigateToDetail(BuildContext context, {bool scrollToComments = false}) {
-    Navigator.of(context).push(
+  void _navigateToDetail(BuildContext context, {bool scrollToComments = false}) async {
+    final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
           postId: widget.postId,
-          userId: widget.userId,
-          username: widget.username,
+          userId: widget.profile.userId ?? 0,
+          username: widget.profile.displayNickname,
           time: widget.time,
           content: widget.content,
           title: widget.title,
@@ -108,22 +105,30 @@ class _FeedItemState extends State<FeedItem> {
           likeCount: _likeCount,
           repostCount: widget.repostCount,
           shareCount: widget.shareCount,
-          avatarAsset: widget.avatarAsset,
-          isVerified: widget.isVerified,
+          avatarAsset: widget.profile.displayAvatar,
+          isVerified: false, // TODO: 需要在 UserProfile 中添加认证标识
           viewCount: 15400,
           type: widget.type,
           scrollToComments: scrollToComments,
+          isLiked: _isLiked,
         ),
       ),
     );
+
+    // 如果详情页返回 true，表示用户点击了不感兴趣，需要从列表移除
+    if (result == true && widget.onRemove != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onRemove?.call();
+      });
+    }
   }
 
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
         UserAvatar(
-          avatarAsset: widget.avatarAsset,
-          isVerified: widget.isVerified,
+          avatarAsset: widget.profile.displayAvatar,
+          isVerified: false, // TODO: 需要在 UserProfile 中添加认证标识
           onTap: () => _navigateToUserProfile(context),
         ),
         const SizedBox(width: 12),
@@ -134,7 +139,7 @@ class _FeedItemState extends State<FeedItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.username,
+                  widget.profile.displayNickname,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -168,7 +173,7 @@ class _FeedItemState extends State<FeedItem> {
   void _navigateToUserProfile(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => UserProfilePage(userId: widget.userId),
+        builder: (context) => UserProfilePage(userId: widget.profile.userId ?? 0),
       ),
     );
   }
@@ -236,8 +241,20 @@ class _FeedItemState extends State<FeedItem> {
   Widget _buildMedia(BuildContext context) {
     final mediaUrls = widget.mediaUrls!;
 
+    // 整个图片区域可点击跳转详情
+    return GestureDetector(
+      onTap: () => _navigateToDetail(context),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: double.infinity,
+        child: _buildMediaContent(context, mediaUrls),
+      ),
+    );
+  }
+
+  Widget _buildMediaContent(BuildContext context, List<String> mediaUrls) {
     if (mediaUrls.length == 1) {
-      // 单张图片：60x60 正方形
+      // 单张图片：60x60 正方形，左对齐
       return Align(
         alignment: Alignment.centerLeft,
         child: GestureDetector(
@@ -316,7 +333,7 @@ class _FeedItemState extends State<FeedItem> {
 
     try {
       final result = await _feedRepository.toggleLike(
-        targetType: 1,
+        targetType: widget.type, // 使用 widget.type：1帖子 2文章
         targetId: widget.postId,
       );
       if (mounted) {
@@ -337,17 +354,38 @@ class _FeedItemState extends State<FeedItem> {
       context,
       placeholder: '评论并转发...',
       showRepostOption: true,
-      onSend: () {},
+      onSend: (content, images) {
+        // TODO: 实现转发功能
+      },
     );
   }
 
-  void _showMenu(BuildContext context) {
-    FeedMenuSheet.show(
+  void _showMenu(BuildContext context) async {
+    final result = await FeedMenuSheet.show(
       context,
-      username: widget.username,
-      topic: null, // TODO: 从帖子内容中提取话题
+      username: widget.profile.displayNickname,
+      topic: null,
       targetId: widget.postId,
-      targetType: widget.type, // 使用 type 字段：1帖子 2文章
+      targetType: widget.type,
+      userId: widget.profile.userId,
     );
+
+    // 处理不感兴趣操作：从列表中移除
+    if (result != null && widget.onRemove != null) {
+      final shouldRemove = [
+        'not_interested_post',
+        'not_interested_user',
+        'not_interested_topic',
+        'low_quality_1',
+        'low_quality_2',
+      ].contains(result);
+
+      if (shouldRemove) {
+        // 延迟一帧执行，避免在 build 期间调用 setState
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onRemove?.call();
+        });
+      }
+    }
   }
 }

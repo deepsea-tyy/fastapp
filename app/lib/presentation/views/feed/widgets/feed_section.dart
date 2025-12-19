@@ -6,9 +6,10 @@ import 'package:fastapp/presentation/views/feed/widgets/announcement_list.dart';
 import 'package:fastapp/presentation/views/feed/widgets/news_list.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
+import 'package:fastapp/core/services/blocked_users_service.dart';
+import 'package:fastapp/core/services/not_interested_service.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/core/widgets/common_empty_state.dart';
-import 'package:fastapp/utils/image_utils.dart';
 
 /// 信息流区域组件
 ///
@@ -22,6 +23,8 @@ class FeedSection extends StatefulWidget {
 
 class _FeedSectionState extends State<FeedSection> {
   final FeedRepository _feedRepository = getIt<FeedRepository>();
+  final BlockedUsersService _blockedUsersService = getIt<BlockedUsersService>();
+  final NotInterestedService _notInterestedService = getIt<NotInterestedService>();
 
   int _currentTab = 0;
 
@@ -286,7 +289,23 @@ class _FeedSectionState extends State<FeedSection> {
       );
     }
 
-    if (_feedList.isEmpty) {
+    // 过滤被屏蔽用户和不感兴趣的帖子
+    final blockedUserIds = _blockedUsersService.getBlockedUserIds();
+    final notInterestedIds = _notInterestedService.getNotInterestedIds();
+    final filteredList = _feedList.where((post) {
+      // 过滤被屏蔽的用户（优先使用 profile.userId，fallback 到 userId）
+      final userId = post.profile?.userId ?? post.userId;
+      if (userId != null && userId != 0 && blockedUserIds.contains(userId)) {
+        return false;
+      }
+      // 过滤不感兴趣的帖子
+      if (notInterestedIds.contains(post.id)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (filteredList.isEmpty) {
       // 根据不同的标签显示不同的空状态提示
       String emptyTitle;
       String? emptyDescription;
@@ -317,9 +336,9 @@ class _FeedSectionState extends State<FeedSection> {
       onRefresh: () => _loadFeedList(refresh: true),
       child: ListView.builder(
         controller: _scrollController,
-        itemCount: _feedList.length + (_isLoadingMore ? 1 : 0),
+        itemCount: filteredList.length + (_isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index == _feedList.length) {
+          if (index == filteredList.length) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
@@ -328,28 +347,30 @@ class _FeedSectionState extends State<FeedSection> {
             );
           }
 
-          final post = _feedList[index];
-          // 优先使用 profile 数据，否则使用平铺字段
-          final username = post.profile?.displayNickname ?? post.username ?? '用户${post.userId}';
-          final avatar = post.profile?.displayAvatar ?? post.avatar ?? '';
+          final post = filteredList[index];
 
           return FeedItem(
             postId: post.id,
-            userId: post.userId ?? 0,
-            username: username,
-            avatarAsset: avatar,
+            profile: post.profile!, // 使用 profile 传递用户信息
             time: post.getFormattedTime(),
             title: post.title,
             content: post.content ?? '',
             mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
-            isVerified: post.isVerified ?? false,
             commentCount: post.commentCount,
             likeCount: post.likeCount,
-            repostCount: post.quoteCount ?? 0,  // 使用quoteCount作为repostCount
+            repostCount: post.quoteCount ?? 0,
             shareCount: post.shareCount ?? 0,
             isLiked: post.isLiked ?? false,
-            type: post.type ?? 1, // 默认为帖子
+            type: post.type ?? 1,
             menuIcon: Icons.more_horiz,
+            onRemove: () {
+              // 列表页删除回调：从列表中移除该帖子
+              setState(() {
+                _feedList.removeWhere((p) => p.id == post.id);
+                // 更新当前tab的缓存
+                _tabDataCache[_currentTab] = _feedList;
+              });
+            },
           );
         },
       ),

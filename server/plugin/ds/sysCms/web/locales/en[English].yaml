@@ -161,6 +161,10 @@ admin:
       pending: Pending
       approved: Approved
       rejected: Rejected
+    status:
+      draft: Draft
+      published: Published
+      offline: Offline
   FeedDict:
     targetType:
       post: Post

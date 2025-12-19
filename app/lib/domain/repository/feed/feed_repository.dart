@@ -2,6 +2,7 @@ import '../../entity/feed/feed_post.dart';
 import '../../entity/feed/feed_comment.dart';
 import '../../entity/feed/feed_operation_result.dart';
 import '../../entity/feed/feed_article.dart';
+import '../../entity/feed/feed_user_profile.dart';
 
 /// 信息流Repository抽象接口
 abstract class FeedRepository {
@@ -63,12 +64,14 @@ abstract class FeedRepository {
   /// 获取用户发布的帖子列表
   Future<List<FeedPost>> getUserPostList({
     required int userId,
+    int? type,
+    int? status,
     int page = 1,
     int pageSize = 20,
   });
 
   /// 创建帖子
-  Future<Map<String, dynamic>> createPost({
+  Future<FeedPost> createPost({
     int type = 1,
     int contentType = 1,
     String? title,
@@ -77,9 +80,21 @@ abstract class FeedRepository {
     List<String>? videos,
   });
 
+  /// 更新帖子
+  Future<Map<String, dynamic>> updatePost({
+    required int id,
+    int? status,
+  });
+
   /// 删除帖子
   Future<Map<String, dynamic>> deletePost({
     required int id,
+  });
+
+  /// 增加帖子浏览数
+  Future<void> incrementPostView({
+    required int id,
+    int targetType = 1,
   });
 
   // ==================== 评论管理 ====================
@@ -158,7 +173,8 @@ abstract class FeedRepository {
   });
 
   /// 获取用户关注统计
-  Future<UserFollowStats?> getUserFollowStats();
+  /// [userId] 用户ID（可选，不传则获取当前登录用户）
+  Future<UserFollowStats?> getUserFollowStats({int? userId});
 
   /// 检查是否关注某用户（返回关注状态和用户资料）
   Future<Map<String, dynamic>> checkFollowStatus({

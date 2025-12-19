@@ -283,9 +283,25 @@ abstract class _UserStore with Store {
   Future<void> updateNickname(String nickname) async {
     try {
       final userApi = getIt<UserApi>();
-      await userApi.updateProfile(nickname: nickname);
-      // 更新成功后立即刷新用户信息，确保界面同步
-      await getUserInfo();
+      final response = await userApi.updateProfile(nickname: nickname);
+
+      // DioClient 拦截器已经解包响应，response 直接是 profile 数据
+      if (currentUser != null) {
+        final updatedProfile = UserProfile.fromJson(response);
+        currentUser = User(
+          id: currentUser!.id,
+          username: currentUser!.username,
+          mobile: currentUser!.mobile,
+          email: currentUser!.email,
+          code: currentUser!.code,
+          isGoogle2fa: currentUser!.isGoogle2fa,
+          isTransPassword: currentUser!.isTransPassword,
+          isPassword: currentUser!.isPassword,
+          isKyc: currentUser!.isKyc,
+          no: currentUser!.no,
+          profile: updatedProfile,
+        );
+      }
     } catch (e) {
       errorStore.setErrorMessage(e.toString());
       rethrow;
@@ -297,9 +313,71 @@ abstract class _UserStore with Store {
   Future<void> updateAvatar(String avatarUrl) async {
     try {
       final userApi = getIt<UserApi>();
-      await userApi.updateProfile(avatar: avatarUrl);
-      // 更新成功后立即刷新用户信息，确保界面同步
-      await getUserInfo();
+      final response = await userApi.updateProfile(avatar: avatarUrl);
+
+      // DioClient 拦截器已经解包响应，response 直接是 profile 数据
+      if (currentUser != null) {
+        final updatedProfile = UserProfile.fromJson(response);
+        currentUser = User(
+          id: currentUser!.id,
+          username: currentUser!.username,
+          mobile: currentUser!.mobile,
+          email: currentUser!.email,
+          code: currentUser!.code,
+          isGoogle2fa: currentUser!.isGoogle2fa,
+          isTransPassword: currentUser!.isTransPassword,
+          isPassword: currentUser!.isPassword,
+          isKyc: currentUser!.isKyc,
+          no: currentUser!.no,
+          profile: updatedProfile,
+        );
+      }
+    } catch (e) {
+      errorStore.setErrorMessage(e.toString());
+      rethrow;
+    }
+  }
+
+  /// 更新个性签名
+  @action
+  Future<void> updateSigned(String signed) async {
+    try {
+      final userApi = getIt<UserApi>();
+      final response = await userApi.updateProfile(signed: signed);
+
+      // DioClient 拦截器已经解包响应，response 直接是 profile 数据
+      if (currentUser != null) {
+        final updatedProfile = UserProfile.fromJson(response);
+        currentUser = User(
+          id: currentUser!.id,
+          username: currentUser!.username,
+          mobile: currentUser!.mobile,
+          email: currentUser!.email,
+          code: currentUser!.code,
+          isGoogle2fa: currentUser!.isGoogle2fa,
+          isTransPassword: currentUser!.isTransPassword,
+          isPassword: currentUser!.isPassword,
+          isKyc: currentUser!.isKyc,
+          no: currentUser!.no,
+          profile: updatedProfile,
+        );
+      }
+    } catch (e) {
+      errorStore.setErrorMessage(e.toString());
+      rethrow;
+    }
+  }
+
+  /// 更新用户名
+  @action
+  Future<void> updateUsername(String username) async {
+    try {
+      final userApi = getIt<UserApi>();
+      final response = await userApi.updateProfile(username: username);
+
+      // DioClient 拦截器已经解包响应，response 直接是 userInfo 数据
+      final updatedUser = User.fromJson(response);
+      currentUser = updatedUser;
     } catch (e) {
       errorStore.setErrorMessage(e.toString());
       rethrow;

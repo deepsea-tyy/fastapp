@@ -9,7 +9,7 @@ part 'user_profile.g.dart';
 @JsonSerializable()
 class UserProfile {
   /// 用户ID
-  @JsonKey(name: 'user_id')
+  @JsonKey(name: 'user_id', fromJson: _parseUserId)
   final int? userId;
 
   /// 昵称
@@ -18,11 +18,26 @@ class UserProfile {
   /// 头像
   final String? avatar;
 
+  /// 签名
+  final String? signed;
+
   UserProfile({
     this.userId,
     this.nickname,
     this.avatar,
+    this.signed,
   });
+
+  /// 解析 user_id，处理多种数据类型
+  static int? _parseUserId(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      if (value.isEmpty) return null;
+      return int.tryParse(value);
+    }
+    return null;
+  }
 
   factory UserProfile.fromJson(Map<String, dynamic> json) =>
       _$UserProfileFromJson(json);
@@ -33,6 +48,7 @@ class UserProfile {
   static UserProfile get empty => UserProfile(
         nickname: '',
         avatar: '',
+        signed: '',
       );
 
   /// 获取昵称（带默认值）

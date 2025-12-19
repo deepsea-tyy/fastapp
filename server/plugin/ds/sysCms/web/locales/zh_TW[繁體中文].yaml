@@ -161,6 +161,10 @@ admin:
       pending: 待審核
       approved: 已通過
       rejected: 已拒絕
+    status:
+      draft: 草稿
+      published: 已發布
+      offline: 已下架
   FeedDict:
     targetType:
       post: 帖子

@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:fastapp/domain/entity/feed/converters/string_to_int_converter.dart';
 
 part 'user.g.dart';
 
@@ -43,11 +44,13 @@ class User {
 class UserProfile {
   final int id;
   @JsonKey(name: 'user_id')
+  @StringToIntConverter()
   final int userId;
   final String? nickname;
   final String? avatar;
   final String? signed;
   final String? lang;
+  final Map<String, dynamic>? setting;
   @JsonKey(name: 'created_at')
   final String? createdAt;
   @JsonKey(name: 'updated_at')
@@ -60,6 +63,7 @@ class UserProfile {
     this.avatar,
     this.signed,
     this.lang,
+    this.setting,
     this.createdAt,
     this.updatedAt,
   });

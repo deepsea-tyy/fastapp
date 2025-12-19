@@ -7,6 +7,7 @@ namespace Plugin\Ds\SysCms\Http\Api\Service;
 use App\Common\Tools;
 use App\Model\UserProfile;
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
+use Plugin\Ds\SysCms\Model\FeedUserStats;
 
 /**
  * 用户关注服务
@@ -23,7 +24,7 @@ class FeedUserFollowService
             throw new \InvalidArgumentException('不能关注自己');
         }
 
-        $isFollowing = $this->isFollowing($userId, $followUserId);
+        $isFollowing = $this->isFollowing($userId, $followUserId)['is_following'];
 
         if ($isFollowing) {
             // 取消关注
@@ -32,7 +33,9 @@ class FeedUserFollowService
                 ->where('follow_user_id', $followUserId)
                 ->delete();
 
-            // TODO: 更新粉丝数和关注数统计
+            // 更新统计：减少关注数和粉丝数
+            $this->decrementFollowingCount($userId);
+            $this->decrementFollowersCount($followUserId);
 
             return false;
         } else {
@@ -43,7 +46,9 @@ class FeedUserFollowService
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // TODO: 更新粉丝数和关注数统计
+            // 更新统计：增加关注数和粉丝数
+            $this->incrementFollowingCount($userId);
+            $this->incrementFollowersCount($followUserId);
 
             return true;
         }
@@ -59,10 +64,9 @@ class FeedUserFollowService
             ->where('user_id', $userId)
             ->where('follow_user_id', $followUserId)
             ->exists();
-        $profile = UserProfile::query()->where('user_id', $userId)->first(['user_id', 'nickname', 'avatar', 'signed']);
         return [
-            'is_following' => $is_following,
-            'profile' => $profile,
+            'is_following' => $is_following ? 1 : 0,
+            'profile' => Tools::getUserCache($userId, ['user_id', 'nickname', 'avatar', 'signed']),
         ];
     }
 
@@ -109,26 +113,6 @@ class FeedUserFollowService
     }
 
     /**
-     * 获取关注数
-     */
-    public function getFollowingCount(int $userId): int
-    {
-        return FeedUserFollow::query()
-            ->where('user_id', $userId)
-            ->count();
-    }
-
-    /**
-     * 获取粉丝数
-     */
-    public function getFollowersCount(int $userId): int
-    {
-        return FeedUserFollow::query()
-            ->where('follow_user_id', $userId)
-            ->count();
-    }
-
-    /**
      * 批量检查关注状态
      */
     public function batchCheckFollowing(int $userId, array $followUserIds): array
@@ -166,7 +150,6 @@ class FeedUserFollowService
         $offset = ($page - 1) * $pageSize;
 
         return \Plugin\Ds\SysCms\Model\FeedPost::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('user_id', $followUserIds)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -175,18 +158,7 @@ class FeedUserFollowService
             ->limit($pageSize)
             ->get()
             ->map(function ($post) {
-                return [
-                    'type' => $post->type ?? 1,
-                    'id' => $post->id,
-                    'profile' => $post->profile,
-                    'user_id' => $post->user_id,
-                    'title' => $post->title ?? '',
-                    'content' => $post->content ?? '',
-                    'images' => $post->images ?? [],
-                    'like_count' => $post->like_count ?? 0,
-                    'comment_count' => $post->comment_count ?? 0,
-                    'created_at' => $post->created_at->toDateTimeString(),
-                ];
+                return FeedCacheService::formatData($post);
             })->toArray();
 
     }
@@ -207,5 +179,141 @@ class FeedUserFollowService
                     'content' => $item->posts?->content
                 ];
             })->toArray();
+    }
+
+    /**
+     * 增加关注数
+     */
+    public function incrementFollowingCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('following_count');
+    }
+
+    /**
+     * 减少关注数
+     */
+    public function decrementFollowingCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('following_count', 1, ['following_count' => 0]);
+    }
+
+    /**
+     * 增加粉丝数
+     */
+    public function incrementFollowersCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('followers_count');
+    }
+
+    /**
+     * 减少粉丝数
+     */
+    public function decrementFollowersCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('followers_count', 1, ['followers_count' => 0]);
+    }
+
+    /**
+     * 增加用户获得的点赞数
+     */
+    public function incrementUserLikeCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('total_likes');
+    }
+
+    /**
+     * 减少用户获得的点赞数
+     */
+    public function decrementUserLikeCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('total_likes', 1, ['total_likes' => 0]);
+    }
+
+    /**
+     * 增加用户获得的分享数
+     */
+    public function incrementUserShareCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('total_shares');
+    }
+
+    /**
+     * 减少用户获得的分享数
+     */
+    public function decrementUserShareCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('total_shares', 1, ['total_shares' => 0]);
+    }
+
+    /**
+     * 增加用户获得的评论数
+     */
+    public function incrementUserCommentCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('total_comments');
+    }
+
+    /**
+     * 减少用户获得的评论数
+     */
+    public function decrementUserCommentCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('total_comments', 1, ['total_comments' => 0]);
+    }
+
+    /**
+     * 增加用户帖子数
+     */
+    public function incrementUserPostCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('posts_count');
+    }
+
+    /**
+     * 减少用户帖子数
+     */
+    public function decrementUserPostCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->decrement('posts_count', 1, ['posts_count' => 0]);
+    }
+
+    /**
+     * 增加用户获得的浏览数
+     */
+    public function incrementUserViewCount(int $userId): void
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+        $stats->increment('total_views');
+    }
+
+    /**
+     * 获取用户统计信息
+     */
+    public function getUserStats(int $userId): array
+    {
+        $stats = FeedUserStats::getOrCreate($userId);
+
+        return [
+            'user_id' => $stats->user_id,
+            'following_count' => $stats->following_count,
+            'followers_count' => $stats->followers_count,
+            'posts_count' => $stats->posts_count,
+            'total_likes' => $stats->total_likes,
+            'total_shares' => $stats->total_shares,
+            'total_comments' => $stats->total_comments,
+            'total_views' => $stats->total_views,
+        ];
     }
 }

@@ -7,19 +7,23 @@ import 'package:get_it/get_it.dart';
 /// 信息流评论列表组件
 class FeedCommentList extends StatefulWidget {
   final int postId;
+  final int postType;
   final int commentCount;
+  final Function(int parentId, int replyToUserId, String replyToUsername)? onReply;
 
   const FeedCommentList({
     super.key,
     required this.postId,
+    required this.postType,
     required this.commentCount,
+    this.onReply,
   });
 
   @override
-  State<FeedCommentList> createState() => _FeedCommentListState();
+  State<FeedCommentList> createState() => FeedCommentListState();
 }
 
-class _FeedCommentListState extends State<FeedCommentList> {
+class FeedCommentListState extends State<FeedCommentList> {
   final FeedRepository _feedRepository = GetIt.instance<FeedRepository>();
   List<FeedComment> _comments = [];
   bool _isLoading = false;
@@ -28,10 +32,10 @@ class _FeedCommentListState extends State<FeedCommentList> {
   @override
   void initState() {
     super.initState();
-    _loadComments();
+    loadComments();
   }
 
-  Future<void> _loadComments() async {
+  Future<void> loadComments() async {
     if (_isLoading) return;
 
     setState(() {
@@ -40,7 +44,7 @@ class _FeedCommentListState extends State<FeedCommentList> {
 
     try {
       final comments = await _feedRepository.getCommentList(
-        targetType: 1, // 1表示帖子
+        targetType: widget.postType, // 使用正确的类型：1帖子 2文章 3公告 4新闻
         targetId: widget.postId,
         page: 1,
         pageSize: 20,
@@ -66,7 +70,7 @@ class _FeedCommentListState extends State<FeedCommentList> {
       _sortBy = sortBy;
     });
 
-    _loadComments();
+    loadComments();
   }
 
   @override
@@ -198,10 +202,14 @@ class _FeedCommentListState extends State<FeedCommentList> {
           return FeedCommentItem(
             comment: comment,
             onReply: () {
-              // TODO: 实现回复功能
+              widget.onReply?.call(
+                comment.id,
+                comment.userId,
+                comment.username ?? '用户',
+              );
             },
-            onLike: () {
-              // TODO: 实现点赞功能
+            onLike: () async {
+              await _handleCommentLike(comment);
             },
           );
         }),
@@ -225,6 +233,29 @@ class _FeedCommentListState extends State<FeedCommentList> {
           ),
       ],
     );
+  }
+
+  /// 处理评论点赞
+  Future<void> _handleCommentLike(FeedComment comment) async {
+    try {
+      final result = await _feedRepository.toggleLike(
+        targetType: 5, // 评论类型为5
+        targetId: comment.id,
+      );
+
+      // 更新评论列表中的点赞状态
+      setState(() {
+        final index = _comments.indexWhere((c) => c.id == comment.id);
+        if (index != -1) {
+          _comments[index] = comment.copyWith(
+            isLiked: result.isLiked,
+            likeCount: result.likeCount,
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('评论点赞失败: $e');
+    }
   }
 }
 

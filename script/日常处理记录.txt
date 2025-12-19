@@ -1,0 +1,41 @@
+
+git
+git push --force origin main
+
+
+Claude ai全局设置
+
+会话管理
+- 文档生成：非必要不生成，需要时只包含核心内容
+- 依赖提示：仅在确实需要时才提示
+- 会话压缩：需要时提示使用 /clear 命令手动清除
+- 向后兼容：不需要考虑
+- 文件搜索：超过3次未找到，给出提示不在继续查找，我告诉你
+
+
+API 响应处理
+DioClient 拦截器会自动处理 API 响应：
+1. 自动检查 code 状态码，code != 200 时抛出异常
+2. 自动解包 data 字段，直接返回 data 内容
+
+重要规则：
+- 不要检查 response['code'] == 200
+- 不要访问 response['data']
+- response 已经是解包后的 data 内容，直接使用
+- 使用 try-catch 捕获异常即可
+- 成功请求，不使用返回的message做提示
+
+示例：
+final response = await userApi.updateProfile(username: username);
+final user = User.fromJson(response);  // response 直接就是数据
+
+
+
+
+
+DNS
+日常上网（混合国内外）	223.5.5.5（阿里） + 119.29.29.29（腾讯）
+开发/测试/访问 GitHub 等	8.8.8.8 + 1.1.1.1
+
+
+

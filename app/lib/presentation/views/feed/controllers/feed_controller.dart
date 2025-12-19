@@ -157,6 +157,22 @@ class FeedController extends ChangeNotifier {
     }
   }
 
+  /// 插入新帖子到列表顶部
+  void insertNewPost(FeedPost post) {
+    _feedList.insert(0, post);
+    // 更新当前tab的缓存
+    _tabDataCache[_currentTab] = _feedList;
+    notifyListeners();
+  }
+
+  /// 从列表中移除帖子
+  void removePost(int postId) {
+    _feedList.removeWhere((post) => post.id == postId);
+    // 更新当前tab的缓存
+    _tabDataCache[_currentTab] = _feedList;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _tabDataCache.clear();

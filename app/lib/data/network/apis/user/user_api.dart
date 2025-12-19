@@ -472,9 +472,15 @@ class UserApi {
   /// 更新用户资料
   /// [nickname] 昵称
   /// [avatar] 头像URL
+  /// [signed] 个性签名
+  /// [username] 用户名
+  /// [setting] 用户设置（包含通知设置等）
   Future<Map<String, dynamic>> updateProfile({
     String? nickname,
     String? avatar,
+    String? signed,
+    String? username,
+    Map<String, dynamic>? setting,
   }) async {
     final data = <String, dynamic>{};
     if (nickname != null) {
@@ -482,6 +488,15 @@ class UserApi {
     }
     if (avatar != null) {
       data['avatar'] = avatar;
+    }
+    if (signed != null) {
+      data['signed'] = signed;
+    }
+    if (username != null) {
+      data['username'] = username;
+    }
+    if (setting != null) {
+      data['setting'] = setting;
     }
 
     final response = await _dioClient.dio.post(
@@ -558,6 +573,42 @@ class UserApi {
   Future<Map<String, dynamic>> getVipDetail() async {
     final response = await _dioClient.dio.get(
       Endpoints.vipDetail,
+    );
+    return response.data;
+  }
+
+  /// 提交内容质量反馈
+  /// [targetType] 目标类型：1帖子 2文章 3公告 4新闻
+  /// [targetId] 目标ID
+  /// [qualityType] 质量类型：1对投资没有帮助 2内容质量差
+  Future<void> submitQualityFeedback({
+    required int targetType,
+    required int targetId,
+    required int qualityType,
+  }) async {
+    await _dioClient.dio.post(
+      Endpoints.feedQualityFeedback,
+      data: {
+        'target_type': targetType,
+        'target_id': targetId,
+        'quality_type': qualityType,
+      },
+    );
+  }
+
+  /// 获取收藏状态
+  /// [targetType] 目标类型：1帖子 2文章
+  /// [targetId] 目标ID
+  Future<Map<String, dynamic>> getCollectStatus({
+    required int targetType,
+    required int targetId,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedUserCollectStatus,
+      queryParameters: {
+        'target_type': targetType,
+        'target_id': targetId,
+      },
     );
     return response.data;
   }

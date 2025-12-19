@@ -7,7 +7,6 @@ namespace Plugin\Ds\SysCms\Http\Api\Service;
 use App\Common\Tools;
 use Hyperf\Cache\Annotation\Cacheable;
 use Hyperf\Cache\Annotation\CacheEvict;
-use Hyperf\Cache\Annotation\CachePut;
 use Hyperf\DbConnection\Db;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedCollect;
@@ -26,9 +25,11 @@ class FeedCacheService
     // ==================== 常量定义 ====================
 
     // 内容类型
-    public const TYPE_POST = 1;
-    public const TYPE_ARTICLE = 2;
-    public const TYPE_COMMENT = 3;
+    public const TYPE_POST = 1;        // 帖子
+    public const TYPE_ARTICLE = 2;     // 文章（FeedPost type=2）
+    public const TYPE_NOTICE = 3;      // 公告
+    public const TYPE_NEWS = 4;        // 新闻
+    public const TYPE_COMMENT = 5;     // 评论（用于点赞）
 
     // 缓存TTL（秒）
     private const TTL_CONTENT = 3600;      // 内容详情：1小时
@@ -45,7 +46,6 @@ class FeedCacheService
     public function getPost(int $id): array
     {
         $post = FeedPost::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->where('id', $id)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -57,7 +57,7 @@ class FeedCacheService
 
         return [
             'id' => $post->id,
-            'profile' => $post->profile,
+            'profile' => Tools::getUserCache($post->user_id, ['user_id', 'nickname', 'avatar', 'signed']),
             'user_id' => $post->user_id,
             'content_type' => $post->content_type,
             'title' => $post->title ?? '',
@@ -85,7 +85,6 @@ class FeedCacheService
     public function getArticle(int $id): array
     {
         $article = Article::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->where('id', $id)
             ->where('status', 1)
             ->first();
@@ -97,7 +96,7 @@ class FeedCacheService
         // 存储原始数据（包含多语言JSON）
         return [
             'id' => $article->id,
-            'profile' => $article->profile,
+            'profile' => Tools::getUserCache($article->user_id, ['user_id', 'nickname', 'avatar', 'signed']),
             'title' => $article->title ?? [],
             'subtitle' => $article->subtitle ?? [],
             'brief' => $article->brief ?? [],
@@ -176,7 +175,6 @@ class FeedCacheService
 
         // 批量查询文章（避免N+1问题）
         $articles = Article::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('id', $articleIds)
             ->where('status', 1)
             ->get()
@@ -188,7 +186,7 @@ class FeedCacheService
             if ($article) {
                 $result[] = [
                     'id' => $article->id,
-                    'profile' => $article->profile,
+                    'profile' => Tools::getUserCache($article->created_by, ['user_id', 'nickname', 'avatar', 'signed']),
                     'title' => Tools::formatLang($article->title ?? [], $userId),
                     'subtitle' => Tools::formatLang($article->subtitle ?? [], $userId),
                     'brief' => Tools::formatLang($article->brief ?? [], $userId),
@@ -326,8 +324,8 @@ class FeedCacheService
     #[Cacheable(prefix: 'content:stats', value: '_#{targetType}#{targetId}', ttl: self::TTL_STATS)]
     public function getStats(int $targetType, int $targetId): array
     {
-        if ($targetType === self::TYPE_POST) {
-            // 帖子统计
+        if ($targetType === self::TYPE_POST || $targetType === self::TYPE_ARTICLE) {
+            // 帖子/文章统计（从 FeedPost 表）
             $post = FeedPost::find($targetId);
             if (!$post) {
                 return [];
@@ -340,8 +338,8 @@ class FeedCacheService
                 'share_count' => $post->share_count ?? 0,
                 'collect_count' => $post->collect_count ?? 0,
             ];
-        } elseif ($targetType === self::TYPE_ARTICLE) {
-            // 文章统计
+        } elseif ($targetType === self::TYPE_NOTICE || $targetType === self::TYPE_NEWS) {
+            // 公告/新闻统计（从 Article 表）
             $article = Article::find($targetId);
             if (!$article) {
                 return [];
@@ -360,15 +358,6 @@ class FeedCacheService
     }
 
     /**
-     * 更新统计数据缓存
-     */
-    #[CachePut(prefix: 'content:stats', value: '_#{targetType}#{targetId}', ttl: self::TTL_STATS)]
-    public function updateStats(int $targetType, int $targetId, array $stats): array
-    {
-        return $stats;
-    }
-
-    /**
      * 清除统计数据缓存
      */
     #[CacheEvict(prefix: 'content:stats', value: '_#{targetType}#{targetId}')]
@@ -382,16 +371,17 @@ class FeedCacheService
     public function incrementViewCount(int $targetType, int $targetId): void
     {
         // 使用数据库原子操作更新计数
-        if ($targetType === self::TYPE_POST) {
+        if ($targetType === self::TYPE_POST || $targetType === self::TYPE_ARTICLE) {
+            // 帖子/文章
             Db::table('feed_post')
                 ->where('id', $targetId)
                 ->increment('view_count');
-        } elseif ($targetType === self::TYPE_ARTICLE) {
+        } elseif ($targetType === self::TYPE_NOTICE || $targetType === self::TYPE_NEWS) {
+            // 公告/新闻
             Db::table('article')
                 ->where('id', $targetId)
                 ->increment('view_count');
         }
-
         // 清除缓存，下次查询时重新从数据库获取准确的值
         $this->clearStats($targetType, $targetId);
     }
@@ -422,6 +412,62 @@ class FeedCacheService
             ->where('target_type', $targetType)
             ->where('target_id', $targetId)
             ->exists();
+    }
+
+    /**
+     * 批量获取用户点赞状态
+     * @param int $userId 用户ID
+     * @param int $targetType 目标类型
+     * @param array $targetIds 目标ID数组
+     * @return array 返回格式: [target_id => true/false]
+     */
+    public function batchGetUserLikeStatus(int $userId, int $targetType, array $targetIds): array
+    {
+        if (empty($targetIds)) {
+            return [];
+        }
+
+        $liked = FeedLike::query()
+            ->where('user_id', $userId)
+            ->where('target_type', $targetType)
+            ->whereIn('target_id', $targetIds)
+            ->pluck('target_id')
+            ->toArray();
+
+        $result = [];
+        foreach ($targetIds as $targetId) {
+            $result[$targetId] = in_array($targetId, $liked) ? 1 : 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 批量获取用户收藏状态
+     * @param int $userId 用户ID
+     * @param int $targetType 目标类型
+     * @param array $targetIds 目标ID数组
+     * @return array 返回格式: [target_id => true/false]
+     */
+    public function batchGetUserCollectStatus(int $userId, int $targetType, array $targetIds): array
+    {
+        if (empty($targetIds)) {
+            return [];
+        }
+
+        $collected = FeedCollect::query()
+            ->where('user_id', $userId)
+            ->where('target_type', $targetType)
+            ->whereIn('target_id', $targetIds)
+            ->pluck('target_id')
+            ->toArray();
+
+        $result = [];
+        foreach ($targetIds as $targetId) {
+            $result[$targetId] = in_array($targetId, $collected) ? 1 : 0;
+        }
+
+        return $result;
     }
 
     /**
@@ -490,6 +536,21 @@ class FeedCacheService
     }
 
     // ==================== 信息流列表缓存 ====================
+    public static function formatData(FeedPost $post): array
+    {
+        return [
+            'type' => $post->type ?? 1,
+            'id' => $post->id,
+            'profile' => Tools::getUserCache($post->user_id, ['user_id', 'nickname', 'avatar', 'signed']),
+            'user_id' => $post->user_id,
+            'title' => $post->title ?? '',
+            'content' => $post->content ?? '',
+            'images' => $post->images ?? [],
+            'like_count' => $post->like_count ?? 0,
+            'comment_count' => $post->comment_count ?? 0,
+            'created_at' => $post->created_at->toDateTimeString(),
+        ];
+    }
 
     /**
      * 获取信息流列表（带缓存）
@@ -500,7 +561,6 @@ class FeedCacheService
     {
         $offset = ($page - 1) * $pageSize;
         return FeedPost::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->where('status', 1)
             ->where('audit_status', 1)
             ->orderByDesc('is_top')
@@ -509,18 +569,7 @@ class FeedCacheService
             ->limit($pageSize)
             ->get()
             ->map(function ($post) {
-                return [
-                    'type' => $post->type ?? 1,
-                    'id' => $post->id,
-                    'profile' => $post->profile,
-                    'user_id' => $post->user_id,
-                    'title' => $post->title ?? '',
-                    'content' => $post->content ?? '',
-                    'images' => $post->images ?? [],
-                    'like_count' => $post->like_count ?? 0,
-                    'comment_count' => $post->comment_count ?? 0,
-                    'created_at' => $post->created_at->toDateTimeString(),
-                ];
+                return static::formatData($post);
             })->toArray();
     }
 
@@ -549,12 +598,14 @@ class FeedCacheService
             $type = $item['type'];
             $id = $item['id'];
 
-            if ($type === self::TYPE_POST) {
+            if ($type === self::TYPE_POST || $type === self::TYPE_ARTICLE) {
+                // 帖子/文章
                 $post = $this->getPost($id);
                 if (!empty($post)) {
                     $result[] = $post;
                 }
-            } elseif ($type === self::TYPE_ARTICLE) {
+            } elseif ($type === self::TYPE_NOTICE || $type === self::TYPE_NEWS) {
+                // 公告/新闻
                 $article = $this->getArticleFormatted($id, $userId);
                 if ($article !== null) {
                     $result[] = $article;
@@ -574,9 +625,11 @@ class FeedCacheService
             $type = $item['type'];
             $id = $item['id'];
 
-            if ($type === self::TYPE_POST) {
+            if ($type === self::TYPE_POST || $type === self::TYPE_ARTICLE) {
+                // 帖子/文章
                 $this->clearPost($id);
-            } elseif ($type === self::TYPE_ARTICLE) {
+            } elseif ($type === self::TYPE_NOTICE || $type === self::TYPE_NEWS) {
+                // 公告/新闻
                 $this->clearArticle($id);
             }
 

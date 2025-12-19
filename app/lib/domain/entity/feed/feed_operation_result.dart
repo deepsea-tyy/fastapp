@@ -1,12 +1,13 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:fastapp/utils/json_converters.dart';
 
 part 'feed_operation_result.g.dart';
 
 /// 点赞操作结果
 @JsonSerializable()
 class LikeResult {
-  /// 是否已点赞
-  @JsonKey(name: 'is_liked')
+  /// 是否已点赞 (0未点赞 1已点赞)
+  @JsonKey(name: 'is_liked', fromJson: intToBool)
   final bool isLiked;
 
   /// 最新点赞数
@@ -27,8 +28,8 @@ class LikeResult {
 /// 收藏操作结果
 @JsonSerializable()
 class CollectResult {
-  /// 是否已收藏
-  @JsonKey(name: 'is_collected')
+  /// 是否已收藏 (0未收藏 1已收藏)
+  @JsonKey(name: 'is_collected', fromJson: intToBool)
   final bool isCollected;
 
   /// 提示消息
@@ -48,8 +49,8 @@ class CollectResult {
 /// 关注操作结果
 @JsonSerializable()
 class FollowResult {
-  /// 是否已关注
-  @JsonKey(name: 'is_following')
+  /// 是否已关注 (0未关注 1已关注)
+  @JsonKey(name: 'is_following', fromJson: intToBool)
   final bool isFollowing;
 
   /// 提示消息
@@ -66,9 +67,13 @@ class FollowResult {
   Map<String, dynamic> toJson() => _$FollowResultToJson(this);
 }
 
-/// 用户关注统计
+/// 用户统计信息
 @JsonSerializable()
 class UserFollowStats {
+  /// 用户ID
+  @JsonKey(name: 'user_id')
+  final int userId;
+
   /// 关注数
   @JsonKey(name: 'following_count')
   final int followingCount;
@@ -77,9 +82,35 @@ class UserFollowStats {
   @JsonKey(name: 'followers_count')
   final int followersCount;
 
+  /// 帖子数
+  @JsonKey(name: 'posts_count')
+  final int postsCount;
+
+  /// 获赞总数
+  @JsonKey(name: 'total_likes')
+  final int totalLikes;
+
+  /// 分享总数
+  @JsonKey(name: 'total_shares')
+  final int totalShares;
+
+  /// 评论总数
+  @JsonKey(name: 'total_comments')
+  final int totalComments;
+
+  /// 浏览总数
+  @JsonKey(name: 'total_views')
+  final int totalViews;
+
   UserFollowStats({
+    required this.userId,
     required this.followingCount,
     required this.followersCount,
+    this.postsCount = 0,
+    this.totalLikes = 0,
+    this.totalShares = 0,
+    this.totalComments = 0,
+    this.totalViews = 0,
   });
 
   factory UserFollowStats.fromJson(Map<String, dynamic> json) =>

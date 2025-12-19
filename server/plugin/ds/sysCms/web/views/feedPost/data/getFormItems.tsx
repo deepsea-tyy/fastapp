@@ -95,16 +95,8 @@ placeholder: t('admin.FeedPostFields.quoted_type'),
       prop: 'audit_status',
       render: () => <ma-dict-select />,
       renderProps: {
+          dictName:"feed-audit-status",
 placeholder: t('admin.FeedPostFields.audit_status'),
-            },
-      cols: { lg: 12, md: 24 },
-    },
-    {
-      label: () => t('admin.FeedPostFields.audited_at'), // '审核时间'
-      prop: 'audited_at',
-      render: () => <el-date-picker />,
-      renderProps: {
-placeholder: t('admin.FeedPostFields.audited_at'),
             },
       cols: { lg: 12, md: 24 },
     },
@@ -113,7 +105,7 @@ placeholder: t('admin.FeedPostFields.audited_at'),
       prop: 'is_top',
       render: () => <ma-dict-select />,
       renderProps: {
-          dictName:'feed-audit-status',
+          dictName:'system-yes-no',
 placeholder: t('admin.FeedPostFields.is_top'),
             },
       cols: { lg: 12, md: 24 },
@@ -129,11 +121,11 @@ placeholder: t('admin.FeedPostFields.is_hot'),
       cols: { lg: 12, md: 24 },
     },
     {
-      label: () => t('crud.status'), // '状态：1显示 0隐藏'
+      label: () => t('crud.status'), // '状态：0草稿 1已发布 2已下架'
       prop: 'status',
       render: () => <ma-dict-select />,
       renderProps: {
-          dictName:'system-display',
+          dictName:'feed-status',
 placeholder: t('crud.status'),
             },
       cols: { lg: 12, md: 24 },
@@ -205,24 +197,6 @@ placeholder: t('admin.FeedPostFields.quote_count'),
       cols: { lg: 12, md: 24 },
     },
     {
-      label: () => t('admin.FeedPostFields.ip'), // '发布IP'
-      prop: 'ip',
-      render: () => <el-input />,
-      renderProps: {
-placeholder: t('admin.FeedPostFields.ip'),
-            },
-      cols: { lg: 12, md: 24 },
-    },
-    {
-      label: () => t('admin.FeedPostFields.device_type'), // '设备类型：ios, android, web'
-      prop: 'device_type',
-      render: () => <ma-dict-select />,
-      renderProps: {
-placeholder: t('admin.FeedPostFields.device_type'),
-            },
-      cols: { lg: 12, md: 24 },
-    },
-    {
       label: () => t('admin.FeedPostFields.content'), // '内容'
       prop: 'content',
       render: () => <ma-editor />,
@@ -231,6 +205,9 @@ placeholder: t('admin.FeedPostFields.content'),
         type: 'textarea',
         rows: 3,
             },
+      itemProps: {
+        rules: [{ required: true, message: t('form.pleaseInput', { msg: t('admin.FeedPostFields.content') }) }],
+      },
     },
   ]
 }

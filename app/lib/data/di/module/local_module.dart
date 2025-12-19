@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:fastapp/core/data/local/sembast/sembast_client.dart';
+import 'package:fastapp/core/services/blocked_users_service.dart';
+import 'package:fastapp/core/services/not_interested_service.dart';
 import 'package:fastapp/data/local/constants/db_constants.dart';
 import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +18,12 @@ class LocalModule {
         SharedPreferences.getInstance);
     getIt.registerSingleton<SharedPreferenceHelper>(
       SharedPreferenceHelper(await getIt.getAsync<SharedPreferences>()),
+    );
+    getIt.registerSingleton<BlockedUsersService>(
+      BlockedUsersService(await getIt.getAsync<SharedPreferences>()),
+    );
+    getIt.registerSingleton<NotInterestedService>(
+      NotInterestedService(await getIt.getAsync<SharedPreferences>()),
     );
 
     // database:----------------------------------------------------------------

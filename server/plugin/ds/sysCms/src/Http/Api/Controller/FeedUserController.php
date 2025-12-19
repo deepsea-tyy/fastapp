@@ -18,24 +18,28 @@ use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
+use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedCollect;
 use Plugin\Ds\SysCms\Model\FeedComment;
 use Plugin\Ds\SysCms\Model\FeedLike;
 use Plugin\Ds\SysCms\Model\FeedPost;
+use Plugin\Ds\SysCms\Model\FeedQualityFeedback;
 
 /**
  * 信息流用户操作API控制器
  */
 #[HyperfServer(name: 'http')]
 #[Middleware(TokenMiddleware::class)]
-class FeedUserOperationController extends AbstractController
+class FeedUserController extends AbstractController
 {
     #[ResultResponse(instance: new Result())]
     public function __construct(
         private readonly FeedCacheService      $cacheService,
         private readonly FeedUserFollowService $followService,
         private readonly CurrentUser           $currentUser
-    ){}
+    )
+    {
+    }
 
     #[Post(
         path: '/api/feed/user/collectToggle',
@@ -46,7 +50,7 @@ class FeedUserOperationController extends AbstractController
     #[RequestBody(content: new JsonContent(
         required: ['target_type', 'target_id'],
         properties: [
-            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2公告 3新闻', 'example' => 1],
+            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章 3公告 4新闻', 'example' => 1],
             'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
         ]
     ))]
@@ -56,7 +60,7 @@ class FeedUserOperationController extends AbstractController
         $userId = $this->currentUser->id();
 
         $data = $this->getRequestData();
-        $targetType = (int)$data['target_type'];
+        $targetType = (int)$data['target_type'] ?: 1;
         $targetId = (int)$data['target_id'];
 
         // 检查是否已收藏（使用缓存）
@@ -69,9 +73,7 @@ class FeedUserOperationController extends AbstractController
                 ->where('target_type', $targetType)
                 ->where('target_id', $targetId)
                 ->delete();
-
-            $this->updateCollectCount($targetType, $targetId, -1);
-            $newStatus = false;
+            $newStatus = 0;
         } else {
             // 添加收藏
             FeedCollect::create([
@@ -80,11 +82,16 @@ class FeedUserOperationController extends AbstractController
                 'target_id' => $targetId,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
-
-            $this->updateCollectCount($targetType, $targetId, 1);
-            $newStatus = true;
+            $newStatus = 1;
         }
 
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
+            FeedPost::query()->where('id', $targetId)->increment('collect_count', $newStatus ? 1 : -1);
+        } elseif ($targetType === 3 || $targetType === 4) {
+            // 公告/新闻（Article）
+            Article::query()->where('id', $targetId)->increment('collect_count', $newStatus ? 1 : -1);
+        }
         // 清除用户收藏状态缓存
         $this->cacheService->clearUserCollect($userId, $targetType, $targetId);
 
@@ -125,13 +132,15 @@ class FeedUserOperationController extends AbstractController
         // 批量获取内容详情
         $list = [];
         foreach ($collects as $collect) {
-            if ($collect->target_type === 1) {
+            if ($collect->target_type === 1 || $collect->target_type === 2) {
+                // 帖子/文章（FeedPost）
                 $post = $this->cacheService->getPost($collect->target_id);
                 if ($post) {
                     $post['collected_at'] = $collect->created_at?->toDateTimeString();
                     $list[] = $post;
                 }
-            } elseif ($collect->target_type === 2) {
+            } elseif ($collect->target_type === 3 || $collect->target_type === 4) {
+                // 公告/新闻（Article）
                 $article = $this->cacheService->getArticle($collect->target_id);
                 if ($article) {
                     $article['collected_at'] = $collect->created_at?->toDateTimeString();
@@ -141,14 +150,6 @@ class FeedUserOperationController extends AbstractController
         }
 
         return $this->success(['list' => $list]);
-    }
-
-    private function updateCollectCount(int $targetType, int $targetId, int $increment): void
-    {
-        if ($targetType === 1) {
-            FeedPost::query()->where('id', $targetId)->increment('collect_count', $increment);
-        }
-        // 文章收藏数暂不支持
     }
 
 
@@ -161,7 +162,7 @@ class FeedUserOperationController extends AbstractController
     #[RequestBody(content: new JsonContent(
         required: ['target_type', 'target_id'],
         properties: [
-            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章 3评论', 'example' => 1],
+            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章 3公告 4新闻 5评论', 'example' => 1],
             'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
         ]
     ))]
@@ -171,7 +172,7 @@ class FeedUserOperationController extends AbstractController
         $userId = $this->currentUser->id();
 
         $data = $this->getRequestData();
-        $targetType = (int)$data['target_type'];
+        $targetType = (int)$data['target_type'] ?: 1;
         $targetId = (int)$data['target_id'];
 
         // 检查是否已点赞（使用缓存）
@@ -186,7 +187,7 @@ class FeedUserOperationController extends AbstractController
                 ->delete();
 
             $this->updateLikeCount($targetType, $targetId, -1);
-            $newStatus = false;
+            $newStatus = 0;
         } else {
             // 添加点赞
             FeedLike::create([
@@ -197,7 +198,7 @@ class FeedUserOperationController extends AbstractController
             ]);
 
             $this->updateLikeCount($targetType, $targetId, 1);
-            $newStatus = true;
+            $newStatus = 1;
         }
 
         // 清除用户点赞状态缓存
@@ -217,14 +218,46 @@ class FeedUserOperationController extends AbstractController
 
     private function updateLikeCount(int $targetType, int $targetId, int $increment): void
     {
-        if ($targetType === 1) {
-            // 更新帖子点赞数
-            FeedPost::query()->where('id', $targetId)->increment('like_count', $increment);
-        } elseif ($targetType === 3) {
-            // 更新评论点赞数
-            FeedComment::query()->where('id', $targetId)->increment('like_count', $increment);
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
+            $post = FeedPost::query()->where('id', $targetId)->first();
+            if ($post) {
+                $post->increment('like_count', $increment);
+
+                // 更新帖子作者的总点赞数统计
+                if ($increment > 0) {
+                    $this->followService->incrementUserLikeCount($post->user_id);
+                } else {
+                    $this->followService->decrementUserLikeCount($post->user_id);
+                }
+            }
+        } elseif ($targetType === 3 || $targetType === 4) {
+            // 公告/新闻（Article）
+            $article = Article::query()->where('id', $targetId)->first();
+            if ($article) {
+                $article->increment('like_count', $increment);
+
+                // 更新作者的总点赞数统计
+                if ($increment > 0) {
+                    $this->followService->incrementUserLikeCount($article->created_by);
+                } else {
+                    $this->followService->decrementUserLikeCount($article->created_by);
+                }
+            }
+        } elseif ($targetType === 5) {
+            // 评论
+            $comment = FeedComment::query()->where('id', $targetId)->first();
+            if ($comment) {
+                $comment->increment('like_count', $increment);
+
+                // 更新评论作者的总点赞数统计
+                if ($increment > 0) {
+                    $this->followService->incrementUserLikeCount($comment->user_id);
+                } else {
+                    $this->followService->decrementUserLikeCount($comment->user_id);
+                }
+            }
         }
-        // 文章点赞数暂不支持
     }
 
     #[Post(
@@ -251,8 +284,7 @@ class FeedUserOperationController extends AbstractController
             $isFollowing = $this->followService->toggleFollow($userId, $followUserId);
 
             return $this->success([
-                'is_following' => $isFollowing,
-                'message' => $isFollowing ? '关注成功' : '已取消关注'
+                'is_following' => $isFollowing ? 1 : 0,
             ]);
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 400);
@@ -315,21 +347,20 @@ class FeedUserOperationController extends AbstractController
     #[Get(
         path: '/api/feed/user/stats',
         operationId: 'feedUserFollowStats',
-        summary: '获取用户关注统计',
+        summary: '获取用户统计信息',
         tags: ['信息流-用户操作']
     )]
-    #[QueryParameter(name: 'user_id', description: '用户ID', example: '1')]
+    #[QueryParameter(name: 'user_id', description: '用户ID（可选，不传则获取当前用户）', example: '1')]
     #[ResultResponse(instance: new Result())]
     public function stats(): Result
     {
-        $userId = $this->currentUser->id();
-        $followingCount = $this->followService->getFollowingCount($userId);
-        $followersCount = $this->followService->getFollowersCount($userId);
+        $queryUserId = $this->getRequest()->input('user_id');
+        $userId = $queryUserId ? (int)$queryUserId : $this->currentUser->id();
 
-        return $this->success([
-            'following_count' => $followingCount,  // 关注数
-            'followers_count' => $followersCount,  // 粉丝数
-        ]);
+        // 使用新的统计表获取数据，性能更好
+        $stats = $this->followService->getUserStats($userId);
+
+        return $this->success($stats);
     }
 
     #[Get(
@@ -346,5 +377,56 @@ class FeedUserOperationController extends AbstractController
 
         $res = $this->followService->isFollowing($userId, (int)$this->getRequest()->input('follow_user_id'));
         return $this->success($res);
+    }
+
+    #[Get(
+        path: '/api/feed/user/collectStatus',
+        operationId: 'feedUserCollectStatus',
+        summary: '获取收藏状态',
+        tags: ['信息流-用户操作']
+    )]
+    #[QueryParameter(name: 'target_type', description: '目标类型：1帖子 2文章 3公告 4新闻', example: '1')]
+    #[QueryParameter(name: 'target_id', description: '目标ID', example: '1')]
+    #[ResultResponse(instance: new Result())]
+    public function collectStatus(): Result
+    {
+        $userId = $this->currentUser->id();
+        $targetType = (int)$this->getRequest()->input('target_type', 1);
+        $targetId = (int)$this->getRequest()->input('target_id');
+
+        // 使用缓存查询收藏状态
+        $isCollected = $this->cacheService->getUserCollectStatus($userId, $targetType, $targetId);
+
+        return $this->success([
+            'is_collected' => $isCollected ? 1 : 0
+        ]);
+    }
+
+    #[Post(
+        path: '/api/feed/user/qualityFeedback',
+        operationId: 'feedQualityFeedback',
+        summary: '提交内容质量反馈',
+        tags: ['信息流-用户操作']
+    )]
+    #[RequestBody(content: new JsonContent(
+        required: ['target_type', 'target_id', 'quality_type'],
+        properties: [
+            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章 3公告 4新闻', 'example' => 1],
+            'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
+            'quality_type' => ['type' => 'integer', 'description' => '质量类型：1对投资没有帮助 2内容质量差', 'example' => 1],
+        ]
+    ))]
+    #[ResultResponse(instance: new Result())]
+    public function qualityFeedback(): Result
+    {
+        $userId = $this->currentUser->id();
+        $map = $this->getRequestData();
+        $map['user_id'] = $userId;
+        $exists = FeedQualityFeedback::query()->where($map)->exists();
+        if ($exists) {
+            return $this->success();
+        }
+        (new FeedQualityFeedback)->fill($map)->save();
+        return $this->success();
     }
 }

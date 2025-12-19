@@ -42,10 +42,11 @@ abstract class AbstractController
 
     protected function getRequestData(): array
     {
-        $request = $this->getRequest();
+        return $this->getRequest()->all();
+    }
 
-        return array_merge($request->all(), [
-            'lang' => $request->getHeaderLine('accept-language') ?: 'zh_CN',
-        ]);
+    protected function getLang(): string
+    {
+        return $this->getRequest()->getHeaderLine('accept-language') ?: 'zh_CN';
     }
 }

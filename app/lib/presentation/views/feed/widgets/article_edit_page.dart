@@ -3,6 +3,7 @@ import 'package:html_editor_enhanced/html_editor.dart';
 import 'package:get_it/get_it.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
+import 'package:fastapp/core/services/message_service.dart';
 
 /// HTML 富文本编辑器页面
 ///
@@ -58,20 +59,20 @@ class _ArticleEditPageState extends State<ArticleEditPage> {
     final htmlContent = await _htmlEditorController.getText();
 
     if (htmlContent.isEmpty || htmlContent == '<p></p>' || htmlContent == '<p><br></p>') {
-      _showSnackBar('请输入内容');
+      MessageService.warning('请输入内容');
       return;
     }
 
     // 检查字数限制
     if (_contentLength > _maxContentLength) {
-      _showSnackBar('内容超过字数限制（最多$_maxContentLength字）');
+      MessageService.warning('内容超过字数限制（最多$_maxContentLength字）');
       return;
     }
 
     if (_isArticle) {
       final title = _titleController.text.trim();
       if (title.isEmpty) {
-        _showSnackBar('请输入标题');
+        MessageService.warning('请输入标题');
         return;
       }
     }
@@ -79,7 +80,7 @@ class _ArticleEditPageState extends State<ArticleEditPage> {
     setState(() => _isPublishing = true);
 
     try {
-      await _feedRepository.createPost(
+      final newPost = await _feedRepository.createPost(
         type: widget.type,
         contentType: 2, // 文章默认是图文类型
         title: _isArticle ? _titleController.text.trim() : null,
@@ -88,23 +89,15 @@ class _ArticleEditPageState extends State<ArticleEditPage> {
       );
 
       if (mounted) {
-        _showSnackBar('发布成功');
-        Navigator.of(context).pop(true);
+        MessageService.success('发布成功');
+        Navigator.of(context).pop(newPost);
       }
     } catch (e) {
-      _showSnackBar('发布失败: ${e.toString()}');
+      MessageService.error('发布失败: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _isPublishing = false);
       }
-    }
-  }
-
-  void _showSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
     }
   }
 
@@ -259,7 +252,7 @@ class _ArticleEditPageState extends State<ArticleEditPage> {
 
               // 图片上传区域
               ImageUploadGrid(
-                maxCount: 9,
+                maxCount: 5,
                 onImagesChanged: (images) {
                   setState(() {
                     _uploadedImages.clear();

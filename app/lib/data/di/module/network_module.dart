@@ -18,6 +18,7 @@ import 'package:fastapp/data/network/apis/feed/feed_api.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/core/services/page_content_service.dart';
+import 'package:fastapp/core/services/quality_feedback_service.dart';
 import 'package:fastapp/core/services/language_service.dart';
 import 'package:fastapp/data/network/constants/endpoints.dart';
 import 'package:fastapp/data/network/interceptors/error_interceptor.dart';
@@ -97,6 +98,10 @@ class NetworkModule {
 
     getIt.registerSingleton<PageContentService>(
       PageContentService(getIt<PageContentApi>()),
+    );
+
+    getIt.registerSingleton<QualityFeedbackService>(
+      QualityFeedbackService(),
     );
   }
 }

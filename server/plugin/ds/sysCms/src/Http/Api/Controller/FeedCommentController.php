@@ -18,6 +18,7 @@ use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedComment;
 use Plugin\Ds\SysCms\Model\FeedPost;
@@ -29,8 +30,9 @@ use Plugin\Ds\SysCms\Model\FeedPost;
 class FeedCommentController extends AbstractController
 {
     public function __construct(
-        private readonly FeedCacheService $cacheService,
-        private readonly CurrentUser      $currentUser
+        private readonly FeedCacheService      $cacheService,
+        private readonly FeedUserFollowService $followService,
+        private readonly CurrentUser           $currentUser
     )
     {
     }
@@ -41,7 +43,7 @@ class FeedCommentController extends AbstractController
         summary: '获取评论列表',
         tags: ['信息流-评论']
     )]
-    #[QueryParameter(name: 'target_type', description: '目标类型：1帖子 2文章', required: true, example: '1')]
+    #[QueryParameter(name: 'target_type', description: '目标类型：1帖子 2文章 3公告 4新闻', required: true, example: '1')]
     #[QueryParameter(name: 'target_id', description: '目标ID', required: true, example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
@@ -92,7 +94,7 @@ class FeedCommentController extends AbstractController
                 'user_id' => $reply->user_id,
                 'reply_to_user_id' => $reply->reply_to_user_id,
                 'content' => $reply->content,
-                'images' => $post->images ??[],
+                'images' => $reply->images ?? [],
                 'like_count' => $reply->like_count,
                 'created_at' => $reply->created_at?->toDateTimeString(),
             ];
@@ -110,7 +112,7 @@ class FeedCommentController extends AbstractController
     #[RequestBody(content: new JsonContent(
         required: ['target_type', 'target_id', 'content'],
         properties: [
-            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章', 'example' => 1],
+            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章 3公告 4新闻', 'example' => 1],
             'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
             'parent_id' => ['type' => 'integer', 'description' => '父评论ID，0为顶级评论', 'example' => 0],
             'reply_to_user_id' => ['type' => 'integer', 'description' => '回复的用户ID'],
@@ -154,6 +156,12 @@ class FeedCommentController extends AbstractController
         // 更新目标内容的评论数
         $this->updateCommentCount($targetType, $targetId, 1);
 
+        // 更新目标内容作者的总评论数统计
+        $targetAuthorId = $this->getTargetAuthorId($targetType, $targetId);
+        if ($targetAuthorId) {
+            $this->followService->incrementUserCommentCount($targetAuthorId);
+        }
+
         // 更新父评论的回复数
         if ($parentId > 0) {
             FeedComment::query()->where('id', $parentId)->increment('reply_count');
@@ -188,8 +196,15 @@ class FeedCommentController extends AbstractController
         if (!$comment) {
             return $this->success();
         }
+
         // 更新目标内容的评论数
         $this->updateCommentCount($comment->target_type, $comment->target_id, -1);
+
+        // 更新目标内容作者的总评论数统计
+        $targetAuthorId = $this->getTargetAuthorId($comment->target_type, $comment->target_id);
+        if ($targetAuthorId) {
+            $this->followService->decrementUserCommentCount($targetAuthorId);
+        }
 
         // 更新父评论的回复数
         if ($comment->parent_id > 0) {
@@ -209,10 +224,30 @@ class FeedCommentController extends AbstractController
 
     private function updateCommentCount(int $targetType, int $targetId, int $increment): void
     {
-        if ($targetType === 1) {
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
             FeedPost::query()->where('id', $targetId)->increment('comment_count', $increment);
-        } elseif ($targetType === 2) {
-            Article::query()->where('id', $targetId)->increment('comment', $increment);
+        } elseif ($targetType === 3 || $targetType === 4) {
+            // 公告/新闻（Article）
+            Article::query()->where('id', $targetId)->increment('comment_count', $increment);
         }
+    }
+
+    /**
+     * 获取目标内容的作者ID
+     */
+    private function getTargetAuthorId(int $targetType, int $targetId): ?int
+    {
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
+            $post = $this->cacheService->getPost($targetId);
+            return $post['user_id'] ?? null;
+        } elseif ($targetType === 3 || $targetType === 4) {
+            // 公告/新闻（Article）
+            $article = $this->cacheService->getArticle($targetId);
+            return $article['profile']['user_id'] ?? null;
+        }
+
+        return null;
     }
 }

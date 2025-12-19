@@ -7,7 +7,7 @@ namespace Plugin\Ds\SysCms\Model;
 use Hyperf\DbConnection\Model\Model;
 
 /**
- * @property int $target_type 目标类型：1帖子 2文章
+ * @property int $target_type 目标类型：1帖子 2文章 3公告 4新闻
  * @property int $target_id 目标ID
  * @property int $tag_id 标签ID
  * @property string $created_at 创建时间

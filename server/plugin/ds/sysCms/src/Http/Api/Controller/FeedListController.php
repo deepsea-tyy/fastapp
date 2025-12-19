@@ -7,6 +7,7 @@ namespace Plugin\Ds\SysCms\Http\Api\Controller;
 use App\Common\AbstractController;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
+use App\Common\Tools;
 use App\Http\CurrentUser;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
@@ -51,10 +52,18 @@ class FeedListController extends AbstractController
 
         // 如果用户已登录，批量获取用户动作状态
         $userId = $this->currentUser->id();
-        if ($userId) {
+        if ($userId && !empty($list)) {
+            // 提取所有帖子ID
+            $postIds = array_column($list, 'id');
+
+            // 批量查询点赞和收藏状态（只需2次查询，而不是 N*2 次）
+            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
+//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+
+            // 将状态添加到列表中
             foreach ($list as &$item) {
-                $item['is_liked'] = $this->cacheService->getUserLikeStatus($userId, 1, $item['id']);
-                $item['is_collected'] = $this->cacheService->getUserCollectStatus($userId, 1, $item['id']);
+                $item['is_liked'] = $likeStatuses[$item['id']] ?? 0;
+//                $item['is_collected'] = $collectStatuses[$item['id']] ?? 0;
             }
         }
         return $this->success(['list' => $list]);
@@ -93,7 +102,6 @@ class FeedListController extends AbstractController
 
         // 使用模型查询以便加载关联和自动处理JSON字段
         $posts = \Plugin\Ds\SysCms\Model\FeedPost::query()
-            ->with(['profile:user_id,nickname,avatar'])
             ->whereIn('id', $postIds)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -108,7 +116,7 @@ class FeedListController extends AbstractController
                 $list[] = [
                     'type' => $post->type ?? 1,
                     'id' => $post->id,
-                    'profile' => $post->profile,
+                    'profile' => Tools::getUserCache($post->user_id, ['user_id', 'nickname', 'avatar', 'signed']),
                     'user_id' => $post->user_id,
                     'title' => $post->title ?? '',
                     'content' => $post->content ?? '',
@@ -122,10 +130,18 @@ class FeedListController extends AbstractController
 
         // 如果用户已登录，批量获取用户动作状态
         $userId = $this->currentUser->id();
-        if ($userId) {
+        if ($userId && !empty($list)) {
+            // 提取所有帖子ID
+            $postIds = array_column($list, 'id');
+
+            // 批量查询点赞和收藏状态（只需2次查询，而不是 N*2 次）
+            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
+//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+
+            // 将状态添加到列表中
             foreach ($list as &$item) {
-                $item['is_liked'] = $this->cacheService->getUserLikeStatus($userId, 1, $item['id']);
-                $item['is_collected'] = $this->cacheService->getUserCollectStatus($userId, 1, $item['id']);
+                $item['is_liked'] = $likeStatuses[$item['id']] ?? 0;
+//                $item['is_collected'] = $collectStatuses[$item['id']] ?? 0;
             }
         }
 
@@ -148,6 +164,23 @@ class FeedListController extends AbstractController
 
         $userId = $this->currentUser->id();
         $posts = $this->followService->getFollowingUserPosts($userId, $page, $pageSize);
+
+        // 如果有数据，批量获取用户动作状态
+        if (!empty($posts)) {
+            // 提取所有帖子ID
+            $postIds = array_column($posts, 'id');
+
+            // 批量查询点赞和收藏状态
+            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
+//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+
+            // 将状态添加到列表中
+            foreach ($posts as &$post) {
+                $post['is_liked'] = $likeStatuses[$post['id']] ?? 0;
+//                $post['is_collected'] = $collectStatuses[$post['id']] ?? 0;
+            }
+        }
+
         FeedService::readMessage($userId, 1);
         return $this->success(['list' => $posts]);
     }
@@ -163,7 +196,7 @@ class FeedListController extends AbstractController
     #[ResultResponse(instance: new Result())]
     public function hot(): Result
     {
-        return $this->getList('hot');
+        return $this->list('hot');
     }
 
     #[Get(

@@ -6,22 +6,31 @@ import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
 /// 用于发布评论、回复、转发等场景
 class FeedCommentInputSheet extends StatefulWidget {
   final String? placeholder;
-  final VoidCallback? onSend;
+  final Function(String content, List<String> images)? onSend;
   final bool showRepostOption;
+  final int? parentId;
+  final int? replyToUserId;
+  final String? replyToUsername;
 
   const FeedCommentInputSheet({
     super.key,
     this.placeholder,
     this.onSend,
     this.showRepostOption = true,
+    this.parentId,
+    this.replyToUserId,
+    this.replyToUsername,
   });
 
   /// 显示评论输入弹框
   static void show(
     BuildContext context, {
     String? placeholder,
-    VoidCallback? onSend,
+    Function(String content, List<String> images)? onSend,
     bool showRepostOption = true,
+    int? parentId,
+    int? replyToUserId,
+    String? replyToUsername,
   }) {
     showModalBottomSheet(
       context: context,
@@ -31,6 +40,9 @@ class FeedCommentInputSheet extends StatefulWidget {
         placeholder: placeholder,
         onSend: onSend,
         showRepostOption: showRepostOption,
+        parentId: parentId,
+        replyToUserId: replyToUserId,
+        replyToUsername: replyToUsername,
       ),
     );
   }
@@ -278,8 +290,9 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
         const SizedBox(width: 16),
         GestureDetector(
           onTap: () {
-            if (_textController.text.trim().isEmpty) return;
-            widget.onSend?.call();
+            final content = _textController.text.trim();
+            if (content.isEmpty) return;
+            widget.onSend?.call(content, _uploadedImages);
             Navigator.of(context).pop();
           },
           child: Container(

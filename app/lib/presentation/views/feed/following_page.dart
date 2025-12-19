@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/di/service_locator.dart';
-import 'package:fastapp/presentation/views/feed/notification_settings_page.dart';
+import 'package:fastapp/presentation/views/feed/feed_notify_settings.dart';
 import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:fastapp/core/services/message_service.dart';
@@ -292,7 +292,7 @@ class _FollowingPageState extends State<FollowingPage>
           icon: Icon(Icons.hexagon_outlined, color: Colors.grey.shade700),
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const NotificationSettingsPage(),
+              builder: (context) => const FeedNotifySettings(),
             ),
           ),
         ),

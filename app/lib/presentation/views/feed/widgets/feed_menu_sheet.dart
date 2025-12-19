@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/common/action_bottom_sheet.dart';
+import 'package:fastapp/core/services/blocked_users_service.dart';
+import 'package:fastapp/core/services/not_interested_service.dart';
+import 'package:fastapp/core/services/quality_feedback_service.dart';
+import 'package:fastapp/core/services/message_service.dart';
+import 'package:fastapp/di/service_locator.dart';
 import 'feed_report_page.dart';
 
 class FeedMenuSheet extends StatelessWidget {
@@ -7,6 +12,7 @@ class FeedMenuSheet extends StatelessWidget {
   final String? topic;
   final int? targetId;
   final int targetType;
+  final int? userId;
 
   const FeedMenuSheet({
     super.key,
@@ -14,16 +20,18 @@ class FeedMenuSheet extends StatelessWidget {
     this.topic,
     this.targetId,
     this.targetType = 1,
+    this.userId,
   });
 
-  static void show(
+  static Future<String?> show(
     BuildContext context, {
     String? username,
     String? topic,
     int? targetId,
     int targetType = 1, // 1=帖子 2=文章 3=评论
-  }) {
-    showModalBottomSheet(
+    int? userId,
+  }) async {
+    final result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -33,11 +41,14 @@ class FeedMenuSheet extends StatelessWidget {
           topic: topic,
           targetId: targetId,
           targetType: targetType,
+          userId: userId,
         );
       },
-    ).then((result) {
-      // 如果返回值是 'report'，导航到举报页面
-      if (result == 'report' && targetId != null) {
+    );
+
+    // 如果返回值是 'report'，导航到举报页面
+    if (result == 'report' && targetId != null) {
+      if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => FeedReportPage(
@@ -47,10 +58,16 @@ class FeedMenuSheet extends StatelessWidget {
           ),
         );
       }
-    });
+    }
+
+    return result;
   }
 
-  List<ActionSheetSection> _buildSections() {
+  List<ActionSheetSection> _buildSections(BuildContext context) {
+    final notInterestedService = getIt<NotInterestedService>();
+    final blockedUsersService = getIt<BlockedUsersService>();
+    final qualityFeedbackService = getIt<QualityFeedbackService>();
+
     return [
       ActionSheetSection(
         title: '不感兴趣',
@@ -58,13 +75,28 @@ class FeedMenuSheet extends StatelessWidget {
           ActionSheetItem(
             icon: Icons.sentiment_dissatisfied_outlined,
             text: '对这篇文章不感兴趣',
-            onTap: () {},
+            closeOnTap: false,
+            onTap: () async {
+              if (targetId != null) {
+                await notInterestedService.markAsNotInterested(targetId!);
+                if (context.mounted) {
+                  Navigator.pop(context, 'not_interested_post');
+                }
+              }
+            },
           ),
-          if (username != null)
+          // 只有当 userId 存在且不为 0 时才显示"对用户不感兴趣"选项
+          if (username != null && userId != null && userId != 0)
             ActionSheetItem(
               icon: Icons.person_off_outlined,
               text: '对 @$username 不感兴趣',
-              onTap: () {},
+              closeOnTap: false,
+              onTap: () async {
+                await blockedUsersService.blockUser(userId!);
+                if (context.mounted) {
+                  Navigator.pop(context, 'not_interested_user');
+                }
+              },
             ),
           if (topic != null)
             ActionSheetItem(
@@ -80,12 +112,48 @@ class FeedMenuSheet extends StatelessWidget {
           ActionSheetItem(
             icon: Icons.description_outlined,
             text: '对投资没有帮助',
-            onTap: () {},
+            closeOnTap: false,
+            onTap: () async {
+              if (targetId != null) {
+                final success = await qualityFeedbackService.submitFeedback(
+                  targetType: targetType,
+                  targetId: targetId!,
+                  qualityType: 1,
+                );
+                if (context.mounted) {
+                  if (success) {
+                    Navigator.pop(context, 'low_quality_1');
+                    MessageService.success('感谢您的反馈');
+                  } else {
+                    Navigator.pop(context);
+                    MessageService.error('反馈失败，请稍后重试');
+                  }
+                }
+              }
+            },
           ),
           ActionSheetItem(
             icon: Icons.thumb_down_outlined,
             text: '内容质量差',
-            onTap: () {},
+            closeOnTap: false,
+            onTap: () async {
+              if (targetId != null) {
+                final success = await qualityFeedbackService.submitFeedback(
+                  targetType: targetType,
+                  targetId: targetId!,
+                  qualityType: 2,
+                );
+                if (context.mounted) {
+                  if (success) {
+                    Navigator.pop(context, 'low_quality_2');
+                    MessageService.success('感谢您的反馈');
+                  } else {
+                    Navigator.pop(context);
+                    MessageService.error('反馈失败，请稍后重试');
+                  }
+                }
+              }
+            },
           ),
         ],
       ),
@@ -105,7 +173,7 @@ class FeedMenuSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sections = _buildSections();
+    final sections = _buildSections(context);
 
     return Container(
       decoration: const BoxDecoration(

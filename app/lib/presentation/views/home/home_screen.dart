@@ -65,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final UserStore _userStore = getIt<UserStore>();
   late final FeedController _feedController;
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _feedTabsKey = GlobalKey();
   bool _showFab = false;
   int _unreadMessageCount = 3; // TODO: 从实际数据源获取未读消息数
 
@@ -102,9 +103,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onScroll() {
-    // 判断是否显示浮动按钮：滚动超过屏幕高度的一半
+    // 判断是否显示浮动按钮：FeedTabs 组件位置超过屏幕中间
     final screenHeight = MediaQuery.of(context).size.height;
-    final shouldShow = _scrollController.position.pixels > screenHeight / 2;
+    final screenMiddle = screenHeight / 2;
+
+    bool shouldShow = false;
+
+    // 获取 FeedTabs 的实际位置
+    final RenderBox? renderBox = _feedTabsKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      // 当 FeedTabs 顶部位置在屏幕中间以上时显示按钮
+      shouldShow = position.dy < screenMiddle;
+    }
 
     if (shouldShow != _showFab) {
       setState(() {
@@ -155,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   delegate: StickyHeaderDelegate(
                     height: 50,
                     child: Container(
+                      key: _feedTabsKey,
                       color: Colors.white,
                       child: ListenableBuilder(
                         listenable: _feedController,
@@ -336,30 +348,27 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           final post = _feedController.feedList[index];
-          final username = post.profile?.displayNickname ??
-              post.username ??
-              '用户${post.userId}';
-          final avatar = post.profile?.displayAvatar ?? post.avatar ?? '';
 
           return Container(
             color: Colors.white,
             child: FeedItem(
               postId: post.id,
-              userId: post.userId ?? 0,
-              username: username,
-              avatarAsset: avatar,
+              profile: post.profile!,
               time: post.getFormattedTime(),
               title: post.title,
               content: post.content ?? '',
               mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
-              isVerified: post.isVerified ?? false,
               commentCount: post.commentCount,
               likeCount: post.likeCount,
               repostCount: post.quoteCount ?? 0,
               shareCount: post.shareCount ?? 0,
               isLiked: post.isLiked ?? false,
-              type: post.type ?? 1, // 默认为帖子
+              type: post.type ?? 1,
               menuIcon: Icons.more_horiz,
+              onRemove: () {
+                // 首页删除回调：从列表中移除该帖子
+                _feedController.removePost(post.id);
+              },
             ),
           );
         },
@@ -374,7 +383,12 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.edit_outlined,
       backgroundColor: Theme.of(context).colorScheme.primary,
       iconColor: Theme.of(context).colorScheme.onPrimary,
-      onTap: () => CreatePostMenu.show(context),
+      onTap: () => CreatePostMenu.show(
+        context,
+        onPostCreated: (newPost) {
+          _feedController.insertNewPost(newPost);
+        },
+      ),
     );
   }
 

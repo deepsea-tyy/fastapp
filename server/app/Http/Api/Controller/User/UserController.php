@@ -24,6 +24,7 @@ use App\Model\Enums\User\Status;
 use App\Model\Enums\User\Type;
 use App\Model\User;
 use App\Model\UserAccountLog;
+use Hyperf\Collection\Arr;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
@@ -37,7 +38,7 @@ use Ramsey\Uuid\Uuid;
 class UserController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser          $userService,
+        private readonly CurrentUser          $currentUser,
         private readonly TwoFactorAuthService $twoFAService,
     )
     {
@@ -63,9 +64,9 @@ class UserController extends AbstractController
         $validated['user_type'] = Type::USER;
         $user = '';
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value) {
-            $user = $this->userService->findUser(['username' => $validated['username']]);
+            $user = $this->currentUser->findUser(['username' => $validated['username']]);
             if ($user) return $this->error(Tools::__('user.username_exist'));
-            $user = $this->userService->create($validated);
+            $user = $this->currentUser->create($validated);
         }
         if ($validated['type'] == LoginType::MOBILE_CODE->value) {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_REGISTER;
@@ -78,15 +79,15 @@ class UserController extends AbstractController
             )) {
                 throw new BusinessException(message: '验证码错误或已过期');
             }
-            $user = $this->userService->create($validated);
+            $user = $this->currentUser->create($validated);
         }
         if ($validated['type'] == LoginType::WECHAT_MINI->value) {
             $validated['wxmini_openid'] = $request->post('openid');
-            $user = $this->userService->create($validated);
+            $user = $this->currentUser->create($validated);
         }
         if ($validated['type'] == LoginType::WECHAT_OPEN->value) {
             $validated['wx_openid'] = $request->post('openid');
-            $user = $this->userService->create($validated);
+            $user = $this->currentUser->create($validated);
         }
         if (!$user) throw new BusinessException(message: trans('user.register_fail'));
 
@@ -95,7 +96,7 @@ class UserController extends AbstractController
             $deviceId = Uuid::uuid4()->toString();
         }
 
-        $tokenData = $this->userService->setScene('api')->formatToken(
+        $tokenData = $this->currentUser->setScene('api')->formatToken(
             $user,
             $request->ip(),
             $request->header('User-Agent') ?: 'unknown',
@@ -120,7 +121,7 @@ class UserController extends AbstractController
     #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {"status": 0}}')]
     public function isRegister(): Result
     {
-        return $this->success(['status' => $this->userService->findUser($this->getRequestData()) ? 1 : 0]);
+        return $this->success(['status' => $this->currentUser->findUser($this->getRequestData()) ? 1 : 0]);
     }
 
     #[Get(
@@ -207,11 +208,11 @@ class UserController extends AbstractController
             } elseif (!empty($validated['email'])) {
                 $findParams['email'] = $validated['email'];
             }
-            $user = $this->userService->findUser($findParams);
+            $user = $this->currentUser->findUser($findParams);
         } else if ($validated['type'] == LoginType::MOBILE_CODE->value) {
-            $user = $this->userService->findUser(['mobile' => $validated['mobile']]);
+            $user = $this->currentUser->findUser(['mobile' => $validated['mobile']]);
         } else if ($validated['type'] == LoginType::EMAIL_CODE->value) {
-            $user = $this->userService->findUser(['email' => $validated['mobile']]);
+            $user = $this->currentUser->findUser(['email' => $validated['mobile']]);
         }
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
         if ($user->status == Status::DISABLE->value) throw new BusinessException(message: trans('result.disabled'));
@@ -261,7 +262,7 @@ class UserController extends AbstractController
         // 验证二次认证
         $this->twoFAService->verify($user, $validated, VerifyCodeService::SCENE_LOGIN);
 
-        $tokenData = $this->userService->setScene('api')->formatToken(
+        $tokenData = $this->currentUser->setScene('api')->formatToken(
             $user,
             $request->ip(),
             $request->header('User-Agent') ?: 'unknown',
@@ -283,7 +284,7 @@ class UserController extends AbstractController
     #[Middleware(TokenMiddleware::class)]
     public function logout(): Result
     {
-        $this->userService->setScene('api')->logout($this->userService->getToken());
+        $this->currentUser->setScene('api')->logout($this->currentUser->getToken());
         return $this->success();
     }
 
@@ -307,8 +308,8 @@ class UserController extends AbstractController
         if (empty($token)) {
             throw new BusinessException(message: trans('jwt.token_required'));
         }
-        $pasToken = $this->userService->setScene('api')->getJwt()->parserRefreshToken($token);
-        $tokenData = $this->userService->setScene('api')->refreshToken($pasToken);
+        $pasToken = $this->currentUser->setScene('api')->getJwt()->parserRefreshToken($token);
+        $tokenData = $this->currentUser->setScene('api')->refreshToken($pasToken);
         return $this->success($tokenData);
     }
 
@@ -323,7 +324,7 @@ class UserController extends AbstractController
     #[Middleware(TokenMiddleware::class)]
     public function info(): Result
     {
-        $info = $this->userService->getInfo();
+        $info = $this->currentUser->getInfo();
         $info->is_google2fa = $info->google2fa ? 1 : 0;
         $info->is_trans_password = $info->profile?->trans_password ? 1 : 0;
         $info->is_password = $info->getOriginal('password') ? 1 : 0;
@@ -353,7 +354,7 @@ class UserController extends AbstractController
     public function changePassword(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
 
         $oldPassword = '';
         if (!empty($user->getOriginal('password'))) {
@@ -372,7 +373,7 @@ class UserController extends AbstractController
         $user->password = $validated['password'];
         $user->save();
 
-        $this->userService->setScene('api')->logout($this->userService->getToken());
+        $this->currentUser->setScene('api')->logout($this->currentUser->getToken());
 
         return $this->success(message: trans('user.password_change_success'));
     }
@@ -394,14 +395,14 @@ class UserController extends AbstractController
     public function disableAccount(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
 
         $this->twoFAService->verifyPasswordAndTwoFactor($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
 
         $user->status = Status::DISABLE->value;
         $user->save();
 
-        $this->userService->setScene('api')->logout($this->userService->getToken());
+        $this->currentUser->setScene('api')->logout($this->currentUser->getToken());
         $this->dispatchUserLoginEvent($user, $request, 8);
         return $this->success(message: trans('auth.account_disable_success'));
     }
@@ -423,7 +424,7 @@ class UserController extends AbstractController
     public function deleteAccount(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
 
         $this->twoFAService->verifyPasswordAndTwoFactor($user, $validated, $validated['password'] ?? '', VerifyCodeService::SCENE_CHANGE);
 
@@ -436,7 +437,7 @@ class UserController extends AbstractController
         $user->status = Status::DISABLE->value;
         $user->save();
 
-        $this->userService->setScene('api')->logout($this->userService->getToken());
+        $this->currentUser->setScene('api')->logout($this->currentUser->getToken());
         $this->dispatchUserLoginEvent($user, $request, 9);
         return $this->success(message: trans('auth.account_delete_success'));
     }
@@ -452,7 +453,7 @@ class UserController extends AbstractController
     #[Middleware(TokenMiddleware::class)]
     public function google2faQrcode(): Result
     {
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
 
 
         if (!empty($user->google2fa)) {
@@ -486,7 +487,7 @@ class UserController extends AbstractController
     public function google2faBind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $secret = $validated['google2fa'];
         $code = $validated['google2fa_code'];
 
@@ -520,7 +521,7 @@ class UserController extends AbstractController
     public function google2faUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $code = $validated['google2fa_code'];
 
         if (empty($user->google2fa)) {
@@ -552,11 +553,11 @@ class UserController extends AbstractController
     public function emailBind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $email = $validated['email'];
         $vcode = $validated['vcode'];
 
-        $existingUser = $this->userService->findUser(['email' => $email]);
+        $existingUser = $this->currentUser->findUser(['email' => $email]);
         if ($existingUser && $existingUser->id !== $user->id) {
             throw new BusinessException(message: trans('auth.email_used'));
         }
@@ -606,7 +607,7 @@ class UserController extends AbstractController
     public function emailUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $vcode = $validated['vcode'];
 
         if (empty($user->email)) {
@@ -654,12 +655,12 @@ class UserController extends AbstractController
     public function mobileBind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $mobile = $validated['mobile'];
         $vcode = $validated['vcode'];
         $countryCode = (int)($validated['code'] ?? 86);
 
-        $existingUser = $this->userService->findUser(['mobile' => $mobile]);
+        $existingUser = $this->currentUser->findUser(['mobile' => $mobile]);
         if ($existingUser && $existingUser->id !== $user->id) {
             throw new BusinessException(message: trans('auth.mobile_used'));
         }
@@ -710,7 +711,7 @@ class UserController extends AbstractController
     public function mobileUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
-        $user = $this->userService->user();
+        $user = $this->currentUser->user();
         $vcode = $validated['vcode'];
 
         if (empty($user->mobile)) {
@@ -756,7 +757,7 @@ class UserController extends AbstractController
     #[Middleware(TokenMiddleware::class)]
     public function accountLogs(UserRequest $request): Result
     {
-        $map['user_id'] = $this->userService->id();
+        $map['user_id'] = $this->currentUser->id();
         $type = (int)$request->input('type');
         if ($type) {
             $map['type'] = $type;
@@ -788,13 +789,21 @@ class UserController extends AbstractController
     {
         $validated = $request->validated();
         if (!$validated) return $this->success();
-        $profile = $this->userService->profile();
+        if (!empty($validated['username'])) {
+            $userId = $this->currentUser->id();
+            if (User::query()->where(['username' => $validated['username']])->where('id', '!=', $userId)->exists()) {
+                return $this->error('user.username_exist');
+            }
+            User::query()->where(['id' => $userId])->update(['username' => $validated['username']]);
+            return $this->info();
+        }
+        $profile = $this->currentUser->profile();
         if (!empty($validated['setting'])) {
-            $validated['setting'] = array_merge($profile->setting, $validated['setting']);
+            $validated['setting'] = array_merge($profile->setting ?: [], $validated['setting']);
         }
         $profile->fill($validated)->save();
-
-        return $this->success(message: trans('user.profile_update_success'));
+        Tools::setUserCache($profile->user_id, Arr::only($profile->toArray(), ['nickname', 'avatar', 'signed', 'lang', 'setting']));
+        return $this->success($profile);
     }
 
     #[Post(
@@ -819,7 +828,7 @@ class UserController extends AbstractController
         } elseif ($validated['type'] == LoginType::EMAIL_CODE->value) {
             $findParams['email'] = $validated['email'];
         }
-        $user = $this->userService->findUser($findParams);
+        $user = $this->currentUser->findUser($findParams);
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
 
         $verifyAgain = $user->google2fa ? 'google2fa_code' : '';

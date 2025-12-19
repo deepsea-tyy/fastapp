@@ -258,13 +258,20 @@ class UserRequest extends FormRequest
     public function profileUpdateRules(): array
     {
         return [
+            'username' => 'nullable|string|max:32|regex:/^[^\s]+$/',
             'nickname' => 'nullable|string|max:32|regex:/^[^\s]+$/',
             'avatar' => 'nullable|string|max:200',
             'signed' => 'nullable|string|max:200',
             'lang' => 'nullable|string|max:8',
             'setting' => 'nullable|array',
             'setting.theme' => 'string|max:8',
-            'setting.message' => 'numeric|in:0,1',
+            'setting.feed_msg_like' => 'numeric|in:0,1',
+            'setting.feed_msg_replay' => 'numeric|in:0,1',
+            'setting.feed_msg_follow' => 'numeric|in:0,1',
+            'setting.feed_msg_at' => 'numeric|in:0,1',
+            'setting.feed_msg_content' => 'numeric|in:0,1',
+            'setting.feed_msg_frequency' => 'numeric|in:1,2,3',
+            'setting.feed_msg_news' => 'numeric|in:0,1',
         ];
     }
 

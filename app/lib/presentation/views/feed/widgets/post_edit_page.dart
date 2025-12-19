@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
+import 'package:fastapp/core/services/message_service.dart';
 
 /// 创建内容页面（支持帖子和文章）
 class PostEditPage extends StatefulWidget {
@@ -36,14 +37,14 @@ class _PostEditPageState extends State<PostEditPage> {
   Future<void> _publish() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) {
-      _showSnackBar('请输入内容');
+      MessageService.warning('请输入内容');
       return;
     }
 
     if (_isArticle) {
       final title = _titleController.text.trim();
       if (title.isEmpty) {
-        _showSnackBar('请输入标题');
+        MessageService.warning('请输入标题');
         return;
       }
     }
@@ -51,7 +52,7 @@ class _PostEditPageState extends State<PostEditPage> {
     setState(() => _isPublishing = true);
 
     try {
-      await _feedRepository.createPost(
+      final newPost = await _feedRepository.createPost(
         type: widget.type,
         contentType: _uploadedImages.isEmpty ? 1 : 2, // 1纯文本 2图文
         title: _isArticle ? _titleController.text.trim() : null,
@@ -60,23 +61,15 @@ class _PostEditPageState extends State<PostEditPage> {
       );
 
       if (mounted) {
-        _showSnackBar('发布成功');
-        Navigator.of(context).pop(true);
+        MessageService.success('发布成功');
+        Navigator.of(context).pop(newPost);
       }
     } catch (e) {
-      _showSnackBar('发布失败: ${e.toString()}');
+      MessageService.error('发布失败: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _isPublishing = false);
       }
-    }
-  }
-
-  void _showSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
     }
   }
 
@@ -153,7 +146,7 @@ class _PostEditPageState extends State<PostEditPage> {
               _buildContentInput(theme),
               const SizedBox(height: 24),
               ImageUploadGrid(
-                maxCount: 9,
+                maxCount: 5,
                 onImagesChanged: (images) {
                   setState(() {
                     _uploadedImages.clear();
