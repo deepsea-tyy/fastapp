@@ -29,6 +29,7 @@ class FeedItem extends StatefulWidget {
   final bool isLiked;
   final int type; // 帖子类型：1帖子 2文章
   final VoidCallback? onRemove; // 删除回调
+  final Function(bool isLiked, int likeCount)? onLikeChanged; // 点赞状态变化回调
 
   const FeedItem({
     super.key,
@@ -48,6 +49,7 @@ class FeedItem extends StatefulWidget {
     this.isLiked = false,
     this.type = 1, // 默认为帖子
     this.onRemove,
+    this.onLikeChanged,
   });
 
   @override
@@ -65,6 +67,21 @@ class _FeedItemState extends State<FeedItem> {
     super.initState();
     _isLiked = widget.isLiked;
     _likeCount = widget.likeCount;
+  }
+
+  @override
+  void didUpdateWidget(FeedItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 当外部传入的点赞状态或点赞数发生变化时，同步更新内部状态
+    // 注意：如果正在执行点赞操作，不要更新状态，避免冲突
+    if (!_isLiking) {
+      if (oldWidget.isLiked != widget.isLiked) {
+        _isLiked = widget.isLiked;
+      }
+      if (oldWidget.likeCount != widget.likeCount) {
+        _likeCount = widget.likeCount;
+      }
+    }
   }
 
   @override
@@ -342,6 +359,9 @@ class _FeedItemState extends State<FeedItem> {
           _likeCount = result.likeCount;
           _isLiking = false;
         });
+
+        // 触发点赞状态变化回调
+        widget.onLikeChanged?.call(result.isLiked, result.likeCount);
       }
     } catch (e) {
       if (mounted) setState(() => _isLiking = false);
@@ -354,10 +374,93 @@ class _FeedItemState extends State<FeedItem> {
       context,
       placeholder: '评论并转发...',
       showRepostOption: true,
-      onSend: (content, images) {
-        // TODO: 实现转发功能
+      defaultRepostChecked: true,
+      onSendWithRepost: (content, images, isRepost) async {
+        if (isRepost) {
+          await _createRepost(content: content, images: images);
+        } else {
+          await _createComment(content: content, images: images);
+        }
       },
     );
+  }
+
+  /// 创建转发帖子
+  Future<void> _createRepost({
+    required String content,
+    required List<String> images,
+  }) async {
+    try {
+      final post = await _feedRepository.createPost(
+        type: widget.type,
+        contentType: images.isNotEmpty ? 2 : 1,
+        content: content,
+        images: images.isNotEmpty ? images : null,
+        quotedType: widget.type,
+        quotedId: widget.postId,
+      );
+
+      if (!mounted) return;
+
+      // 跳转到新创建的帖子详情页
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => FeedDetail(
+            postId: post.id,
+            userId: post.userId ?? 0,
+            username: post.username ?? '',
+            time: post.getFormattedTime(),
+            content: post.content ?? '',
+            title: post.title,
+            mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
+            commentCount: post.commentCount,
+            likeCount: post.likeCount,
+            repostCount: post.quoteCount ?? 0,
+            shareCount: post.shareCount ?? 0,
+            avatarAsset: post.avatar ?? '',
+            isVerified: post.isVerified ?? false,
+            viewCount: post.viewCount ?? 0,
+            type: post.type ?? 1,
+            isLiked: post.isLiked ?? false,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('转发失败: $e')),
+        );
+      }
+      debugPrint('转发失败: $e');
+    }
+  }
+
+  /// 创建评论（不转发）
+  Future<void> _createComment({
+    required String content,
+    required List<String> images,
+  }) async {
+    try {
+      await _feedRepository.createComment(
+        targetType: widget.type,
+        targetId: widget.postId,
+        content: content,
+        images: images.isNotEmpty ? images : null,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('评论成功')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('评论失败: $e')),
+        );
+      }
+      debugPrint('评论失败: $e');
+    }
   }
 
   void _showMenu(BuildContext context) async {

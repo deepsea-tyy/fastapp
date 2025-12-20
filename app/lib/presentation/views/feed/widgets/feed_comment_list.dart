@@ -38,29 +38,48 @@ class FeedCommentListState extends State<FeedCommentList> {
   Future<void> loadComments() async {
     if (_isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final comments = await _feedRepository.getCommentList(
-        targetType: widget.postType, // 使用正确的类型：1帖子 2文章 3公告 4新闻
+        targetType: widget.postType,
         targetId: widget.postId,
         page: 1,
         pageSize: 20,
       );
 
-      setState(() {
-        _comments = comments;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _comments = comments;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      // TODO: 显示错误提示
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       debugPrint('加载评论失败: $e');
     }
+  }
+
+  /// 添加新评论到列表
+  void addComment(FeedComment newComment) {
+    if (!mounted) return;
+
+    setState(() {
+      if (newComment.parentId == 0) {
+        _comments.insert(0, newComment);
+      } else {
+        final rootIndex = _comments.indexWhere((c) => c.id == newComment.rootId);
+        if (rootIndex != -1) {
+          final root = _comments[rootIndex];
+          _comments[rootIndex] = root.copyWith(
+            children: [...?root.children, newComment],
+            replyCount: root.replyCount + 1,
+          );
+        }
+      }
+    });
   }
 
   void _changeSortBy(String sortBy) {
@@ -162,7 +181,7 @@ class FeedCommentListState extends State<FeedCommentList> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                // TODO: 打开评论输入
+                widget.onReply?.call(0, 0, '');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey.shade200,
@@ -192,46 +211,52 @@ class FeedCommentListState extends State<FeedCommentList> {
 
   /// 评论列表
   Widget _buildComments() {
-    if (_comments.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (_comments.isEmpty) return const SizedBox.shrink();
 
     return Column(
       children: [
-        ..._comments.map((comment) {
-          return FeedCommentItem(
+        ..._comments.expand((comment) => [
+          FeedCommentItem(
             comment: comment,
-            onReply: () {
-              widget.onReply?.call(
-                comment.id,
-                comment.userId,
-                comment.username ?? '用户',
-              );
-            },
-            onLike: () async {
-              await _handleCommentLike(comment);
-            },
-          );
-        }),
-        // 查看更多按钮
-        if (_comments.length >= 20)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            child: TextButton(
-              onPressed: () {
-                // TODO: 加载更多评论
-              },
-              child: Text(
-                '查看更多',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.orange.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            onReply: () => widget.onReply?.call(
+              comment.id,
+              comment.userId,
+              comment.username ?? '用户',
             ),
+            onLike: () => _handleCommentLike(comment),
           ),
+          if (comment.children?.isNotEmpty ?? false)
+            ...comment.children!.map((child) => FeedCommentItem(
+              comment: child,
+              onReply: () => widget.onReply?.call(
+                child.id,
+                child.userId,
+                child.username ?? '用户',
+              ),
+              onLike: () => _handleCommentLike(child),
+            )),
+        ]),
+        if (_comments.length >= 20) _buildLoadMoreButton(),
       ],
+    );
+  }
+
+  Widget _buildLoadMoreButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: TextButton(
+        onPressed: () {
+          // TODO: 加载更多评论
+        },
+        child: Text(
+          '查看更多',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.orange.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
@@ -243,14 +268,36 @@ class FeedCommentListState extends State<FeedCommentList> {
         targetId: comment.id,
       );
 
+      if (!mounted) return;
+
       // 更新评论列表中的点赞状态
       setState(() {
+        // 先尝试在顶级评论中查找
         final index = _comments.indexWhere((c) => c.id == comment.id);
         if (index != -1) {
-          _comments[index] = comment.copyWith(
+          // 找到顶级评论，直接更新
+          _comments[index] = _comments[index].copyWith(
             isLiked: result.isLiked,
             likeCount: result.likeCount,
           );
+        } else {
+          // 没找到，说明是子评论，需要在父评论的 children 中查找
+          for (var i = 0; i < _comments.length; i++) {
+            final parent = _comments[i];
+            if (parent.children != null && parent.children!.isNotEmpty) {
+              final childIndex = parent.children!.indexWhere((c) => c.id == comment.id);
+              if (childIndex != -1) {
+                // 找到子评论，更新它
+                final updatedChildren = List<FeedComment>.from(parent.children!);
+                updatedChildren[childIndex] = updatedChildren[childIndex].copyWith(
+                  isLiked: result.isLiked,
+                  likeCount: result.likeCount,
+                );
+                _comments[i] = parent.copyWith(children: updatedChildren);
+                break;
+              }
+            }
+          }
         }
       });
     } catch (e) {
@@ -377,27 +424,33 @@ class FeedCommentItem extends StatelessWidget {
 
   /// 回复标记
   Widget _buildReplyMark() {
-    return RichText(
-      text: TextSpan(
-        style: const TextStyle(
-          fontSize: 14,
-          color: Colors.black87,
-          height: 1.4,
-        ),
-        children: [
-          TextSpan(
-            text: '回复 ',
-            style: TextStyle(color: Colors.grey.shade600),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.black87,
+            height: 1.4,
           ),
-          TextSpan(
-            text: '@${comment.replyToUsername}',
-            style: TextStyle(
-              color: Colors.orange.shade700,
-              fontWeight: FontWeight.w500,
+          children: [
+            TextSpan(
+              text: '回复 ',
+              style: TextStyle(color: Colors.grey.shade600),
             ),
-          ),
-          const TextSpan(text: ' '),
-        ],
+            TextSpan(
+              text: '@${comment.replyToUsername}',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            TextSpan(
+              text: '：',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }

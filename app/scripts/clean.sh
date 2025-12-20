@@ -70,7 +70,7 @@ for item in "${platforms[@]}"; do
         echo "${num}️⃣  $name 目录不存在，跳过"
     fi
 done
-
+flutter pub run build_runner build --delete-conflicting-outputs
 # 11. 重新获取依赖
 echo ""
 echo "📦 重新获取 Flutter 依赖..."

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/domain/entity/feed/feed_comment.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/presentation/views/common/image_preview_page.dart';
@@ -69,7 +70,8 @@ class _FeedDetailState extends State<FeedDetail> {
   bool _isLiking = false;
   bool _isCollected = false;
   bool _isCollecting = false;
-  bool _isLoadingCollectStatus = true;
+  bool _isLoadingDetail = true;
+  late int _commentCount;
 
   // 评论列表的key，用于刷新评论列表
   final GlobalKey<_FeedCommentListWrapperState> _commentListKey = GlobalKey();
@@ -78,16 +80,13 @@ class _FeedDetailState extends State<FeedDetail> {
   void initState() {
     super.initState();
 
-    // 初始化点赞状态
+    // 初始化点赞状态和评论数
     _isLiked = widget.isLiked;
     _likeCount = widget.likeCount;
+    _commentCount = widget.commentCount;
 
-    // 获取收藏状态和关注状态
-    _loadCollectStatus();
-    _loadFollowStatus();
-
-    // 增加帖子浏览数
-    _incrementViewCount();
+    // 加载帖子详情（包含所有状态）
+    _loadPostDetail();
 
     if (widget.scrollToComments) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,56 +95,26 @@ class _FeedDetailState extends State<FeedDetail> {
     }
   }
 
-  /// 获取收藏状态
-  Future<void> _loadCollectStatus() async {
+  /// 加载帖子详情（包含所有状态）
+  Future<void> _loadPostDetail() async {
     try {
-      final response = await _userApi.getCollectStatus(
-        targetType: widget.type,
-        targetId: widget.postId,
-      );
-      if (mounted) {
+      final post = await _feedRepository.getPostDetail(id: widget.postId);
+      if (post != null && mounted) {
         setState(() {
-          _isCollected = response['is_collected'] == 1;
-          _isLoadingCollectStatus = false;
+          // 更新所有状态
+          _isCollected = post.isCollected ?? false;
+          _isFollowing = post.isFollowing ?? false;
+          _isLiked = post.isLiked ?? _isLiked;
+          _likeCount = post.likeCount;
+          _commentCount = post.commentCount;
+          _isLoadingDetail = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingCollectStatus = false);
+        setState(() => _isLoadingDetail = false);
       }
-      debugPrint('获取收藏状态失败: $e');
-    }
-  }
-
-  /// 获取关注状态
-  Future<void> _loadFollowStatus() async {
-    try {
-      final response = await _feedRepository.checkFollowStatus(
-        followUserId: widget.userId,
-      );
-      if (mounted) {
-        // is_following 和 profile 是两个独立的字段
-        final isFollowingValue = response['is_following'];
-        setState(() {
-          // 处理 int 或 bool 类型
-          _isFollowing = isFollowingValue is int ? isFollowingValue == 1 : (isFollowingValue as bool);
-        });
-      }
-    } catch (e) {
-      debugPrint('获取关注状态失败: $e');
-    }
-  }
-
-  /// 增加浏览数
-  Future<void> _incrementViewCount() async {
-    try {
-      await _feedRepository.incrementPostView(
-        id: widget.postId,
-        targetType: widget.type,
-      );
-    } catch (e) {
-      // 浏览数更新失败不影响用户体验
-      debugPrint('增加浏览数失败: $e');
+      debugPrint('加载帖子详情失败: $e');
     }
   }
 
@@ -178,21 +147,16 @@ class _FeedDetailState extends State<FeedDetail> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          GestureDetector(
-            onTap: _isCollecting ? null : _handleCollect,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  key: ValueKey(_isCollected),
-                  _isCollected ? Icons.star : Icons.star_border,
-                  size: 24,
-                  color: _isCollected ? Colors.orange.shade600 : Colors.black,
-                ),
+          IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                key: ValueKey(_isCollected),
+                _isCollected ? Icons.star : Icons.star_border,
+                color: _isCollected ? Colors.orange.shade600 : Colors.black,
               ),
             ),
+            onPressed: _isCollecting ? null : _handleCollect,
           ),
           IconButton(
             icon: const Icon(Icons.flag_outlined, color: Colors.black),
@@ -359,7 +323,7 @@ class _FeedDetailState extends State<FeedDetail> {
 
     try {
       final result = await _feedRepository.toggleLike(
-        targetType: widget.type, // 使用 widget.type：1帖子 2文章
+        targetType: widget.type,
         targetId: widget.postId,
       );
       if (mounted) {
@@ -384,7 +348,6 @@ class _FeedDetailState extends State<FeedDetail> {
   Future<void> _handleCollect() async {
     if (_isCollecting) return;
 
-    // 乐观更新：先更新UI，提升用户体验
     final previousState = _isCollected;
     setState(() {
       _isCollected = !_isCollected;
@@ -393,7 +356,7 @@ class _FeedDetailState extends State<FeedDetail> {
 
     try {
       final result = await _feedRepository.toggleCollect(
-        targetType: widget.type, // 使用 widget.type：1帖子 2文章
+        targetType: widget.type,
         targetId: widget.postId,
       );
       if (mounted) {
@@ -403,7 +366,6 @@ class _FeedDetailState extends State<FeedDetail> {
         });
       }
     } catch (e) {
-      // 发生错误时回滚状态
       if (mounted) {
         setState(() {
           _isCollected = previousState;
@@ -530,31 +492,60 @@ class _FeedDetailState extends State<FeedDetail> {
 
   Widget _buildDisclaimer() {
     return Container(
-      color: Colors.grey.shade100,
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '免责声明:含第三方意见,不构成财务建议,并且可能包含赞助内容。',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 4),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-              children: [
-                const TextSpan(text: '详见'),
-                TextSpan(
-                  text: '《条款和条件》',
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    decoration: TextDecoration.underline,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: Colors.grey.shade600,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(text: '免责声明：含第三方意见，不构成财务建议，并且可能包含赞助内容。详见'),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.baseline,
+                        baseline: TextBaseline.alphabetic,
+                        child: GestureDetector(
+                          onTap: () {
+                            MessageService.info('请阅读完整的条款和条件以了解详细信息');
+                          },
+                          child: Text(
+                            '《条款和条件》',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(text: '。'),
+                    ],
                   ),
                 ),
-                const TextSpan(text: '。'),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -572,7 +563,7 @@ class _FeedDetailState extends State<FeedDetail> {
         children: [
           _buildStatItem(viewCountText),
           const SizedBox(width: 16),
-          _buildStatItem('${widget.likeCount} 次点赞'),
+          _buildStatItem('$_likeCount 次点赞'),
           const SizedBox(width: 16),
           _buildStatItem('${widget.repostCount} 次引用'),
           const SizedBox(width: 16),
@@ -594,7 +585,7 @@ class _FeedDetailState extends State<FeedDetail> {
       key: _commentListKey,
       postId: widget.postId,
       postType: widget.type,
-      commentCount: widget.commentCount,
+      commentCount: _commentCount,
       onReply: (parentId, replyToUserId, replyToUsername) {
         _showCommentInput(
           parentId: parentId,
@@ -637,7 +628,7 @@ class _FeedDetailState extends State<FeedDetail> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildBottomIcon(Icons.comment_outlined, widget.commentCount,
+                _buildBottomIcon(Icons.comment_outlined, _commentCount,
                     onTap: _showCommentInput),
                 _buildBottomIcon(
                     _isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
@@ -656,19 +647,19 @@ class _FeedDetailState extends State<FeedDetail> {
   void _showCommentInput({int? parentId, int? replyToUserId, String? replyToUsername}) {
     FeedCommentInputSheet.show(
       context,
-      placeholder: replyToUsername != null ? '回复 @$replyToUsername' : '添加回复...',
+      placeholder: (replyToUsername?.isNotEmpty ?? false)
+          ? '回复 @$replyToUsername'
+          : '添加回复...',
       showRepostOption: false,
       parentId: parentId,
       replyToUserId: replyToUserId,
       replyToUsername: replyToUsername,
-      onSend: (content, images) async {
-        await _sendComment(
-          content: content,
-          images: images,
-          parentId: parentId ?? 0,
-          replyToUserId: replyToUserId,
-        );
-      },
+      onSend: (content, images) => _sendComment(
+        content: content,
+        images: images,
+        parentId: parentId ?? 0,
+        replyToUserId: replyToUserId,
+      ),
     );
   }
 
@@ -680,8 +671,8 @@ class _FeedDetailState extends State<FeedDetail> {
     int? replyToUserId,
   }) async {
     try {
-      await _feedRepository.createComment(
-        targetType: widget.type, // 使用 widget.type：1帖子 2文章
+      final response = await _feedRepository.createComment(
+        targetType: widget.type,
         targetId: widget.postId,
         content: content,
         parentId: parentId,
@@ -689,11 +680,21 @@ class _FeedDetailState extends State<FeedDetail> {
         images: images.isNotEmpty ? images : null,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('评论成功')),
-        );
-        // 刷新评论列表
+      if (!mounted) return;
+
+      // 更新评论数
+      final newCommentCount = response['comment_count'];
+      if (newCommentCount is int) {
+        setState(() => _commentCount = newCommentCount);
+      } else if (parentId == 0) {
+        setState(() => _commentCount++);
+      }
+
+      // 直接添加新评论到列表
+      try {
+        _commentListKey.currentState?.addComment(FeedComment.fromJson(response));
+      } catch (e) {
+        debugPrint('解析新评论失败: $e，重新加载列表');
         _commentListKey.currentState?._loadComments();
       }
     } catch (e) {
@@ -751,9 +752,9 @@ class _FeedCommentListWrapper extends StatefulWidget {
 class _FeedCommentListWrapperState extends State<_FeedCommentListWrapper> {
   final GlobalKey<FeedCommentListState> _listKey = GlobalKey();
 
-  void _loadComments() {
-    _listKey.currentState?.loadComments();
-  }
+  void _loadComments() => _listKey.currentState?.loadComments();
+
+  void addComment(FeedComment comment) => _listKey.currentState?.addComment(comment);
 
   @override
   Widget build(BuildContext context) {

@@ -19,8 +19,10 @@ use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
 use Plugin\Ds\SysCms\Http\Api\Request\FeedPostRequest;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
+use Plugin\Ds\SysCms\Model\FeedCollect;
+use Plugin\Ds\SysCms\Model\FeedLike;
 use Plugin\Ds\SysCms\Model\FeedPost;
 use Swoole\Coroutine;
 
@@ -31,7 +33,7 @@ use Swoole\Coroutine;
 class FeedPostController extends AbstractController
 {
     public function __construct(
-        private readonly FeedCacheService      $cacheService,
+        private readonly FeedService           $feedService,
         private readonly FeedUserFollowService $followService,
         private readonly CurrentUser           $currentUser
     )
@@ -48,29 +50,25 @@ class FeedPostController extends AbstractController
     )]
     #[QueryParameter(name: 'id', description: '帖子ID', example: '1')]
     #[ResultResponse(instance: new Result())]
-    public function detail(int $id): Result
+    public function detail(): Result
     {
-        // 获取帖子详情（自动使用缓存）
-        $post = $this->cacheService->getPost($id);
+        $id = (int)$this->getRequest()->input('id');
+        $post = $this->feedService->getPost($id);
 
         if (!$post) {
-            return $this->error('帖子不存在');
+            return $this->error();
         }
-
-        // 获取统计数据（自动使用缓存）
-        $stats = $this->cacheService->getStats(1, $id);
-
-        // 异步增加浏览数
-        $this->cacheService->incrementViewCount(1, $id);
-
-        // 如果用户已登录，获取用户动作状态
+        $this->feedService->incrementViewCount(1, $id);
         $userId = $this->currentUser->id();
         if ($userId) {
-            $post['is_liked'] = $this->cacheService->getUserLikeStatus($userId, 1, $id);
-            $post['is_collected'] = $this->cacheService->getUserCollectStatus($userId, 1, $id);
+            $map['user_id'] = $userId;
+            $map['target_type'] = $post['type'];
+            $map['target_id'] = $id;
+            $post['is_liked'] = FeedLike::query()->where($map)->exists() ? 1 : 0;
+            $post['is_collected'] = FeedCollect::query()->where($map)->exists() ? 1 : 0;
+            $post['is_following'] = $this->followService->isFollowing($userId, $post['user_id']);
         }
-
-        return $this->success(array_merge($post, $stats));
+        return $this->success($post);
     }
 
     #[Get(
@@ -159,9 +157,6 @@ class FeedPostController extends AbstractController
         // 增加用户帖子数统计
         $this->followService->incrementUserPostCount($userId);
 
-        // 清除信息流列表缓存
-        $this->cacheService->clearFeedList();
-
         return $this->success([
             'id' => $post->id,
             'profile' => Tools::getUserCache($userId, ['user_id', 'nickname', 'avatar', 'signed']),
@@ -205,10 +200,6 @@ class FeedPostController extends AbstractController
 
         $post->fill($data)->save();
 
-        // 清除信息流列表缓存和帖子缓存
-        $this->cacheService->clearFeedList();
-        $this->cacheService->clearPost($post->id);
-
         return $this->success([
             'id' => $post->id,
             'profile' => Tools::getUserCache($userId, ['user_id', 'nickname', 'avatar', 'signed']),
@@ -250,37 +241,6 @@ class FeedPostController extends AbstractController
         // 减少用户帖子数统计
         $this->followService->decrementUserPostCount($userId);
 
-        // 清除相关缓存
-        $this->cacheService->clearPost($id);
-        $this->cacheService->clearStats(1, $id);
-        $this->cacheService->clearCommentList(1, $id);
-        $this->cacheService->clearFeedList();
-
         return $this->success(['message' => '删除成功']);
-    }
-
-    #[Post(
-        path: '/api/feed/post/view',
-        operationId: 'feedPostView',
-        summary: '增加帖子浏览数',
-        tags: ['信息流-帖子']
-    )]
-    #[RequestBody(content: new JsonContent(
-        required: ['id'],
-        properties: [
-            'id' => ['type' => 'integer', 'description' => '帖子ID', 'example' => 1],
-            'target_type' => ['type' => 'integer', 'description' => '目标类型：1帖子 2文章', 'example' => 1],
-        ]
-    ))]
-    #[ResultResponse(instance: new Result())]
-    public function view(): Result
-    {
-        $id = (int)$this->getRequest()->input('id');
-        $targetType = (int)$this->getRequest()->input('target_type', 1);
-        Coroutine::create(function () use ($id, $targetType) {
-            // 异步增加浏览数
-            $this->cacheService->incrementViewCount($targetType, $id);
-        });
-        return $this->success();
     }
 }

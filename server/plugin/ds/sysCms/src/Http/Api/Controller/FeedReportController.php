@@ -14,7 +14,7 @@ use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\RequestBody;
-use Plugin\Ds\SysCms\Service\FeedReportService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedReportService;
 
 /**
  * 信息流举报API控制器

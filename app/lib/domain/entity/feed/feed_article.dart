@@ -59,6 +59,13 @@ class FeedArticle {
   @JsonKey(name: 'created_at')
   final String? createdAt;
 
+  /// 文章类型：3公告 4新闻（对应数据库 target_type）
+  final int? type;
+
+  /// 是否已点赞（登录后附加）
+  @JsonKey(name: 'is_liked')
+  final bool? isLiked;
+
   FeedArticle({
     required this.id,
     required this.title,
@@ -74,6 +81,8 @@ class FeedArticle {
     this.shareCount = 0,
     this.collectCount = 0,
     this.createdAt,
+    this.type,
+    this.isLiked,
   });
 
   factory FeedArticle.fromJson(Map<String, dynamic> json) =>

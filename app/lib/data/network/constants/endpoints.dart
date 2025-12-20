@@ -111,7 +111,6 @@ class Endpoints {
   static const String feedPostCreate = '/api/feed/post/create';
   static const String feedPostUpdate = '/api/feed/post/update';
   static const String feedPostDelete = '/api/feed/post/delete';
-  static const String feedPostView = '/api/feed/post/view';
 
   // 评论管理
   static const String feedCommentList = '/api/feed/comment/list';

@@ -180,6 +180,8 @@ class FeedApi {
   /// [content] 内容
   /// [images] 图片URL列表
   /// [videos] 视频URL列表
+  /// [quotedType] 引用类型：1帖子 2文章
+  /// [quotedId] 引用的内容ID
   Future<Map<String, dynamic>> createPost({
     int type = 1,
     int contentType = 1,
@@ -187,6 +189,8 @@ class FeedApi {
     required String content,
     List<String>? images,
     List<String>? videos,
+    int? quotedType,
+    int? quotedId,
   }) async {
     final response = await _dioClient.dio.post(
       Endpoints.feedPostCreate,
@@ -197,6 +201,8 @@ class FeedApi {
         'content': content,
         if (images != null) 'images': images,
         if (videos != null) 'videos': videos,
+        if (quotedType != null) 'quoted_type': quotedType,
+        if (quotedId != null) 'quoted_id': quotedId,
       },
     );
     return response.data;
@@ -228,23 +234,6 @@ class FeedApi {
       Endpoints.feedPostDelete,
       queryParameters: {
         'id': id,
-      },
-    );
-    return response.data;
-  }
-
-  /// 增加帖子浏览数
-  /// [id] 帖子ID
-  /// [targetType] 目标类型：1帖子 2文章
-  Future<Map<String, dynamic>> incrementPostView({
-    required int id,
-    int targetType = 1,
-  }) async {
-    final response = await _dioClient.dio.post(
-      Endpoints.feedPostView,
-      data: {
-        'id': id,
-        'target_type': targetType,
       },
     );
     return response.data;

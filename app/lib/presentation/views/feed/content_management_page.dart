@@ -8,6 +8,7 @@ import 'package:fastapp/utils/image_utils.dart';
 import 'package:fastapp/presentation/views/common/action_bottom_sheet.dart';
 import 'widgets/post_edit_page.dart';
 import 'widgets/article_edit_page.dart';
+import 'widgets/feed_detail.dart';
 
 /// 内容管理页面
 class ContentManagementPage extends StatefulWidget {
@@ -439,97 +440,172 @@ class _ContentManagementPageState extends State<ContentManagementPage> {
     final content = post.content ?? '';
     final displayText = title ?? content;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 内容预览
-          Text(
-            displayText,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
+    return GestureDetector(
+      onTap: () => _navigateToDetail(post),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 内容预览
+            Text(
+              displayText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+                height: 1.4,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // 操作按钮
-          Row(
-            children: [
-              // 发布时间
-              Expanded(
-                child: Text(
-                  post.getFormattedTime(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-              // 下架/上架按钮（已发布显示下架，已下架显示上架）
-              if (_selectedStatus == 1)
-                TextButton.icon(
-                  onPressed: () => _toggleStatus(post),
-                  icon: Icon(Icons.archive_outlined,
-                      size: 16, color: Colors.orange.shade700),
-                  label: Text(
-                    '下架',
+            const SizedBox(height: 12),
+            // 统计数据
+            Row(
+              children: [
+                _buildStatItem(Icons.visibility_outlined, post.viewCount ?? 0),
+                const SizedBox(width: 16),
+                _buildStatItem(Icons.thumb_up_outlined, post.likeCount),
+                const SizedBox(width: 16),
+                _buildStatItem(Icons.comment_outlined, post.commentCount),
+                const SizedBox(width: 16),
+                _buildStatItem(Icons.repeat, post.quoteCount ?? 0),
+                const Spacer(),
+                _buildStatItem(Icons.star_border, post.collectCount ?? 0),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Divider(height: 1, color: Colors.grey.shade200),
+            const SizedBox(height: 8),
+            // 操作按钮
+            Row(
+              children: [
+                // 发布时间
+                Expanded(
+                  child: Text(
+                    post.getFormattedTime(),
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.orange.shade700,
+                      color: Colors.grey.shade600,
                     ),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 32),
-                  ),
                 ),
-              if (_selectedStatus == 2)
-                TextButton.icon(
-                  onPressed: () => _toggleStatus(post),
-                  icon: Icon(Icons.unarchive_outlined,
-                      size: 16, color: Colors.green.shade700),
-                  label: Text(
-                    '上架',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.green.shade700,
-                    ),
+                // 下架/上架按钮（已发布显示下架，已下架显示上架）
+                if (_selectedStatus == 1)
+                  _buildActionButton(
+                    icon: Icons.archive_outlined,
+                    label: '下架',
+                    color: Colors.orange.shade700,
+                    onPressed: () => _toggleStatus(post),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 32),
+                if (_selectedStatus == 2)
+                  _buildActionButton(
+                    icon: Icons.unarchive_outlined,
+                    label: '上架',
+                    color: Colors.green.shade700,
+                    onPressed: () => _toggleStatus(post),
                   ),
+                const SizedBox(width: 8),
+                // 删除按钮
+                _buildActionButton(
+                  icon: Icons.delete_outline,
+                  label: '删除',
+                  color: Colors.red,
+                  onPressed: () => _deletePost(post),
                 ),
-              const SizedBox(width: 8),
-              // 删除按钮
-              TextButton.icon(
-                onPressed: () => _deletePost(post),
-                icon: const Icon(Icons.delete_outline,
-                    size: 16, color: Colors.red),
-                label: const Text(
-                  '删除',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.red,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 32),
-                ),
-              ),
-            ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, int count) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Colors.grey.shade600,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          _formatCount(count),
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCount(int count) {
+    if (count >= 10000) {
+      return '${(count / 10000).toStringAsFixed(1)}w';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}k';
+    }
+    return count.toString();
+  }
+
+  void _navigateToDetail(FeedPost post) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FeedDetail(
+          postId: post.id,
+          userId: post.userId ?? 0,
+          username: post.username ?? '',
+          time: post.getFormattedTime(),
+          content: post.content ?? '',
+          title: post.title,
+          mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
+          commentCount: post.commentCount,
+          likeCount: post.likeCount,
+          repostCount: post.quoteCount ?? 0,
+          shareCount: post.shareCount ?? 0,
+          avatarAsset: post.avatar ?? '',
+          isVerified: post.isVerified ?? false,
+          viewCount: post.viewCount ?? 0,
+          type: post.type ?? 1,
+          isLiked: post.isLiked ?? false,
+        ),
       ),
     );
   }

@@ -16,7 +16,7 @@ use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedCollect;
@@ -34,7 +34,7 @@ class FeedUserController extends AbstractController
 {
     #[ResultResponse(instance: new Result())]
     public function __construct(
-        private readonly FeedCacheService      $cacheService,
+        private readonly FeedService           $cacheService,
         private readonly FeedUserFollowService $followService,
         private readonly CurrentUser           $currentUser
     )
@@ -63,16 +63,12 @@ class FeedUserController extends AbstractController
         $targetType = (int)$data['target_type'] ?: 1;
         $targetId = (int)$data['target_id'];
 
-        // 检查是否已收藏（使用缓存）
-        $isCollected = $this->cacheService->getUserCollectStatus($userId, $targetType, $targetId);
+        $map = ['user_id' => $userId, 'target_type' => $targetType, 'target_id' => $targetId];
+        $isCollected = FeedCollect::query()->where($map)->exists();
 
         if ($isCollected) {
             // 取消收藏
-            FeedCollect::query()
-                ->where('user_id', $userId)
-                ->where('target_type', $targetType)
-                ->where('target_id', $targetId)
-                ->delete();
+            FeedCollect::query()->where($map)->delete();
             $newStatus = 0;
         } else {
             // 添加收藏
@@ -92,11 +88,6 @@ class FeedUserController extends AbstractController
             // 公告/新闻（Article）
             Article::query()->where('id', $targetId)->increment('collect_count', $newStatus ? 1 : -1);
         }
-        // 清除用户收藏状态缓存
-        $this->cacheService->clearUserCollect($userId, $targetType, $targetId);
-
-        // 清除统计数据缓存
-        $this->cacheService->clearStats($targetType, $targetId);
 
         return $this->success([
             'is_collected' => $newStatus,
@@ -175,48 +166,30 @@ class FeedUserController extends AbstractController
         $targetType = (int)$data['target_type'] ?: 1;
         $targetId = (int)$data['target_id'];
 
+        $map = ['user_id' => $userId, 'target_type' => $targetType, 'target_id' => $targetId];
         // 检查是否已点赞（使用缓存）
-        $isLiked = $this->cacheService->getUserLikeStatus($userId, $targetType, $targetId);
+        $isLiked = FeedLike::query()->where($map)->exists();
 
         if ($isLiked) {
             // 取消点赞
-            FeedLike::query()
-                ->where('user_id', $userId)
-                ->where('target_type', $targetType)
-                ->where('target_id', $targetId)
-                ->delete();
-
-            $this->updateLikeCount($targetType, $targetId, -1);
+            FeedLike::query()->where($map)->delete();
+            $like_count = $this->updateLikeCount($targetType, $targetId, -1);
             $newStatus = 0;
         } else {
             // 添加点赞
-            FeedLike::create([
-                'user_id' => $userId,
-                'target_type' => $targetType,
-                'target_id' => $targetId,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-
-            $this->updateLikeCount($targetType, $targetId, 1);
+            $map['created_at'] = date('Y-m-d H:i:s');
+            FeedLike::create($map);
+            $like_count = $this->updateLikeCount($targetType, $targetId, 1);
             $newStatus = 1;
         }
 
-        // 清除用户点赞状态缓存
-        $this->cacheService->clearUserLike($userId, $targetType, $targetId);
-
-        // 清除统计数据缓存
-        $this->cacheService->clearStats($targetType, $targetId);
-
-        // 获取最新的点赞数
-        $stats = $this->cacheService->getStats($targetType, $targetId);
-
         return $this->success([
             'is_liked' => $newStatus,
-            'like_count' => $stats['like_count']
+            'like_count' => $like_count
         ]);
     }
 
-    private function updateLikeCount(int $targetType, int $targetId, int $increment): void
+    private function updateLikeCount(int $targetType, int $targetId, int $increment): int
     {
         if ($targetType === 1 || $targetType === 2) {
             // 帖子/文章（FeedPost）
@@ -230,6 +203,7 @@ class FeedUserController extends AbstractController
                 } else {
                     $this->followService->decrementUserLikeCount($post->user_id);
                 }
+                return FeedPost::query()->where('id', $targetId)->value('like_count');
             }
         } elseif ($targetType === 3 || $targetType === 4) {
             // 公告/新闻（Article）
@@ -243,6 +217,7 @@ class FeedUserController extends AbstractController
                 } else {
                     $this->followService->decrementUserLikeCount($article->created_by);
                 }
+                return Article::query()->where('id', $targetId)->value('like_count');
             }
         } elseif ($targetType === 5) {
             // 评论
@@ -256,8 +231,10 @@ class FeedUserController extends AbstractController
                 } else {
                     $this->followService->decrementUserLikeCount($comment->user_id);
                 }
+                return FeedComment::query()->where('id', $targetId)->value('like_count');
             }
         }
+        return 0;
     }
 
     #[Post(
@@ -276,19 +253,9 @@ class FeedUserController extends AbstractController
     public function followToggle(): Result
     {
         $userId = $this->currentUser->id();
-
-        $data = $this->getRequestData();
-        $followUserId = (int)$data['follow_user_id'];
-
-        try {
-            $isFollowing = $this->followService->toggleFollow($userId, $followUserId);
-
-            return $this->success([
-                'is_following' => $isFollowing ? 1 : 0,
-            ]);
-        } catch (\InvalidArgumentException $e) {
-            return $this->error($e->getMessage(), 400);
-        }
+        return $this->success([
+            'is_following' => $this->followService->toggleFollow($userId, (int)$this->getRequest()->input('follow_user_id')) ? 1 : 0,
+        ]);
     }
 
     #[Get(
@@ -325,23 +292,8 @@ class FeedUserController extends AbstractController
         $pageSize = $this->getPageSize();
 
         $userId = $this->currentUser->id();
-
-        $followerUserIds = $this->followService->getFollowersList($userId, $page, $pageSize);
-
-        // 批量检查是否互相关注
-        $mutualFollowing = $this->followService->batchCheckFollowing($userId, $followerUserIds);
-
-        // TODO: 批量获取用户信息
-        $list = [];
-        foreach ($followerUserIds as $followerUserId) {
-            $list[] = [
-                'user_id' => $followerUserId,
-                'is_mutual' => $mutualFollowing[$followerUserId] ?? false, // 是否互相关注
-                // TODO: 添加用户详细信息
-            ];
-        }
-
-        return $this->success($list);
+        $list = $this->followService->getFollowersList($userId, $page, $pageSize);
+        return $this->success(['list' => $list]);
     }
 
     #[Get(
@@ -374,9 +326,10 @@ class FeedUserController extends AbstractController
     public function followStatus(): Result
     {
         $userId = $this->currentUser->id();
-
-        $res = $this->followService->isFollowing($userId, (int)$this->getRequest()->input('follow_user_id'));
-        return $this->success($res);
+        $followUserId = (int)$this->getRequest()->input('follow_user_id');
+        return $this->success([
+            'is_following' => $this->followService->isFollowing($userId, $followUserId),
+        ]);
     }
 
     #[Get(
@@ -390,15 +343,12 @@ class FeedUserController extends AbstractController
     #[ResultResponse(instance: new Result())]
     public function collectStatus(): Result
     {
-        $userId = $this->currentUser->id();
-        $targetType = (int)$this->getRequest()->input('target_type', 1);
-        $targetId = (int)$this->getRequest()->input('target_id');
-
-        // 使用缓存查询收藏状态
-        $isCollected = $this->cacheService->getUserCollectStatus($userId, $targetType, $targetId);
+        $map['user_id'] = $this->currentUser->id();
+        $map['target_type'] = (int)$this->getRequest()->input('target_type', 1);
+        $map['target_id'] = (int)$this->getRequest()->input('target_id');
 
         return $this->success([
-            'is_collected' => $isCollected ? 1 : 0
+            'is_collected' => FeedCollect::query()->where($map)->exists() ? 1 : 0
         ]);
     }
 

@@ -64,14 +64,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
   void initState() {
     super.initState();
 
-    // 加载用户资料（本人获取资料，他人获取资料+关注状态）
+    // 先加载帖子列表（会从中获取用户资料）
+    _loadUserPosts();
+
+    // 加载关注状态
     _checkFollowStatus();
 
     // 加载用户统计数据
     _loadUserStats();
-
-    // 加载帖子列表
-    _loadUserPosts();
 
     // 添加滚动监听以实现分页加载
     _scrollController.addListener(_onScroll);
@@ -90,34 +90,28 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  /// 检查关注状态并获取用户信息
+  /// 检查关注状态
   Future<void> _checkFollowStatus() async {
     try {
-      // 使用 checkFollowStatus 接口获取用户资料和关注状态
       final response = await _feedRepository.checkFollowStatus(
         followUserId: widget.userId,
       );
 
-      // 解析返回的数据
-      final profile = FeedUserProfile.fromJson(response['profile']);
-
-      // is_following 和 profile 是两个独立的字段
+      // 解析关注状态
       final isFollowingValue = response['is_following'];
       final isFollowing = isFollowingValue is int ? isFollowingValue == 1 : (isFollowingValue as bool);
 
-      setState(() {
-        _isFollowing = isFollowing;
-        _isCheckingFollow = false;
-
-        // 用户基本信息
-        _nickname = profile.nickname;
-        _avatar = profile.avatar ?? '';
-        _signed = profile.displaySigned;
-        _isVerified = profile.isVerified;
-      });
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing;
+          _isCheckingFollow = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isCheckingFollow = false);
-      debugPrint('获取用户资料失败: $e');
+      if (mounted) {
+        setState(() => _isCheckingFollow = false);
+      }
+      debugPrint('获取关注状态失败: $e');
     }
   }
 
@@ -165,13 +159,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _allPosts.addAll(posts);
         }
 
-        // 如果还没有用户基本信息，从第一个帖子获取（作为备用）
-        if (_allPosts.isNotEmpty && _nickname.isEmpty) {
+        // 从第一个帖子获取用户基本信息
+        if (_allPosts.isNotEmpty) {
           final firstPost = _allPosts.first;
           _nickname = firstPost.profile?.nickname ?? firstPost.username ?? '用户${widget.userId}';
           _avatar = firstPost.profile?.avatar ?? firstPost.avatar ?? '';
           _isVerified = firstPost.isVerified ?? false;
-          // 签名为空时不设置默认值
+          _signed = firstPost.profile?.signed ?? '';
         }
 
         // 根据当前选中的类型过滤内容

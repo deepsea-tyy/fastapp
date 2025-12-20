@@ -17,6 +17,7 @@ use App\Exception\JwtInBlackException;
 use App\Model\Enums\User\Status;
 use App\Model\User;
 use App\Model\UserProfile;
+use Hyperf\Collection\Arr;
 use Hyperf\Context\RequestContext;
 use Hyperf\DbConnection\Db;
 use Lcobucci\JWT\Token\RegisteredClaims;
@@ -53,14 +54,14 @@ class CurrentUser
         }
         if ($ip) {
             if ($this->scene == 'api') {
-                Tools::setUserCache($user->id, [
+                $profile = Arr::only($user->profile?->toArray() ?? [], ['user_id', 'nickname', 'avatar', 'signed', 'lang', 'trans_password']);
+                Tools::setUserCache($user->id, array_merge([
+                    'user_id' => $user->id,
                     'email' => $user->email,
                     'code' => $user->code,
                     'mobile' => $user->mobile,
                     'google2fa' => $user->google2fa ?: '',
-                    'lang' => $user->profile?->lang ?? 'zh_CN',
-                    'trans_password' => $user->profile?->trans_password ?: '',
-                ]);
+                ], $profile, $user->profile?->setting));
                 Tools::eventDispatcher(new UserAccountEvent($user, $ip, $os, $browser, $deviceId, $user->wasRecentlyCreated ? 2 : 1));
             } else {
                 Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));
@@ -134,14 +135,14 @@ class CurrentUser
             ->find($id ?: $this->id());
     }
 
-    public function user(): ?User
+    public function user(int $id = 0): ?User
     {
-        return User::query()->find($this->id());
+        return User::query()->find($id ?: $this->id());
     }
 
-    public function profile(): ?UserProfile
+    public function profile(int $id = 0): ?UserProfile
     {
-        return UserProfile::query()->where(['user_id' => $this->id()])->first();
+        return UserProfile::query()->where(['user_id' => $id ?: $this->id()])->first();
     }
 
     public function getToken(): ?\Lcobucci\JWT\UnencryptedToken
@@ -160,5 +161,17 @@ class CurrentUser
             $token = $this->jwtFactory->get($this->scene)->parserAccessToken($tokenStr);
         }
         return (int)$token->claims()->get(RegisteredClaims::ID);
+    }
+
+    public static function baseInfo(int $userId): array
+    {
+        $filed = ['user_id', 'nickname', 'avatar', 'signed', 'lang'];
+        $profile = Tools::getUserCache($userId, $filed);
+        if (!$profile['user_id']) {
+            $profile = UserProfile::query()->where('user_id', $userId)
+                ->first($filed)?->toArray() ?? ['user_id' => $userId, 'nickname' => '', 'avatar' => '', 'signed' => ''];
+            Tools::setUserCache($userId, $profile);
+        }
+        return $profile;
     }
 }

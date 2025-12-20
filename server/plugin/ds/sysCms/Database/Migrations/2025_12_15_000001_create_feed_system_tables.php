@@ -308,6 +308,23 @@ return new class extends Migration {
             $table->index('posts_count');
             $table->index('total_likes');
         });
+
+        // 17. 信息流曝光记录表
+        Schema::create('feed_impression', function (Blueprint $table) {
+            $table->engine = 'Innodb';
+            $table->comment('信息流曝光记录表');
+            $table->bigIncrements('id')->comment('主键');
+            $table->bigInteger('user_id')->unsigned()->comment('用户ID');
+            $table->bigInteger('content_id')->unsigned()->comment('内容ID');
+            $table->tinyInteger('content_type')->unsigned()->comment('内容类型：1帖子 2文章 3公告 4新闻');
+            $table->tinyInteger('feed_type')->unsigned()->comment('Feed类型：1关注 2推荐');
+            $table->timestamp('impressed_at')->nullable()->comment('曝光时间');
+
+            // 唯一索引：同一用户对同一内容只记录一次曝光
+            $table->unique(['user_id', 'content_id', 'content_type'], 'unique_user_content');
+            $table->index('content_id');
+            $table->index('feed_type');
+        });
     }
 
     /**
@@ -315,6 +332,7 @@ return new class extends Migration {
      */
     public function down(): void
     {
+        Schema::dropIfExists('feed_impression');
         Schema::dropIfExists('feed_user_stats');
         Schema::dropIfExists('feed_quality_feedback');
         Schema::dropIfExists('feed_user_read_position');

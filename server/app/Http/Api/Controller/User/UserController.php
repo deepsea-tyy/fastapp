@@ -802,7 +802,10 @@ class UserController extends AbstractController
             $validated['setting'] = array_merge($profile->setting ?: [], $validated['setting']);
         }
         $profile->fill($validated)->save();
-        Tools::setUserCache($profile->user_id, Arr::only($profile->toArray(), ['nickname', 'avatar', 'signed', 'lang', 'setting']));
+        Tools::setUserCache($profile->user_id, array_merge(
+            Arr::only($profile->toArray(), ['user_id', 'nickname', 'avatar', 'signed', 'lang']),
+            $profile->setting ?: []
+        ));
         return $this->success($profile);
     }
 
@@ -886,4 +889,19 @@ class UserController extends AbstractController
             type: $type
         ));
     }
+
+
+    #[Get(
+        path: '/api/user/baseInfo',
+        operationId: 'ApiUserbaseInfo',
+        summary: '用户基础信息',
+        tags: ['用户接口'],
+    )]
+    #[QueryParameter(name: 'user_id', description: '用户 id')]
+    #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {}}')]
+    public function baseInfo(): Result
+    {
+        return $this->success($this->currentUser::baseInfo((int)$this->getRequest()->input('user_id')));
+    }
+
 }

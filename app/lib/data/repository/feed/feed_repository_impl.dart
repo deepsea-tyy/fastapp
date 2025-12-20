@@ -293,6 +293,8 @@ class FeedRepositoryImpl implements FeedRepository {
     required String content,
     List<String>? images,
     List<String>? videos,
+    int? quotedType,
+    int? quotedId,
   }) async {
     try {
       final response = await _feedApi.createPost(
@@ -302,6 +304,8 @@ class FeedRepositoryImpl implements FeedRepository {
         content: content,
         images: images,
         videos: videos,
+        quotedType: quotedType,
+        quotedId: quotedId,
       );
 
       if (response is Map<String, dynamic>) {
@@ -344,21 +348,6 @@ class FeedRepositoryImpl implements FeedRepository {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '删除帖子失败'));
     } catch (e) {
       throw Exception(e.toString());
-    }
-  }
-
-  @override
-  Future<void> incrementPostView({
-    required int id,
-    int targetType = 1,
-  }) async {
-    try {
-      await _feedApi.incrementPostView(id: id, targetType: targetType);
-    } on DioException catch (e) {
-      // 浏览数更新失败不影响用户体验，只记录日志
-      debugPrint('增加浏览数失败: ${ErrorHandler.getErrorMessage(e)}');
-    } catch (e) {
-      debugPrint('增加浏览数失败: $e');
     }
   }
 

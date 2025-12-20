@@ -43,7 +43,7 @@ class FeedPostController extends AbstractController
         return $this->success(
             $this->service->page(
                 array_merge($this->getRequestData(), [
-                    'created_by' => $this->currentUser->id(),
+                    'user_id' => $this->currentUser->id(),
                 ]),
                 $this->getPage(),
                 $this->getPageSize()
@@ -57,7 +57,7 @@ class FeedPostController extends AbstractController
     public function create(Request $request): Result
     {
         $this->service->create(array_merge($this->getRequestData(), [
-            'created_by' => $this->currentUser->id(),
+            'user_id' => $this->currentUser->id(),
         ]));
         return $this->success();
     }

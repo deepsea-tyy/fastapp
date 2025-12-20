@@ -102,6 +102,10 @@ class FeedPost {
   @JsonKey(name: 'is_collected', fromJson: intToBoolNullable)
   final bool? isCollected;
 
+  /// 是否已关注作者（登录后附加）
+  @JsonKey(name: 'is_following', fromJson: intToBoolNullable)
+  final bool? isFollowing;
+
   /// 创建时间
   @JsonKey(name: 'created_at')
   final String? createdAt;
@@ -138,6 +142,7 @@ class FeedPost {
     this.quoteCount,
     this.isLiked,
     this.isCollected,
+    this.isFollowing,
     this.createdAt,
     this.type,
     this.status,
@@ -175,6 +180,7 @@ class FeedPost {
     int? quoteCount,
     bool? isLiked,
     bool? isCollected,
+    bool? isFollowing,
     String? createdAt,
     int? type,
     int? status,
@@ -205,6 +211,7 @@ class FeedPost {
       quoteCount: quoteCount ?? this.quoteCount,
       isLiked: isLiked ?? this.isLiked,
       isCollected: isCollected ?? this.isCollected,
+      isFollowing: isFollowing ?? this.isFollowing,
       createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
       status: status ?? this.status,

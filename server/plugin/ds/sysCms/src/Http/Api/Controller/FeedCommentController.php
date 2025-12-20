@@ -8,6 +8,7 @@ use App\Common\AbstractController;
 use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
+use App\Common\Tools;
 use App\Http\CurrentUser;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\Swagger\Annotation\Delete;
@@ -17,7 +18,7 @@ use Hyperf\Swagger\Annotation\JsonContent;
 use Hyperf\Swagger\Annotation\Post;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Hyperf\Swagger\Annotation\RequestBody;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedComment;
@@ -30,7 +31,7 @@ use Plugin\Ds\SysCms\Model\FeedPost;
 class FeedCommentController extends AbstractController
 {
     public function __construct(
-        private readonly FeedCacheService      $cacheService,
+        private readonly FeedService           $cacheService,
         private readonly FeedUserFollowService $followService,
         private readonly CurrentUser           $currentUser
     )
@@ -57,11 +58,41 @@ class FeedCommentController extends AbstractController
         $pageSize = (int)($params['page_size'] ?? 20);
 
         // 获取评论列表（自动使用缓存）
-        $comments = $this->cacheService->getCommentList($targetType, $targetId, $page, $pageSize);
+        $list = $this->cacheService->getCommentList($targetType, $targetId, $page, $pageSize);
 
-        // TODO: 批量获取用户信息
+        // 获取当前用户ID（如果已登录）
+        $userId = $this->currentUser->id();
+        if ($userId) {
+            // 收集所有评论ID（包括子评论）
+            $commentIds = [];
+            foreach ($list as $comment) {
+                $commentIds[] = $comment['id'];
+                if (!empty($comment['children'])) {
+                    $commentIds = array_merge($commentIds, array_column($comment['children'], 'id'));
+                }
+            }
 
-        return $this->success(['list' => $comments]);
+            // 批量获取用户点赞状态（评论类型为 TYPE_COMMENT = 5）
+            if (!empty($commentIds)) {
+                $likeStatusMap = $this->cacheService->batchGetUserLikeStatus(
+                    $userId,
+                    FeedService::TYPE_COMMENT,
+                    $commentIds
+                );
+
+                // 将点赞状态添加到评论数据中
+                foreach ($list as &$comment) {
+                    $comment['is_liked'] = in_array($comment['id'], $likeStatusMap) ? 1 : 0;
+                    if (!empty($comment['children'])) {
+                        foreach ($comment['children'] as &$child) {
+                            $child['is_liked'] = in_array($child['id'], $likeStatusMap) ? 1 : 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $this->success(['list' => $list]);
     }
 
     #[Get(
@@ -89,15 +120,8 @@ class FeedCommentController extends AbstractController
             ->get();
 
         $list = $replies->map(function ($reply) {
-            return [
-                'id' => $reply->id,
-                'user_id' => $reply->user_id,
-                'reply_to_user_id' => $reply->reply_to_user_id,
-                'content' => $reply->content,
-                'images' => $reply->images ?? [],
-                'like_count' => $reply->like_count,
-                'created_at' => $reply->created_at?->toDateTimeString(),
-            ];
+            $reply->images = $reply->images ?? [];
+            return $reply;
         })->toArray();
 
         return $this->success(['list' => $list]);
@@ -124,35 +148,24 @@ class FeedCommentController extends AbstractController
     #[ResultResponse(instance: new Result())]
     public function create(): Result
     {
-        $userId = $this->currentUser->id();
-
         $data = $this->getRequestData();
+        $data['user_id'] = $this->currentUser->id();
         $targetType = (int)$data['target_type'];
         $targetId = (int)$data['target_id'];
         $parentId = (int)($data['parent_id'] ?? 0);
 
         // 确定root_id
-        $rootId = 0;
         if ($parentId > 0) {
             $parentComment = FeedComment::find($parentId);
             if ($parentComment) {
-                $rootId = $parentComment->root_id ?: $parentId;
+                $data['root_id'] = $parentComment->root_id ?: $parentId;
             }
         }
 
         // 创建评论
-        $comment = FeedComment::create([
-            'target_type' => $targetType,
-            'target_id' => $targetId,
-            'user_id' => $userId,
-            'parent_id' => $parentId,
-            'root_id' => $rootId,
-            'reply_to_user_id' => $data['reply_to_user_id'] ?? null,
-            'content' => $data['content'],
-            'images' => json_encode($data['images'] ?? []),
-            'status' => 1,
-        ]);
-
+        $comment = new FeedComment();
+        $comment->fill($data);
+        $comment->save();
         // 更新目标内容的评论数
         $this->updateCommentCount($targetType, $targetId, 1);
 
@@ -165,18 +178,45 @@ class FeedCommentController extends AbstractController
         // 更新父评论的回复数
         if ($parentId > 0) {
             FeedComment::query()->where('id', $parentId)->increment('reply_count');
+
+            // 如果有根评论且根评论不是父评论本身，也需要更新根评论的回复数
+            $rootId = $data['root_id'] ?? 0;
+            if ($rootId > 0 && $rootId != $parentId) {
+                FeedComment::query()->where('id', $rootId)->increment('reply_count');
+            }
         }
 
-        // 清除评论列表缓存
-        $this->cacheService->clearCommentList($targetType, $targetId);
+        // 重新加载评论，包含关联数据
+        $comment = FeedComment::with(['profile:user_id,nickname,avatar,signed'])
+            ->find($comment->id);
 
-        // 清除目标内容的统计数据缓存
-        $this->cacheService->clearStats($targetType, $targetId);
-
-        return $this->success([
+        // 格式化返回数据，与列表接口格式一致
+        $result = [
             'id' => $comment->id,
-            'message' => '评论成功'
-        ]);
+            'target_type' => $comment->target_type,
+            'target_id' => $comment->target_id,
+            'user_id' => $comment->user_id,
+            'parent_id' => $comment->parent_id,
+            'root_id' => $comment->root_id,
+            'reply_to_user_id' => $comment->reply_to_user_id,
+            'content' => $comment->content ?? '',
+            'images' => $comment->images ?? [],
+            'like_count' => $comment->like_count ?? 0,
+            'reply_count' => $comment->reply_count ?? 0,
+            'created_at' => $comment->created_at->toDateTimeString(),
+        ];
+
+        $userCache = Tools::getUserCache($comment->user_id, ['user_id', 'nickname', 'avatar', 'signed']);
+        $result['username'] = $userCache['nickname'] ?? '';
+        $result['avatar'] = $userCache['avatar'] ?? '';
+
+        // 如果是回复，添加被回复用户的信息
+        if ($comment->parent_id != $comment->root_id) {
+            $replyToUserCache = Tools::getUserCache($comment->reply_to_user_id, ['user_id', 'nickname', 'avatar', 'signed']);
+            $result['reply_to_username'] = $replyToUserCache['nickname'] ?? '';
+        }
+
+        return $this->success($result);
     }
 
     #[Delete(
@@ -209,17 +249,16 @@ class FeedCommentController extends AbstractController
         // 更新父评论的回复数
         if ($comment->parent_id > 0) {
             FeedComment::query()->where('id', $comment->parent_id)->decrement('reply_count');
+
+            // 如果有根评论且根评论不是父评论本身，也需要更新根评论的回复数
+            if ($comment->root_id > 0 && $comment->root_id != $comment->parent_id) {
+                FeedComment::query()->where('id', $comment->root_id)->decrement('reply_count');
+            }
         }
 
         $comment->delete();
 
-        // 清除评论列表缓存
-        $this->cacheService->clearCommentList($comment->target_type, $comment->target_id);
-
-        // 清除目标内容的统计数据缓存
-        $this->cacheService->clearStats($comment->target_type, $comment->target_id);
-
-        return $this->success(['message' => '删除成功']);
+        return $this->success();
     }
 
     private function updateCommentCount(int $targetType, int $targetId, int $increment): void

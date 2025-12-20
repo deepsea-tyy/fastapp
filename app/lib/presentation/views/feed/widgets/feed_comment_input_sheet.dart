@@ -7,7 +7,9 @@ import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
 class FeedCommentInputSheet extends StatefulWidget {
   final String? placeholder;
   final Function(String content, List<String> images)? onSend;
+  final Function(String content, List<String> images, bool isRepost)? onSendWithRepost;
   final bool showRepostOption;
+  final bool defaultRepostChecked;
   final int? parentId;
   final int? replyToUserId;
   final String? replyToUsername;
@@ -16,7 +18,9 @@ class FeedCommentInputSheet extends StatefulWidget {
     super.key,
     this.placeholder,
     this.onSend,
+    this.onSendWithRepost,
     this.showRepostOption = true,
+    this.defaultRepostChecked = false,
     this.parentId,
     this.replyToUserId,
     this.replyToUsername,
@@ -27,7 +31,9 @@ class FeedCommentInputSheet extends StatefulWidget {
     BuildContext context, {
     String? placeholder,
     Function(String content, List<String> images)? onSend,
+    Function(String content, List<String> images, bool isRepost)? onSendWithRepost,
     bool showRepostOption = true,
+    bool defaultRepostChecked = false,
     int? parentId,
     int? replyToUserId,
     String? replyToUsername,
@@ -39,7 +45,9 @@ class FeedCommentInputSheet extends StatefulWidget {
       builder: (context) => FeedCommentInputSheet(
         placeholder: placeholder,
         onSend: onSend,
+        onSendWithRepost: onSendWithRepost,
         showRepostOption: showRepostOption,
+        defaultRepostChecked: defaultRepostChecked,
         parentId: parentId,
         replyToUserId: replyToUserId,
         replyToUsername: replyToUsername,
@@ -54,13 +62,14 @@ class FeedCommentInputSheet extends StatefulWidget {
 class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  bool _isRepostChecked = false;
+  late bool _isRepostChecked;
   List<String> _uploadedImages = [];
   String? _selectedLocation; // 已选择的位置
 
   @override
   void initState() {
     super.initState();
+    _isRepostChecked = widget.defaultRepostChecked;
     // 延迟自动聚焦，等待动画完成
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
@@ -292,7 +301,14 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
           onTap: () {
             final content = _textController.text.trim();
             if (content.isEmpty) return;
-            widget.onSend?.call(content, _uploadedImages);
+
+            // 优先使用 onSendWithRepost 回调
+            if (widget.onSendWithRepost != null) {
+              widget.onSendWithRepost!(content, _uploadedImages, _isRepostChecked);
+            } else if (widget.onSend != null) {
+              widget.onSend!(content, _uploadedImages);
+            }
+
             Navigator.of(context).pop();
           },
           child: Container(

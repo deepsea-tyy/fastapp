@@ -78,6 +78,8 @@ abstract class FeedRepository {
     required String content,
     List<String>? images,
     List<String>? videos,
+    int? quotedType,
+    int? quotedId,
   });
 
   /// 更新帖子
@@ -89,12 +91,6 @@ abstract class FeedRepository {
   /// 删除帖子
   Future<Map<String, dynamic>> deletePost({
     required int id,
-  });
-
-  /// 增加帖子浏览数
-  Future<void> incrementPostView({
-    required int id,
-    int targetType = 1,
   });
 
   // ==================== 评论管理 ====================

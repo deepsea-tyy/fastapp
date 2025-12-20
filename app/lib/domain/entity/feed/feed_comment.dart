@@ -2,6 +2,26 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'feed_comment.g.dart';
 
+/// int 转 bool 的转换器
+class IntToBoolConverter implements JsonConverter<bool?, dynamic> {
+  const IntToBoolConverter();
+
+  @override
+  bool? fromJson(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return null;
+  }
+
+  @override
+  dynamic toJson(bool? value) {
+    if (value == null) return null;
+    return value ? 1 : 0;
+  }
+}
+
 /// 信息流评论实体
 ///
 /// 对应后端 feed_comment 表
@@ -58,17 +78,22 @@ class FeedComment {
   @JsonKey(name: 'reply_count')
   final int replyCount;
 
-  /// 是否已点赞
+  /// 是否已点赞（后端返回 int 0/1）
   @JsonKey(name: 'is_liked')
+  @IntToBoolConverter()
   final bool? isLiked;
 
-  /// 是否是帖子作者
+  /// 是否是帖子作者（后端返回 int 0/1）
   @JsonKey(name: 'is_author')
+  @IntToBoolConverter()
   final bool? isAuthor;
 
   /// 创建时间
   @JsonKey(name: 'created_at')
   final String? createdAt;
+
+  /// 子评论列表
+  final List<FeedComment>? children;
 
   FeedComment({
     required this.id,
@@ -88,6 +113,7 @@ class FeedComment {
     this.isLiked,
     this.isAuthor,
     this.createdAt,
+    this.children,
   });
 
   factory FeedComment.fromJson(Map<String, dynamic> json) =>
@@ -114,6 +140,7 @@ class FeedComment {
     bool? isLiked,
     bool? isAuthor,
     String? createdAt,
+    List<FeedComment>? children,
   }) {
     return FeedComment(
       id: id ?? this.id,
@@ -133,6 +160,7 @@ class FeedComment {
       isLiked: isLiked ?? this.isLiked,
       isAuthor: isAuthor ?? this.isAuthor,
       createdAt: createdAt ?? this.createdAt,
+      children: children ?? this.children,
     );
   }
 

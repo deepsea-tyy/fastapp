@@ -25,13 +25,18 @@ class FeedUserFollow extends Model
 
     protected array $casts = ['user_id' => 'integer', 'follow_user_id' => 'integer'];
 
-    public function profile(): HasOne
+    public function following(): HasOne
     {
-        return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
+        return $this->hasOne(UserProfile::class, 'user_id', 'follow_user_id');
     }
 
-    public function posts(): HasOne
+    public function post(): HasOne
     {
         return $this->hasOne(FeedPost::class, 'user_id', 'follow_user_id')->orderByDesc('id');
+    }
+
+    public function follower(): HasOne
+    {
+        return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
     }
 }

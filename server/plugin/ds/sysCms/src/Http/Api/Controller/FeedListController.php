@@ -7,14 +7,14 @@ namespace Plugin\Ds\SysCms\Http\Api\Controller;
 use App\Common\AbstractController;
 use App\Common\Result;
 use App\Common\Swagger\ResultResponse;
-use App\Common\Tools;
 use App\Http\CurrentUser;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\QueryParameter;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedImpressionService;
+use Swoole\Coroutine;
 
 /**
  * 信息流列表API控制器
@@ -23,8 +23,9 @@ use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 class FeedListController extends AbstractController
 {
     public function __construct(
-        private readonly FeedCacheService      $cacheService,
+        private readonly FeedService           $cacheService,
         private readonly FeedUserFollowService $followService,
+        private readonly FeedImpressionService $impressionService,
         private readonly CurrentUser           $currentUser
     )
     {
@@ -46,27 +47,65 @@ class FeedListController extends AbstractController
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
+        $userId = $this->currentUser->id();
 
-        // 获取列表（自动使用缓存）
-        $list = $this->cacheService->getFeedList($filter, $page, $pageSize);
+        // 判断是否需要去重（推荐Feed需要去重）
+        $needDedup = in_array($filter, ['latest', 'hot']);
+
+        if ($needDedup && $userId) {
+            // 直接获取已去重的数据（SQL层面过滤）
+            $list = $this->impressionService->getDeduplicatedFeed($userId, $filter, $page, $pageSize);
+
+            // 如果去重后没数据，降级为不去重（确保有内容显示）
+            if ($list->isEmpty()) {
+                $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize));
+            } else {
+                // 异步记录曝光
+                Coroutine::create(function () use ($list, $userId) {
+                    $this->impressionService->recordImpressions(
+                        $userId,
+                        $list->pluck('id')->toArray(),
+                        FeedImpressionService::CONTENT_TYPE_POST,
+                        FeedImpressionService::FEED_TYPE_RECOMMEND
+                    );
+                });
+            }
+
+            // 格式化数据
+            $list = $list->map(function ($item) {
+                return FeedService::formatData($item);
+            });
+        } else {
+            // 不需要去重或用户未登录，直接获取列表
+            $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize));
+        }
 
         // 如果用户已登录，批量获取用户动作状态
-        $userId = $this->currentUser->id();
-        if ($userId && !empty($list)) {
-            // 提取所有帖子ID
-            $postIds = array_column($list, 'id');
+        if ($userId && $list->isNotEmpty()) {
+            // 转换为数组便于处理
+            $listArray = $list->toArray();
 
-            // 批量查询点赞和收藏状态（只需2次查询，而不是 N*2 次）
-            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
-//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+            // 按 type 分组帖子ID
+            $postIdsByType = [];
+            foreach ($listArray as $item) {
+                $postIdsByType[$item['type']][] = $item['id'];
+            }
+
+            // 批量查询点赞状态（按type分组查询）
+            $allLikeStatuses = [];
+            foreach ($postIdsByType as $type => $postIds) {
+                $allLikeStatuses[$type] = $this->cacheService->batchGetUserLikeStatus($userId, $type, $postIds);
+            }
 
             // 将状态添加到列表中
-            foreach ($list as &$item) {
-                $item['is_liked'] = $likeStatuses[$item['id']] ?? 0;
-//                $item['is_collected'] = $collectStatuses[$item['id']] ?? 0;
+            foreach ($listArray as &$item) {
+                $item['is_liked'] = in_array($item['id'], $allLikeStatuses[$item['type']]) ? 1 : 0;
             }
+
+            return $this->success(['list' => $listArray]);
         }
-        return $this->success(['list' => $list]);
+
+        return $this->success(['list' => $list->toArray()]);
     }
 
     #[Get(
@@ -113,35 +152,32 @@ class FeedListController extends AbstractController
         foreach ($postIds as $postId) {
             $post = $posts->get($postId);
             if ($post) {
-                $list[] = [
-                    'type' => $post->type ?? 1,
-                    'id' => $post->id,
-                    'profile' => Tools::getUserCache($post->user_id, ['user_id', 'nickname', 'avatar', 'signed']),
-                    'user_id' => $post->user_id,
-                    'title' => $post->title ?? '',
-                    'content' => $post->content ?? '',
-                    'images' => $post->images ?? [],
-                    'like_count' => $post->like_count ?? 0,
-                    'comment_count' => $post->comment_count ?? 0,
-                    'created_at' => $post->created_at->toDateTimeString(),
-                ];
+                $list[] = FeedService::formatData($post);
             }
         }
 
         // 如果用户已登录，批量获取用户动作状态
         $userId = $this->currentUser->id();
         if ($userId && !empty($list)) {
-            // 提取所有帖子ID
-            $postIds = array_column($list, 'id');
+            // 按 type 分组帖子ID
+            $postIdsByType = [];
+            foreach ($list as $item) {
+                $type = $item['type'] ?? 1;
+                $postIdsByType[$type][] = $item['id'];
+            }
 
-            // 批量查询点赞和收藏状态（只需2次查询，而不是 N*2 次）
-            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
-//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+            // 批量查询点赞状态（按type分组查询）
+            $allLikeStatuses = [];
+            foreach ($postIdsByType as $type => $postIds) {
+                $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, $type, $postIds);
+                foreach ($likeStatuses as $postId) {
+                    $allLikeStatuses[$postId] = true;
+                }
+            }
 
             // 将状态添加到列表中
             foreach ($list as &$item) {
-                $item['is_liked'] = $likeStatuses[$item['id']] ?? 0;
-//                $item['is_collected'] = $collectStatuses[$item['id']] ?? 0;
+                $item['is_liked'] = isset($allLikeStatuses[$item['id']]) ? 1 : 0;
             }
         }
 
@@ -167,17 +203,25 @@ class FeedListController extends AbstractController
 
         // 如果有数据，批量获取用户动作状态
         if (!empty($posts)) {
-            // 提取所有帖子ID
-            $postIds = array_column($posts, 'id');
+            // 按 type 分组帖子ID
+            $postIdsByType = [];
+            foreach ($posts as $post) {
+                $type = $post['type'] ?? 1;
+                $postIdsByType[$type][] = $post['id'];
+            }
 
-            // 批量查询点赞和收藏状态
-            $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, 1, $postIds);
-//            $collectStatuses = $this->cacheService->batchGetUserCollectStatus($userId, 1, $postIds);
+            // 批量查询点赞状态（按type分组查询）
+            $allLikeStatuses = [];
+            foreach ($postIdsByType as $type => $postIds) {
+                $likeStatuses = $this->cacheService->batchGetUserLikeStatus($userId, $type, $postIds);
+                foreach ($likeStatuses as $postId) {
+                    $allLikeStatuses[$postId] = true;
+                }
+            }
 
             // 将状态添加到列表中
             foreach ($posts as &$post) {
-                $post['is_liked'] = $likeStatuses[$post['id']] ?? 0;
-//                $post['is_collected'] = $collectStatuses[$post['id']] ?? 0;
+                $post['is_liked'] = isset($allLikeStatuses[$post['id']]) ? 1 : 0;
             }
         }
 

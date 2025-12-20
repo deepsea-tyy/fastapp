@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Model;
 
+use App\Model\UserProfile;
+use Hyperf\Database\Model\Relations\HasMany;
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\Database\Model\SoftDeletes;
 use Hyperf\DbConnection\Model\Model;
 
@@ -27,6 +30,7 @@ use Hyperf\DbConnection\Model\Model;
 class FeedComment extends Model
 {
     use SoftDeletes;
+
     /**
      * The table associated with the model.
      */
@@ -55,4 +59,14 @@ class FeedComment extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(FeedComment::class, 'root_id', 'id');
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
+    }
 }

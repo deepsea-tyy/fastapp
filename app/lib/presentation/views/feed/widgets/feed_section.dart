@@ -111,8 +111,8 @@ class _FeedSectionState extends State<FeedSection> {
         _hasMore = newList.length >= _pageSize;
         _isLoading = false;
 
-        // 更新当前tab的缓存
-        _tabDataCache[_currentTab] = _feedList;
+        // 更新当前tab的缓存（深拷贝List）
+        _tabDataCache[_currentTab] = List<FeedPost>.from(_feedList);
         _tabPageCache[_currentTab] = _currentPage;
         _tabHasMoreCache[_currentTab] = _hasMore;
       });
@@ -156,8 +156,8 @@ class _FeedSectionState extends State<FeedSection> {
         _hasMore = newList.length >= _pageSize;
         _isLoadingMore = false;
 
-        // 更新当前tab的缓存
-        _tabDataCache[_currentTab] = _feedList;
+        // 更新当前tab的缓存（深拷贝List）
+        _tabDataCache[_currentTab] = List<FeedPost>.from(_feedList);
         _tabPageCache[_currentTab] = _currentPage;
         _tabHasMoreCache[_currentTab] = _hasMore;
       });
@@ -189,17 +189,17 @@ class _FeedSectionState extends State<FeedSection> {
             initialIndex: _currentTab,
             onTabChanged: (index) {
               setState(() {
-                // 保存当前tab的数据到缓存
-                _tabDataCache[_currentTab] = _feedList;
+                // 保存当前tab的数据到缓存（深拷贝List，避免引用共享）
+                _tabDataCache[_currentTab] = List<FeedPost>.from(_feedList);
                 _tabPageCache[_currentTab] = _currentPage;
                 _tabHasMoreCache[_currentTab] = _hasMore;
 
                 // 切换到新tab
                 _currentTab = index;
 
-                // 从缓存恢复新tab的数据，如果有的话
+                // 从缓存恢复新tab的数据（深拷贝List，避免引用共享）
                 if (_tabDataCache.containsKey(index)) {
-                  _feedList = _tabDataCache[index]!;
+                  _feedList = List<FeedPost>.from(_tabDataCache[index]!);
                   _currentPage = _tabPageCache[index] ?? 1;
                   _hasMore = _tabHasMoreCache[index] ?? true;
                 } else {
@@ -350,6 +350,7 @@ class _FeedSectionState extends State<FeedSection> {
           final post = filteredList[index];
 
           return FeedItem(
+            key: ValueKey('feed_item_${post.id}'), // 添加key，确保组件正确对应
             postId: post.id,
             profile: post.profile!, // 使用 profile 传递用户信息
             time: post.getFormattedTime(),
@@ -363,12 +364,44 @@ class _FeedSectionState extends State<FeedSection> {
             isLiked: post.isLiked ?? false,
             type: post.type ?? 1,
             menuIcon: Icons.more_horiz,
+            onLikeChanged: (isLiked, newLikeCount) {
+              // 点赞状态变化回调：同步更新所有tab缓存中相同postId的状态
+              setState(() {
+                // 更新当前列表中的帖子
+                final currentIndex = _feedList.indexWhere((p) => p.id == post.id);
+                if (currentIndex != -1) {
+                  _feedList[currentIndex] = _feedList[currentIndex].copyWith(
+                    isLiked: isLiked,
+                    likeCount: newLikeCount,
+                  );
+                }
+
+                // 同步更新其他tab缓存中的相同帖子（跳过当前tab，避免重复更新）
+                _tabDataCache.forEach((tabIndex, cachedList) {
+                  if (tabIndex == _currentTab) return; // 跳过当前tab
+
+                  final cachedIndex = cachedList.indexWhere((p) => p.id == post.id);
+                  if (cachedIndex != -1) {
+                    // 创建新的List，避免修改原有引用
+                    final updatedList = List<FeedPost>.from(cachedList);
+                    updatedList[cachedIndex] = updatedList[cachedIndex].copyWith(
+                      isLiked: isLiked,
+                      likeCount: newLikeCount,
+                    );
+                    _tabDataCache[tabIndex] = updatedList;
+                  }
+                });
+
+                // 保存更新后的列表到当前tab缓存（深拷贝）
+                _tabDataCache[_currentTab] = List<FeedPost>.from(_feedList);
+              });
+            },
             onRemove: () {
               // 列表页删除回调：从列表中移除该帖子
               setState(() {
                 _feedList.removeWhere((p) => p.id == post.id);
-                // 更新当前tab的缓存
-                _tabDataCache[_currentTab] = _feedList;
+                // 更新当前tab的缓存（深拷贝）
+                _tabDataCache[_currentTab] = List<FeedPost>.from(_feedList);
               });
             },
           );

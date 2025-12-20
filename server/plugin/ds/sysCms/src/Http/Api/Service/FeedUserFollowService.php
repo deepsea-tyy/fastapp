@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Http\Api\Service;
 
-use App\Common\Tools;
 use App\Model\UserProfile;
+use Plugin\Ds\SysCms\Model\FeedPost;
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
 use Plugin\Ds\SysCms\Model\FeedUserStats;
 
@@ -24,7 +24,7 @@ class FeedUserFollowService
             throw new \InvalidArgumentException('不能关注自己');
         }
 
-        $isFollowing = $this->isFollowing($userId, $followUserId)['is_following'];
+        $isFollowing = $this->isFollowing($userId, $followUserId);
 
         if ($isFollowing) {
             // 取消关注
@@ -57,17 +57,26 @@ class FeedUserFollowService
     /**
      * 检查是否已关注
      */
-    public function isFollowing(int $userId, int $followUserId): array
+    public function isFollowing(int $userId, int $followUserId): int
     {
-
-        $is_following = FeedUserFollow::query()
+        return FeedUserFollow::query()
             ->where('user_id', $userId)
             ->where('follow_user_id', $followUserId)
-            ->exists();
-        return [
-            'is_following' => $is_following ? 1 : 0,
-            'profile' => Tools::getUserCache($userId, ['user_id', 'nickname', 'avatar', 'signed']),
-        ];
+            ->exists() ? 1 : 0;
+    }
+
+    /**
+     * 获取关注的用户ID列表
+     *
+     * @param int $userId 用户ID
+     * @return array 关注的用户ID数组
+     */
+    public function getFollowingIds(int $userId): array
+    {
+        return FeedUserFollow::query()
+            ->where('user_id', $userId)
+            ->pluck('follow_user_id')
+            ->toArray();
     }
 
     /**
@@ -75,22 +84,21 @@ class FeedUserFollowService
      */
     public function getFollowingList(int $userId, int $page = 1, int $pageSize = 20): array
     {
-        $offset = ($page - 1) * $pageSize;
         return FeedUserFollow::query()
-            ->with(['profile:user_id,nickname,avatar,signed', 'posts:user_id,title,content'])
+            ->with(['following:user_id,nickname,avatar,signed', 'post:user_id,title,content'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
-            ->offset($offset)
+            ->offset(($page - 1) * $pageSize)
             ->limit($pageSize)
             ->get()->map(function (FeedUserFollow $follow) {
                 return [
                     'follow_user_id' => $follow->follow_user_id,
                     'user_id' => $follow->user_id,
-                    'nickname' => $follow->profile?->nickname,
-                    'avatar' => $follow->profile?->avatar,
-                    'signed' => $follow->profile?->signed,
-                    'title' => $follow->posts?->title,
-                    'content' => $follow->posts?->content
+                    'nickname' => $follow->following?->nickname,
+                    'avatar' => $follow->following?->avatar,
+                    'signed' => $follow->following?->signed,
+                    'title' => $follow->post?->title,
+                    'content' => $follow->post?->content
                 ];
             })->toArray();
     }
@@ -100,35 +108,26 @@ class FeedUserFollowService
      */
     public function getFollowersList(int $userId, int $page = 1, int $pageSize = 20): array
     {
-        $offset = ($page - 1) * $pageSize;
-
-        $followers = FeedUserFollow::query()
+        $result = FeedUserFollow::query()
+            ->with(['follower:user_id,nickname,avatar,signed'])
             ->where('follow_user_id', $userId)
             ->orderBy('created_at', 'desc')
-            ->offset($offset)
+            ->offset(($page - 1) * $pageSize)
             ->limit($pageSize)
             ->get();
 
-        return $followers->pluck('user_id')->toArray();
-    }
-
-    /**
-     * 批量检查关注状态
-     */
-    public function batchCheckFollowing(int $userId, array $followUserIds): array
-    {
-        $follows = FeedUserFollow::query()
+        $followIds = FeedUserFollow::query()
             ->where('user_id', $userId)
-            ->whereIn('follow_user_id', $followUserIds)
-            ->pluck('follow_user_id')
-            ->toArray();
+            ->whereIn('follow_user_id', $result->pluck('user_id'))
+            ->pluck('follow_user_id')->toArray();
 
-        $result = [];
-        foreach ($followUserIds as $followUserId) {
-            $result[$followUserId] = in_array($followUserId, $follows);
+        $list = [];
+        foreach ($result as $item) {
+            $follow = $item->follower;
+            $follow->is_mutual = in_array($follow->user_id, $followIds) ? 1 : 0;
+            $list[] = $follow;
         }
-
-        return $result;
+        return $list;
     }
 
     /**
@@ -149,7 +148,7 @@ class FeedUserFollowService
         // 查询这些用户的帖子
         $offset = ($page - 1) * $pageSize;
 
-        return \Plugin\Ds\SysCms\Model\FeedPost::query()
+        return FeedPost::query()
             ->whereIn('user_id', $followUserIds)
             ->where('status', 1)
             ->where('audit_status', 1)
@@ -158,7 +157,7 @@ class FeedUserFollowService
             ->limit($pageSize)
             ->get()
             ->map(function ($post) {
-                return FeedCacheService::formatData($post);
+                return FeedService::formatData($post);
             })->toArray();
 
     }

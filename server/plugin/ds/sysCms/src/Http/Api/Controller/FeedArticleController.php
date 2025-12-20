@@ -15,7 +15,6 @@ use App\Http\CurrentUser;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\QueryParameter;
-use Plugin\Ds\SysCms\Http\Api\Service\FeedCacheService;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
 use Plugin\Ds\SysCms\Model\Category;
 
@@ -23,9 +22,8 @@ use Plugin\Ds\SysCms\Model\Category;
 class FeedArticleController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser      $currentUser,
-        private readonly FeedService      $feedService,
-        private readonly FeedCacheService $cacheService,
+        private readonly CurrentUser $currentUser,
+        private readonly FeedService $feedService,
     )
     {
         // 设置为API场景
@@ -48,10 +46,10 @@ class FeedArticleController extends AbstractController
         $uid = $this->currentUser->id();
 
         // 从缓存获取文章ID列表
-        $articleIds = $this->cacheService->getCategoryArticleIds('news', $page, $pageSize);
+        $articleIds = $this->feedService->getCategoryArticleIds('news', $page, $pageSize);
 
         // 批量获取格式化后的文章（带缓存）
-        $list = $this->cacheService->batchGetArticlesFormatted($articleIds, $uid);
+        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
 
         // 标记消息已读
         $this->feedService::readMessage($uid, 3);
@@ -75,10 +73,10 @@ class FeedArticleController extends AbstractController
         $uid = $this->currentUser->id();
 
         // 从缓存获取文章ID列表
-        $articleIds = $this->cacheService->getCategoryArticleIds('notice', $page, $pageSize);
+        $articleIds = $this->feedService->getCategoryArticleIds('notice', $page, $pageSize);
 
         // 批量获取格式化后的文章（带缓存）
-        $list = $this->cacheService->batchGetArticlesFormatted($articleIds, $uid);
+        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
 
         // 标记消息已读
         $this->feedService::readMessage($uid, 2);
@@ -116,10 +114,10 @@ class FeedArticleController extends AbstractController
         $uid = $this->currentUser->id();
 
         // 从缓存获取文章ID列表
-        $articleIds = $this->cacheService->getArticleIdsByCategoryId($categoryId);
+        $articleIds = $this->feedService->getArticleIdsByCategoryId($categoryId);
 
         // 批量获取格式化后的文章（带缓存）
-        $list = $this->cacheService->batchGetArticlesFormatted($articleIds, $uid);
+        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
 
         return $this->success(['list' => $list]);
     }
