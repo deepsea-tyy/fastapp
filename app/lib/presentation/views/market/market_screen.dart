@@ -1,12 +1,12 @@
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:fastapp/presentation/views/market/market_search_screen.dart';
 import 'package:fastapp/presentation/views/market/widgets/market_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-
-/// 行情主页面
+/// 行情主页面（简化版）
 class MarketScreen extends StatefulWidget {
   const MarketScreen({super.key});
 
@@ -16,9 +16,9 @@ class MarketScreen extends StatefulWidget {
 
 class _MarketScreenState extends State<MarketScreen> {
   final MarketStore _marketStore = getIt<MarketStore>();
-  int _selectedMainTab = 1; // 0: 自选, 1: 市场, 2: Alpha, 3: 金融增长, 4: 广场, 5: 大数据
-  int _selectedCategoryTab = 0; // 0: 加密货币, 1: 现货, 2: U本位合约, 3: 币本位合约, 4: 期权
-  int _selectedFilterTab = 0; // 0: 全部, 1: BNB Chain, 2: Solana, 3: RWA, 4: Meme, 5: F
+  final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
+  int _selectedMainTab = 0; // 0: 加密货币, 1: 现货, 2: U本位合约, 3: 币本位合约, 4: 期权
+  int _selectedCategoryTab = 0; // 0: 全部, 1: BNB Chain, 2: Solana, 3: RWA, 4: Meme, 5: F
   String? _sortField; // null, 'name', 'price', 'change'
   bool _sortAscending = true;
 
@@ -26,6 +26,8 @@ class _MarketScreenState extends State<MarketScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 同时加载市场数据配置和 ticker 数据
+      _marketDataStore.loadMarketData();
       _marketStore.loadAllTickers();
     });
   }
@@ -39,16 +41,16 @@ class _MarketScreenState extends State<MarketScreen> {
           children: [
             // 顶部搜索栏
             _buildSearchBar(),
-            
+
             // 主导航栏
             _buildMainNavigation(),
-            
+
             // 次级分类导航
             _buildCategoryNavigation(),
-            
+
             // 列表头部
             _buildListHeader(),
-            
+
             // 内容区域
             Expanded(
               child: _buildMarketList(),
@@ -77,7 +79,10 @@ class _MarketScreenState extends State<MarketScreen> {
               Icon(Icons.search, size: 20, color: Colors.grey.shade600),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('搜索币种/币对/合约', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                child: Text(
+                  '搜索币种/币对/合约',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
               ),
             ],
           ),
@@ -88,7 +93,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   Widget _buildMainNavigation() {
     final mainTabs = ['加密货币', '现货', 'U本位合约', '币本位合约', '期权'];
-    
+
     return SizedBox(
       height: 44,
       child: ListView(
@@ -98,7 +103,7 @@ class _MarketScreenState extends State<MarketScreen> {
           ...mainTabs.asMap().entries.map((entry) {
             final index = entry.key;
             final isSelected = _selectedMainTab == index;
-            
+
             return GestureDetector(
               onTap: () => setState(() => _selectedMainTab = index),
               child: Container(
@@ -129,54 +134,34 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   Widget _buildCategoryNavigation() {
-    return Column(
-      children: [
-        _buildHorizontalTabList(
-          tabs: ['全部', 'BNB Chain', 'Solana', 'RWA', 'Meme', 'F'],
-          selectedIndex: _selectedCategoryTab,
-          onTap: (index) => setState(() => _selectedCategoryTab = index),
-          itemBuilder: (label, isSelected) => Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+    final categories = ['全部', 'BNB Chain', 'Solana', 'RWA', 'Meme', 'F'];
 
-  Widget _buildHorizontalTabList({
-    required List<String> tabs,
-    required int selectedIndex,
-    required ValueChanged<int> onTap,
-    required Widget Function(String label, bool isSelected) itemBuilder,
-    Widget? trailing,
-  }) {
     return SizedBox(
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          ...tabs.asMap().entries.map((entry) {
+          ...categories.asMap().entries.map((entry) {
             final index = entry.key;
-            final isSelected = selectedIndex == index;
-            final isLast = index == tabs.length - 1;
-            final marginRight = trailing == null && isLast ? 0.0 : (trailing == null ? 16.0 : 8.0);
-            
+            final isSelected = _selectedCategoryTab == index;
+
             return GestureDetector(
-              onTap: () => onTap(index),
+              onTap: () => setState(() => _selectedCategoryTab = index),
               child: Container(
-                margin: EdgeInsets.only(right: marginRight),
+                margin: const EdgeInsets.only(right: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: itemBuilder(entry.value, isSelected),
+                child: Text(
+                  entry.value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: Colors.black87,
+                  ),
+                ),
               ),
             );
           }),
-          if (trailing != null) trailing,
         ],
       ),
     );
@@ -187,13 +172,24 @@ class _MarketScreenState extends State<MarketScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(flex: 3, child: _buildSortHeader('名称', 'name')),
-          Expanded(flex: 3, child: _buildSortHeader('最新价格', 'price', isRight: true)),
-          Expanded(flex: 2, child: _buildSortHeader('24h 涨跌', 'change', isRight: true)),
+          Expanded(
+            flex: 3,
+            child: _buildSortHeader('名称', 'name'),
+          ),
+          Expanded(
+            flex: 3,
+            child: _buildSortHeader('最新价格', 'price', isRight: true),
+          ),
+          Expanded(
+            flex: 2,
+            child: _buildSortHeader('24h涨跌', 'change', isRight: true),
+          ),
         ],
       ),
     );
@@ -215,7 +211,13 @@ class _MarketScreenState extends State<MarketScreen> {
       child: Row(
         mainAxisAlignment: isRight ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black87,
+            ),
+          ),
           const SizedBox(width: 4),
           Icon(
             isSelected
@@ -234,7 +236,7 @@ class _MarketScreenState extends State<MarketScreen> {
       builder: (_) {
         // 显示加载状态
         if (_marketStore.isLoading && _marketStore.tickerList.isEmpty) {
-          return Center(
+          return const Center(
             child: CircularProgressIndicator(
               color: Colors.amber,
             ),
@@ -247,7 +249,15 @@ class _MarketScreenState extends State<MarketScreen> {
         }
 
         var tickers = List.from(_marketStore.tickerList);
-        
+
+        // 过滤掉无效的数据（价格无效的项）
+        tickers = tickers.where((ticker) {
+          return !ticker.lastPrice.isNaN && 
+                 !ticker.lastPrice.isInfinite && 
+                 ticker.lastPrice > 0 &&
+                 ticker.symbol.isNotEmpty;
+        }).toList();
+
         // 排序
         if (_sortField != null && tickers.isNotEmpty) {
           tickers.sort(_compareTickers);
@@ -255,11 +265,21 @@ class _MarketScreenState extends State<MarketScreen> {
 
         // 显示空数据状态
         if (tickers.isEmpty) {
+          // 如果正在加载，显示加载状态；否则显示空状态
+          if (_marketStore.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.amber,
+              ),
+            );
+          }
           return _buildEmptyState();
         }
 
         return RefreshIndicator(
-          onRefresh: () => _marketStore.refreshTickers(),
+          onRefresh: () async {
+            await _marketStore.refreshTickers();
+          },
           color: Colors.amber,
           child: ListView.builder(
             itemCount: tickers.length,
@@ -267,12 +287,14 @@ class _MarketScreenState extends State<MarketScreen> {
               final ticker = tickers[index];
               final parts = ticker.symbol.split('/');
               final baseCurrency = parts.isNotEmpty ? parts[0] : ticker.symbol;
-              
+
               return MarketListItem(
                 ticker: ticker,
                 fullName: _getFullName(baseCurrency),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => MarketDetailScreen(ticker: ticker)),
+                  MaterialPageRoute(
+                    builder: (_) => MarketDetailScreen(ticker: ticker),
+                  ),
                 ),
               );
             },
@@ -284,7 +306,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   int _compareTickers(dynamic a, dynamic b) {
     if (_sortField == null) return 0;
-    
+
     int result = 0;
     switch (_sortField) {
       case 'name':
@@ -313,12 +335,22 @@ class _MarketScreenState extends State<MarketScreen> {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(message, style: TextStyle(color: Colors.grey.shade600, fontSize: 14), textAlign: TextAlign.center),
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => _marketStore.refreshTickers(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black87),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black87,
+            ),
             child: const Text('重试'),
           ),
         ],
@@ -333,15 +365,31 @@ class _MarketScreenState extends State<MarketScreen> {
         children: [
           Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 64),
           const SizedBox(height: 16),
-          Text('暂无数据', style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w500)),
+          Text(
+            '暂无数据',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('请下拉刷新或稍后再试', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+          Text(
+            '请下拉刷新或稍后再试',
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => _marketStore.refreshTickers(),
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('刷新'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black87),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black87,
+            ),
           ),
         ],
       ),
@@ -365,4 +413,3 @@ class _MarketScreenState extends State<MarketScreen> {
     return fullNameMap[currency];
   }
 }
-

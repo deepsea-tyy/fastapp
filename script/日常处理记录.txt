@@ -19,8 +19,8 @@ Claude ai全局设置
 
 API 响应处理
 DioClient 拦截器会自动处理 API 响应：
-1. 自动检查 code 状态码，code != 200 时抛出异常
-2. 自动解包 data 字段，直接返回 data 内容
+- 自动检查 code 状态码，code != 200 时抛出异常
+- 自动解包 data 字段，直接返回 data 内容
 
 重要规则：
 - 不要检查 response['code'] == 200

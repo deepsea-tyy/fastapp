@@ -25,6 +25,9 @@ class Endpoints {
   static const String marketKline = AppConfig.marketKline;
   static const String marketDepth = AppConfig.marketDepth;
 
+  // 市场数据配置下载
+  static const String currencyDownload = '/api/ds/ex/currency/download';
+
   // 交易相关
   static const String tradePlaceOrder = AppConfig.tradePlaceOrder;
   static const String tradeCancelOrder = AppConfig.tradeCancelOrder;

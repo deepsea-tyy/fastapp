@@ -43,19 +43,19 @@ class MarketPair {
     this.logoUrl,
   });
 
-  /// 从JSON创建
+  /// 从JSON创建（支持snake_case和camelCase）
   factory MarketPair.fromJson(Map<String, dynamic> json) {
     return MarketPair(
       symbol: json['symbol'] as String,
-      baseCurrency: json['baseCurrency'] as String,
-      quoteCurrency: json['quoteCurrency'] as String,
-      name: json['name'] as String,
-      pricePrecision: json['pricePrecision'] as int,
-      quantityPrecision: json['quantityPrecision'] as int,
-      minQuantity: (json['minQuantity'] as num).toDouble(),
-      minAmount: (json['minAmount'] as num).toDouble(),
-      enabled: json['enabled'] as bool? ?? true,
-      logoUrl: json['logoUrl'] as String?,
+      baseCurrency: (json['base_currency'] ?? json['baseCurrency']) as String,
+      quoteCurrency: (json['quote_currency'] ?? json['quoteCurrency']) as String,
+      name: json['name'] as String? ?? json['symbol'] as String,
+      pricePrecision: (json['price_precision'] ?? json['pricePrecision'] ?? 2) as int,
+      quantityPrecision: (json['quantity_precision'] ?? json['quantityPrecision'] ?? 8) as int,
+      minQuantity: (json['min_quantity'] ?? json['minQuantity'] ?? 0).toDouble(),
+      minAmount: (json['min_amount'] ?? json['minAmount'] ?? 0).toDouble(),
+      enabled: (json['enabled'] ?? json['status'] == 1) as bool? ?? true,
+      logoUrl: json['logo_url'] as String? ?? json['logoUrl'] as String?,
     );
   }
 

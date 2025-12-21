@@ -18,11 +18,13 @@ import 'package:fastapp/data/network/apis/feed/feed_api.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/core/services/page_content_service.dart';
+import 'package:fastapp/core/services/market_data_service.dart';
 import 'package:fastapp/core/services/quality_feedback_service.dart';
 import 'package:fastapp/core/services/language_service.dart';
 import 'package:fastapp/data/network/constants/endpoints.dart';
 import 'package:fastapp/data/network/interceptors/error_interceptor.dart';
 import 'package:fastapp/data/network/rest_client.dart';
+import 'package:fastapp/data/network/http_client_wrapper.dart';
 import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:fastapp/di/service_locator.dart';
@@ -79,7 +81,20 @@ class NetworkModule {
     ]);
 
     final dio = getIt<DioClient>();
-    getIt.registerSingleton(MarketApi());
+    final restClient = getIt<RestClient>();
+    
+    // 注册 HTTP 客户端包装器
+    // 用于统一管理 DioClient 和 RestClient 的切换
+    // 开发时默认使用 DioClient（有日志），生产时可配置部分接口使用 RestClient（性能优化）
+    getIt.registerSingleton<HttpClientWrapper>(
+      HttpClientWrapper(
+        dioClient: dio,
+        restClient: restClient,
+      ),
+    );
+    
+    // 注册 MarketApi（使用 HttpClientWrapper）
+    getIt.registerSingleton(MarketApi(getIt<HttpClientWrapper>()));
     getIt.registerSingleton(OrderApi());
     getIt.registerSingleton(WalletApi());
     getIt.registerSingleton(TradeApi());
@@ -98,6 +113,10 @@ class NetworkModule {
 
     getIt.registerSingleton<PageContentService>(
       PageContentService(getIt<PageContentApi>()),
+    );
+
+    getIt.registerSingleton<MarketDataService>(
+      MarketDataService(getIt<MarketApi>()),
     );
 
     getIt.registerSingleton<QualityFeedbackService>(

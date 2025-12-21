@@ -1,6 +1,7 @@
 import 'package:fastapp/constants/app_theme.dart';
 import 'package:fastapp/core/stores/error/error_store.dart';
-import 'package:fastapp/domain/repository/setting/setting_repository.dart';
+import 'package:fastapp/domain/usecase/setting/get_theme_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/set_theme_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:mobx/mobx.dart';
 
@@ -9,10 +10,15 @@ part 'theme_store.g.dart';
 class ThemeStore = _ThemeStore with _$ThemeStore;
 
 abstract class _ThemeStore with Store {
-  final SettingRepository _repository;
+  final GetThemeUseCase _getThemeUseCase;
+  final SetThemeUseCase _setThemeUseCase;
   final ErrorStore errorStore;
 
-  _ThemeStore(this._repository, this.errorStore) {
+  _ThemeStore(
+    this._getThemeUseCase,
+    this._setThemeUseCase,
+    this.errorStore,
+  ) {
     init();
   }
 
@@ -45,13 +51,13 @@ abstract class _ThemeStore with Store {
 
   /// 初始化主题
   Future<void> init() async {
-    final isDark = _repository.isDarkMode;
+    final isDark = await _getThemeUseCase.call(params: null);
     _currentTheme = isDark ? AppThemeType.dark : AppThemeType.light;
   }
 
   /// 保存主题到本地存储
   Future<void> _saveTheme() async {
-    await _repository.changeBrightnessToDark(isDarkMode);
+    await _setThemeUseCase.call(params: SetThemeParams(isDarkMode: isDarkMode));
   }
 
   /// 检查系统是否为暗色模式

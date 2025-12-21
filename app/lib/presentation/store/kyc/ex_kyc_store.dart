@@ -1,5 +1,6 @@
 import 'package:fastapp/core/stores/error/error_store.dart';
-import 'package:fastapp/data/network/apis/kyc/ex_kyc_api.dart';
+import 'package:fastapp/domain/usecase/kyc/get_kyc_detail_usecase.dart';
+import 'package:fastapp/domain/usecase/kyc/submit_kyc_usecase.dart';
 import 'package:fastapp/domain/entity/kyc/ex_kyc.dart';
 import 'package:fastapp/utils/data_validator.dart';
 import 'package:mobx/mobx.dart';
@@ -9,10 +10,15 @@ part 'ex_kyc_store.g.dart';
 class ExKycStore = _ExKycStore with _$ExKycStore;
 
 abstract class _ExKycStore with Store {
-  final ExKycApi _kycApi;
+  final GetKycDetailUseCase _getKycDetailUseCase;
+  final SubmitKycUseCase _submitKycUseCase;
   final ErrorStore _errorStore;
 
-  _ExKycStore(this._kycApi, this._errorStore);
+  _ExKycStore(
+    this._getKycDetailUseCase,
+    this._submitKycUseCase,
+    this._errorStore,
+  );
 
   // ==================== 私有状态 ====================
 
@@ -80,7 +86,9 @@ abstract class _ExKycStore with Store {
     _errorStore.setErrorMessage('');
 
     try {
-      final data = await _kycApi.getKycDetail(kycLevel: kycLevel);
+      final data = await _getKycDetailUseCase.call(
+        params: GetKycDetailParams(kycLevel: kycLevel),
+      );
 
       // 使用 DataValidator 提取单个对象
       final kycData = DataValidator.extractObject(
@@ -119,7 +127,9 @@ abstract class _ExKycStore with Store {
 
     try {
       // 不传 kycLevel 参数，一次请求获取所有数据
-      final data = await _kycApi.getKycDetail();
+      final data = await _getKycDetailUseCase.call(
+        params: GetKycDetailParams(),
+      );
 
       // 使用 DataValidator 提取有效的 KYC 数据列表
       final kycList = DataValidator.extractList(
@@ -176,28 +186,30 @@ abstract class _ExKycStore with Store {
     _errorStore.setErrorMessage('');
 
     try {
-      final data = await _kycApi.submitKyc(
-        kycLevel: kycLevel,
-        countryCode: countryCode,
-        surname: surname,
-        middleName: middleName,
-        name: name,
-        gender: gender,
-        birthday: birthday,
-        idType: idType,
-        idNumber: idNumber,
-        idIssueDate: idIssueDate,
-        idExpiryDate: idExpiryDate,
-        address: address,
-        latitude: latitude,
-        longitude: longitude,
-        locationAccuracy: locationAccuracy,
-        locationAddress: locationAddress,
-        locationTime: locationTime,
-        idFrontImage: idFrontImage,
-        idBackImage: idBackImage,
-        idSelfieImage: idSelfieImage,
-        addressProofImage: addressProofImage,
+      final data = await _submitKycUseCase.call(
+        params: SubmitKycParams(
+          kycLevel: kycLevel,
+          countryCode: countryCode,
+          surname: surname,
+          middleName: middleName,
+          name: name,
+          gender: gender,
+          birthday: birthday,
+          idType: idType,
+          idNumber: idNumber,
+          idIssueDate: idIssueDate,
+          idExpiryDate: idExpiryDate,
+          address: address,
+          latitude: latitude,
+          longitude: longitude,
+          locationAccuracy: locationAccuracy,
+          locationAddress: locationAddress,
+          locationTime: locationTime,
+          idFrontImage: idFrontImage,
+          idBackImage: idBackImage,
+          idSelfieImage: idSelfieImage,
+          addressProofImage: addressProofImage,
+        ),
       );
 
       // 提交成功，解析返回的 KYC 数据（响应拦截器已处理，直接使用 data）

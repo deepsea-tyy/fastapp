@@ -5,6 +5,7 @@ import 'package:fastapp/presentation/views/main/main_screen.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 import 'package:fastapp/presentation/store/app/theme_store.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
@@ -38,6 +39,8 @@ class _AppState extends State<App> {
     _messageService = MessageService(getIt());
     // 启动时下载页面配置
     _downloadPageContent();
+    // 启动时下载市场数据配置
+    _downloadMarketData();
     // 监听强制登出事件
     _listenToForceLogout();
   }
@@ -79,6 +82,19 @@ class _AppState extends State<App> {
         // initialize() 会先请求服务器，成功则保存/更新本地缓存，失败则使用本地缓存
         final pageContentManager = getIt<PageContentManager>();
         await pageContentManager.initialize();
+      } catch (e) {
+        // 下载失败不影响app启动，静默失败
+      }
+    });
+  }
+
+  /// 下载市场数据配置（后台静默下载，不影响启动）
+  /// APP启动时从服务器获取币种、现货、合约、期权配置
+  void _downloadMarketData() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final marketDataStore = getIt<MarketDataStore>();
+        await marketDataStore.loadMarketData();
       } catch (e) {
         // 下载失败不影响app启动，静默失败
       }

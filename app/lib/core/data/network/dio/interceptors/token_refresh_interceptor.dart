@@ -47,7 +47,6 @@ class TokenRefreshInterceptor extends Interceptor {
 
     try {
       final refreshTokenValue = await _sharedPrefsHelper.refreshToken;
-      print('🔄 [TokenRefresh] 开始刷新token, refresh_token: ${refreshTokenValue?.substring(0, 20)}...');
       if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
         throw Exception('刷新token失败：未找到refresh_token');
       }
@@ -100,8 +99,6 @@ class TokenRefreshInterceptor extends Interceptor {
       if (tokenData['expire_at'] != null) {
         await _sharedPrefsHelper.saveExpireAt(tokenData['expire_at'] as int);
       }
-
-      print('✅ [TokenRefresh] Token刷新成功，新token已保存');
       _refreshTokenCompleter!.complete();
     } catch (e) {
       _refreshTokenCompleter!.completeError(e);

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/domain/entity/market/spot_pair.dart';
 
 /// 现货策略广场页面
 class SpotStrategyMarketScreen extends StatefulWidget {
@@ -9,10 +13,23 @@ class SpotStrategyMarketScreen extends StatefulWidget {
 }
 
 class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
+  final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
+  
   int _selectedCategoryIndex = 0;
   final List<String> _categories = ['全部', '算法订单', '横盘整理', '看涨', '看跌'];
   String _selectedStrategyType = '现货网格';
   String _selectedSortType = '收益额最高';
+  
+  @override
+  void initState() {
+    super.initState();
+    // 确保市场数据已加载
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_marketDataStore.isInitialized && !_marketDataStore.isLoading) {
+        _marketDataStore.loadMarketData();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +65,7 @@ class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
             _buildCategoryTabs(),
             _buildRobotTypes(),
             _buildStrategySquare(),
-            _buildStrategyCard(),
+            _buildStrategyList(),
           ],
         ),
       ),
@@ -345,9 +362,97 @@ class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
     );
   }
 
-  Widget _buildStrategyCard() {
+  Widget _buildStrategyList() {
+    return Observer(
+      builder: (_) {
+        if (_marketDataStore.isLoading && !_marketDataStore.isInitialized) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (_marketDataStore.errorMessage != null && !_marketDataStore.isInitialized) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    '加载失败',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => _marketDataStore.loadMarketData(),
+                    child: const Text('重试'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final spotPairs = _marketDataStore.allSpotPairs;
+        
+        if (spotPairs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 16),
+                  Text(
+                    '暂无策略数据',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // 根据选择的策略类型过滤
+        List<SpotPair> filteredPairs = spotPairs;
+        if (_selectedStrategyType == '现货网格') {
+          // 可以添加更多过滤逻辑
+        }
+
+        // 根据排序类型排序
+        if (_selectedSortType == '收益额最高') {
+          // 暂时不排序，因为策略数据可能来自其他接口
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: filteredPairs.length,
+          itemBuilder: (context, index) {
+            final pair = filteredPairs[index];
+            return _buildStrategyCard(pair);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStrategyCard(SpotPair pair) {
+    // 获取币种信息
+    final baseCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.chain, pair.baseCurrencySymbol);
+    final quoteCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.chain, pair.quoteCurrencySymbol);
+    
+    final symbol = '${pair.baseCurrencySymbol}/${pair.quoteCurrencySymbol}';
+    final baseCurrencyName = baseCurrency?.name ?? pair.baseCurrencySymbol;
+    final quoteCurrencyName = quoteCurrency?.name ?? pair.quoteCurrencySymbol;
+
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -360,29 +465,38 @@ class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ETH/JPY',
-                    style: TextStyle(
+                    symbol,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
+                      Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
                       Text(
                         '1',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: Colors.grey.shade600,
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      if (baseCurrencyName != pair.baseCurrencySymbol)
+                        Text(
+                          baseCurrencyName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
                     ],
                   ),
                 ],
@@ -511,9 +625,9 @@ class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    '20746 JPY',
-                    style: TextStyle(
+                  Text(
+                    '0.00 $quoteCurrencyName',
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black87,
                     ),
@@ -575,7 +689,7 @@ class _ChartPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     final fillPaint = Paint()
-      ..color = Colors.green.withOpacity(0.1)
+      ..color = Colors.green.withValues(alpha: 0.1)
       ..style = PaintingStyle.fill;
 
     final fillPath = Path.from(path)

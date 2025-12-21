@@ -4,6 +4,7 @@ import '../entity/market/kline_data.dart';
 import '../entity/market/depth_data.dart';
 import '../entity/market/ticker_data.dart';
 import '../entity/market/market_pair.dart';
+import '../entity/market/market_data_config.dart';
 
 /// 行情仓库接口
 abstract class MarketRepository {
@@ -41,5 +42,8 @@ abstract class MarketRepository {
 
   /// 根据符号获取交易对
   Future<MarketPair?> getMarketPairBySymbol(String symbol);
+
+  /// 下载市场数据配置
+  Future<MarketDataConfig> downloadMarketData();
 }
 

@@ -1,6 +1,7 @@
 import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/language/Language.dart';
-import 'package:fastapp/domain/repository/setting/setting_repository.dart';
+import 'package:fastapp/domain/usecase/setting/get_language_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/set_language_usecase.dart';
 import 'package:mobx/mobx.dart';
 
 part 'language_store.g.dart';
@@ -8,7 +9,8 @@ part 'language_store.g.dart';
 class LanguageStore = _LanguageStore with _$LanguageStore;
 
 abstract class _LanguageStore with Store {
-  final SettingRepository _repository;
+  final GetLanguageUseCase _getLanguageUseCase;
+  final SetLanguageUseCase _setLanguageUseCase;
   final ErrorStore errorStore;
 
   static const List<Map<String, String>> _languageData = [
@@ -139,8 +141,20 @@ abstract class _LanguageStore with Store {
     'au': 'AT',
   };
 
-  _LanguageStore(this._repository, this.errorStore) {
-    init();
+  _LanguageStore(
+    this._getLanguageUseCase,
+    this._setLanguageUseCase,
+    this.errorStore,
+  ) {
+    _init();
+  }
+
+  /// 异步初始化语言
+  void _init() async {
+    final savedLanguage = await _getLanguageUseCase.call(params: null);
+    if (savedLanguage != null) {
+      _locale = savedLanguage;
+    }
   }
 
   @observable
@@ -176,7 +190,7 @@ abstract class _LanguageStore with Store {
   @action
   void changeLanguage(String value) {
     _locale = value;
-    _repository.changeLanguage(value);
+    _setLanguageUseCase.call(params: SetLanguageParams(language: value));
   }
 
   @action
@@ -192,10 +206,4 @@ abstract class _LanguageStore with Store {
         .language;
   }
 
-  void init() {
-    final savedLanguage = _repository.currentLanguage;
-    if (savedLanguage != null) {
-      _locale = savedLanguage;
-    }
-  }
 }

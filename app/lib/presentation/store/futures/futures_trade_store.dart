@@ -7,11 +7,15 @@ import 'package:fastapp/domain/entity/order/order_side.dart';
 import 'package:fastapp/domain/entity/order/order_type.dart';
 import 'package:fastapp/domain/entity/trade/trade_request.dart';
 import 'package:fastapp/domain/entity/trade/trade_response.dart';
-import 'package:fastapp/domain/repository/futures_repository.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart' as depth_usecase;
 import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
+import 'package:fastapp/domain/usecase/futures/get_positions_usecase.dart';
+import 'package:fastapp/domain/usecase/futures/get_funding_rate_usecase.dart';
+import 'package:fastapp/domain/usecase/futures/get_mark_price_usecase.dart';
+import 'package:fastapp/domain/usecase/futures/get_leverage_usecase.dart';
+import 'package:fastapp/domain/usecase/futures/set_leverage_usecase.dart';
 import 'package:fastapp/domain/entity/wallet/balance.dart';
 import 'package:mobx/mobx.dart';
 
@@ -23,14 +27,22 @@ abstract class _FuturesTradeStore with Store {
   final PlaceOrderUseCase _placeOrderUseCase;
   final GetDepthUseCase _getDepthUseCase;
   final GetBalanceUseCase _getBalanceUseCase;
-  final FuturesRepository _futuresRepository;
+  final GetPositionsUseCase _getPositionsUseCase;
+  final GetFundingRateUseCase _getFundingRateUseCase;
+  final GetMarkPriceUseCase _getMarkPriceUseCase;
+  final GetLeverageUseCase _getLeverageUseCase;
+  final SetLeverageUseCase _setLeverageUseCase;
   final ErrorStore _errorStore;
 
   _FuturesTradeStore(
     this._placeOrderUseCase,
     this._getDepthUseCase,
     this._getBalanceUseCase,
-    this._futuresRepository,
+    this._getPositionsUseCase,
+    this._getFundingRateUseCase,
+    this._getMarkPriceUseCase,
+    this._getLeverageUseCase,
+    this._setLeverageUseCase,
     this._errorStore,
   );
 
@@ -161,7 +173,9 @@ abstract class _FuturesTradeStore with Store {
   @action
   Future<void> loadLeverage() async {
     try {
-      final leverageData = await _futuresRepository.getLeverage(selectedSymbol);
+      final leverageData = await _getLeverageUseCase.call(
+        params: GetLeverageParams(symbol: selectedSymbol),
+      );
       if (leverageData != null) {
         leverage = leverageData.leverage;
       }
@@ -176,7 +190,9 @@ abstract class _FuturesTradeStore with Store {
     errorMessage = null;
 
     try {
-      final success = await _futuresRepository.setLeverage(selectedSymbol, value);
+      final success = await _setLeverageUseCase.call(
+        params: SetLeverageParams(symbol: selectedSymbol, leverage: value),
+      );
       if (success) {
         leverage = value;
         return true;
@@ -311,7 +327,9 @@ abstract class _FuturesTradeStore with Store {
     errorMessage = null;
 
     try {
-      final positions = await _futuresRepository.getPositions(symbol: selectedSymbol);
+      final positions = await _getPositionsUseCase.call(
+        params: GetPositionsParams(symbol: selectedSymbol),
+      );
       if (positions.isNotEmpty) {
         currentPosition = positions.first;
       } else {
@@ -331,7 +349,9 @@ abstract class _FuturesTradeStore with Store {
     errorMessage = null;
 
     try {
-      final rate = await _futuresRepository.getFundingRate(symbol: selectedSymbol);
+      final rate = await _getFundingRateUseCase.call(
+        params: GetFundingRateParams(symbol: selectedSymbol),
+      );
       fundingRate = rate;
     } catch (e) {
       errorMessage = e.toString();
@@ -347,7 +367,9 @@ abstract class _FuturesTradeStore with Store {
     errorMessage = null;
 
     try {
-      final mark = await _futuresRepository.getMarkPrice(symbol: selectedSymbol);
+      final mark = await _getMarkPriceUseCase.call(
+        params: GetMarkPriceParams(symbol: selectedSymbol),
+      );
       markPrice = mark;
     } catch (e) {
       errorMessage = e.toString();

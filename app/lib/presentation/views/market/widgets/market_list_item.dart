@@ -21,16 +21,17 @@ class MarketListItem extends StatelessWidget {
     final lastPrice = ticker.lastPrice;
     final changePercent = ticker.changePercent;
     
-    if (lastPrice.isNaN || lastPrice.isInfinite) {
-      return const SizedBox.shrink();
-    }
+    // 确保价格有效（如果无效，使用默认值显示）
+    final validPrice = (lastPrice.isNaN || lastPrice.isInfinite || lastPrice <= 0) 
+        ? 0.0 
+        : lastPrice;
     
     final isPositive = changePercent >= 0;
     final parts = ticker.symbol.split('/');
     final baseCurrency = parts.isNotEmpty ? parts[0] : ticker.symbol;
     
     // 计算人民币价格（假设汇率，实际应从API获取）
-    final cnyPrice = lastPrice * 7.08;
+    final cnyPrice = validPrice * 7.08;
 
     return InkWell(
       onTap: onTap,
@@ -95,7 +96,7 @@ class MarketListItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _formatPrice(lastPrice),
+                    _formatPrice(validPrice),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87, height: 1.2),
                   ),
                   Padding(

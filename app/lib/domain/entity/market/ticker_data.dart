@@ -43,19 +43,19 @@ class TickerData {
     required this.timestamp,
   });
 
-  /// 从JSON创建
+  /// 从JSON创建（支持snake_case和camelCase）
   factory TickerData.fromJson(Map<String, dynamic> json) {
     return TickerData(
       symbol: json['symbol'] as String,
-      lastPrice: (json['lastPrice'] as num).toDouble(),
-      openPrice: (json['openPrice'] as num).toDouble(),
-      highPrice: (json['highPrice'] as num).toDouble(),
-      lowPrice: (json['lowPrice'] as num).toDouble(),
-      volume: (json['volume'] as num).toDouble(),
-      amount: (json['amount'] as num).toDouble(),
-      changePercent: (json['changePercent'] as num).toDouble(),
-      changeAmount: (json['changeAmount'] as num).toDouble(),
-      timestamp: json['timestamp'] as int,
+      lastPrice: (json['last_price'] ?? json['lastPrice'] ?? 0).toDouble(),
+      openPrice: (json['open_price'] ?? json['openPrice'] ?? 0).toDouble(),
+      highPrice: (json['high_price'] ?? json['highPrice'] ?? 0).toDouble(),
+      lowPrice: (json['low_price'] ?? json['lowPrice'] ?? 0).toDouble(),
+      volume: (json['volume'] ?? 0).toDouble(),
+      amount: (json['amount'] ?? 0).toDouble(),
+      changePercent: (json['change_percent'] ?? json['changePercent'] ?? 0).toDouble(),
+      changeAmount: (json['change_amount'] ?? json['changeAmount'] ?? 0).toDouble(),
+      timestamp: (json['timestamp'] ?? 0) as int,
     );
   }
 

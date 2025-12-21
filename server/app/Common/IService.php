@@ -28,9 +28,9 @@ abstract class IService
         return $this->repository->page($params, $page, $pageSize);
     }
 
-    public function getList(array $paras): Collection
+    public function getList(array $params): Collection
     {
-        return $this->repository->list($paras);
+        return $this->repository->list($params);
     }
 
     /**
