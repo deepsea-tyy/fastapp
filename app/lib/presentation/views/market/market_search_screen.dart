@@ -1,6 +1,7 @@
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -21,7 +22,7 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    afterPageContentDownloaded(() {
       _focusNode.requestFocus();
       if (_marketStore.tickerList.isEmpty) {
         _marketStore.loadAllTickers();

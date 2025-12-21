@@ -35,7 +35,8 @@ abstract class MarketRepository {
   Future<TickerData?> getTickerData({String? symbol});
 
   /// 获取所有Ticker数据
-  Future<List<TickerData>> getAllTickerData();
+  /// [symbols] 交易对符号列表（可选，如果为空则返回空列表）
+  Future<List<TickerData>> getAllTickerData({List<String>? symbols});
 
   /// 获取交易对列表
   Future<List<MarketPair>> getMarketPairs();

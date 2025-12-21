@@ -74,12 +74,12 @@ class Tools
      * 根据当前语言从多语言数据数组中获取对应文本
      *
      * @param array $data 多语言数据数组，格式：[['lang' => 'zh_CN', 'text' => '文本'], ...]
-     * @param int $userId
+     * @param int|string $userId 用户 id 或语言
      * @return string 匹配的文本，如果未找到则返回第一条文本
      */
-    public static function formatLang(array $data, int $userId = 0): string
+    public static function formatLang(array $data, int|string $userId = 0): string
     {
-        $lang = Tools::lang($userId);
+        $lang = is_int($userId) ? Tools::lang($userId) : $userId;
         foreach ($data as $v) {
             if ($v['lang'] == $lang) return $v['text'];
         }

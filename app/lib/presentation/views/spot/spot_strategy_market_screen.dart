@@ -444,8 +444,8 @@ class _SpotStrategyMarketScreenState extends State<SpotStrategyMarketScreen> {
 
   Widget _buildStrategyCard(SpotPair pair) {
     // 获取币种信息
-    final baseCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.chain, pair.baseCurrencySymbol);
-    final quoteCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.chain, pair.quoteCurrencySymbol);
+    final baseCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.baseCurrencySymbol);
+    final quoteCurrency = _marketDataStore.marketDataConfig?.getCurrency(pair.quoteCurrencySymbol);
     
     final symbol = '${pair.baseCurrencySymbol}/${pair.quoteCurrencySymbol}';
     final baseCurrencyName = baseCurrency?.name ?? pair.baseCurrencySymbol;

@@ -17,22 +17,28 @@ class GetTickerUseCase implements UseCase<TickerData?, GetTickerParams> {
 
   @override
   Future<TickerData?> call({required GetTickerParams params}) async {
-    if (params.symbol != null) {
-      return _marketRepository.getTickerData(symbol: params.symbol);
-    }
-    return null;
+    return params.symbol != null
+        ? _marketRepository.getTickerData(symbol: params.symbol)
+        : null;
   }
 }
 
+/// 获取所有Ticker数据的参数
+class GetAllTickerParams {
+  final List<String>? symbols;
+
+  GetAllTickerParams({this.symbols});
+}
+
 /// 获取所有TickerUseCase
-class GetAllTickerUseCase implements UseCase<List<TickerData>, void> {
+class GetAllTickerUseCase implements UseCase<List<TickerData>, GetAllTickerParams> {
   final MarketRepository _marketRepository;
 
   GetAllTickerUseCase(this._marketRepository);
 
   @override
-  Future<List<TickerData>> call({required params}) async {
-    return _marketRepository.getAllTickerData();
+  Future<List<TickerData>> call({required GetAllTickerParams params}) async {
+    return _marketRepository.getAllTickerData(symbols: params.symbols);
   }
 }
 

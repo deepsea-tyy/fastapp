@@ -31,6 +31,7 @@ import 'package:fastapp/presentation/views/feed/widgets/news_list.dart';
 import 'package:fastapp/presentation/views/feed/widgets/create_content_menu.dart';
 import 'package:fastapp/presentation/views/feed/controllers/feed_controller.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/constants/app_backgrounds.dart';
@@ -72,14 +73,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // 页面初始化时，如果已登录但用户信息未加载，则获取用户信息
-    if (_userStore.isLoggedIn && _userStore.currentUser == null) {
-      _userStore.getUserInfo();
-    }
-
-    // 初始化 Feed 控制器
+    // 立即初始化 Feed 控制器（避免 build 时访问未初始化的字段）
     _feedController = FeedController();
-    _feedController.init();
+    
+    // 等待页面内容下载完成后再发送请求
+    afterPageContentDownloadedAsync(() async {
+      // 页面初始化时，如果已登录但用户信息未加载，则获取用户信息
+      if (_userStore.isLoggedIn && _userStore.currentUser == null) {
+        _userStore.getUserInfo();
+      }
+      // 初始化 Feed 控制器（加载数据）
+      await _feedController.init();
+    });
 
     // 监听滚动，实现加载更多
     _scrollController.addListener(_onScroll);

@@ -96,34 +96,19 @@ abstract class _MarketDataStore with Store {
     return marketDataConfig?.allOptions ?? [];
   }
 
-  /// 根据符号获取现货交易对（在所有链中搜索）
+  /// 根据符号获取现货交易对
   SpotPair? getSpotPair(String symbol) {
-    return marketDataConfig?.getSpotPairBySymbol(symbol);
+    return marketDataConfig?.getSpotPair(symbol);
   }
 
-  /// 根据链和符号获取现货交易对
-  SpotPair? getSpotPairByChain(String chain, String symbol) {
-    return marketDataConfig?.getSpotPair(chain, symbol);
+  /// 根据符号获取合约交易对
+  FuturesPair? getFuturesPair(String symbol) {
+    return marketDataConfig?.getFuturesPair(symbol);
   }
 
-  /// 根据符号获取合约交易对（在所有链中搜索）
-  FuturesPair? getFuturesPair(String settlementCurrency, String symbol) {
-    return marketDataConfig?.getFuturesPairBySymbol(settlementCurrency, symbol);
-  }
-
-  /// 根据链、结算币种和符号获取合约交易对
-  FuturesPair? getFuturesPairByChain(String chain, String settlementCurrency, String symbol) {
-    return marketDataConfig?.getFuturesPair(chain, settlementCurrency, symbol);
-  }
-
-  /// 根据符号获取期权交易对（在所有链中搜索）
+  /// 根据符号获取期权交易对
   OptionPair? getOptionPair(String symbol) {
-    return marketDataConfig?.getOptionPairBySymbol(symbol);
-  }
-
-  /// 根据链和符号获取期权交易对
-  OptionPair? getOptionPairByChain(String chain, String symbol) {
-    return marketDataConfig?.getOptionPair(chain, symbol);
+    return marketDataConfig?.getOptionPair(symbol);
   }
 
   /// 获取所有币种列表
@@ -132,19 +117,29 @@ abstract class _MarketDataStore with Store {
     return marketDataConfig?.allCurrencies ?? [];
   }
 
+  /// 根据符号获取币种
+  Currency? getCurrency(String symbol) {
+    return marketDataConfig?.getCurrency(symbol);
+  }
+
   /// 根据链获取币种列表
   List<Currency> getCurrenciesByChain(String chain) {
     return marketDataConfig?.getCurrenciesByChain(chain) ?? [];
   }
 
-  /// 根据链和符号获取币种
-  Currency? getCurrency(String chain, String symbol) {
-    return marketDataConfig?.getCurrency(chain, symbol);
+  /// 根据链获取现货交易对列表
+  List<SpotPair> getSpotPairsByChain(String chain) {
+    return marketDataConfig?.getSpotPairsByChain(chain) ?? [];
   }
 
-  /// 根据符号获取币种（在所有链中搜索）
-  Currency? getCurrencyBySymbol(String symbol) {
-    return marketDataConfig?.getCurrencyBySymbol(symbol);
+  /// 根据链获取合约交易对列表
+  List<FuturesPair> getFuturesPairsByChain(String chain) {
+    return marketDataConfig?.getFuturesPairsByChain(chain) ?? [];
+  }
+
+  /// 根据链获取期权交易对列表
+  List<OptionPair> getOptionPairsByChain(String chain) {
+    return marketDataConfig?.getOptionPairsByChain(chain) ?? [];
   }
 
   /// 获取所有链名称列表
@@ -156,6 +151,6 @@ abstract class _MarketDataStore with Store {
   /// 获取热门币种列表
   @computed
   List<Currency> get hotCurrencies {
-    return allCurrencies.where((currency) => currency.isHot).toList();
+    return marketDataConfig?.hotCurrencies ?? [];
   }
 }

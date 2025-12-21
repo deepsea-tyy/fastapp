@@ -91,19 +91,20 @@ class StoreModule {
       HomeStore()..initData(),
     );
 
+    getIt.registerSingleton<MarketDataStore>(
+      MarketDataStore(
+        getIt<DownloadMarketDataUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
     getIt.registerSingleton<MarketStore>(
       MarketStore(
         getIt<GetTickerUseCase>(),
         getIt<GetAllTickerUseCase>(),
         getIt<ErrorStore>(),
         getIt<WebSocketService>(),
-      ),
-    );
-
-    getIt.registerSingleton<MarketDataStore>(
-      MarketDataStore(
-        getIt<DownloadMarketDataUseCase>(),
-        getIt<ErrorStore>(),
+        getIt<MarketDataStore>(),
       ),
     );
 

@@ -1,9 +1,11 @@
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:fastapp/presentation/views/market/market_search_screen.dart';
 import 'package:fastapp/presentation/views/market/widgets/market_list_item.dart';
+import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 /// 行情主页面（简化版）
@@ -25,10 +27,15 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 同时加载市场数据配置和 ticker 数据
-      _marketDataStore.loadMarketData();
-      _marketStore.loadAllTickers();
+    afterPageContentDownloaded(() async {
+      // 先加载市场数据配置（币种、现货交易对等）
+      if (!_marketDataStore.isInitialized && !_marketDataStore.isLoading) {
+        await _marketDataStore.loadMarketData();
+      }
+      // 等待市场数据加载完成后再加载 ticker 数据（需要从市场数据中获取交易对符号）
+      if (_marketDataStore.isInitialized) {
+        _marketStore.loadAllTickers();
+      }
     });
   }
 
@@ -276,29 +283,61 @@ class _MarketScreenState extends State<MarketScreen> {
           return _buildEmptyState();
         }
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            await _marketStore.refreshTickers();
-          },
-          color: Colors.amber,
-          child: ListView.builder(
-            itemCount: tickers.length,
-            itemBuilder: (context, index) {
-              final ticker = tickers[index];
-              final parts = ticker.symbol.split('/');
-              final baseCurrency = parts.isNotEmpty ? parts[0] : ticker.symbol;
-
-              return MarketListItem(
-                ticker: ticker,
-                fullName: _getFullName(baseCurrency),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => MarketDetailScreen(ticker: ticker),
-                  ),
+        return Column(
+          children: [
+            // 部分加载进度提示
+            if (_marketStore.isPartiallyLoaded && _marketStore.totalTickerCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.amber.shade50,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.amber.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '正在加载更多数据 (${_marketStore.loadedTickerCount}/${_marketStore.totalTickerCount})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            // 列表内容
+            Expanded(
+              child: ListView.builder(
+                itemCount: tickers.length,
+                itemBuilder: (context, index) {
+                  final ticker = tickers[index];
+                  final baseCurrencySymbol = _getBaseCurrencySymbol(ticker.symbol);
+                  final currency = _marketDataStore.getCurrency(baseCurrencySymbol);
+
+                  return MarketListItem(
+                    ticker: ticker,
+                    logoUrl: currency?.logo != null 
+                        ? ImageUtils.formatSingleImagePath(currency!.logo)
+                        : null,
+                    fullName: currency?.name ?? _getFullName(baseCurrencySymbol),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MarketDetailScreen(ticker: ticker),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -394,6 +433,14 @@ class _MarketScreenState extends State<MarketScreen> {
         ],
       ),
     );
+  }
+
+  /// 从交易对符号中提取基础币种符号
+  String _getBaseCurrencySymbol(String symbol) {
+    if (symbol.contains('/')) {
+      return symbol.split('/')[0];
+    }
+    return _marketDataStore.getSpotPair(symbol)?.baseCurrencySymbol ?? symbol;
   }
 
   String? _getFullName(String currency) {

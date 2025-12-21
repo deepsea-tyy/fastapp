@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
+import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/di/service_locator.dart';
 
 /// Feed 控制器 - 管理信息流的状态和数据
@@ -31,7 +32,9 @@ class FeedController extends ChangeNotifier {
   bool get hasMore => _hasMore;
 
   /// 初始化 - 加载第一页数据
-  void init() {
+  /// 会等待页面内容下载完成后再加载
+  Future<void> init() async {
+    await AppStartupState.waitForPageContent();
     loadFeedList();
   }
 

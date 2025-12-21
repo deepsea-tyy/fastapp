@@ -88,52 +88,45 @@ class MarketApi {
   /// - 根据 HttpClientConfig 配置自动选择 DioClient 或 RestClient
   /// - 此接口为高频接口，生产环境可配置使用 RestClient 优化性能
   /// 
+  /// 【注意】
+  /// - CurrencyController 的 ticker 接口支持批量请求多个符号（用逗号分隔）
+  /// - 返回格式：{ data: [...] }，其中 data 是 ticker 对象数组
+  /// 
+  /// @param symbols 交易对符号列表（如：['BTCUSDT', 'ETHUSDT']），如果为空则返回空列表
   /// @return TickerData 列表
-  Future<List<TickerData>> getAllTickerData() async {
+  Future<List<TickerData>> getAllTickerData({List<String>? symbols}) async {
+    if (symbols == null || symbols.isEmpty) return [];
+
     try {
       final response = await _httpClient.get(
-        '/api/ds/ex/currency/tickers',
+        '/api/ds/ex/currency/ticker',
+        queryParameters: {'symbol': symbols.join(',')},
       );
 
-      List<dynamic> tickerList = [];
-
-      // 支持多种响应格式
-      if (response is List) {
-        // 格式1: 直接返回 List
-        tickerList = response;
-      } else if (response is Map) {
-        // 格式2: { list: [...] }
-        if (response['list'] is List) {
-          tickerList = response['list'] as List;
-        }
-        // 格式3: { data: [...] } (ApiResponse 格式)
-        else if (response['data'] is List) {
-          tickerList = response['data'] as List;
-        }
-        // 格式4: { tickers: [...] }
-        else if (response['tickers'] is List) {
-          tickerList = response['tickers'] as List;
-        }
-      }
-
-      if (tickerList.isEmpty) {
-        return [];
-      }
-      
-      // 解析 TickerData 列表
-      final result = tickerList.map((item) {
-        try {
-          return TickerData.fromJson(item as Map<String, dynamic>);
-        } catch (e) {
-          return null;
-        }
-      }).whereType<TickerData>().toList();
-
-      return result;
+      final tickerList = _extractTickerList(response);
+      return tickerList
+          .map((item) {
+            try {
+              return TickerData.fromJson(item as Map<String, dynamic>);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<TickerData>()
+          .toList();
     } catch (e) {
-      // 重新抛出异常，让上层处理
       rethrow;
     }
+  }
+
+  /// 从响应中提取 ticker 列表
+  List<dynamic> _extractTickerList(dynamic response) {
+    if (response is List) return response;
+    if (response is! Map) return [];
+
+    return response['data'] as List? ??
+        response['list'] as List? ??
+        (response['symbol'] != null ? [response] : []);
   }
 
   /// 获取交易对列表

@@ -22,70 +22,36 @@ class MarketRepositoryImpl implements MarketRepository {
     int? startTime,
     int? endTime,
     int? limit,
-  }) async {
-    try {
-      return await _marketApi.getKlineData(
+  }) =>
+      _marketApi.getKlineData(
         symbol: symbol,
         interval: interval,
         startTime: startTime,
         endTime: endTime,
         limit: limit,
       );
-    } catch (e) {
-      throw e;
-    }
-  }
 
   @override
   Future<DepthChartData> getDepthData({
     required String symbol,
     int? limit,
-  }) async {
-    try {
-      return await _marketApi.getDepthData(
-        symbol: symbol,
-        limit: limit,
-      );
-    } catch (e) {
-      throw e;
-    }
-  }
+  }) =>
+      _marketApi.getDepthData(symbol: symbol, limit: limit);
 
   @override
-  Future<TickerData?> getTickerData({String? symbol}) async {
-    try {
-      return await _marketApi.getTickerData(symbol: symbol);
-    } catch (e) {
-      throw e;
-    }
-  }
+  Future<TickerData?> getTickerData({String? symbol}) =>
+      _marketApi.getTickerData(symbol: symbol);
 
   @override
-  Future<List<TickerData>> getAllTickerData() async {
-    try {
-      return await _marketApi.getAllTickerData();
-    } catch (e) {
-      throw e;
-    }
-  }
+  Future<List<TickerData>> getAllTickerData({List<String>? symbols}) =>
+      _marketApi.getAllTickerData(symbols: symbols);
 
   @override
-  Future<List<MarketPair>> getMarketPairs() async {
-    try {
-      return await _marketApi.getMarketPairs();
-    } catch (e) {
-      throw e;
-    }
-  }
+  Future<List<MarketPair>> getMarketPairs() => _marketApi.getMarketPairs();
 
   @override
-  Future<MarketPair?> getMarketPairBySymbol(String symbol) async {
-    try {
-      return await _marketApi.getMarketPairBySymbol(symbol);
-    } catch (e) {
-      throw e;
-    }
-  }
+  Future<MarketPair?> getMarketPairBySymbol(String symbol) =>
+      _marketApi.getMarketPairBySymbol(symbol);
 
   @override
   Future<MarketDataConfig> downloadMarketData() async {

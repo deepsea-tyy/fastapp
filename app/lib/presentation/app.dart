@@ -10,6 +10,7 @@ import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/core/services/page_content_manager.dart';
+import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/core/data/network/dio/interceptors/token_refresh_interceptor.dart';
 import 'package:fastapp/presentation/views/home/widgets/quick/quick_entrance_state.dart';
 import 'package:flutter/material.dart';
@@ -37,10 +38,8 @@ class _AppState extends State<App> {
   void initState() {
     super.initState();
     _messageService = MessageService(getIt());
-    // 启动时下载页面配置
-    _downloadPageContent();
-    // 启动时下载市场数据配置
-    _downloadMarketData();
+    // 启动时先完成页面配置下载，然后并发执行其他请求
+    _initStartupRequests();
     // 监听强制登出事件
     _listenToForceLogout();
   }
@@ -73,25 +72,30 @@ class _AppState extends State<App> {
     });
   }
 
-  /// 下载页面配置（后台静默下载，不影响启动）
-  /// 每次启动都会请求服务器更新配置，无缓存则保存，有缓存则更新
-  void _downloadPageContent() {
+  /// 初始化启动请求
+  /// 先完成 pageContentDownload，然后并发执行其他请求
+  void _initStartupRequests() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        // 初始化页面内容管理器
-        // initialize() 会先请求服务器，成功则保存/更新本地缓存，失败则使用本地缓存
+        // 先完成页面配置下载
         final pageContentManager = getIt<PageContentManager>();
         await pageContentManager.initialize();
       } catch (e) {
-        // 下载失败不影响app启动，静默失败
+        // 下载失败不影响启动流程
+      } finally {
+        // 无论成功失败都标记完成，确保其他页面不会一直等待
+        AppStartupState.markPageContentDownloaded();
+        // 并发执行其他请求
+        _startConcurrentRequests();
       }
     });
   }
 
-  /// 下载市场数据配置（后台静默下载，不影响启动）
-  /// APP启动时从服务器获取币种、现货、合约、期权配置
-  void _downloadMarketData() {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+  /// 启动并发请求（不等待彼此完成）
+  void _startConcurrentRequests() {
+    // 并发执行，不等待彼此完成
+    // 市场数据配置下载
+    Future.microtask(() async {
       try {
         final marketDataStore = getIt<MarketDataStore>();
         await marketDataStore.loadMarketData();
@@ -99,6 +103,9 @@ class _AppState extends State<App> {
         // 下载失败不影响app启动，静默失败
       }
     });
+    
+    // 其他需要启动时执行的请求可以在这里添加
+    // 它们会并发执行，不等待彼此完成
   }
 
   @override
