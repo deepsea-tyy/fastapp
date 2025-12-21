@@ -198,14 +198,14 @@ class _FeedItemState extends State<FeedItem> {
   Widget _buildContent(BuildContext context) {
     final hasTitle = widget.title != null && widget.title!.isNotEmpty;
     final fontSize = hasTitle ? 14.0 : 15.0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (hasTitle) ...[
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _navigateToDetail(context),
-            child: SizedBox(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _navigateToDetail(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasTitle) ...[
+            SizedBox(
               width: double.infinity,
               child: Text(
                 widget.title!,
@@ -217,12 +217,9 @@ class _FeedItemState extends State<FeedItem> {
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        GestureDetector(
-          onTap: () => _navigateToDetail(context),
-          child: ConstrainedBox(
+            const SizedBox(height: 8),
+          ],
+          ConstrainedBox(
             constraints: BoxConstraints(maxHeight: fontSize * 1.5 * 5),
             child: Html(
               data: widget.content,
@@ -239,19 +236,19 @@ class _FeedItemState extends State<FeedItem> {
               },
             ),
           ),
-        ),
-        if (widget.originalLink != null && widget.originalLink!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            widget.originalLink!,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.blue.shade600,
-              decoration: TextDecoration.underline,
+          if (widget.originalLink != null && widget.originalLink!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              widget.originalLink!,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.blue.shade600,
+                decoration: TextDecoration.underline,
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -375,6 +372,12 @@ class _FeedItemState extends State<FeedItem> {
       placeholder: '评论并转发...',
       showRepostOption: true,
       defaultRepostChecked: true,
+      quotedContent: QuotedContent(
+        username: widget.profile.displayNickname,
+        avatar: widget.profile.displayAvatar,
+        content: widget.content,
+        firstImageUrl: widget.mediaUrls?.isNotEmpty == true ? widget.mediaUrls!.first : null,
+      ),
       onSendWithRepost: (content, images, isRepost) async {
         if (isRepost) {
           await _createRepost(content: content, images: images);
@@ -391,7 +394,7 @@ class _FeedItemState extends State<FeedItem> {
     required List<String> images,
   }) async {
     try {
-      final post = await _feedRepository.createPost(
+      await _feedRepository.createPost(
         type: widget.type,
         contentType: images.isNotEmpty ? 2 : 1,
         content: content,
@@ -402,28 +405,8 @@ class _FeedItemState extends State<FeedItem> {
 
       if (!mounted) return;
 
-      // 跳转到新创建的帖子详情页
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => FeedDetail(
-            postId: post.id,
-            userId: post.userId ?? 0,
-            username: post.username ?? '',
-            time: post.getFormattedTime(),
-            content: post.content ?? '',
-            title: post.title,
-            mediaUrls: post.formattedImages.isNotEmpty ? post.formattedImages : null,
-            commentCount: post.commentCount,
-            likeCount: post.likeCount,
-            repostCount: post.quoteCount ?? 0,
-            shareCount: post.shareCount ?? 0,
-            avatarAsset: post.avatar ?? '',
-            isVerified: post.isVerified ?? false,
-            viewCount: post.viewCount ?? 0,
-            type: post.type ?? 1,
-            isLiked: post.isLiked ?? false,
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('转发成功')),
       );
     } catch (e) {
       if (mounted) {
@@ -446,12 +429,6 @@ class _FeedItemState extends State<FeedItem> {
         targetId: widget.postId,
         content: content,
         images: images.isNotEmpty ? images : null,
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('评论成功')),
       );
     } catch (e) {
       if (mounted) {

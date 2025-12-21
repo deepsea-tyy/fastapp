@@ -1,18 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/common/image_upload_grid.dart';
+import 'package:fastapp/presentation/views/common/safe_network_image.dart';
 
-/// Feed 评论输入底部弹框（通用组件）
+/// 引用内容数据模型
+class QuotedContent {
+  final int? commentId;
+  final String username;
+  final String? avatar;
+  final String content;
+  final String? firstImageUrl;
+
+  const QuotedContent({
+    this.commentId,
+    required this.username,
+    this.avatar,
+    required this.content,
+    this.firstImageUrl,
+  });
+}
+
+/// Feed 评论输入底部弹框(通用组件)
 ///
 /// 用于发布评论、回复、转发等场景
 class FeedCommentInputSheet extends StatefulWidget {
   final String? placeholder;
-  final Function(String content, List<String> images)? onSend;
+  final Function(String content, List<String> images, {int? quotedCommentId})? onSend;
   final Function(String content, List<String> images, bool isRepost)? onSendWithRepost;
   final bool showRepostOption;
   final bool defaultRepostChecked;
   final int? parentId;
   final int? replyToUserId;
   final String? replyToUsername;
+  final QuotedContent? quotedContent;
 
   const FeedCommentInputSheet({
     super.key,
@@ -24,19 +43,21 @@ class FeedCommentInputSheet extends StatefulWidget {
     this.parentId,
     this.replyToUserId,
     this.replyToUsername,
+    this.quotedContent,
   });
 
   /// 显示评论输入弹框
   static void show(
     BuildContext context, {
     String? placeholder,
-    Function(String content, List<String> images)? onSend,
+    Function(String content, List<String> images, {int? quotedCommentId})? onSend,
     Function(String content, List<String> images, bool isRepost)? onSendWithRepost,
     bool showRepostOption = true,
     bool defaultRepostChecked = false,
     int? parentId,
     int? replyToUserId,
     String? replyToUsername,
+    QuotedContent? quotedContent,
   }) {
     showModalBottomSheet(
       context: context,
@@ -51,6 +72,7 @@ class FeedCommentInputSheet extends StatefulWidget {
         parentId: parentId,
         replyToUserId: replyToUserId,
         replyToUsername: replyToUsername,
+        quotedContent: quotedContent,
       ),
     );
   }
@@ -107,6 +129,10 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
                   const SizedBox(height: 8),
                   _buildAttachments(),
                 ],
+                if (widget.quotedContent != null) ...[
+                  const SizedBox(height: 12),
+                  _buildQuotedContent(),
+                ],
               ],
             ),
           ),
@@ -126,8 +152,8 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
     return TextField(
       controller: _textController,
       focusNode: _focusNode,
-      maxLines: 5,
-      minLines: 3,
+      maxLines: 8,
+      minLines: 5,
       decoration: InputDecoration(
         hintText: widget.placeholder ?? '添加回复...',
         hintStyle: TextStyle(
@@ -306,7 +332,7 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
             if (widget.onSendWithRepost != null) {
               widget.onSendWithRepost!(content, _uploadedImages, _isRepostChecked);
             } else if (widget.onSend != null) {
-              widget.onSend!(content, _uploadedImages);
+              widget.onSend!(content, _uploadedImages, quotedCommentId: widget.quotedContent?.commentId);
             }
 
             Navigator.of(context).pop();
@@ -341,6 +367,115 @@ class _FeedCommentInputSheetState extends State<FeedCommentInputSheet> {
         icon,
         size: 24,
         color: Colors.black87,
+      ),
+    );
+  }
+
+  /// 引用内容展示
+  Widget _buildQuotedContent() {
+    final quoted = widget.quotedContent!;
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 引用标签
+          Row(
+            children: [
+              Icon(
+                Icons.format_quote,
+                size: 12,
+                color: Colors.grey.shade500,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '引用内容',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 引用的主体内容
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 左侧头像
+              if (quoted.avatar != null && quoted.avatar!.isNotEmpty)
+                SafeNetworkImage(
+                  imageUrl: quoted.avatar!,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(16),
+                )
+              else
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.person,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              const SizedBox(width: 10),
+              // 中间内容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      quoted.username,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      quoted.content,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 右侧图片（如果有）
+              if (quoted.firstImageUrl != null && quoted.firstImageUrl!.isNotEmpty) ...[
+                const SizedBox(width: 10),
+                SafeNetworkImage(
+                  imageUrl: quoted.firstImageUrl!,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }

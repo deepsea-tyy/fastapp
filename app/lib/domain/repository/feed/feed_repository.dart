@@ -101,6 +101,7 @@ abstract class FeedRepository {
     required int targetId,
     int page = 1,
     int pageSize = 20,
+    String sortBy = 'hot',
   });
 
   /// 获取评论的回复列表
@@ -117,6 +118,7 @@ abstract class FeedRepository {
     required String content,
     int parentId = 0,
     int? replyToUserId,
+    int? quotedCommentId,
     List<String>? images,
   });
 

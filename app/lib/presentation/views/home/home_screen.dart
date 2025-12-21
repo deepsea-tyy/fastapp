@@ -21,7 +21,7 @@ import 'package:fastapp/presentation/views/home/widgets/sections/journey_section
 import 'package:fastapp/presentation/views/home/widgets/sections/mobile_crypto_list_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/sections/trust_section.dart';
 import 'package:fastapp/presentation/views/home/widgets/sections/tologin_section.dart';
-import 'package:fastapp/presentation/views/home/widgets/sections/quick_entrance_section.dart';
+import 'package:fastapp/presentation/views/home/widgets/quick/quick_entrance_widget.dart';
 import 'package:fastapp/presentation/views/home/widgets/sticky_header_delegate.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_tabs.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_item.dart';
@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverToBoxAdapter(
                   child: Container(
                     color: backgrounds.card,
-                    child: const QuickEntranceSection(),
+                    child: const QuickEntranceWidget(),
                   ),
                 ),
 

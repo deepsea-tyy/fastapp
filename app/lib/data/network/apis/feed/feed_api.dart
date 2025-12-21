@@ -246,11 +246,13 @@ class FeedApi {
   /// [targetId] 目标ID
   /// [page] 页码
   /// [pageSize] 每页数量
+  /// [sortBy] 排序方式：hot热门 latest最新
   Future<dynamic> getCommentList({
     required int targetType,
     required int targetId,
     int page = 1,
     int pageSize = 20,
+    String sortBy = 'hot',
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.feedCommentList,
@@ -259,6 +261,7 @@ class FeedApi {
         'target_id': targetId,
         'page': page,
         'page_size': pageSize,
+        'sort_by': sortBy,
       },
     );
     return response.data;
@@ -290,6 +293,7 @@ class FeedApi {
   /// [content] 评论内容
   /// [parentId] 父评论ID，0为顶级评论
   /// [replyToUserId] 回复的用户ID
+  /// [quotedCommentId] 引用的评论ID
   /// [images] 图片URL列表
   Future<Map<String, dynamic>> createComment({
     required int targetType,
@@ -297,6 +301,7 @@ class FeedApi {
     required String content,
     int parentId = 0,
     int? replyToUserId,
+    int? quotedCommentId,
     List<String>? images,
   }) async {
     final response = await _dioClient.dio.post(
@@ -307,6 +312,7 @@ class FeedApi {
         'content': content,
         'parent_id': parentId,
         if (replyToUserId != null) 'reply_to_user_id': replyToUserId,
+        if (quotedCommentId != null) 'quoted_comment_id': quotedCommentId,
         if (images != null) 'images': images,
       },
     );

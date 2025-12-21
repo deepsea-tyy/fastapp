@@ -18,6 +18,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $parent_id 父评论ID（0为顶级评论）
  * @property int $root_id 根评论ID（用于楼中楼）
  * @property int $reply_to_user_id 回复的用户ID
+ * @property int $quoted_comment_id 引用的评论ID
  * @property string $content 评论内容
  * @property string $images 图片列表（JSON数组）
  * @property int $like_count 点赞数
@@ -39,7 +40,7 @@ class FeedComment extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'target_type', 'target_id', 'user_id', 'parent_id', 'root_id', 'reply_to_user_id', 'content', 'images', 'like_count', 'reply_count', 'status', 'created_at', 'updated_at', 'deleted_at'];
+    protected array $fillable = ['id', 'target_type', 'target_id', 'user_id', 'parent_id', 'root_id', 'reply_to_user_id', 'quoted_comment_id', 'content', 'images', 'like_count', 'reply_count', 'status', 'created_at', 'updated_at', 'deleted_at'];
 
     /**
      * The attributes that should be cast to native types.
@@ -52,6 +53,7 @@ class FeedComment extends Model
         'parent_id' => 'integer',
         'root_id' => 'integer',
         'reply_to_user_id' => 'integer',
+        'quoted_comment_id' => 'integer',
         'like_count' => 'integer',
         'reply_count' => 'integer',
         'status' => 'integer',
@@ -68,5 +70,10 @@ class FeedComment extends Model
     public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class, 'user_id', 'user_id');
+    }
+
+    public function quotedComment(): HasOne
+    {
+        return $this->hasOne(FeedComment::class, 'id', 'quoted_comment_id');
     }
 }

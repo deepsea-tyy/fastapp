@@ -1,121 +1,10 @@
 import 'package:flutter/material.dart';
-import '../constants/service_constants.dart';
-import '../models/service_item.dart';
-
-/// 服务页面AppBar
-class ServiceAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
-
-  const ServiceAppBar({
-    super.key,
-    this.title = '服务',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: ServiceConstants.backgroundColor,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.black, fontSize: 18),
-      ),
-      centerTitle: true,
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-/// 搜索栏
-class ServiceSearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final String hintText;
-
-  const ServiceSearchBar({
-    super.key,
-    required this.controller,
-    this.hintText = '搜索更多服务',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ServiceConstants.paddingLarge,
-        vertical: ServiceConstants.paddingMedium,
-      ),
-      child: Container(
-        height: ServiceConstants.searchBarHeight,
-        decoration: BoxDecoration(
-          color: ServiceConstants.searchBarColor,
-          borderRadius: BorderRadius.circular(ServiceConstants.searchBorderRadius),
-        ),
-        child: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: ServiceConstants.hintTextStyle,
-            prefixIcon: const Icon(
-              Icons.search,
-              color: ServiceConstants.hintColor,
-              size: 20,
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: ServiceConstants.paddingMedium,
-              vertical: 10,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 服务Tab栏
-class ServiceTabBar extends StatelessWidget {
-  final TabController controller;
-  final List<String> tabs;
-
-  const ServiceTabBar({
-    super.key,
-    required this.controller,
-    this.tabs = ServiceConstants.tabLabels,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: ServiceConstants.backgroundColor,
-      child: TabBar(
-        controller: controller,
-        isScrollable: true,
-        labelColor: ServiceConstants.primaryColor,
-        unselectedLabelColor: ServiceConstants.textPrimary,
-        indicatorColor: ServiceConstants.primaryColor,
-        indicatorWeight: 2,
-        labelStyle: const TextStyle(
-          fontSize: ServiceConstants.fontSizeMedium,
-          fontWeight: FontWeight.w500,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: ServiceConstants.fontSizeMedium,
-        ),
-        tabs: tabs.map((tab) => Tab(text: tab)).toList(),
-      ),
-    );
-  }
-}
+import 'service_constants.dart';
+import 'service_item_model.dart';
 
 /// 服务网格布局
 class ServiceGrid extends StatelessWidget {
-  final List<ServiceItem> services;
+  final List<AppServiceItem> services;
   final int crossAxisCount;
   final double crossAxisSpacing;
   final double mainAxisSpacing;
@@ -142,16 +31,14 @@ class ServiceGrid extends StatelessWidget {
         childAspectRatio: childAspectRatio,
       ),
       itemCount: services.length,
-      itemBuilder: (context, index) {
-        return ServiceGridItem(item: services[index]);
-      },
+      itemBuilder: (context, index) => ServiceGridItem(item: services[index]),
     );
   }
 }
 
 /// 服务网格项
 class ServiceGridItem extends StatelessWidget {
-  final ServiceItem item;
+  final AppServiceItem item;
 
   const ServiceGridItem({
     super.key,
@@ -161,11 +48,7 @@ class ServiceGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (item.onTap != null) {
-          item.onTap!(context);
-        }
-      },
+      onTap: () => item.onTap?.call(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -260,7 +143,7 @@ class ServiceTabView extends StatelessWidget {
 /// 服务分组数据类
 class ServiceSection {
   final String? title;
-  final List<ServiceItem> services;
+  final List<AppServiceItem> services;
   final bool boldTitle;
 
   const ServiceSection({
@@ -270,22 +153,4 @@ class ServiceSection {
   });
 }
 
-/// 空状态页面
-class EmptyServiceTab extends StatelessWidget {
-  final String message;
 
-  const EmptyServiceTab({
-    super.key,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        message,
-        style: ServiceConstants.emptyStateStyle,
-      ),
-    );
-  }
-}

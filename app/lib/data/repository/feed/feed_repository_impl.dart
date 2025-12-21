@@ -359,6 +359,7 @@ class FeedRepositoryImpl implements FeedRepository {
     required int targetId,
     int page = 1,
     int pageSize = 20,
+    String sortBy = 'hot',
   }) async {
     try {
       final response = await _feedApi.getCommentList(
@@ -366,6 +367,7 @@ class FeedRepositoryImpl implements FeedRepository {
         targetId: targetId,
         page: page,
         pageSize: pageSize,
+        sortBy: sortBy,
       );
 
       // 兼容两种返回格式：直接数组 或 {"list": [...]}
@@ -426,6 +428,7 @@ class FeedRepositoryImpl implements FeedRepository {
     required String content,
     int parentId = 0,
     int? replyToUserId,
+    int? quotedCommentId,
     List<String>? images,
   }) async {
     try {
@@ -435,6 +438,7 @@ class FeedRepositoryImpl implements FeedRepository {
         content: content,
         parentId: parentId,
         replyToUserId: replyToUserId,
+        quotedCommentId: quotedCommentId,
         images: images,
       );
 

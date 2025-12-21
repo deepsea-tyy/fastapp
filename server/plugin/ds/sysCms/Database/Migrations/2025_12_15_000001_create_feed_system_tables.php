@@ -74,6 +74,7 @@ return new class extends Migration {
             $table->bigInteger('parent_id')->unsigned()->comment('父评论ID（0为顶级评论）')->default(0);
             $table->bigInteger('root_id')->unsigned()->comment('根评论ID（用于楼中楼）')->default(0);
             $table->bigInteger('reply_to_user_id')->unsigned()->nullable()->comment('回复的用户ID');
+            $table->bigInteger('quoted_comment_id')->unsigned()->nullable()->comment('引用的评论ID');
 
             $table->text('content')->comment('评论内容');
             $table->json('images')->nullable()->comment('图片列表（JSON数组）');
@@ -88,7 +89,8 @@ return new class extends Migration {
 
             $table->index(['target_type', 'target_id', 'status', 'created_at']);
             $table->index('user_id');
-            $table->index(['parent_id', 'root_id']);
+            $table->index('quoted_comment_id');
+            $table->index('root_id');
         });
 
         // 3. 点赞表（通用）

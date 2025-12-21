@@ -31,7 +31,7 @@ use Plugin\Ds\SysCms\Model\FeedPost;
 class FeedCommentController extends AbstractController
 {
     public function __construct(
-        private readonly FeedService           $cacheService,
+        private readonly FeedService           $feedService,
         private readonly FeedUserFollowService $followService,
         private readonly CurrentUser           $currentUser
     )
@@ -48,6 +48,7 @@ class FeedCommentController extends AbstractController
     #[QueryParameter(name: 'target_id', description: '目标ID', required: true, example: '1')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
+    #[QueryParameter(name: 'sort_by', description: '排序方式：hot热门 latest最新', example: 'hot')]
     #[ResultResponse(instance: new Result())]
     public function list(): Result
     {
@@ -56,9 +57,10 @@ class FeedCommentController extends AbstractController
         $targetId = (int)$params['target_id'];
         $page = (int)($params['page'] ?? 1);
         $pageSize = (int)($params['page_size'] ?? 20);
+        $sortBy = $params['sort_by'] ?? 'hot';
 
         // 获取评论列表（自动使用缓存）
-        $list = $this->cacheService->getCommentList($targetType, $targetId, $page, $pageSize);
+        $list = $this->feedService->getCommentList($targetType, $targetId, $page, $pageSize, $sortBy);
 
         // 获取当前用户ID（如果已登录）
         $userId = $this->currentUser->id();
@@ -74,7 +76,7 @@ class FeedCommentController extends AbstractController
 
             // 批量获取用户点赞状态（评论类型为 TYPE_COMMENT = 5）
             if (!empty($commentIds)) {
-                $likeStatusMap = $this->cacheService->batchGetUserLikeStatus(
+                $likeStatusMap = $this->feedService->batchGetUserLikeStatus(
                     $userId,
                     FeedService::TYPE_COMMENT,
                     $commentIds
@@ -140,6 +142,7 @@ class FeedCommentController extends AbstractController
             'target_id' => ['type' => 'integer', 'description' => '目标ID', 'example' => 1],
             'parent_id' => ['type' => 'integer', 'description' => '父评论ID，0为顶级评论', 'example' => 0],
             'reply_to_user_id' => ['type' => 'integer', 'description' => '回复的用户ID'],
+            'quoted_comment_id' => ['type' => 'integer', 'description' => '引用的评论ID'],
             'content' => ['type' => 'string', 'description' => '评论内容', 'example' => '这是一条评论'],
             'images' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => '图片URL列表'],
         ]
@@ -279,11 +282,11 @@ class FeedCommentController extends AbstractController
     {
         if ($targetType === 1 || $targetType === 2) {
             // 帖子/文章（FeedPost）
-            $post = $this->cacheService->getPost($targetId);
+            $post = $this->feedService->getPost($targetId);
             return $post['user_id'] ?? null;
         } elseif ($targetType === 3 || $targetType === 4) {
             // 公告/新闻（Article）
-            $article = $this->cacheService->getArticle($targetId);
+            $article = $this->feedService->getArticle($targetId);
             return $article['profile']['user_id'] ?? null;
         }
 

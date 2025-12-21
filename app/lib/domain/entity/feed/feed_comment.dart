@@ -22,6 +22,32 @@ class IntToBoolConverter implements JsonConverter<bool?, dynamic> {
   }
 }
 
+/// 引用评论简要信息
+@JsonSerializable()
+class QuotedComment {
+  final int id;
+  @JsonKey(name: 'user_id')
+  final int userId;
+  final String username;
+  final String? avatar;
+  final String content;
+  final List<String>? images;
+
+  QuotedComment({
+    required this.id,
+    required this.userId,
+    required this.username,
+    this.avatar,
+    required this.content,
+    this.images,
+  });
+
+  factory QuotedComment.fromJson(Map<String, dynamic> json) =>
+      _$QuotedCommentFromJson(json);
+
+  Map<String, dynamic> toJson() => _$QuotedCommentToJson(this);
+}
+
 /// 信息流评论实体
 ///
 /// 对应后端 feed_comment 表
@@ -63,6 +89,14 @@ class FeedComment {
   /// 回复的用户名（需要额外获取）
   @JsonKey(name: 'reply_to_username')
   final String? replyToUsername;
+
+  /// 引用的评论ID
+  @JsonKey(name: 'quoted_comment_id')
+  final int? quotedCommentId;
+
+  /// 引用的评论详情
+  @JsonKey(name: 'quoted_comment')
+  final QuotedComment? quotedComment;
 
   /// 评论内容
   final String content;
@@ -106,6 +140,8 @@ class FeedComment {
     this.rootId = 0,
     this.replyToUserId,
     this.replyToUsername,
+    this.quotedCommentId,
+    this.quotedComment,
     required this.content,
     this.images,
     this.likeCount = 0,
@@ -133,6 +169,8 @@ class FeedComment {
     int? rootId,
     int? replyToUserId,
     String? replyToUsername,
+    int? quotedCommentId,
+    QuotedComment? quotedComment,
     String? content,
     List<String>? images,
     int? likeCount,
@@ -153,6 +191,8 @@ class FeedComment {
       rootId: rootId ?? this.rootId,
       replyToUserId: replyToUserId ?? this.replyToUserId,
       replyToUsername: replyToUsername ?? this.replyToUsername,
+      quotedCommentId: quotedCommentId ?? this.quotedCommentId,
+      quotedComment: quotedComment ?? this.quotedComment,
       content: content ?? this.content,
       images: images ?? this.images,
       likeCount: likeCount ?? this.likeCount,

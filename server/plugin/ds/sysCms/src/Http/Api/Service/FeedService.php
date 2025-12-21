@@ -241,42 +241,97 @@ class FeedService
     /**
      * 获取评论列表
      */
-    public function getCommentList(int $targetType, int $targetId, int $page = 1, int $pageSize = 20): array
+    public function getCommentList(int $targetType, int $targetId, int $page = 1, int $pageSize = 20, string $sortBy = 'hot'): array
     {
         $offset = ($page - 1) * $pageSize;
 
-        return FeedComment::query()
+        $query = FeedComment::query()
             ->with(['children' => function ($query) {
-                $query->where('status', 1)->orderBy('created_at', 'asc');
-            }])
+                $query->with(['quotedComment'])->where('status', 1)->orderBy('created_at', 'asc');
+            }, 'quotedComment'])
             ->where('target_type', $targetType)
             ->where('target_id', $targetId)
             ->where('parent_id', 0)
-            ->where('status', 1)
-            ->orderByDesc('id')
-            ->offset($offset)
+            ->where('status', 1);
+
+        // 根据排序方式排序
+        if ($sortBy === 'hot') {
+            // 热门：按回复数降序，回复数相同按点赞数降序，再按时间降序
+            $query->orderByDesc('reply_count')->orderByDesc('like_count')->orderByDesc('id');
+        } else {
+            // 最新：按创建时间降序
+            $query->orderByDesc('id');
+        }
+
+        return $query->offset($offset)
             ->limit($pageSize)
             ->get()->map(function ($comment) {
-                $comment['images'] = $comment->images ?? [];
-                $userCache = self::getProfile($comment->user_id);
-                $comment->username = $userCache['nickname'] ?? '';
-                $comment->avatar = $userCache['avatar'] ?? '';
-                $comment->is_liked = 0;
+                $data = self::formatComment($comment);
                 if ($comment->children) {
+                    $data['children'] = [];
                     foreach ($comment->children as $child) {
-                        $child['images'] = $child->images ?? [];
-                        $userCache = self::getProfile($child->user_id);
-                        $child->username = $userCache['nickname'] ?? '';
-                        $child->avatar = $userCache['avatar'] ?? '';
-                        $child->is_liked = 0;
+                        $childData = self::formatComment($child);
                         if ($child->parent_id != $child->root_id) {
                             $replyToUserCache = self::getProfile($child->reply_to_user_id);
-                            $child->reply_to_username = $replyToUserCache['nickname'] ?? '';
+                            $childData['reply_to_username'] = $replyToUserCache['nickname'] ?? '';
                         }
+                        $data['children'][] = $childData;
                     }
                 }
-                return $comment;
+                return $data;
             })->toArray();
+    }
+
+    public static function formatComment(FeedComment $comment): array
+    {
+        $userCache = self::getProfile($comment->user_id);
+
+        $data = [
+            'id' => $comment->id,
+            'target_type' => $comment->target_type,
+            'target_id' => $comment->target_id,
+            'user_id' => $comment->user_id,
+            'username' => $userCache['nickname'] ?? '',
+            'avatar' => $userCache['avatar'] ?? '',
+            'parent_id' => $comment->parent_id,
+            'root_id' => $comment->root_id,
+            'reply_to_user_id' => $comment->reply_to_user_id,
+            'quoted_comment_id' => $comment->quoted_comment_id,
+            'content' => $comment->content ?? '',
+            'images' => $comment->images ?? [],
+            'like_count' => $comment->like_count ?? 0,
+            'reply_count' => $comment->reply_count ?? 0,
+            'is_liked' => 0,
+            'created_at' => $comment->created_at->toDateTimeString(),
+        ];
+
+        // 处理引用评论
+        if ($comment->quoted_comment_id) {
+            if ($comment->quotedComment) {
+                // 引用评论存在，获取引用评论的用户信息
+                $quotedUserCache = self::getProfile($comment->quotedComment->user_id);
+                $data['quoted_comment'] = [
+                    'id' => $comment->quotedComment->id,
+                    'user_id' => $comment->quotedComment->user_id,
+                    'username' => $quotedUserCache['nickname'] ?? '',
+                    'avatar' => $quotedUserCache['avatar'] ?? '',
+                    'content' => $comment->quotedComment->content ?? '',
+                    'images' => $comment->quotedComment->images ?? [],
+                ];
+            } else {
+                // 引用评论已被删除，返回占位信息
+                $data['quoted_comment'] = [
+                    'id' => 0,
+                    'user_id' => 0,
+                    'username' => '未知用户',
+                    'avatar' => '',
+                    'content' => '该评论已被删除',
+                    'images' => [],
+                ];
+            }
+        }
+
+        return $data;
     }
 
     /**

@@ -10,10 +10,12 @@ import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/core/services/page_content_manager.dart';
 import 'package:fastapp/core/data/network/dio/interceptors/token_refresh_interceptor.dart';
+import 'package:fastapp/presentation/views/home/widgets/quick/quick_entrance_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:mobx/mobx.dart';
+import 'package:provider/provider.dart';
 
 import 'package:fastapp/di/service_locator.dart';
 
@@ -92,27 +94,34 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return Observer(
-      builder: (context) {
-        final locale = _parseLocale(_languageStore.locale);
-        
-        return MaterialApp(
-          key: const ValueKey('main_material_app'),
-          navigatorKey: _navigatorKey,
-          debugShowCheckedModeBanner: false,
-          title: AppConfig.appName,
-          theme: _themeStore.themeData,
-          routes: Routes.routes,
-          locale: locale,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          builder: (context, child) {
-            _initMessageService(context);
-            return child ?? const SizedBox();
-          },
-          home: const MainScreen(),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => QuickEntranceState(),
+        ),
+      ],
+      child: Observer(
+        builder: (context) {
+          final locale = _parseLocale(_languageStore.locale);
+          
+          return MaterialApp(
+            key: const ValueKey('main_material_app'),
+            navigatorKey: _navigatorKey,
+            debugShowCheckedModeBanner: false,
+            title: AppConfig.appName,
+            theme: _themeStore.themeData,
+            routes: Routes.routes,
+            locale: locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            builder: (context, child) {
+              _initMessageService(context);
+              return child ?? const SizedBox();
+            },
+            home: const MainScreen(),
+          );
+        },
+      ),
     );
   }
 

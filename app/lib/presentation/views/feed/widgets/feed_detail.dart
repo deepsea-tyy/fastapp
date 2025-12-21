@@ -67,6 +67,7 @@ class _FeedDetailState extends State<FeedDetail> {
   bool _isFollowLoading = false;
   late bool _isLiked;
   late int _likeCount;
+  late int _viewCount;
   bool _isLiking = false;
   bool _isCollected = false;
   bool _isCollecting = false;
@@ -84,6 +85,7 @@ class _FeedDetailState extends State<FeedDetail> {
     _isLiked = widget.isLiked;
     _likeCount = widget.likeCount;
     _commentCount = widget.commentCount;
+    _viewCount = widget.viewCount;
 
     // 加载帖子详情（包含所有状态）
     _loadPostDetail();
@@ -107,6 +109,7 @@ class _FeedDetailState extends State<FeedDetail> {
           _isLiked = post.isLiked ?? _isLiked;
           _likeCount = post.likeCount;
           _commentCount = post.commentCount;
+          _viewCount = post.viewCount ?? _viewCount;
           _isLoadingDetail = false;
         });
       }
@@ -553,9 +556,9 @@ class _FeedDetailState extends State<FeedDetail> {
   }
 
   Widget _buildStats() {
-    final viewCountText = widget.viewCount >= 1000
-        ? '${(widget.viewCount / 1000).toStringAsFixed(1)}K 次浏览'
-        : '${widget.viewCount} 次浏览';
+    final viewCountText = _viewCount >= 1000
+        ? '${(_viewCount / 1000).toStringAsFixed(1)}K 次浏览'
+        : '$_viewCount 次浏览';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -592,6 +595,9 @@ class _FeedDetailState extends State<FeedDetail> {
           replyToUserId: replyToUserId,
           replyToUsername: replyToUsername,
         );
+      },
+      onQuote: (comment) {
+        _showQuoteInput(comment);
       },
     );
   }
@@ -654,11 +660,32 @@ class _FeedDetailState extends State<FeedDetail> {
       parentId: parentId,
       replyToUserId: replyToUserId,
       replyToUsername: replyToUsername,
-      onSend: (content, images) => _sendComment(
+      onSend: (content, images, {quotedCommentId}) => _sendComment(
         content: content,
         images: images,
         parentId: parentId ?? 0,
         replyToUserId: replyToUserId,
+      ),
+    );
+  }
+
+  void _showQuoteInput(FeedComment comment) {
+    FeedCommentInputSheet.show(
+      context,
+      placeholder: '引用评论...',
+      showRepostOption: false,
+      quotedContent: QuotedContent(
+        commentId: comment.id,
+        username: comment.username ?? '未知用户',
+        avatar: comment.avatar,
+        content: comment.content,
+        firstImageUrl: comment.images?.isNotEmpty == true ? comment.images!.first : null,
+      ),
+      onSend: (content, images, {quotedCommentId}) => _sendComment(
+        content: content,
+        images: images,
+        parentId: 0,
+        quotedCommentId: quotedCommentId,
       ),
     );
   }
@@ -669,6 +696,7 @@ class _FeedDetailState extends State<FeedDetail> {
     required List<String> images,
     int parentId = 0,
     int? replyToUserId,
+    int? quotedCommentId,
   }) async {
     try {
       final response = await _feedRepository.createComment(
@@ -677,6 +705,7 @@ class _FeedDetailState extends State<FeedDetail> {
         content: content,
         parentId: parentId,
         replyToUserId: replyToUserId,
+        quotedCommentId: quotedCommentId,
         images: images.isNotEmpty ? images : null,
       );
 
@@ -736,6 +765,7 @@ class _FeedCommentListWrapper extends StatefulWidget {
   final int postType;
   final int commentCount;
   final Function(int parentId, int replyToUserId, String replyToUsername)? onReply;
+  final Function(FeedComment comment)? onQuote;
 
   const _FeedCommentListWrapper({
     super.key,
@@ -743,6 +773,7 @@ class _FeedCommentListWrapper extends StatefulWidget {
     required this.postType,
     required this.commentCount,
     this.onReply,
+    this.onQuote,
   });
 
   @override
@@ -764,6 +795,7 @@ class _FeedCommentListWrapperState extends State<_FeedCommentListWrapper> {
       postType: widget.postType,
       commentCount: widget.commentCount,
       onReply: widget.onReply,
+      onQuote: widget.onQuote,
     );
   }
 }

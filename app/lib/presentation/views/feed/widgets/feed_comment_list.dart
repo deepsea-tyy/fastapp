@@ -10,6 +10,7 @@ class FeedCommentList extends StatefulWidget {
   final int postType;
   final int commentCount;
   final Function(int parentId, int replyToUserId, String replyToUsername)? onReply;
+  final Function(FeedComment comment)? onQuote;
 
   const FeedCommentList({
     super.key,
@@ -17,6 +18,7 @@ class FeedCommentList extends StatefulWidget {
     required this.postType,
     required this.commentCount,
     this.onReply,
+    this.onQuote,
   });
 
   @override
@@ -46,6 +48,7 @@ class FeedCommentListState extends State<FeedCommentList> {
         targetId: widget.postId,
         page: 1,
         pageSize: 20,
+        sortBy: _sortBy,
       );
 
       if (mounted) {
@@ -223,6 +226,7 @@ class FeedCommentListState extends State<FeedCommentList> {
               comment.userId,
               comment.username ?? '用户',
             ),
+            onQuote: () => widget.onQuote?.call(comment),
             onLike: () => _handleCommentLike(comment),
           ),
           if (comment.children?.isNotEmpty ?? false)
@@ -233,6 +237,7 @@ class FeedCommentListState extends State<FeedCommentList> {
                 child.userId,
                 child.username ?? '用户',
               ),
+              onQuote: () => widget.onQuote?.call(child),
               onLike: () => _handleCommentLike(child),
             )),
         ]),
@@ -310,12 +315,14 @@ class FeedCommentListState extends State<FeedCommentList> {
 class FeedCommentItem extends StatelessWidget {
   final FeedComment comment;
   final VoidCallback? onReply;
+  final VoidCallback? onQuote;
   final VoidCallback? onLike;
 
   const FeedCommentItem({
     super.key,
     required this.comment,
     this.onReply,
+    this.onQuote,
     this.onLike,
   });
 
@@ -372,6 +379,10 @@ class FeedCommentItem extends StatelessWidget {
         const SizedBox(height: 4),
         if (comment.replyToUsername != null) _buildReplyMark(),
         _buildCommentText(),
+        if (comment.quotedComment != null) ...[
+          const SizedBox(height: 8),
+          _buildQuotedComment(),
+        ],
         const SizedBox(height: 8),
         _buildActions(),
       ],
@@ -473,7 +484,7 @@ class FeedCommentItem extends StatelessWidget {
       children: [
         _buildAction('回复', onPressed: onReply),
         const SizedBox(width: 16),
-        _buildAction('引用'),
+        _buildAction('引用', onPressed: onQuote),
       ],
     );
   }
@@ -495,6 +506,121 @@ class FeedCommentItem extends StatelessWidget {
           color: color ?? Colors.grey.shade600,
         ),
       ),
+    );
+  }
+
+  /// 引用评论卡片
+  Widget _buildQuotedComment() {
+    final quoted = comment.quotedComment!;
+    final isDeleted = quoted.id == 0;
+
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: isDeleted ? Colors.grey.shade100 : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
+      child: isDeleted
+          ? _buildDeletedQuote(quoted)
+          : _buildNormalQuote(quoted),
+    );
+  }
+
+  /// 已删除的引用评论
+  Widget _buildDeletedQuote(QuotedComment quoted) {
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 16,
+          color: Colors.grey.shade500,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          quoted.content,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade500,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 正常的引用评论
+  Widget _buildNormalQuote(QuotedComment quoted) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 用户名
+              Row(
+                children: [
+                  Icon(
+                    Icons.format_quote,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '@${quoted.username}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // 引用内容
+              Text(
+                quoted.content,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 右侧图片（如果有）
+        if (quoted.images?.isNotEmpty == true) ...[
+          const SizedBox(width: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              quoted.images!.first,
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 50,
+                  height: 50,
+                  color: Colors.grey.shade300,
+                  child: Icon(
+                    Icons.image,
+                    size: 24,
+                    color: Colors.grey.shade500,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 
