@@ -26,7 +26,7 @@ class AppPageContentRepository extends IRepository
             $this->applyTimeFilter($query, time());
         }
         
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 
     /**

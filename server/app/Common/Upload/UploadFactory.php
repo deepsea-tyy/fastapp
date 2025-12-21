@@ -123,7 +123,7 @@ class UploadFactory
 
     protected function generatorPath(): string
     {
-        return '/' . date('Y-m-d');
+        return '/' . date('Ymd');
     }
 
     protected function generatorId(): string

@@ -16,6 +16,6 @@ class PlacementPositionRepository extends IRepository
     {
         // 应用数据权限过滤
         DataScopeTool::applyUserDataScope($params['created_by'], $query);
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 }

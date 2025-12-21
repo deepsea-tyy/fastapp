@@ -23,11 +23,10 @@ abstract class IRepository
     public const PER_PAGE_PARAM_NAME = 'per_page';
 
     private const SKIP_PARAMS = ['page', 'per_page', 'order_by', 'order_by_direction', 'order', 'sort'];
-    private const INTEGER_TYPES = ['integer', 'int', 'bigint', 'smallint', 'tinyint', 'mediumint'];
+    private const INTEGER_TYPES = ['integer', 'int', 'bigint', 'smallint', 'tinyint', 'mediumint', 'boolean', 'bool', 'bit'];
     private const FLOAT_TYPES = ['float', 'double', 'decimal', 'numeric'];
     private const DATETIME_TYPES = ['datetime', 'timestamp'];
     private const JSON_TYPES = ['json', 'jsonb'];
-    private const BOOLEAN_TYPES = ['boolean', 'bool', 'bit'];
     private const ENUM_TYPES = ['enum', 'set'];
     private const ALLOWED_ORDER_BY_TYPES = ['integer', 'int', 'bigint', 'smallint', 'tinyint', 'mediumint', 'enum', 'set'];
 
@@ -105,6 +104,16 @@ abstract class IRepository
             return;
         }
 
+        // 枚举类型处理
+        if (in_array($type, self::ENUM_TYPES, true)) {
+            if (is_array($value)) {
+                $query->whereIn($field, $value);
+            } else {
+                $query->where($field, $value);
+            }
+            return;
+        }
+
         // 整数类型且值为数组时，转换为整数数组后使用 whereIn
         if (is_array($value) && in_array($type, self::INTEGER_TYPES, true)) {
             $query->whereIn($field, array_map('intval', $value));
@@ -117,11 +126,10 @@ abstract class IRepository
         }
 
         match (true) {
-            in_array($type, self::INTEGER_TYPES, true) => $query->where($field, (int)$value),
+            in_array($type, self::INTEGER_TYPES, true) => $query->where($field, is_numeric($value) ? (int)$value : $value),
             in_array($type, self::FLOAT_TYPES, true) => $query->where($field, (float)$value),
             in_array($type, self::DATETIME_TYPES, true) || $type === 'date' => $this->handleDateRangeWhere($query, $field, $value),
             in_array($type, self::JSON_TYPES, true) || $type === 'array' => $query->whereJsonContains($field, $value),
-            in_array($type, self::BOOLEAN_TYPES, true) => $query->where($field, (bool)$value),
             default => $query->where($field, 'like', "%{$value}%"),
         };
     }
@@ -130,12 +138,11 @@ abstract class IRepository
     {
         return match (true) {
             $castType === null => null,
-            str_contains($castType, 'int') => 'integer',
+            str_contains($castType, 'int') || str_contains($castType, 'bool') => 'integer',
             str_contains($castType, 'float') || str_contains($castType, 'decimal') => 'float',
             str_contains($castType, 'datetime') || str_contains($castType, 'timestamp') => 'datetime',
             str_contains($castType, 'date') => 'date',
             str_contains($castType, 'json') || str_contains($castType, 'array') => 'json',
-            str_contains($castType, 'bool') => 'boolean',
             default => 'string',
         };
     }

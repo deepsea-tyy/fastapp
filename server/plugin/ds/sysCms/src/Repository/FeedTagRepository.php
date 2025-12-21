@@ -13,6 +13,6 @@ class FeedTagRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
-        return $query;
+        return parent::handleSearch($query, $params);
     }
 }
