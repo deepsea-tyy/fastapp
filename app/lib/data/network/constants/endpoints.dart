@@ -19,34 +19,48 @@ class Endpoints {
   static const int sendTimeout = AppConfig.sendTimeout;
 
   // ==================== API 端点路径 ====================
-  
-  // 行情相关
-  static const String marketTicker = AppConfig.marketTicker;
-  static const String marketKline = AppConfig.marketKline;
-  static const String marketDepth = AppConfig.marketDepth;
 
-  // 市场数据配置下载
+  // ==================== 行情相关 ====================
+
+  /// 获取单个交易对 Ticker 数据（支持批量，用逗号分隔）
+  static const String marketTicker = '/api/ds/ex/currency/ticker';
+
+  /// 市场数据配置下载（币种、现货、合约、期权）
   static const String currencyDownload = '/api/ds/ex/currency/download';
-  
-  // 汇率相关
+
+  /// 获取交易对列表
+  static const String marketPairs = '/api/ds/ex/currency/marketPair';
+
+  /// 获取币种详情
+  static const String currencyDetail = '/api/ds/ex/currency/detail';
+
+  /// 汇率相关
   static const String exchangeRate = '/api/ds/ex/currency/exchangeRate';
 
-  // 交易相关
-  static const String tradePlaceOrder = AppConfig.tradePlaceOrder;
-  static const String tradeCancelOrder = AppConfig.tradeCancelOrder;
+  // ==================== 交易相关 ====================
+  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
 
-  // 订单相关
-  static const String orderList = AppConfig.orderList;
-  static const String orderDetail = AppConfig.orderDetail;
+  // static const String tradePlaceOrder = '/api/v1/trade/order';
+  // static const String tradeCancelOrder = '/api/v1/trade/order/cancel';
 
-  // 钱包相关
-  static const String walletBalance = AppConfig.walletBalance;
-  static const String walletTransactions = AppConfig.walletTransactions;
+  // ==================== 订单相关 ====================
+  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
 
-  // 合约相关
-  static const String futuresPosition = AppConfig.futuresPosition;
-  static const String futuresLeverage = AppConfig.futuresLeverage;
-  static const String futuresFundingRate = AppConfig.futuresFundingRate;
+  // static const String orderList = '/api/v1/order/list';
+  // static const String orderDetail = '/api/v1/order/detail';
+
+  // ==================== 钱包相关 ====================
+  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
+
+  // static const String walletBalance = '/api/v1/wallet/balance';
+  // static const String walletTransactions = '/api/v1/wallet/transactions';
+
+  // ==================== 合约相关 ====================
+  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
+
+  // static const String futuresPosition = '/api/v1/futures/position';
+  // static const String futuresLeverage = '/api/v1/futures/leverage';
+  // static const String futuresFundingRate = '/api/v1/futures/funding-rate';
 
   // 用户相关
   static const String userLogin = '/api/user/login';

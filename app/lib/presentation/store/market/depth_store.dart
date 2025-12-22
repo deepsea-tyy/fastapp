@@ -2,7 +2,6 @@ import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/market/depth_data.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart' as depth_usecase;
-import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:mobx/mobx.dart';
 
@@ -13,12 +12,12 @@ class DepthStore = _DepthStore with _$DepthStore;
 abstract class _DepthStore with Store {
   final GetDepthUseCase _getDepthUseCase;
   final ErrorStore _errorStore;
-  final WebSocketService _webSocketService;
+  final MarketWebSocket _webSocket;
 
   _DepthStore(
     this._getDepthUseCase,
     this._errorStore,
-    this._webSocketService,
+    this._webSocket,
   );
 
   // 深度图数据
@@ -52,29 +51,20 @@ abstract class _DepthStore with Store {
   void _subscribeDepth(String symbol) {
     // 取消之前的订阅
     if (_currentDepthTopic != null) {
-      _webSocketService.unsubscribe(_currentDepthTopic!);
+      _webSocket.unsubscribe(_currentDepthTopic!);
     }
 
-    // 确保WebSocket已连接
-    if (!_webSocketService.isConnected) {
-      _webSocketService.connect();
+    // 检查 WebSocket 是否已连接
+    if (!_webSocket.isConnected) {
+      print('DepthStore: WebSocket 未连接，跳过订阅 $symbol');
+      return;
     }
 
     // 订阅新的深度图频道
     final topic = 'depth:$symbol';
     _currentDepthTopic = topic;
-    
-    _webSocketService.subscribe(topic, (message) {
-      if (message.type == WebSocketMessageType.depth &&
-          message.symbol == symbol) {
-        try {
-          final depthData = DepthChartData.fromJson(message.data as Map<String, dynamic>);
-          _updateDepthData(depthData);
-        } catch (e) {
-          // 忽略解析错误
-        }
-      }
-    });
+
+    _webSocket.subscribe(topic, symbol: symbol);
   }
 
   /// 更新深度图数据
@@ -112,7 +102,7 @@ abstract class _DepthStore with Store {
   void dispose() {
     // 取消WebSocket订阅
     if (_currentDepthTopic != null) {
-      _webSocketService.unsubscribe(_currentDepthTopic!);
+      _webSocket.unsubscribe(_currentDepthTopic!);
       _currentDepthTopic = null;
     }
   }

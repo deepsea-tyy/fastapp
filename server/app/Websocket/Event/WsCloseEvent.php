@@ -6,7 +6,7 @@
  * @Contact (telegram:deepsea159)
  */
 
-namespace App\Common\Event;
+namespace App\Websocket\Event;
 
 class WsCloseEvent
 {

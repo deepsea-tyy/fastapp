@@ -39,6 +39,7 @@ class _MarketScreenState extends State<MarketScreen> {
       // 等待市场数据加载完成后再加载 ticker 数据（需要从市场数据中获取交易对符号）
       if (_marketDataStore.isInitialized) {
         _loadTickersForCurrentTab();
+        // WebSocket 连接已在 App 启动时完成，这里不需要再次连接
       }
     });
   }
@@ -225,12 +226,16 @@ class _MarketScreenState extends State<MarketScreen> {
     return GestureDetector(
       onTap: () => setState(() {
         if (_sortField == field) {
-          _sortAscending = !_sortAscending;
-          if (!_sortAscending) {
+          if (_sortAscending) {
+            // 第二次点击：切换为降序
+            _sortAscending = false;
+          } else {
+            // 第三次点击：清除排序
             _sortField = null;
             _sortAscending = true;
           }
         } else {
+          // 切换到新字段：默认升序
           _sortField = field;
           _sortAscending = true;
         }
@@ -258,7 +263,9 @@ class _MarketScreenState extends State<MarketScreen> {
   Widget _buildMarketList() {
     final selectedMainTab = _selectedMainTab;
     final selectedCategoryTab = _selectedCategoryTab;
-    
+    final sortField = _sortField;  // 捕获排序字段
+    final sortAscending = _sortAscending;  // 捕获排序方向
+
     return Observer(
       builder: (_) {
         // 显示加载状态
@@ -273,14 +280,22 @@ class _MarketScreenState extends State<MarketScreen> {
 
         final validSymbols = _getValidSymbolsForTab(selectedMainTab, selectedCategoryTab);
         final tickerMap = _buildValidTickerMap();
-        
+
         var tickers = validSymbols
             .where((symbol) => tickerMap.containsKey(symbol))
             .map((symbol) => tickerMap[symbol]!)
             .toList();
 
-        if (_sortField != null && tickers.isNotEmpty) {
-          tickers.sort(_compareTickers);
+        if (sortField != null && tickers.isNotEmpty) {
+          tickers.sort((a, b) {
+            final result = switch (sortField) {
+              'name' => (a.symbol ?? '').compareTo(b.symbol ?? ''),
+              'price' => _compareNumbers(a.lastPrice, b.lastPrice),
+              'change' => _compareNumbers(a.changePercent, b.changePercent),
+              _ => 0,
+            };
+            return sortAscending ? result : -result;
+          });
         }
 
         // 显示空数据状态
@@ -337,7 +352,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       logoUrl: currency?.logo != null
                           ? ImageUtils.formatSingleImagePath(currency!.logo)
                           : null,
-                      fullName: currency?.name ?? _getFullName(baseCurrencySymbol),
+                      fullName: currency?.name,
                       onTap: () {
                         // 直接根据一级筛选判断是否是合约类型
                         // _selectedMainTab: 0=现货, 1=U本位合约, 2=币本位合约, 3=期权
@@ -451,10 +466,8 @@ class _MarketScreenState extends State<MarketScreen> {
   /// 根据指定的 tab 和 category 获取有效交易对符号列表
   List<String> _getValidSymbolsForTab(int mainTab, int categoryTab) {
     final chains = _marketDataStore.chains;
-    final selectedChain = categoryTab > 0 && categoryTab <= chains.length
-        ? chains[categoryTab - 1]
-        : null;
-    
+    final selectedChain = categoryTab > 0 && categoryTab <= chains.length ? chains[categoryTab - 1] : null;
+
     final pairs = switch (mainTab) {
       0 => _marketDataStore.allSpotPairs,
       1 => _marketDataStore.usdtFutures,
@@ -462,72 +475,39 @@ class _MarketScreenState extends State<MarketScreen> {
       3 => _marketDataStore.allOptions,
       _ => <dynamic>[],
     };
-    
+
     return pairs
-        .where((pair) => _isPairValid(pair, selectedChain))
+        .where((pair) => pair.isEnabled && (selectedChain == null || _isPairMatchChain(pair, selectedChain)))
         .map((pair) => pair.symbol as String)
         .toList();
   }
 
-  /// 检查交易对是否有效
-  /// 选择"全部"时不检查 isBaseCurrency，选择具体链时才过滤
-  bool _isPairValid(dynamic pair, String? selectedChain) {
-    if (!pair.isEnabled) return false;
-    if (selectedChain == null) return true; // 选择"全部"，全部显示
-    
+  /// 检查交易对是否匹配指定链
+  bool _isPairMatchChain(dynamic pair, String chain) {
     final currency = _marketDataStore.getCurrency(pair.baseCurrencySymbol);
-    return currency != null &&
-        !currency.isBaseCurrency &&
-        pair.chain == selectedChain;
+    return currency != null && !currency.isBaseCurrency && pair.chain == chain;
   }
 
   /// 构建有效的 ticker 映射
   Map<String, dynamic> _buildValidTickerMap() {
     return Map.fromEntries(
       _marketStore.tickerList
-          .where(_isTickerValid)
+          .where((t) => t.symbol.isNotEmpty && t.lastPrice > 0 && t.lastPrice.isFinite)
           .map((ticker) => MapEntry(ticker.symbol, ticker)),
     );
   }
 
-  /// 检查 ticker 是否有效
-  bool _isTickerValid(dynamic ticker) {
-    return ticker.symbol.isNotEmpty &&
-        !ticker.lastPrice.isNaN &&
-        !ticker.lastPrice.isInfinite &&
-        ticker.lastPrice > 0;
-  }
-
   /// 从交易对符号中提取基础币种符号
   String _getBaseCurrencySymbol(String symbol, [int? mainTab]) {
-    if (symbol.contains('/')) {
-      return symbol.split('/')[0];
-    }
-    
+    if (symbol.contains('/')) return symbol.split('/')[0];
+
     final tab = mainTab ?? _selectedMainTab;
     return switch (tab) {
-      0 => _marketDataStore.getSpotPair(symbol)?.baseCurrencySymbol ?? symbol,
-      1 || 2 => _marketDataStore.getFuturesPair(symbol)?.baseCurrencySymbol ?? symbol,
-      3 => _marketDataStore.getOptionPair(symbol)?.baseCurrencySymbol ?? symbol,
-      _ => symbol,
-    };
-  }
-
-  String? _getFullName(String currency) {
-    const fullNameMap = {
-      'BTC': 'Bitcoin',
-      'ETH': 'Ethereum',
-      'SOL': 'Solana',
-      '1INCH': '1inch',
-      'AAVE': 'Aave',
-      'ACM': 'AC Milan Fan Token',
-      'ADA': 'Cardano',
-      'ALGO': 'Algorand',
-      'ALICE': 'My Neighbor Alice',
-      'ANKR': 'Ankr',
-      'ARDR': 'Ardor',
-    };
-    return fullNameMap[currency];
+      0 => _marketDataStore.getSpotPair(symbol)?.baseCurrencySymbol,
+      1 || 2 => _marketDataStore.getFuturesPair(symbol)?.baseCurrencySymbol,
+      3 => _marketDataStore.getOptionPair(symbol)?.baseCurrencySymbol,
+      _ => null,
+    } ?? symbol;
   }
 
 }

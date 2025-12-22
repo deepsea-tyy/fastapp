@@ -676,8 +676,8 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
       // 用户选择立即登录，跳转到登录页面
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     } else {
-      // 用户选择稍后登录或关闭弹框，跳转到首页
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      // 用户选择稍后登录或关闭弹框，跳转到主页面
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     }
   }
 

@@ -50,28 +50,7 @@ class AppConfig {
   static const int sendTimeout = 5000;
 
   // ==================== API 端点路径 ====================
-  
-  /// 行情相关端点
-  static const String marketTicker = '/api/v1/market/ticker';
-  static const String marketKline = '/api/v1/market/kline';
-  static const String marketDepth = '/api/v1/market/depth';
-
-  /// 交易相关端点
-  static const String tradePlaceOrder = '/api/v1/trade/order';
-  static const String tradeCancelOrder = '/api/v1/trade/order/cancel';
-
-  /// 订单相关端点
-  static const String orderList = '/api/v1/order/list';
-  static const String orderDetail = '/api/v1/order/detail';
-
-  /// 钱包相关端点
-  static const String walletBalance = '/api/v1/wallet/balance';
-  static const String walletTransactions = '/api/v1/wallet/transactions';
-
-  /// 合约相关端点
-  static const String futuresPosition = '/api/v1/futures/position';
-  static const String futuresLeverage = '/api/v1/futures/leverage';
-  static const String futuresFundingRate = '/api/v1/futures/funding-rate';
+  // 注意：以下接口为预留接口，实际后端接口请在实现时更新
 
   // ==================== 资源配置 ====================
   

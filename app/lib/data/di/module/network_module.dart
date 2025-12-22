@@ -16,7 +16,6 @@ import 'package:fastapp/data/network/apis/kyc/ex_kyc_api.dart';
 import 'package:fastapp/data/network/apis/attachment/attachment_api.dart';
 import 'package:fastapp/data/network/apis/feed/feed_api.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
-import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/core/services/page_content_service.dart';
 import 'package:fastapp/core/services/market_data_service.dart';
 import 'package:fastapp/core/services/exchange_rate_service.dart';
@@ -99,7 +98,7 @@ class NetworkModule {
     getIt.registerSingleton(OrderApi());
     getIt.registerSingleton(WalletApi());
     getIt.registerSingleton(TradeApi());
-    getIt.registerSingleton(FuturesApi());
+    getIt.registerSingleton(FuturesApi(getIt<HttpClientWrapper>()));
     getIt.registerSingleton(UserApi(dio));
     getIt.registerSingleton(PageContentApi(dio));
     getIt.registerSingleton(ExKycApi(dio));
@@ -108,9 +107,6 @@ class NetworkModule {
 
     // websocket:---------------------------------------------------------------
     getIt.registerSingleton(MarketWebSocket());
-    getIt.registerSingleton<WebSocketService>(
-      WebSocketService(getIt<MarketWebSocket>()),
-    );
 
     getIt.registerSingleton<PageContentService>(
       PageContentService(getIt<PageContentApi>()),

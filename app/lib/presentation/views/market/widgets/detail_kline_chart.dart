@@ -4,7 +4,6 @@ import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/store/market/depth_store.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
-import 'package:fastapp/data/mock/mock_market_data.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -395,17 +394,16 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
           );
         }
 
-        // 获取实际数据或使用模拟数据（用于测试）
+        // 获取K线数据
         List<KlineData> dataToUse = _klineStore.klineData;
-        final bool usingMockData = dataToUse.isEmpty || dataToUse.length < 50;
-        
-        // 如果数据为空或数据量不足（少于50个），使用模拟数据来测试指标显示
-        // MACD需要至少26个数据点，KDJ需要至少9个数据点，为了确保显示正常，使用至少100个数据点
-        if (usingMockData) {
-          dataToUse = MockMarketData.generateKlineData(
-            symbol: widget.symbol,
-            interval: widget.interval,
-            limit: 150, // 生成150个数据点，确保指标能正确计算
+
+        // 如果数据为空，返回空状态
+        if (dataToUse.isEmpty) {
+          return const Center(
+            child: Text(
+              '暂无K线数据',
+              style: TextStyle(color: Colors.grey),
+            ),
           );
         }
 

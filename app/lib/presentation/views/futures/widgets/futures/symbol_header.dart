@@ -63,8 +63,6 @@ class SymbolHeader extends StatelessWidget {
                   lowPrice: orderBookData?.lastPrice ?? 0.0,
                   volume: 0.0,
                   amount: 0.0,
-                  changePercent: 0.0,
-                  changeAmount: 0.0,
                   timestamp: DateTime.now().millisecondsSinceEpoch,
                 );
                 Navigator.of(context).push(

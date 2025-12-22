@@ -532,7 +532,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
-        Routes.home,
+        '/',
         (Route<dynamic> route) => false,
       );
     }

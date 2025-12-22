@@ -110,9 +110,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       canPop: false,
       onPopInvoked: (didPop) async {
         if (!didPop) {
-          // 如果无法返回，则跳转到首页
+          // 如果无法返回，则跳转到主页面
           if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
           }
         }
       },
@@ -204,8 +204,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        // 点击返回按钮时，跳转到首页
-                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                        // 点击返回按钮时，跳转到主页面
+                        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
                       },
                     ),
                     Expanded(
@@ -332,11 +332,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Observer(
       builder: (_) {
         if (_userStore.success) {
-          // 登录成功后导航到首页
+          // 登录成功后导航到主页面（包含底部导航栏）
           // 注意: 登录状态已由 UserStore.handleLoginSuccess() 统一保存，无需在此重复保存
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(Routes.home, (_) => false);
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             }
           });
         }

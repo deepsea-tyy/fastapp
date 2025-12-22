@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysKefu\Listener;
 
-use App\Common\Event\WsCloseEvent;
+use App\Websocket\Event\WsCloseEvent;
 use App\Websocket\WsController;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Event\Annotation\Listener;

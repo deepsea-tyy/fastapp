@@ -11,6 +11,7 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/data/network/apis/user/user_api.dart';
 import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:fastapp/presentation/store/kyc/ex_kyc_store.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:mobx/mobx.dart';
 
 import 'package:fastapp/domain/entity/user/user.dart';
@@ -35,11 +36,18 @@ abstract class _UserStore with Store {
     // setting up disposers
     _setupDisposers();
 
-    // checking if user is logged in
-    _isLoggedInUseCase.call(params: null).then((value) async {
+    // checking if user is logged in (不立即请求 userInfo)
+    _isLoggedInUseCase.call(params: null).then((value) {
       setIsLoggedIn(value);
-      if (value) await getUserInfo();
     });
+  }
+
+  /// 延迟初始化用户信息（在启动流程完成后调用）
+  @action
+  Future<void> initializeUser() async {
+    if (isLoggedIn) {
+      await getUserInfo();
+    }
   }
 
   // use cases:-----------------------------------------------------------------
@@ -183,6 +191,45 @@ abstract class _UserStore with Store {
     success = true;
     _clearVerifyAgainState();
     await getUserInfo();
+
+    // 登录成功后，重新连接 WebSocket 并使用 token 进行认证
+    _reconnectWebSocketWithAuth();
+  }
+
+  /// 重新连接 WebSocket 并使用 token 进行认证
+  void _reconnectWebSocketWithAuth() async {
+    try {
+      final sharedPrefHelper = getIt<SharedPreferenceHelper>();
+      final token = await sharedPrefHelper.authToken;
+
+      if (token == null || token.isEmpty) {
+        if (kDebugMode) {
+          print('UserStore: 无法获取 token，跳过 WebSocket 认证');
+        }
+        return;
+      }
+
+      final marketStore = getIt<MarketStore>();
+
+      // 断开当前的 WebSocket 连接
+      await marketStore.webSocket.disconnect();
+
+      // 延迟一点时间，确保连接完全关闭
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 重新连接 WebSocket 并使用 token 进行认证
+      await marketStore.webSocket.connect(token: token);
+
+      // 认证成功后，订阅热门币种
+      if (marketStore.webSocket.isAuthenticated) {
+        await marketStore.webSocket.subscribeHotTickers();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('UserStore: WebSocket 重连失败: $e');
+      }
+      // 失败不影响用户登录流程
+    }
   }
 
   /// 清除二次验证状态（内部方法）
@@ -229,6 +276,30 @@ abstract class _UserStore with Store {
       // 无论 API 调用成功与否，都清除本地状态
       _clearUserState();
       await _saveLoginStatusUseCase.call(params: false);
+
+      // 退出登录后，重新连接 WebSocket（游客模式）
+      _reconnectWebSocketAsGuest();
+    }
+  }
+
+  /// 退出登录后，重新连接 WebSocket（游客模式）
+  void _reconnectWebSocketAsGuest() async {
+    try {
+      final marketStore = getIt<MarketStore>();
+
+      // 断开当前的 WebSocket 连接
+      await marketStore.webSocket.disconnect();
+
+      // 延迟一点时间，确保连接完全关闭
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 重新连接 WebSocket（游客模式）
+      await marketStore.ensureWebSocketConnected();
+    } catch (e) {
+      if (kDebugMode) {
+        print('UserStore: WebSocket 重连失败: $e');
+      }
+      // 失败不影响退出登录流程
     }
   }
 

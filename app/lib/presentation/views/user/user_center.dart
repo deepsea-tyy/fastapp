@@ -426,7 +426,7 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
         await userStore.logout();
         if (context.mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil(
-            Routes.home,
+            '/',
             (route) => false,
           );
         }

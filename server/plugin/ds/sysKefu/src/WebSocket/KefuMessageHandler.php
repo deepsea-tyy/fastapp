@@ -25,6 +25,11 @@ class KefuMessageHandler implements WsMessageHandlerInterface
     {
     }
 
+    public function getVisitorActions(): array
+    {
+        return [];
+    }
+
     /**
      * 获取该处理器支持的所有action映射
      *

@@ -23,6 +23,12 @@ use function Hyperf\AsyncQueue\dispatch;
 
 class Tools
 {
+    /**
+     * Logger 实例缓存
+     * @var array<string, \Psr\Log\LoggerInterface>
+     */
+    private static array $loggerInstances = [];
+
     public static function getContainer(): ContainerInterface
     {
         return ApplicationContext::getContainer();
@@ -87,7 +93,7 @@ class Tools
     }
 
     /**
-     * 异步写入日志到指定channel
+     * 异步写入日志到指定channel（使用单例模式缓存Logger实例）
      *
      * @param string $message 日志消息
      * @param string $level 日志级别 (debug, info, notice, warning, error, critical, alert, emergency)
@@ -99,7 +105,13 @@ class Tools
         Coroutine::create(static function () use ($message, $level, $name, $group) {
             try {
                 if (\Hyperf\Config\config('debug')) self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($message);
-                $logger = self::getContainer()->get(LoggerFactory::class)->get($name, $group);
+
+                // 使用单例模式获取或创建 Logger 实例
+                $cacheKey = "{$name}:{$group}";
+                if (!isset(self::$loggerInstances[$cacheKey])) {
+                    self::$loggerInstances[$cacheKey] = self::getContainer()->get(LoggerFactory::class)->get($name, $group);
+                }
+                $logger = self::$loggerInstances[$cacheKey];
 
                 // 验证日志级别
                 $validLevels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];

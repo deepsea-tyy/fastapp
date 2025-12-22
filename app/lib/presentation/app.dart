@@ -5,7 +5,9 @@ import 'package:fastapp/presentation/views/main/main_screen.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 import 'package:fastapp/presentation/store/app/theme_store.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
@@ -104,7 +106,7 @@ class _AppState extends State<App> {
         // 下载失败不影响app启动，静默失败
       }
     });
-    
+
     // 预加载汇率
     Future.microtask(() async {
       try {
@@ -114,7 +116,36 @@ class _AppState extends State<App> {
         // 下载失败不影响app启动，静默失败
       }
     });
-    
+
+    // 初始化用户信息（如果已登录）
+    Future.microtask(() async {
+      try {
+        final userStore = getIt<UserStore>();
+        await userStore.initializeUser();
+      } catch (e) {
+        // 请求失败不影响app启动，静默失败
+      }
+    });
+
+    // 初始化 WebSocket 连接（游客模式或认证模式）
+    Future.microtask(() async {
+      try {
+        final marketStore = getIt<MarketStore>();
+        final sharedPrefHelper = getIt<SharedPreferenceHelper>();
+        final token = await sharedPrefHelper.authToken;
+
+        // 如果用户已登录且有 token，使用 token 连接（认证模式）
+        // 否则使用游客模式连接
+        if (token != null && token.isNotEmpty) {
+          await marketStore.webSocket.connect(token: token);
+        } else {
+          await marketStore.ensureWebSocketConnected();
+        }
+      } catch (e) {
+        // 连接失败不影响app启动，静默失败
+      }
+    });
+
     // 其他需要启动时执行的请求可以在这里添加
     // 它们会并发执行，不等待彼此完成
   }

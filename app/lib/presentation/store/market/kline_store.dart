@@ -2,7 +2,6 @@ import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart' as kline_usecase;
-import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:mobx/mobx.dart';
 
@@ -13,12 +12,12 @@ class KlineStore = _KlineStore with _$KlineStore;
 abstract class _KlineStore with Store {
   final GetKlineUseCase _getKlineUseCase;
   final ErrorStore _errorStore;
-  final WebSocketService _webSocketService;
+  final MarketWebSocket _webSocket;
 
   _KlineStore(
     this._getKlineUseCase,
     this._errorStore,
-    this._webSocketService,
+    this._webSocket,
   );
 
   // K线数据列表
@@ -78,29 +77,20 @@ abstract class _KlineStore with Store {
   void _subscribeKline(String symbol, String interval) {
     // 取消之前的订阅
     if (_currentKlineTopic != null) {
-      _webSocketService.unsubscribe(_currentKlineTopic!);
+      _webSocket.unsubscribe(_currentKlineTopic!);
     }
 
-    // 确保WebSocket已连接
-    if (!_webSocketService.isConnected) {
-      _webSocketService.connect();
+    // 检查 WebSocket 是否已连接
+    if (!_webSocket.isConnected) {
+      print('KlineStore: WebSocket 未连接，跳过订阅 $symbol:$interval');
+      return;
     }
 
     // 订阅新的K线频道
     final topic = 'kline:$symbol:$interval';
     _currentKlineTopic = topic;
-    
-    _webSocketService.subscribe(topic, (message) {
-      if (message.type == WebSocketMessageType.kline &&
-          message.symbol == symbol) {
-        try {
-          final klineData = KlineData.fromJson(message.data as Map<String, dynamic>);
-          updateLatestKline(klineData);
-        } catch (e) {
-          // 忽略解析错误
-        }
-      }
-    });
+
+    _webSocket.subscribe(topic, symbol: symbol);
   }
 
   @action
@@ -176,7 +166,7 @@ abstract class _KlineStore with Store {
   void dispose() {
     // 取消WebSocket订阅
     if (_currentKlineTopic != null) {
-      _webSocketService.unsubscribe(_currentKlineTopic!);
+      _webSocket.unsubscribe(_currentKlineTopic!);
       _currentKlineTopic = null;
     }
   }
