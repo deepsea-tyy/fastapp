@@ -83,7 +83,7 @@ class Tools
         foreach ($data as $v) {
             if ($v['lang'] == $lang) return $v['text'];
         }
-        return $data[0]['text'];
+        return $data[0]['text'] ?? '';
     }
 
     /**

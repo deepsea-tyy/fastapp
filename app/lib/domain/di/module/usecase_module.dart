@@ -16,6 +16,7 @@ import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/download_market_data_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_currency_detail_usecase.dart';
 import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
@@ -74,6 +75,9 @@ class UseCaseModule {
     );
     getIt.registerSingleton<DownloadMarketDataUseCase>(
       DownloadMarketDataUseCase(getIt<MarketRepository>()),
+    );
+    getIt.registerSingleton<GetCurrencyDetailUseCase>(
+      GetCurrencyDetailUseCase(getIt<MarketRepository>()),
     );
 
     // order:-------------------------------------------------------------------

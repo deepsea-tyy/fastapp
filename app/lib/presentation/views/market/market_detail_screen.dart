@@ -1,5 +1,8 @@
+import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
+import 'package:fastapp/domain/entity/market/currency_detail.dart';
+import 'package:fastapp/domain/usecase/market/get_currency_detail_usecase.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/views/market/widgets/detail_app_bar.dart';
 import 'package:fastapp/presentation/views/market/widgets/detail_bottom_actions.dart';
@@ -13,10 +16,12 @@ import 'package:flutter/material.dart';
 /// 交易详情页面
 class MarketDetailScreen extends StatefulWidget {
   final TickerData ticker;
+  final bool isFutures;
 
   const MarketDetailScreen({
     super.key,
     required this.ticker,
+    this.isFutures = false,
   });
 
   @override
@@ -25,11 +30,14 @@ class MarketDetailScreen extends StatefulWidget {
 
 class _MarketDetailScreenState extends State<MarketDetailScreen> {
   final KlineStore _klineStore = getIt<KlineStore>();
+  final GetCurrencyDetailUseCase _getCurrencyDetailUseCase = getIt<GetCurrencyDetailUseCase>();
   
   int _selectedTab = 0;
   String _selectedInterval = '1分';
   bool _isFavorite = false;
   List<String> _selectedIndicators = ['MACD'];
+  CurrencyDetail? _currencyDetail;
+  bool _isLoadingCurrencyDetail = false;
 
   static const List<String> _tabs = ['报价', '信息', '交易数据'];
   static const List<String> _intervals = ['分时', '1分', '3分', '5分', '15分', '1小时', '3日'];
@@ -58,6 +66,51 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
     }
     // 初始化默认指标
     _updateKlineStoreIndicators();
+    // 加载币种详情
+    _loadCurrencyDetail();
+  }
+
+  /// 加载币种详情
+  Future<void> _loadCurrencyDetail() async {
+    if (widget.ticker.symbol.isEmpty) return;
+    
+    // 从交易对符号中提取基础币种（例如：BTC/USDT -> BTC）
+    final symbol = widget.ticker.symbol.replaceAll('/', '');
+    String baseCurrency = symbol;
+    
+    // 移除常见的计价货币后缀
+    final quoteCurrencies = ['USDT', 'BTC', 'ETH', 'BNB', 'USDC', 'BUSD'];
+    for (final quote in quoteCurrencies) {
+      if (symbol.endsWith(quote)) {
+        baseCurrency = symbol.substring(0, symbol.length - quote.length);
+        break;
+      }
+    }
+    
+    if (baseCurrency.isEmpty) return;
+    
+    setState(() {
+      _isLoadingCurrencyDetail = true;
+    });
+    
+    try {
+      final detail = await _getCurrencyDetailUseCase.call(
+        params: GetCurrencyDetailParams(symbol: baseCurrency),
+      );
+      
+      if (mounted) {
+        setState(() {
+          _currencyDetail = detail;
+          _isLoadingCurrencyDetail = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCurrencyDetail = false;
+        });
+      }
+    }
   }
 
   @override
@@ -82,6 +135,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
             onFavoriteToggle: () => setState(() => _isFavorite = !_isFavorite),
             onShare: () {},
             onMore: () {},
+            showPerpetual: widget.isFutures,
           ),
           DetailTabBar(
             tabs: _tabs,
@@ -89,7 +143,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
             onTabChanged: (index) => setState(() => _selectedTab = index),
           ),
           Expanded(
-            child: _buildTabContent(ticker, isPositive, ticker.lastPrice * 7.08),
+            child: _buildTabContent(ticker, isPositive, ticker.lastPrice * ExchangeRate.getUsdToCnySync()),
           ),
           DetailBottomActions(
             onMore: () {},
@@ -142,7 +196,10 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
           onSettingsTap: () {},
         );
       case 1:
-        return DetailInfoTab(ticker: ticker);
+        return DetailInfoTab(
+          ticker: ticker,
+          currencyDetail: _currencyDetail,
+        );
       case 2:
         return const DetailTradeDataTab();
       default:

@@ -19,6 +19,7 @@ import 'package:fastapp/data/network/websocket/market_websocket.dart';
 import 'package:fastapp/data/network/websocket/websocket_service.dart';
 import 'package:fastapp/core/services/page_content_service.dart';
 import 'package:fastapp/core/services/market_data_service.dart';
+import 'package:fastapp/core/services/exchange_rate_service.dart';
 import 'package:fastapp/core/services/quality_feedback_service.dart';
 import 'package:fastapp/core/services/language_service.dart';
 import 'package:fastapp/data/network/constants/endpoints.dart';
@@ -117,6 +118,10 @@ class NetworkModule {
 
     getIt.registerSingleton<MarketDataService>(
       MarketDataService(getIt<MarketApi>()),
+    );
+
+    getIt.registerSingleton<ExchangeRateService>(
+      ExchangeRateService(getIt<MarketApi>()),
     );
 
     getIt.registerSingleton<QualityFeedbackService>(

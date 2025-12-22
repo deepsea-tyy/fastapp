@@ -1,3 +1,4 @@
+import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/wallet/currency/currency_list.dart';
@@ -306,8 +307,6 @@ class AccountAssetList extends StatelessWidget {
         final spotBalance = 0.00118263;
         final fundsBalance = 0.00;
 
-        final exchangeRate = 7.08; // 假设汇率
-
         final totalBalance = contractBalance + spotBalance + fundsBalance;
 
         if (totalBalance == 0) {
@@ -316,9 +315,9 @@ class AccountAssetList extends StatelessWidget {
 
         return Column(
           children: [
-            _buildAccountItem('合约', contractBalance, exchangeRate),
-            _buildAccountItem('现货', spotBalance, exchangeRate),
-            _buildAccountItem('资金', fundsBalance, exchangeRate, showCny: false),
+            _buildAccountItem('合约', contractBalance, ExchangeRate.getUsdToCnySync()),
+            _buildAccountItem('现货', spotBalance, ExchangeRate.getUsdToCnySync()),
+            _buildAccountItem('资金', fundsBalance, ExchangeRate.getUsdToCnySync(), showCny: false),
           ],
         );
       },

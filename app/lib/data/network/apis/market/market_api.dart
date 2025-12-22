@@ -5,6 +5,8 @@ import '../../../../domain/entity/market/depth_data.dart';
 import '../../../../domain/entity/market/ticker_data.dart';
 import '../../../../domain/entity/market/market_pair.dart';
 import '../../../../domain/entity/market/market_data_config.dart';
+import '../../../../domain/entity/market/currency_detail.dart';
+import '../../../../domain/entity/market/exchange_rate_response.dart';
 import '../../constants/endpoints.dart';
 import '../../http_client_wrapper.dart';
 
@@ -193,6 +195,70 @@ class MarketApi {
   Future<MarketDataConfig> downloadMarketData() async {
     final response = await _httpClient.get(Endpoints.currencyDownload);
     return MarketDataConfig.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// 获取币种详情
+  /// 
+  /// 【HTTP 客户端】
+  /// - 根据 HttpClientConfig 配置自动选择 DioClient 或 RestClient
+  /// - 开发时默认使用 DioClient，会打印请求日志
+  /// 
+  /// @param symbol 币种符号，例如：'BTC'（不包含交易对，只取基础币种）
+  /// @return CurrencyDetail 对象，失败时返回 null
+  Future<CurrencyDetail?> getCurrencyDetail({required String symbol}) async {
+    if (symbol.isEmpty) {
+      return null;
+    }
+
+    try {
+      final response = await _httpClient.get(
+        '/api/ds/ex/currency/detail',
+        queryParameters: {'symbol': symbol},
+      );
+      
+      // 处理响应格式，可能是 { data: {...} } 或直接是对象
+      Map<String, dynamic> data;
+      if (response is Map) {
+        if (response.containsKey('data')) {
+          data = response['data'] as Map<String, dynamic>;
+        } else {
+          data = response as Map<String, dynamic>;
+        }
+      } else {
+        return null;
+      }
+      
+      return CurrencyDetail.fromJson(data);
+    } catch (e) {
+      // 发生错误时返回null
+      return null;
+    }
+  }
+
+  /// 获取汇率
+  /// 
+  /// @return ExchangeRateResponse 对象，失败时返回 null
+  Future<ExchangeRateResponse?> getExchangeRate() async {
+    try {
+      final response = await _httpClient.get(Endpoints.exchangeRate);
+      
+      // 处理响应格式，可能是 { data: {...} } 或直接是对象
+      Map<String, dynamic> data;
+      if (response is Map) {
+        if (response.containsKey('data')) {
+          data = response['data'] as Map<String, dynamic>;
+        } else {
+          data = response as Map<String, dynamic>;
+        }
+      } else {
+        return null;
+      }
+      
+      return ExchangeRateResponse.fromJson(data);
+    } catch (e) {
+      // 发生错误时返回null
+      return null;
+    }
   }
 }
 

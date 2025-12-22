@@ -66,17 +66,28 @@ class HttpClientWrapper {
   /// );
   /// ```
   Future<dynamic> get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
-    if (HttpClientConfig.shouldUseRestClient(endpoint)) {
-      // 使用 RestClient（轻量，但无日志、无拦截器）
-      final url = _buildUrl(endpoint, queryParameters);
-      return _restClient.get(url);
-    } else {
-      // 使用 DioClient（支持拦截器、日志、自动 Token 等）
-      final response = await _dioClient.dio.get(
-        endpoint,
-        queryParameters: queryParameters,
-      );
-      return response.data;
+    try {
+      dynamic responseData;
+      int? statusCode;
+
+      if (HttpClientConfig.shouldUseRestClient(endpoint)) {
+        // 使用 RestClient（轻量，但无日志、无拦截器）
+        final url = _buildUrl(endpoint, queryParameters);
+        responseData = await _restClient.get(url);
+        statusCode = 200; // RestClient 不返回状态码，假设成功
+      } else {
+        // 使用 DioClient（支持拦截器、日志、自动 Token 等）
+        final response = await _dioClient.dio.get(
+          endpoint,
+          queryParameters: queryParameters,
+        );
+        responseData = response.data;
+        statusCode = response.statusCode;
+      }
+
+      return responseData;
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -102,26 +113,37 @@ class HttpClientWrapper {
     Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    if (HttpClientConfig.shouldUseRestClient(endpoint)) {
-      // 使用 RestClient
-      final url = _buildUrl(endpoint, queryParameters);
-      String? body;
-      if (data != null) {
-        body = jsonEncode(data);
+    try {
+      dynamic responseData;
+      int? statusCode;
+
+      if (HttpClientConfig.shouldUseRestClient(endpoint)) {
+        // 使用 RestClient
+        final url = _buildUrl(endpoint, queryParameters);
+        String? body;
+        if (data != null) {
+          body = jsonEncode(data);
+        }
+        responseData = await _restClient.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+        statusCode = 200; // RestClient 不返回状态码，假设成功
+      } else {
+        // 使用 DioClient
+        final response = await _dioClient.dio.post(
+          endpoint,
+          data: data,
+          queryParameters: queryParameters,
+        );
+        responseData = response.data;
+        statusCode = response.statusCode;
       }
-      return _restClient.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
-    } else {
-      // 使用 DioClient
-      final response = await _dioClient.dio.post(
-        endpoint,
-        data: data,
-        queryParameters: queryParameters,
-      );
-      return response.data;
+
+      return responseData;
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -136,24 +158,35 @@ class HttpClientWrapper {
     Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    if (HttpClientConfig.shouldUseRestClient(endpoint)) {
-      final url = _buildUrl(endpoint, queryParameters);
-      String? body;
-      if (data != null) {
-        body = jsonEncode(data);
+    try {
+      dynamic responseData;
+      int? statusCode;
+
+      if (HttpClientConfig.shouldUseRestClient(endpoint)) {
+        final url = _buildUrl(endpoint, queryParameters);
+        String? body;
+        if (data != null) {
+          body = jsonEncode(data);
+        }
+        responseData = await _restClient.put(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+        statusCode = 200;
+      } else {
+        final response = await _dioClient.dio.put(
+          endpoint,
+          data: data,
+          queryParameters: queryParameters,
+        );
+        responseData = response.data;
+        statusCode = response.statusCode;
       }
-      return _restClient.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
-    } else {
-      final response = await _dioClient.dio.put(
-        endpoint,
-        data: data,
-        queryParameters: queryParameters,
-      );
-      return response.data;
+
+      return responseData;
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -166,15 +199,26 @@ class HttpClientWrapper {
     String endpoint, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    if (HttpClientConfig.shouldUseRestClient(endpoint)) {
-      final url = _buildUrl(endpoint, queryParameters);
-      return _restClient.delete(url);
-    } else {
-      final response = await _dioClient.dio.delete(
-        endpoint,
-        queryParameters: queryParameters,
-      );
-      return response.data;
+    try {
+      dynamic responseData;
+      int? statusCode;
+
+      if (HttpClientConfig.shouldUseRestClient(endpoint)) {
+        final url = _buildUrl(endpoint, queryParameters);
+        responseData = await _restClient.delete(url);
+        statusCode = 200;
+      } else {
+        final response = await _dioClient.dio.delete(
+          endpoint,
+          queryParameters: queryParameters,
+        );
+        responseData = response.data;
+        statusCode = response.statusCode;
+      }
+
+      return responseData;
+    } catch (e) {
+      rethrow;
     }
   }
 

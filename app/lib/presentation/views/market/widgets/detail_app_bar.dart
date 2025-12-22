@@ -10,6 +10,7 @@ class DetailAppBar extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onMore;
   final ValueChanged<String>? onSymbolChanged;
+  final bool showPerpetual;
 
   const DetailAppBar({
     super.key,
@@ -20,6 +21,7 @@ class DetailAppBar extends StatelessWidget {
     required this.onShare,
     required this.onMore,
     this.onSymbolChanged,
+    this.showPerpetual = false,
   });
 
   @override
@@ -64,8 +66,10 @@ class DetailAppBar extends StatelessWidget {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Text('永续', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  if (showPerpetual) ...[
+                    const SizedBox(width: 4),
+                    const Text('永续', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  ],
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey),
                 ],

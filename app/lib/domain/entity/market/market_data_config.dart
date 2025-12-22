@@ -8,6 +8,9 @@ class MarketDataConfig {
   /// 版本号
   final int version;
 
+  /// 链列表
+  final List<String> chains;
+
   /// 币种列表（扁平化：symbol -> currency）
   final Map<String, Currency> currencies;
 
@@ -22,6 +25,7 @@ class MarketDataConfig {
 
   MarketDataConfig({
     required this.version,
+    required this.chains,
     required this.currencies,
     required this.spotPairs,
     required this.futuresPairs,
@@ -32,6 +36,10 @@ class MarketDataConfig {
   factory MarketDataConfig.fromJson(Map<String, dynamic> json) {
     // 解析版本号
     final version = (json['version'] ?? 0) as int;
+
+    // 解析链列表
+    final chainsJson = json['chain'] as List<dynamic>? ?? [];
+    final chains = chainsJson.map((e) => e.toString()).toList();
 
     // 解析币种（扁平化：symbol -> currency）
     final currenciesJson = json['currency'] as Map<String, dynamic>? ?? {};
@@ -63,6 +71,7 @@ class MarketDataConfig {
 
     return MarketDataConfig(
       version: version,
+      chains: chains,
       currencies: currencies,
       spotPairs: spotPairs,
       futuresPairs: futuresPairs,
@@ -74,6 +83,7 @@ class MarketDataConfig {
   Map<String, dynamic> toJson() {
     return {
       'version': version,
+      'chain': chains,
       'currency': currencies.map((symbol, currency) => MapEntry(symbol, currency.toJson())),
       'spot': spotPairs.map((symbol, spot) => MapEntry(symbol, spot.toJson())),
       'futures': futuresPairs.map((symbol, futures) => MapEntry(symbol, futures.toJson())),

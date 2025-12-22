@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setPreferredOrientations();
+  
   await ServiceLocator.configureDependencies();
   runApp(App());
 }

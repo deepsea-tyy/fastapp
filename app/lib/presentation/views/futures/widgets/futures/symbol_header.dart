@@ -69,7 +69,10 @@ class SymbolHeader extends StatelessWidget {
                 );
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => MarketDetailScreen(ticker: ticker),
+                    builder: (context) => MarketDetailScreen(
+                      ticker: ticker,
+                      isFutures: true,
+                    ),
                   ),
                 );
               },

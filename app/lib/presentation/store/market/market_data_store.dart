@@ -142,10 +142,16 @@ abstract class _MarketDataStore with Store {
     return marketDataConfig?.getOptionPairsByChain(chain) ?? [];
   }
 
-  /// 获取所有链名称列表
+  /// 获取所有链名称列表（从数据中提取）
   @computed
   List<String> get allChains {
     return marketDataConfig?.allChains ?? [];
+  }
+
+  /// 获取链列表（从接口返回的 chain 字段）
+  @computed
+  List<String> get chains {
+    return marketDataConfig?.chains ?? [];
   }
 
   /// 获取热门币种列表

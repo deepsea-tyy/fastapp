@@ -11,6 +11,7 @@ import 'package:fastapp/l10n/app_localizations.dart';
 import 'package:fastapp/core/services/message_service.dart';
 import 'package:fastapp/core/services/page_content_manager.dart';
 import 'package:fastapp/core/services/app_startup_state.dart';
+import 'package:fastapp/core/services/exchange_rate_service.dart';
 import 'package:fastapp/core/data/network/dio/interceptors/token_refresh_interceptor.dart';
 import 'package:fastapp/presentation/views/home/widgets/quick/quick_entrance_state.dart';
 import 'package:flutter/material.dart';
@@ -99,6 +100,16 @@ class _AppState extends State<App> {
       try {
         final marketDataStore = getIt<MarketDataStore>();
         await marketDataStore.loadMarketData();
+      } catch (e) {
+        // 下载失败不影响app启动，静默失败
+      }
+    });
+    
+    // 预加载汇率
+    Future.microtask(() async {
+      try {
+        final exchangeRateService = getIt<ExchangeRateService>();
+        await exchangeRateService.getExchangeRate();
       } catch (e) {
         // 下载失败不影响app启动，静默失败
       }

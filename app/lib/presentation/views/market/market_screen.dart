@@ -8,6 +8,8 @@ import 'package:fastapp/presentation/views/market/widgets/market_list_item.dart'
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+
+
 /// 行情主页面（简化版）
 class MarketScreen extends StatefulWidget {
   const MarketScreen({super.key});
@@ -19,10 +21,12 @@ class MarketScreen extends StatefulWidget {
 class _MarketScreenState extends State<MarketScreen> {
   final MarketStore _marketStore = getIt<MarketStore>();
   final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
-  int _selectedMainTab = 0; // 0: 加密货币, 1: 现货, 2: U本位合约, 3: 币本位合约, 4: 期权
-  int _selectedCategoryTab = 0; // 0: 全部, 1: BNB Chain, 2: Solana, 3: RWA, 4: Meme, 5: F
-  String? _sortField; // null, 'name', 'price', 'change'
+  int _selectedMainTab = 0;
+  int _selectedCategoryTab = 0;
+  String? _sortField;
   bool _sortAscending = true;
+
+  static const _mainTabs = ['现货', 'U本位合约', '币本位合约', '期权'];
 
   @override
   void initState() {
@@ -34,9 +38,28 @@ class _MarketScreenState extends State<MarketScreen> {
       }
       // 等待市场数据加载完成后再加载 ticker 数据（需要从市场数据中获取交易对符号）
       if (_marketDataStore.isInitialized) {
-        _marketStore.loadAllTickers();
+        _loadTickersForCurrentTab();
       }
     });
+  }
+
+  /// 根据当前一级筛选类型加载对应的 ticker 数据
+  /// 仅在初始化时调用，用于首次加载数据
+  void _loadTickersForCurrentTab() {
+    if (!_marketDataStore.isInitialized) return;
+    
+    final validSymbols = _getValidSymbolsForTab(_selectedMainTab, _selectedCategoryTab);
+    
+    if (validSymbols.isEmpty) {
+      _marketStore.tickerList.clear();
+      return;
+    }
+    
+    // 目前 loadAllTickers 只加载现货交易对
+    // TODO: 后续需要扩展 API 支持加载合约和期权的 ticker 数据
+    if (_selectedMainTab == 0) {
+      _marketStore.loadAllTickers();
+    }
   }
 
   @override
@@ -99,77 +122,72 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   Widget _buildMainNavigation() {
-    final mainTabs = ['加密货币', '现货', 'U本位合约', '币本位合约', '期权'];
-
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          ...mainTabs.asMap().entries.map((entry) {
-            final index = entry.key;
-            final isSelected = _selectedMainTab == index;
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedMainTab = index),
-              child: Container(
-                margin: const EdgeInsets.only(right: 24),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isSelected ? Colors.amber : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                child: Text(
-                  entry.value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
+    return _buildHorizontalTabBar(
+      tabs: _mainTabs,
+      selectedIndex: _selectedMainTab,
+      onTap: (index) => setState(() => _selectedMainTab = index),
+      itemMargin: const EdgeInsets.only(right: 24),
+      showBottomBorder: true,
     );
   }
 
   Widget _buildCategoryNavigation() {
-    final categories = ['全部', 'BNB Chain', 'Solana', 'RWA', 'Meme', 'F'];
+    return Observer(
+      builder: (_) {
+        final chains = _marketDataStore.chains;
+        final categories = ['全部', ...chains];
+        return _buildHorizontalTabBar(
+          tabs: categories,
+          selectedIndex: _selectedCategoryTab,
+          onTap: (index) => setState(() => _selectedCategoryTab = index),
+          itemMargin: const EdgeInsets.only(right: 16),
+          showBottomBorder: false,
+        );
+      },
+    );
+  }
 
+  Widget _buildHorizontalTabBar({
+    required List<String> tabs,
+    required int selectedIndex,
+    required ValueChanged<int> onTap,
+    required EdgeInsets itemMargin,
+    required bool showBottomBorder,
+  }) {
     return SizedBox(
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          ...categories.asMap().entries.map((entry) {
-            final index = entry.key;
-            final isSelected = _selectedCategoryTab == index;
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedCategoryTab = index),
-              child: Container(
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text(
-                  entry.value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: Colors.black87,
-                  ),
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final isSelected = selectedIndex == index;
+          return GestureDetector(
+            onTap: () => onTap(index),
+            child: Container(
+              margin: itemMargin,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: showBottomBorder
+                  ? BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isSelected ? Colors.amber : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                    )
+                  : null,
+              child: Text(
+                entry.value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: Colors.black87,
                 ),
               ),
-            );
-          }),
-        ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -205,25 +223,24 @@ class _MarketScreenState extends State<MarketScreen> {
   Widget _buildSortHeader(String label, String field, {bool isRight = false}) {
     final isSelected = _sortField == field;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (_sortField == field) {
-            _sortAscending = !_sortAscending;
-          } else {
-            _sortField = field;
+      onTap: () => setState(() {
+        if (_sortField == field) {
+          _sortAscending = !_sortAscending;
+          if (!_sortAscending) {
+            _sortField = null;
             _sortAscending = true;
           }
-        });
-      },
+        } else {
+          _sortField = field;
+          _sortAscending = true;
+        }
+      }),
       child: Row(
         mainAxisAlignment: isRight ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
           ),
           const SizedBox(width: 4),
           Icon(
@@ -239,15 +256,14 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   Widget _buildMarketList() {
+    final selectedMainTab = _selectedMainTab;
+    final selectedCategoryTab = _selectedCategoryTab;
+    
     return Observer(
       builder: (_) {
         // 显示加载状态
         if (_marketStore.isLoading && _marketStore.tickerList.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Colors.amber,
-            ),
-          );
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
         }
 
         // 显示错误状态
@@ -255,32 +271,23 @@ class _MarketScreenState extends State<MarketScreen> {
           return _buildErrorState(_marketStore.errorMessage ?? '加载失败');
         }
 
-        var tickers = List.from(_marketStore.tickerList);
+        final validSymbols = _getValidSymbolsForTab(selectedMainTab, selectedCategoryTab);
+        final tickerMap = _buildValidTickerMap();
+        
+        var tickers = validSymbols
+            .where((symbol) => tickerMap.containsKey(symbol))
+            .map((symbol) => tickerMap[symbol]!)
+            .toList();
 
-        // 过滤掉无效的数据（价格无效的项）
-        tickers = tickers.where((ticker) {
-          return !ticker.lastPrice.isNaN && 
-                 !ticker.lastPrice.isInfinite && 
-                 ticker.lastPrice > 0 &&
-                 ticker.symbol.isNotEmpty;
-        }).toList();
-
-        // 排序
         if (_sortField != null && tickers.isNotEmpty) {
           tickers.sort(_compareTickers);
         }
 
         // 显示空数据状态
         if (tickers.isEmpty) {
-          // 如果正在加载，显示加载状态；否则显示空状态
-          if (_marketStore.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Colors.amber,
-              ),
-            );
-          }
-          return _buildEmptyState();
+          return _marketStore.isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+              : _buildEmptyState();
         }
 
         return Column(
@@ -315,26 +322,38 @@ class _MarketScreenState extends State<MarketScreen> {
               ),
             // 列表内容
             Expanded(
-              child: ListView.builder(
-                itemCount: tickers.length,
-                itemBuilder: (context, index) {
-                  final ticker = tickers[index];
-                  final baseCurrencySymbol = _getBaseCurrencySymbol(ticker.symbol);
-                  final currency = _marketDataStore.getCurrency(baseCurrencySymbol);
+              child: RefreshIndicator(
+                onRefresh: () => _marketStore.refreshTickers(),
+                color: Colors.amber,
+                child: ListView.builder(
+                  itemCount: tickers.length,
+                  itemBuilder: (context, index) {
+                    final ticker = tickers[index];
+                    final baseCurrencySymbol = _getBaseCurrencySymbol(ticker.symbol);
+                    final currency = _marketDataStore.getCurrency(baseCurrencySymbol);
 
-                  return MarketListItem(
-                    ticker: ticker,
-                    logoUrl: currency?.logo != null 
-                        ? ImageUtils.formatSingleImagePath(currency!.logo)
-                        : null,
-                    fullName: currency?.name ?? _getFullName(baseCurrencySymbol),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => MarketDetailScreen(ticker: ticker),
-                      ),
-                    ),
-                  );
-                },
+                    return MarketListItem(
+                      ticker: ticker,
+                      logoUrl: currency?.logo != null
+                          ? ImageUtils.formatSingleImagePath(currency!.logo)
+                          : null,
+                      fullName: currency?.name ?? _getFullName(baseCurrencySymbol),
+                      onTap: () {
+                        // 直接根据一级筛选判断是否是合约类型
+                        // _selectedMainTab: 0=现货, 1=U本位合约, 2=币本位合约, 3=期权
+                        final isFutures = _selectedMainTab == 1 || _selectedMainTab == 2;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => MarketDetailScreen(
+                              ticker: ticker,
+                              isFutures: isFutures,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -346,23 +365,17 @@ class _MarketScreenState extends State<MarketScreen> {
   int _compareTickers(dynamic a, dynamic b) {
     if (_sortField == null) return 0;
 
-    int result = 0;
-    switch (_sortField) {
-      case 'name':
-        result = (a.symbol ?? '').compareTo(b.symbol ?? '');
-        break;
-      case 'price':
-        final priceA = a.lastPrice;
-        final priceB = b.lastPrice;
-        result = (priceA.isNaN || priceB.isNaN) ? 0 : priceA.compareTo(priceB);
-        break;
-      case 'change':
-        final changeA = a.changePercent;
-        final changeB = b.changePercent;
-        result = (changeA.isNaN || changeB.isNaN) ? 0 : changeA.compareTo(changeB);
-        break;
-    }
+    final result = switch (_sortField) {
+      'name' => (a.symbol ?? '').compareTo(b.symbol ?? ''),
+      'price' => _compareNumbers(a.lastPrice, b.lastPrice),
+      'change' => _compareNumbers(a.changePercent, b.changePercent),
+      _ => 0,
+    };
     return _sortAscending ? result : -result;
+  }
+
+  int _compareNumbers(num a, num b) {
+    return (a.isNaN || b.isNaN) ? 0 : a.compareTo(b);
   }
 
   Widget _buildErrorState(String message) {
@@ -435,12 +448,69 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
+  /// 根据指定的 tab 和 category 获取有效交易对符号列表
+  List<String> _getValidSymbolsForTab(int mainTab, int categoryTab) {
+    final chains = _marketDataStore.chains;
+    final selectedChain = categoryTab > 0 && categoryTab <= chains.length
+        ? chains[categoryTab - 1]
+        : null;
+    
+    final pairs = switch (mainTab) {
+      0 => _marketDataStore.allSpotPairs,
+      1 => _marketDataStore.usdtFutures,
+      2 => _marketDataStore.coinFutures,
+      3 => _marketDataStore.allOptions,
+      _ => <dynamic>[],
+    };
+    
+    return pairs
+        .where((pair) => _isPairValid(pair, selectedChain))
+        .map((pair) => pair.symbol as String)
+        .toList();
+  }
+
+  /// 检查交易对是否有效
+  /// 选择"全部"时不检查 isBaseCurrency，选择具体链时才过滤
+  bool _isPairValid(dynamic pair, String? selectedChain) {
+    if (!pair.isEnabled) return false;
+    if (selectedChain == null) return true; // 选择"全部"，全部显示
+    
+    final currency = _marketDataStore.getCurrency(pair.baseCurrencySymbol);
+    return currency != null &&
+        !currency.isBaseCurrency &&
+        pair.chain == selectedChain;
+  }
+
+  /// 构建有效的 ticker 映射
+  Map<String, dynamic> _buildValidTickerMap() {
+    return Map.fromEntries(
+      _marketStore.tickerList
+          .where(_isTickerValid)
+          .map((ticker) => MapEntry(ticker.symbol, ticker)),
+    );
+  }
+
+  /// 检查 ticker 是否有效
+  bool _isTickerValid(dynamic ticker) {
+    return ticker.symbol.isNotEmpty &&
+        !ticker.lastPrice.isNaN &&
+        !ticker.lastPrice.isInfinite &&
+        ticker.lastPrice > 0;
+  }
+
   /// 从交易对符号中提取基础币种符号
-  String _getBaseCurrencySymbol(String symbol) {
+  String _getBaseCurrencySymbol(String symbol, [int? mainTab]) {
     if (symbol.contains('/')) {
       return symbol.split('/')[0];
     }
-    return _marketDataStore.getSpotPair(symbol)?.baseCurrencySymbol ?? symbol;
+    
+    final tab = mainTab ?? _selectedMainTab;
+    return switch (tab) {
+      0 => _marketDataStore.getSpotPair(symbol)?.baseCurrencySymbol ?? symbol,
+      1 || 2 => _marketDataStore.getFuturesPair(symbol)?.baseCurrencySymbol ?? symbol,
+      3 => _marketDataStore.getOptionPair(symbol)?.baseCurrencySymbol ?? symbol,
+      _ => symbol,
+    };
   }
 
   String? _getFullName(String currency) {
@@ -459,4 +529,5 @@ class _MarketScreenState extends State<MarketScreen> {
     };
     return fullNameMap[currency];
   }
+
 }

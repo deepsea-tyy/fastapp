@@ -27,6 +27,9 @@ class Endpoints {
 
   // 市场数据配置下载
   static const String currencyDownload = '/api/ds/ex/currency/download';
+  
+  // 汇率相关
+  static const String exchangeRate = '/api/ds/ex/currency/exchangeRate';
 
   // 交易相关
   static const String tradePlaceOrder = AppConfig.tradePlaceOrder;

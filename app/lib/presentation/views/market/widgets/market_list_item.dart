@@ -1,3 +1,4 @@
+import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:flutter/material.dart';
 
@@ -30,8 +31,8 @@ class MarketListItem extends StatelessWidget {
     final parts = ticker.symbol.split('/');
     final baseCurrency = parts.isNotEmpty ? parts[0] : ticker.symbol;
     
-    // 计算人民币价格（假设汇率，实际应从API获取）
-    final cnyPrice = validPrice * 7.08;
+    // 计算人民币价格
+    final cnyPrice = validPrice * ExchangeRate.getUsdToCnySync();
 
     return InkWell(
       onTap: onTap,
