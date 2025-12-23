@@ -84,6 +84,26 @@ class WsPushListener implements ListenerInterface
     }
 
     /**
+     * 分页获取所有连接的fd列表
+     */
+    private function getAllConnectionFds(): array
+    {
+        $fds = [];
+        $page = 1;
+        $pageSize = 100;
+
+        do {
+            $result = WsConnectionManager::getConnectionsList(null, $page, $pageSize);
+            foreach ($result['list'] as $connection) {
+                $fds[] = $connection['fd'];
+            }
+            $page++;
+        } while (count($result['list']) === $pageSize);
+
+        return $fds;
+    }
+
+    /**
      * 解析目标fd列表
      */
     private function resolveFds(WsPushEvent $event): array
@@ -103,8 +123,7 @@ class WsPushListener implements ListenerInterface
                 break;
 
             case WsPushEvent::TARGET_ALL:
-                $connections = WsConnectionManager::getAllConnections();
-                $fds = array_column($connections, 'fd');
+                $fds = $this->getAllConnectionFds();
                 break;
 
             case WsPushEvent::TARGET_FD:

@@ -61,7 +61,7 @@ class CurrentUser
                     'code' => $user->code,
                     'mobile' => $user->mobile,
                     'google2fa' => $user->google2fa ?: '',
-                ], $profile, $user->profile?->setting));
+                ], $profile, $user->profile?->setting ?? []));
                 Tools::eventDispatcher(new UserAccountEvent($user, $ip, $os, $browser, $deviceId, $user->wasRecentlyCreated ? 2 : 1));
             } else {
                 Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));

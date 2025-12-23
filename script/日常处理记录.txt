@@ -16,26 +16,20 @@ Claude ai全局设置
 
 
 会话管理
-- 文档生成：非必要不生成，需要时只包含核心内容
+- 文档生成：文档只在必要时生成，内容精简
 - 依赖提示：仅在确实需要时才提示
 - 向后兼容：不需要考虑
 
+代码规范
+- 代码保持简洁直接，避免过度工程
 
-API 响应处理
-DioClient 拦截器会自动处理 API 响应：
-- 自动检查 code 状态码，code != 200 时抛出异常
-- 自动解包 data 字段，直接返回 data 内容
-
-重要规则：
-- 不要检查 response['code'] == 200
-- 不要访问 response['data']
-- response 已经是解包后的 data 内容，直接使用
-- 使用 try-catch 捕获异常即可
-- 成功请求，不使用返回的message做提示
+API 响应处理规则
+- 直接使用 response 作为解包后的数据，无需检查 code 或访问 data 字段
+- 成功请求不展示 message 提示
 
 示例：
 final response = await userApi.updateProfile(username: username);
-final user = User.fromJson(response);  // response 直接就是数据
+final user = User.fromJson(response);
 
 
 cursor

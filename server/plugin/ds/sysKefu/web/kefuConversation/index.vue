@@ -33,7 +33,7 @@ const drawerDetail: UseDrawerExpose = useDrawer({
 // 参数配置
 const options = ref<MaProTableOptions>({
   // 表格距离底部的像素偏移适配
-  adaptionOffsetBottom: 161,
+  //adaptionOffsetBottom: 161,
   header: {
     mainTitle: () => t('kefu.KefuConversation'),
     subTitle: '',

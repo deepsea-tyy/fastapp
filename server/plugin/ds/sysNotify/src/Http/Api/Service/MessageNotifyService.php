@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysNotify\Http\Api\Service;
 
+use App\Common\Tools;
+use Plugin\Ds\SysNotify\WebSocket\Event\MessageNotifyEvent;
 use Plugin\Ds\SysNotify\Model\MessageNotify;
 use Plugin\Ds\SysNotify\Model\MessageNotifyRead;
 use Plugin\Ds\SysNotify\Repository\MessageNotifyRepository;
+use Plugin\Ds\SysNotify\WebSocket\MessageNotifyFormat;
 
 class MessageNotifyService
 {
@@ -169,17 +172,62 @@ class MessageNotifyService
 
     /**
      * 通知个人消息
-    */
+     */
     public static function notifyToUser(int $userId, int $notifyType, string $content, string $title = ''): bool
     {
-        MessageNotify::query()->create([
+        $notify = MessageNotify::query()->create([
             'type' => 2,
             'user_id' => $userId,
             'notify_type' => $notifyType,
             'content' => $content,
             'title' => $title,
         ]);
+
+        // 触发 WebSocket 推送
+        self::pushNotify($notify);
+
         return true;
+    }
+
+    /**
+     * 全局消息推送（推送给所有在线用户）
+     *
+     * @param int $notifyType 通知类型 1-系统通知,2-业务通知,3-其他
+     * @param string $content 消息内容
+     * @param string $title 消息标题
+     * @return bool
+     */
+    public static function notifyToAll(int $notifyType, string $content, string $title = ''): bool
+    {
+        $notify = MessageNotify::query()->create([
+            'type' => 1,
+            'user_id' => 0,  // user_id = 0 表示全局消息
+            'notify_type' => $notifyType,
+            'content' => $content,
+            'title' => $title,
+        ]);
+
+        // 触发 WebSocket 推送
+        self::pushNotify($notify);
+
+        return true;
+    }
+
+    /**
+     * 推送通知消息
+     */
+    protected static function pushNotify($notify): void
+    {
+        $messageFormat = new MessageNotifyFormat();
+        $messageFormat->fill([
+            'id' => $notify->id,
+            'user_id' => $notify->user_id ?? 0,
+            'notify_type' => $notify->notify_type,
+            'title' => $notify->title ?? '',
+            'content' => $notify->content,
+            'created_at' => $notify->created_at->toDateTimeString(),
+        ]);
+        Tools::eventDispatcher(new MessageNotifyEvent($messageFormat));
     }
 }
 

@@ -253,4 +253,74 @@ class WsConnectionManager
             'diff' => $actualCount - $beforeCount,
         ];
     }
+
+    /**
+     * 清理所有 WebSocket 连接相关的 Redis 数据
+     * 包括：连接信息、统计数据、用户映射、fd映射、分布式锁
+     *
+     * @return array ['cleared_keys' => int, 'details' => array]
+     */
+    public static function clearAllConnections(): array
+    {
+        $redis = self::getRedis();
+        $clearedKeys = 0;
+        $details = [];
+
+        try {
+            // 1. 清理连接信息 Hash
+            $connectionCount = $redis->hLen(self::REDIS_KEY_CONNECTIONS_INFO);
+            if ($connectionCount > 0) {
+                $redis->del(self::REDIS_KEY_CONNECTIONS_INFO);
+                $clearedKeys++;
+                $details['connections_info'] = $connectionCount;
+            }
+
+            // 2. 清理总连接数统计
+            if ($redis->exists(self::REDIS_KEY_STATS_TOTAL)) {
+                $redis->del(self::REDIS_KEY_STATS_TOTAL);
+                $clearedKeys++;
+                $details['stats_total'] = true;
+            }
+
+            // 3. 清理所有 ws:user:fds:{user_id} (用户到fd的映射)
+            $userFdsPattern = self::REDIS_KEY_USER_FDS . '*';
+            $userFdsKeys = $redis->keys($userFdsPattern);
+            if ($userFdsKeys && count($userFdsKeys) > 0) {
+                $redis->del(...$userFdsKeys);
+                $clearedKeys += count($userFdsKeys);
+                $details['user_fds_mappings'] = count($userFdsKeys);
+            }
+
+            // 4. 清理所有 ws:fd:user:{fd} (fd到用户的映射，来自 WsController)
+            $fdUserPattern = 'ws:fd:user:*';
+            $fdUserKeys = $redis->keys($fdUserPattern);
+            if ($fdUserKeys && count($fdUserKeys) > 0) {
+                $redis->del(...$fdUserKeys);
+                $clearedKeys += count($fdUserKeys);
+                $details['fd_user_mappings'] = count($fdUserKeys);
+            }
+
+            // 5. 清理所有分布式锁 ws:lock:fd:{fd} (来自 WsController)
+            $lockPattern = 'ws:lock:fd:*';
+            $lockKeys = $redis->keys($lockPattern);
+            if ($lockKeys && count($lockKeys) > 0) {
+                $redis->del(...$lockKeys);
+                $clearedKeys += count($lockKeys);
+                $details['locks'] = count($lockKeys);
+            }
+
+            return [
+                'success' => true,
+                'cleared_keys' => $clearedKeys,
+                'details' => $details,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'cleared_keys' => $clearedKeys,
+                'details' => $details,
+            ];
+        }
+    }
 }

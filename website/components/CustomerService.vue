@@ -275,17 +275,38 @@ function setupWebSocketHandlers() {
 }
 
 function handleWebSocketMessage(data: any) {
-  // 忽略心跳响应
-  if (['ping', 'heartbeat'].includes(data.action) || data.type === 'pong') {
-    return
-  }
+  // 处理推送消息（根据 data.type 判断）
+  if (data.success && data.data && data.data.type === 'push_message') {
+    const message = data.data
+    const action = message.action
 
-  // 处理推送消息
-  if (data.type === 'push_message') {
-    if (['kefu_message', 'kefu_visitor_message'].includes(data.action)) {
-      addMessage(data.content || t('customerService.noContent'), 'other', `${t('customerService.kefu')} ${data.kefu_id}`)
-    } else if (['kefu_message_end', 'kefu_visitor_conversation_end'].includes(data.action)) {
+    // 忽略心跳响应
+    if (['ping', 'heartbeat'].includes(action)) {
+      return
+    }
+
+    // 处理客服消息推送
+    if (action === 'kefu_visitor_message') {
+      // 只显示客服发来的消息（sender_type = 2）
+      if (message.sender_type === 2) {
+        addMessage(
+          message.content || t('customerService.noContent'),
+          'other',
+          `${t('customerService.kefu')} ${message.kefu_id || ''}`
+        )
+      }
+    }
+    // 处理会话结束推送
+    else if (action === 'kefu_visitor_conversation_end') {
       addMessage(t('customerService.sessionEnded'), 'system')
+      // 结束会话后自动断开连接
+      setTimeout(() => {
+        if (ws) {
+          ws.close()
+          ws = null
+          wsConnected.value = false
+        }
+      }, 1000)
     }
     return
   }
@@ -294,7 +315,7 @@ function handleWebSocketMessage(data: any) {
   if (data.success) {
     if (data.message?.includes('Bind key successfully')) {
       addMessage(t('customerService.connected'), 'system')
-    } else if (data.message && !data.message.includes('sent successfully')) {
+    } else if (data.message && !data.message.includes('sent successfully') && data.message !== 'push') {
       addMessage(data.message, 'system')
     }
   } else {
@@ -303,11 +324,27 @@ function handleWebSocketMessage(data: any) {
 }
 
 function disconnect() {
-  stopHeartbeat()
-  ws?.close()
-  ws = null
-  wsConnected.value = false
-  addMessage(t('customerService.disconnected'), 'system')
+  // 在断开连接前通知服务器结束会话
+  if (ws && ws.readyState === WebSocket.OPEN && kefuId.value && visitorId.value) {
+    sendWebSocketMessage({
+      action: 'visitor.kefu_message_end',
+      data: {
+        visitor_id: visitorId.value,
+        kefu_id: kefuId.value,
+        sender_type: 1
+      },
+      op_id: `visitor_end_${Date.now()}`
+    })
+  }
+
+  // 延迟断开连接，让结束消息有时间发送
+  setTimeout(() => {
+    stopHeartbeat()
+    ws?.close()
+    ws = null
+    wsConnected.value = false
+    addMessage(t('customerService.disconnected'), 'system')
+  }, 300)
 }
 
 function bindVisitor() {
@@ -319,7 +356,7 @@ function bindVisitor() {
   }
 
   sendWebSocketMessage({
-    action: 'kefu_message_visitor_bind_fd',
+    action: 'visitor.bind_fd',
     data: { bind_key: visitorId.value },
     op_id: `bind_${Date.now()}`
   })
@@ -343,7 +380,7 @@ function sendMessage() {
   addMessage(content, 'self', locale.value === 'zh' ? '我' : 'Me')
 
   sendWebSocketMessage({
-    action: 'kefu_message_visitor_send',
+    action: 'visitor.kefu_message_send',
     data: {
       visitor_id: visitorId.value,
       kefu_id: kefuId.value,
@@ -395,7 +432,21 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  disconnect()
+  // 组件卸载时结束会话
+  if (ws && ws.readyState === WebSocket.OPEN && kefuId.value && visitorId.value) {
+    sendWebSocketMessage({
+      action: 'visitor.kefu_message_end',
+      data: {
+        visitor_id: visitorId.value,
+        kefu_id: kefuId.value,
+        sender_type: 1
+      },
+      op_id: `visitor_end_${Date.now()}`
+    })
+  }
+  stopHeartbeat()
+  ws?.close()
+  ws = null
 })
 </script>
 

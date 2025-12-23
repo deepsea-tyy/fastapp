@@ -4,23 +4,13 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysKefu\WebSocket;
 
-use App\Websocket\WsMessageAbstract;
-
 /**
- * Kefu消息WebSocket格式
+ * 用户消息推送格式
  */
-class KefuMessageSendFormat extends WsMessageAbstract
+class KefuMessageSendFormat extends KefuMessageFormat
 {
-    /**
-     * 填充消息数据
-     */
-    public function fill(array $message): void
+    protected function getAction(): string
     {
-
-        $this->data = array_merge([
-            'type' => 'push_message',
-            'action' => 'kefu_message',
-            'timestamp' => time(),
-        ], $message);
+        return 'kefu_message';
     }
 }

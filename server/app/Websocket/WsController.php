@@ -11,6 +11,7 @@ namespace App\Websocket;
 use App\Common\Jwt\JwtFactory;
 use App\Common\Tools;
 use App\Websocket\Event\WsCloseEvent;
+use App\Websocket\Event\WsLoginEvent;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Contract\OnCloseInterface;
 use Hyperf\Contract\OnMessageInterface;
@@ -26,107 +27,25 @@ use Swoole\Coroutine;
 /**
  * WebSocket 控制器
  *
- * ============================================================
- * 性能优化指南（Performance Optimization Guide）
- * ============================================================
- *
- * 当前性能：
- * - 单进程 QPS: 5K-10K
- * - 单条消息处理: 2-5ms
- * - 主要瓶颈: 反射调用、Redis 查询
- *
- * 优化后预期：
- * - 单进程 QPS: 30K-50K（提升 5 倍）
- * - 单条消息处理: 0.3-0.8ms（提升 5-10 倍）
- *
- * ============================================================
- * 优化方案优先级排序
- * ============================================================
- *
- * 【高优先级】性能提升明显，实施简单
- * 1. ✅ 使用 Closure 替代反射（提升 60-80%）
- *    位置：scanWebSocketHandlers() 和 handleMessageAction()
- *    实施难度：低
- *
- * 2. ✅ 添加 fd-userId 本地缓存（提升 80-95%）
- *    位置：getUserIdByFd() 和 addConnection()
- *    实施难度：低
- *
- * 【中优先级】特定场景收益大
- * 3. 🔶 批量操作使用协程并发（提升 10-100 倍）
- *    位置：具体业务 Handler（如 MarketWsHandler）
- *    场景：批量订阅、广播推送
- *    实施难度：中
- *
- * 4. 🔶 使用 Swoole Table 替代 Redis 锁（提升 90%）
- *    位置：acquireLock() 和 releaseLock()
- *    实施难度：中
- *
- * 【低优先级】可选优化
- * 5. 🔹 消息批量发送（减少网络开销）
- * 6. 🔹 使用二进制协议替代 JSON（减少带宽 30-50%）
- *
- * ============================================================
- * 协程使用指南
- * ============================================================
- *
- * onMessage() 已在协程中，默认不需要额外协程
- *
- * 需要使用协程的场景：
- * ✅ 批量操作（100+ 连接）：使用 WaitGroup 或 Channel
- * ✅ 并发查询（多个 DB/Redis）：使用 parallel()
- * ✅ 广播推送（1000+ 连接）：必须使用协程池
- * ❌ 简单请求-响应：保持同步即可
- *
- * 协程示例代码见各方法注释
- *
- * ============================================================
- * 注意事项
- * ============================================================
- *
- * 1. 本地缓存需要配合 onClose() 清理，避免内存泄漏
- * 2. 协程并发数建议限制在 100-500，避免协程爆炸
- * 3. 优化前后需要进行压测对比
- * 4. 生产环境建议使用 APM 监控性能指标
- *
- * ============================================================
+ * 架构说明：
+ * - Worker 进程共享处理 HTTP 和 WebSocket 请求
+ * - fd（文件描述符）由 Master 进程的 Reactor 线程维护
+ * - fd 业务映射存储在 Redis，所有 Worker 进程共享访问
+ * - 每个消息请求在独立协程中处理，非阻塞
  */
 class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterface
 {
     /**
      * 动作服务对象处理映射（需要认证的接口）
      * action => handler实例
-     *
-     * 性能优化建议：
-     * 1. 当前使用反射调用，可优化为 Closure 提升 60-80% 性能
-     *    示例：'callable' => \Closure::fromCallable([$instance, $method])
-     * 2. 缓存反射对象避免重复创建
-     *    示例：'reflection' => new \ReflectionMethod($instance, $method)
      */
     public static array $actionHandle = [];
 
     /**
      * 访客模式动作服务对象处理映射（无需认证的接口）
      * visitor.action => handler实例
-     *
-     * 性能优化建议：同上
      */
     public static array $visitorActionHandle = [];
-
-    /**
-     * fd-userId 本地缓存（性能优化）
-     * 用于减少 Redis 查询次数，提升 80-95% 性能
-     *
-     * 使用说明：
-     * - 缓存命中时直接返回，避免 Redis 查询（0.5-2ms 延迟）
-     * - onClose 时需清理缓存避免内存泄漏
-     *
-     * TODO: 启用此缓存需要：
-     * 1. 在 getUserIdByFd() 中优先读取此缓存
-     * 2. 在 addConnection() 中写入缓存
-     * 3. 在 onClose() 中清理缓存
-     */
-    // private static array $fdUserCache = [];
 
     /**
      * 存储每个fd对应的锁值，用于安全释放锁
@@ -241,24 +160,7 @@ LUA;
 
     /**
      * WebSocket 消息处理入口
-     * $params 结构 ['action'=>'xxx','data'=>[],'op_id'=>'xxx'] action动作 data请求数据 op_id操作id原样返回
-     *
-     * 协程说明：
-     * - Swoole 4.x+ 默认启用协程，此方法已在协程中执行
-     * - 每个连接的消息处理都是独立的协程（非阻塞）
-     * - 当前采用同步处理模式，逻辑清晰，性能足够（< 1ms）
-     *
-     * 协程优化建议（按需使用）：
-     * 1. 简单请求-响应：保持同步（当前模式）✓
-     * 2. 批量操作（100+ 连接）：使用协程并发，提升 10-100 倍
-     *    示例：Coroutine::create() 或 WaitGroup
-     * 3. 并发查询（多个 DB/Redis）：使用 parallel() 提升 2-5 倍
-     * 4. 广播推送（1000+ 连接）：必须使用协程池，提升 50-100 倍
-     *
-     * 注意事项：
-     * - 不要在此方法中创建协程，会导致响应顺序混乱
-     * - 协程应在具体的业务处理器（Handler）中按需使用
-     * - 使用协程池限制并发数，避免协程爆炸（推荐 100-500）
+     * $params 结构 ['action'=>'xxx','data'=>[],'op_id'=>'xxx']
      */
     public function onMessage($server, $frame): void
     {
@@ -413,15 +315,12 @@ LUA;
         }
 
         if ($userId && $this->addConnection($fd, $userId)) {
-            // 确保登录后的用户也在热门币种房间里
-            $hotRoomId = 'market:hot';
-            WsRoomManager::joinRoom($hotRoomId, $fd, $userId);
-
             $response = WsResponse::success(null, 'Auth successfully', $params['op_id'] ?? '');
             $this->sendResponse($fd, $response);
             return;
         }
         $this->sendResponse($fd, $responseFail);
+        Tools::eventDispatcher(new WsLoginEvent($userId, $fd));
         Coroutine::create(static function () use ($server, $fd) {
             Coroutine::sleep(3);
             if ($server->exist($fd)) {
@@ -438,30 +337,6 @@ LUA;
      * @param int|string $userIdOrBindKey 用户ID或访客bind_key
      * @param bool $isVisitor 是否为访客模式
      * @return WsResponse|false
-     *
-     * 性能瓶颈分析：
-     * - 当前使用反射调用，每次消息都创建 ReflectionMethod 对象
-     * - 反射调用比直接调用慢 3-5 倍（约 0.05-0.1ms/请求）
-     * - 高并发下影响显著（1万QPS 损失 500-1000ms）
-     *
-     * 优化方案 A（推荐）：使用 Closure 替代反射
-     * 实施步骤：
-     * 1. 在 scanWebSocketHandlers() 注册时转换：
-     *    $actionHandle[$actionName] = [
-     *        'callable' => \Closure::fromCallable([$instance, $method]),
-     *        'class' => $className,
-     *    ];
-     * 2. 此方法改为直接调用：
-     *    $callable = $handler['callable'];
-     *    return $callable($data, $userIdOrBindKey);
-     * 预期性能提升：60-80%，QPS 提升至 30K-50K
-     *
-     * 优化方案 B：缓存反射对象
-     * 实施步骤：
-     * 1. 注册时缓存：'reflection' => new \ReflectionMethod($instance, $method)
-     * 2. 只在注册时验证 isPublic()，运行时跳过验证
-     * 3. 直接使用缓存的反射：$handler['reflection']->invokeArgs(...)
-     * 预期性能提升：30-50%
      */
     private function handleMessageAction(int $fd, string $action, array $data, int|string $userIdOrBindKey = 0, bool $isVisitor = false): WsResponse|false
     {
@@ -775,42 +650,6 @@ LUA;
 
     /**
      * 根据 fd 获取用户ID（仅限已登录用户，返回 int）
-     *
-     * 性能瓶颈：
-     * - 每次请求都查询 Redis（网络延迟 0.5-2ms）
-     * - 高并发下 Redis 成为瓶颈
-     *
-     * 优化方案：添加本地内存缓存
-     * 实施代码：
-     * ```php
-     * private function getUserIdByFd(int $fd): ?int {
-     *     // 1. 先查本地缓存（< 0.001ms）
-     *     if (isset(self::$fdUserCache[$fd])) {
-     *         return self::$fdUserCache[$fd];
-     *     }
-     *
-     *     // 2. 缓存未命中，查 Redis
-     *     $redis = self::getRedis();
-     *     $fdKey = self::REDIS_KEY_FD_USER . $fd;
-     *     $userId = $redis->get($fdKey);
-     *     $result = $userId !== false ? (int)$userId : null;
-     *
-     *     // 3. 写入缓存
-     *     if ($result !== null) {
-     *         self::$fdUserCache[$fd] = $result;
-     *     }
-     *
-     *     return $result;
-     * }
-     * ```
-     *
-     * 配套修改：
-     * 1. 在 addConnection() 中写入缓存：
-     *    self::$fdUserCache[$fd] = (int)$userId;
-     * 2. 在 onClose() 中清理缓存：
-     *    unset(self::$fdUserCache[$fd]);
-     *
-     * 预期性能提升：80-95%（后续请求几乎无延迟）
      */
     private function getUserIdByFd(int $fd): ?int
     {
@@ -822,8 +661,6 @@ LUA;
 
     /**
      * 根据 fd 获取 bind_key（包括游客和已登录用户，返回 string）
-     *
-     * 性能优化：同 getUserIdByFd()，建议添加本地缓存
      */
     private function getBindKeyByFd(int $fd): string
     {

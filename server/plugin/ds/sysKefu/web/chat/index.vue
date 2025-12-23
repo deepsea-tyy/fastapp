@@ -2,7 +2,7 @@
 import { ElMessageBox } from 'element-plus'
 import defaultAvatar from '/defaultAvatar.jpg'
 import './chat.scss'
-import useChatLogic from './useChat.ts'
+import useChatLogic from './composables/useChat.ts'
 import getOnlyWorkAreaHeight from '@/utils/getOnlyWorkAreaHeight.ts'
 
 defineOptions({ name: 'ds:sysKefu:kefuConversation:chat' })

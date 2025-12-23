@@ -524,7 +524,7 @@
             currentMode = mode;
             document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
-            
+
             event.target.classList.add('active');
             document.getElementById(mode + 'Mode').classList.add('active');
         }
@@ -533,17 +533,17 @@
             const messagesDiv = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message-item ${type}`;
-            
+
             const time = new Date().toLocaleTimeString();
             let html = '';
-            
+
             if (sender) {
                 html += `<div class="message-sender">${escapeHtml(sender)}</div>`;
             }
-            
+
             html += `<div class="message-bubble">${escapeHtml(content)}</div>`;
             html += `<div class="message-time">${time}</div>`;
-            
+
             messageDiv.innerHTML = html;
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -576,7 +576,7 @@
                     addChatMessage('WebSocket 连接成功', 'system');
                     document.getElementById('connectBtn').disabled = true;
                     document.getElementById('disconnectBtn').disabled = false;
-                    
+
                     if (currentMode === 'user') {
                         document.getElementById('userAuthBtn').disabled = false;
                     } else {
@@ -654,7 +654,7 @@
                     document.getElementById('visitorBindBtn').disabled = true;
                     document.getElementById('visitorEndBtn').disabled = true;
                     isAuthenticated = false;
-                    
+
                     // 停止心跳
                     stopHeartbeat();
                 };
@@ -673,7 +673,7 @@
 
         function startHeartbeat() {
             stopHeartbeat();
-            
+
             const enabled = document.getElementById('heartbeatEnabled').checked;
             if (!enabled) {
                 updateHeartbeatStatus(false);
@@ -687,10 +687,10 @@
             }
 
             updateHeartbeatStatus(true);
-            
+
             // 立即发送一次心跳
             sendHeartbeat();
-            
+
             // 设置定时器
             heartbeatTimer = setInterval(() => {
                 sendHeartbeat();
@@ -752,7 +752,7 @@
         function sendChatMessage() {
             const input = document.getElementById('messageInput');
             const content = input.value.trim();
-            
+
             if (!content) {
                 return;
             }
@@ -793,13 +793,13 @@
             }
 
             try {
-                const response = await fetch(`${apiBaseUrl}/api/kefu/message/getConversation`, {
+                const response = await fetch(`${apiBaseUrl}/api/sysKefu/message/getConversation`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'token': token
                     }
                 });
                 const result = await response.json();
-                
+
                 if (result.code === 200 && result.data) {
                     conversationId = result.data.id;
                     document.getElementById('conversationId').value = result.data.id;
@@ -909,7 +909,7 @@
             }
 
             sendMessage({
-                action: 'kefu_message_visitor_bind_fd',
+                action: 'visitor.bind_fd',
                 data: {
                     bind_key: visitorId
                 },
@@ -935,7 +935,7 @@
             addChatMessage(content, 'self', '我');
 
             sendMessage({
-                action: 'kefu_message_visitor_send',
+                action: 'visitor.kefu_message_send',
                 data: {
                     visitor_id: visitorId,
                     kefu_id: kefuId,
@@ -959,7 +959,7 @@
             }
 
             sendMessage({
-                action: 'kefu_message_visitor_end',
+                action: 'visitor.kefu_message_end',
                 data: {
                     visitor_id: visitorId,
                     kefu_id: kefuId

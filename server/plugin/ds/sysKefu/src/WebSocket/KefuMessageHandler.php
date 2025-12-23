@@ -10,28 +10,31 @@ namespace Plugin\Ds\SysKefu\WebSocket;
 
 use App\Websocket\WsMessageHandlerInterface;
 use App\Websocket\WsResponse;
-use Hyperf\Logger\LoggerFactory;
 use Plugin\Ds\SysKefu\Service\KefuMessageService;
 use Plugin\Ds\SysKefu\Service\KefuVisitorService;
 
 class KefuMessageHandler implements WsMessageHandlerInterface
 {
-
     public function __construct(
-        protected LoggerFactory      $loggerFactory,
         protected KefuMessageService $messageService,
         protected KefuVisitorService $visitorService,
     )
     {
     }
 
+    /**
+     * 游客
+    */
     public function getVisitorActions(): array
     {
-        return [];
+        return [
+            'visitor.kefu_message_send' => 'kefuMessageVisitorSend',
+            'visitor.kefu_message_end' => 'kefuMessageVisitorEnd',
+        ];
     }
 
     /**
-     * 获取该处理器支持的所有action映射
+     * 需登录
      *
      * @return array<string, string>
      */
@@ -41,26 +44,47 @@ class KefuMessageHandler implements WsMessageHandlerInterface
             'kefu_message_send' => 'kefuMessageSend',
             'kefu_message_read' => 'kefuMessageRead',
             'kefu_message_end' => 'kefuMessageEnd',
-            'kefu_message_visitor_send' => 'kefuMessageVisitorSend',
-            'kefu_message_visitor_end' => 'kefuMessageVisitorEnd',
         ];
+    }
+
+    /**
+     * 验证必填字段
+     */
+    protected function validateRequired(array $data, array $requiredFields): ?string
+    {
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                return "{$field} is required";
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 统一错误处理包装
+     */
+    protected function handleWithErrorCatch(callable $callback, string $errorContext): WsResponse
+    {
+        try {
+            return $callback();
+        } catch (\Throwable $e) {
+            return WsResponse::error("Failed to {$errorContext}");
+        }
     }
 
     /**
      * 处理通过WebSocket发送客服消息
      */
-    protected function kefuMessageSend(array $data, int $userId): WsResponse
+    public function kefuMessageSend(array $data, int $userId): WsResponse
     {
-        // 验证必要字段
-        if (empty($data['conversation_id'])) {
-            return WsResponse::error('conversation_id is required');
+        if ($error = $this->validateRequired($data, ['conversation_id'])) {
+            return WsResponse::error($error);
         }
 
         if (empty($data['content']) && empty($data['file_url'])) {
             return WsResponse::error('content or file_url is required');
         }
 
-        // 构建消息数据
         $messageData = [
             'conversation_id' => (int)$data['conversation_id'],
             'content' => $data['content'] ?? '',
@@ -68,7 +92,6 @@ class KefuMessageHandler implements WsMessageHandlerInterface
             'file_url' => $data['file_url'] ?? null,
         ];
 
-        // 通过KefuMessageService发送消息（会自动触发推送）
         $message = $this->messageService->save($messageData, $userId, $data['sender_type'] ?? 1);
         if (!$message) {
             return WsResponse::error('Failed to save message');
@@ -83,38 +106,31 @@ class KefuMessageHandler implements WsMessageHandlerInterface
     /**
      * 处理标记客服消息已读
      */
-    protected function kefuMessageRead(array $data, int $userId): WsResponse
+    public function kefuMessageRead(array $data, int $userId): WsResponse
     {
-        try {
-            if (empty($data['conversation_id'])) {
-                return WsResponse::error('conversation_id is required');
+        return $this->handleWithErrorCatch(function () use ($data) {
+            if ($error = $this->validateRequired($data, ['conversation_id'])) {
+                return WsResponse::error($error);
             }
 
-            // 通过KefuMessageService批量标记已读
             $result = $this->messageService->batchRead([
-                'message_ids' => empty($data['message_ids']) ? [] : (is_array($data['message_ids']) ? $data['message_ids'] : []),
+                'message_ids' => is_array($data['message_ids'] ?? null) ? $data['message_ids'] : [],
                 'conversation_id' => $data['conversation_id'],
                 'sender_type' => $data['sender_type'] ?? 1
             ]);
 
-            return WsResponse::success([
-                'updated_count' => $result
-            ], 'Messages marked as read');
-        } catch (\Throwable $e) {
-            $this->loggerFactory->get('websocket')->error("Mark kefu message read error: " . $e->getMessage());
-            return WsResponse::error('Failed to mark messages as read');
-        }
+            return WsResponse::success(['updated_count' => $result], 'Messages marked as read');
+        }, 'mark messages as read');
     }
 
     /**
      * 结束会话
      */
-    protected function kefuMessageEnd(array $data, int $userId): WsResponse
+    public function kefuMessageEnd(array $data, int $userId): WsResponse
     {
-        try {
-            // 验证必要字段
-            if (empty($data['conversation_id'])) {
-                return WsResponse::error('conversation_id is required');
+        return $this->handleWithErrorCatch(function () use ($data, $userId) {
+            if ($error = $this->validateRequired($data, ['conversation_id'])) {
+                return WsResponse::error($error);
             }
 
             $conversationId = (int)$data['conversation_id'];
@@ -123,64 +139,50 @@ class KefuMessageHandler implements WsMessageHandlerInterface
             if (!$result) {
                 return WsResponse::error('Failed to end conversation. Conversation not found or no permission.');
             }
-            return WsResponse::success([
-                'conversation_id' => $conversationId
-            ], 'Conversation ended successfully');
-        } catch (\Throwable $e) {
-            $this->loggerFactory->get('websocket')->error("End kefu conversation error: " . $e->getMessage());
-            return WsResponse::error('Failed to end conversation');
-        }
+
+            return WsResponse::success(['conversation_id' => $conversationId], 'Conversation ended successfully');
+        }, 'end conversation');
     }
 
     /**
      * 处理游客发送消息
      */
-    protected function kefuMessageVisitorSend(array $data): WsResponse
+    public function kefuMessageVisitorSend(array $data): WsResponse
     {
-        try {
-            if (empty($data['visitor_id'])) {
-                return WsResponse::error('visitor_id is required');
-            }
-            if (empty($data['kefu_id'])) {
-                return WsResponse::error('kefu_id is required');
+        return $this->handleWithErrorCatch(function () use ($data) {
+            if ($error = $this->validateRequired($data, ['visitor_id', 'kefu_id', 'content'])) {
+                return WsResponse::error($error);
             }
 
-            if (empty($data['content'])) {
-                return WsResponse::error('content is required');
-            }
             $data['sender_type'] = $data['sender_type'] ?? 1;
             $message = $this->visitorService->save($data);
+
             if (!$message) {
                 return WsResponse::error('Failed to save visitor message');
             }
 
-            return WsResponse::success(['message_id' => $message->id], 'Visitor message sent successfully');
-        } catch (\Throwable $e) {
-            $this->loggerFactory->get('websocket')->error("Send visitor message error: " . $e->getMessage());
-            return WsResponse::error('Failed to send visitor message');
-        }
+            return WsResponse::success([
+                'message_id' => $message->id,
+                'created_at' => $message->created_at->toDateTimeString()
+            ], 'Visitor message sent successfully');
+        }, 'send visitor message');
     }
 
     /**
      * 结束游客会话
      */
-    protected function kefuMessageVisitorEnd(array $data): WsResponse
+    public function kefuMessageVisitorEnd(array $data): WsResponse
     {
-        try {
-            if (empty($data['visitor_id'])) {
-                return WsResponse::error('visitor_id is required');
+        return $this->handleWithErrorCatch(function () use ($data) {
+            if ($error = $this->validateRequired($data, ['visitor_id', 'kefu_id'])) {
+                return WsResponse::error($error);
             }
-            if (empty($data['kefu_id'])) {
-                return WsResponse::error('kefu_id is required');
-            }
+
             $data['sender_type'] = $data['sender_type'] ?? 1;
             $this->visitorService->endConversation($data);
 
             return WsResponse::success([], 'Visitor conversation ended successfully');
-        } catch (\Throwable $e) {
-            $this->loggerFactory->get('websocket')->error("End visitor conversation error: " . $e->getMessage());
-            return WsResponse::error('Failed to end visitor conversation');
-        }
+        }, 'end visitor conversation');
     }
 }
 
