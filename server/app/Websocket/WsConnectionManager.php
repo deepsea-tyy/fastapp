@@ -16,13 +16,13 @@ class WsConnectionManager
      * 存储所有连接的详细信息
      * 字段: fd => json(user_id, connect_time, ip, user_agent, device_type, last_ping_time)
      */
-    private const REDIS_KEY_CONNECTIONS_INFO = 'ws:connections:info';
+    public const REDIS_KEY_CONNECTIONS_INFO = 'ws:connections:info';
 
     /**
      * Redis key: ws:stats:total (String)
      * 当前总连接数
      */
-    private const REDIS_KEY_STATS_TOTAL = 'ws:stats:total';
+    public const REDIS_KEY_STATS_TOTAL = 'ws:stats:total';
 
     /**
      * Redis key: ws:user:fds:{user_id} (Set)
@@ -256,58 +256,62 @@ class WsConnectionManager
 
     /**
      * 清理所有 WebSocket 连接相关的 Redis 数据
-     * 包括：连接信息、统计数据、用户映射、fd映射、分布式锁
+     * 包括：连接信息、统计数据、用户映射、fd映射、分布式锁、房间数据
      *
+     * @param int $batchSize 每批删除的 key 数量（默认 100）
      * @return array ['cleared_keys' => int, 'details' => array]
      */
-    public static function clearAllConnections(): array
+    public static function clearAllConnections(int $batchSize = 100): array
     {
         $redis = self::getRedis();
         $clearedKeys = 0;
         $details = [];
 
         try {
-            // 1. 清理连接信息 Hash
+            // 1. 清理连接信息 Hash（使用 UNLINK 异步删除）
             $connectionCount = $redis->hLen(self::REDIS_KEY_CONNECTIONS_INFO);
             if ($connectionCount > 0) {
-                $redis->del(self::REDIS_KEY_CONNECTIONS_INFO);
+                $redis->unlink(self::REDIS_KEY_CONNECTIONS_INFO);
                 $clearedKeys++;
                 $details['connections_info'] = $connectionCount;
             }
 
             // 2. 清理总连接数统计
             if ($redis->exists(self::REDIS_KEY_STATS_TOTAL)) {
-                $redis->del(self::REDIS_KEY_STATS_TOTAL);
+                $redis->unlink(self::REDIS_KEY_STATS_TOTAL);
                 $clearedKeys++;
                 $details['stats_total'] = true;
             }
 
-            // 3. 清理所有 ws:user:fds:{user_id} (用户到fd的映射)
-            $userFdsPattern = self::REDIS_KEY_USER_FDS . '*';
-            $userFdsKeys = $redis->keys($userFdsPattern);
-            if ($userFdsKeys && count($userFdsKeys) > 0) {
-                $redis->del(...$userFdsKeys);
-                $clearedKeys += count($userFdsKeys);
-                $details['user_fds_mappings'] = count($userFdsKeys);
-            }
+            // 3. 使用 SCAN 清理所有 ws:user:fds:{user_id}（用户到fd的映射）
+            $userFdsCount = self::scanAndDeleteKeys($redis, self::REDIS_KEY_USER_FDS . '*', $batchSize);
+            $clearedKeys += $userFdsCount;
+            $details['user_fds_mappings'] = $userFdsCount;
 
-            // 4. 清理所有 ws:fd:user:{fd} (fd到用户的映射，来自 WsController)
-            $fdUserPattern = 'ws:fd:user:*';
-            $fdUserKeys = $redis->keys($fdUserPattern);
-            if ($fdUserKeys && count($fdUserKeys) > 0) {
-                $redis->del(...$fdUserKeys);
-                $clearedKeys += count($fdUserKeys);
-                $details['fd_user_mappings'] = count($fdUserKeys);
-            }
+            // 4. 使用 SCAN 清理所有 ws:fd:user:{fd}（fd到用户的映射，来自 WsController）
+            $fdUserCount = self::scanAndDeleteKeys($redis, 'ws:fd:user:*', $batchSize);
+            $clearedKeys += $fdUserCount;
+            $details['fd_user_mappings'] = $fdUserCount;
 
-            // 5. 清理所有分布式锁 ws:lock:fd:{fd} (来自 WsController)
-            $lockPattern = 'ws:lock:fd:*';
-            $lockKeys = $redis->keys($lockPattern);
-            if ($lockKeys && count($lockKeys) > 0) {
-                $redis->del(...$lockKeys);
-                $clearedKeys += count($lockKeys);
-                $details['locks'] = count($lockKeys);
-            }
+            // 5. 使用 SCAN 清理所有分布式锁 ws:lock:fd:{fd}（来自 WsController）
+            $lockCount = self::scanAndDeleteKeys($redis, 'ws:lock:fd:*', $batchSize);
+            $clearedKeys += $lockCount;
+            $details['locks'] = $lockCount;
+
+            // 6. 使用 SCAN 清理所有房间fd映射 ws:room:{room_id}:fds（来自 WsRoomManager）
+            $roomFdsCount = self::scanAndDeleteKeys($redis, 'ws:room:*:fds', $batchSize);
+            $clearedKeys += $roomFdsCount;
+            $details['room_fds'] = $roomFdsCount;
+
+            // 7. 使用 SCAN 清理所有房间用户映射 ws:room:{room_id}:users（来自 WsRoomManager）
+            $roomUsersCount = self::scanAndDeleteKeys($redis, 'ws:room:*:users', $batchSize);
+            $clearedKeys += $roomUsersCount;
+            $details['room_users'] = $roomUsersCount;
+
+            // 8. 使用 SCAN 清理所有fd的房间列表 ws:fd:rooms:{fd}（来自 WsRoomManager）
+            $fdRoomsCount = self::scanAndDeleteKeys($redis, 'ws:fd:rooms:*', $batchSize);
+            $clearedKeys += $fdRoomsCount;
+            $details['fd_rooms'] = $fdRoomsCount;
 
             return [
                 'success' => true,
@@ -322,5 +326,54 @@ class WsConnectionManager
                 'details' => $details,
             ];
         }
+    }
+
+    /**
+     * 使用 SCAN 命令迭代扫描并分批删除 key
+     * @param Redis $redis
+     * @param string $pattern 匹配模式
+     * @param int $batchSize 每批删除数量
+     * @return int 删除的 key 总数
+     */
+    private static function scanAndDeleteKeys(Redis $redis, string $pattern, int $batchSize): int
+    {
+        $deletedCount = 0;
+        $cursor = null;
+        $keysToDelete = [];
+
+        do {
+            // 使用 SCAN 迭代扫描（每次扫描 COUNT 参数建议为 100）
+            // scan() 方法通过引用参数返回新的游标，返回值是匹配的 key 数组
+            $keys = $redis->scan($cursor, $pattern, 100);
+
+            // scan 失败或无结果时返回 false
+            if ($keys === false) {
+                break;
+            }
+
+            // 收集 key
+            foreach ($keys as $key) {
+                $keysToDelete[] = $key;
+
+                // 达到批量大小时，执行删除
+                if (count($keysToDelete) >= $batchSize) {
+                    // 使用 UNLINK 异步删除，不阻塞 Redis
+                    $redis->unlink(...$keysToDelete);
+                    $deletedCount += count($keysToDelete);
+                    $keysToDelete = [];
+
+                    // 短暂暂停，避免持续占用 Redis（可选）
+                    usleep(1000); // 暂停 1 毫秒
+                }
+            }
+        } while ($cursor !== 0 && $cursor !== null);
+
+        // 删除剩余的 key
+        if (!empty($keysToDelete)) {
+            $redis->unlink(...$keysToDelete);
+            $deletedCount += count($keysToDelete);
+        }
+
+        return $deletedCount;
     }
 }
