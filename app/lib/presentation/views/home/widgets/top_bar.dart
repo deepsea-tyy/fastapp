@@ -3,15 +3,25 @@ import 'package:fastapp/presentation/views/home/search_screen.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/constants/app_backgrounds.dart';
+import 'package:fastapp/utils/icon_mapper.dart';
 
 class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final int unreadMessageCount; // 未读消息数
 
+  // 搜索框配置
+  final String? searchIconName; // Web 端图标名称，如 'material-symbols:local-fire-department'
+  final String? searchKeyword; // 搜索关键词文本，如 'MBL'
+  final Color? searchIconColor; // 图标颜色，如果为 null 则使用配置的默认颜色
+
   const TopBar({
     super.key,
     this.onMenuPressed,
     this.unreadMessageCount = 0,
+    this.searchIconName,
+    this.searchKeyword,
+    this.searchIconColor,
   });
 
   @override
@@ -45,6 +55,19 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildSearchBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final backgrounds = AppBackgrounds.of(context);
+
+    // 获取图标和颜色配置，如果没有配置则使用默认值
+    final iconData = searchIconName != null
+        ? IconMapper.getIcon(searchIconName)
+        : Icons.local_fire_department;
+
+    final iconColor = searchIconColor ??
+        (searchIconName != null
+            ? IconMapper.getColor(searchIconName)
+            : colorScheme.primary);
+
+    final keyword = searchKeyword ?? 'MBL';
 
     return InkWell(
       onTap: () {
@@ -58,22 +81,22 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       child: Container(
         height: 36,
         decoration: BoxDecoration(
-          color: theme.inputDecorationTheme.fillColor,
+          color: backgrounds.input,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
           children: [
             const SizedBox(width: 12),
-            // 火焰图标
+            // 可配置的图标
             Icon(
-              Icons.local_fire_department,
+              iconData,
               size: 18,
-              color: colorScheme.primary,
+              color: iconColor,
             ),
             const SizedBox(width: 8),
-            // MBL 文字
+            // 可配置的文字
             Text(
-              'MBL',
+              keyword,
               style: TextStyle(
                 color: theme.textTheme.bodySmall?.color,
                 fontSize: 14,
@@ -96,52 +119,44 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildNotificationIcon(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).pushNamed(Routes.message);
-      },
-      borderRadius: BorderRadius.circular(24),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.notifications_outlined,
-              color: colorScheme.onSurface,
-            ),
-            onPressed: () {
-              Navigator.of(context).pushNamed(Routes.message);
-            },
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.notifications_outlined,
+            color: colorScheme.onSurface,
           ),
-          if (unreadMessageCount > 0)
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.error,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 16,
-                  minHeight: 16,
-                ),
-                child: Center(
-                  child: Text(
-                    unreadMessageCount > 99 ? '99+' : '$unreadMessageCount',
-                    style: TextStyle(
-                      color: colorScheme.onError,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      height: 1.0,
-                    ),
+          onPressed: () => Navigator.of(context).pushNamed(Routes.message),
+        ),
+        if (unreadMessageCount > 0)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: colorScheme.error,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 16,
+                minHeight: 16,
+              ),
+              child: Center(
+                child: Text(
+                  unreadMessageCount > 99 ? '99+' : '$unreadMessageCount',
+                  style: TextStyle(
+                    color: colorScheme.onError,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -159,21 +174,18 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  /// 处理用户图标点击事件
   void _handleUserIconTap(BuildContext context) {
     final userStore = getIt<UserStore>();
-    
-    // 判断登录状态
-    if (userStore.isLoggedIn) {
-      // 已登录，执行回调或打开侧边栏
-      if (onMenuPressed != null) {
-        onMenuPressed!();
-      } else {
-        Scaffold.of(context).openEndDrawer();
-      }
-    } else {
-      // 未登录，跳转到登录页
+
+    if (!userStore.isLoggedIn) {
       Navigator.of(context).pushNamed(Routes.login);
+      return;
+    }
+
+    if (onMenuPressed != null) {
+      onMenuPressed!();
+    } else {
+      Scaffold.of(context).openEndDrawer();
     }
   }
 

@@ -483,6 +483,59 @@ class MenuInit20251017 extends Seeder
                     ],
                 ],
             ],
+            [
+                'name' => 'search:keyword',
+                'path' => '/search/keyword',
+                'component' => 'search/views/keyword/index',
+                'sort' => 102,
+                'meta' => new Meta([
+                    'title' => '搜索关键词记录',
+                    'i18n' => 'search.Keyword',
+                    'icon' => 'mdi:menu',
+                    'type' => 'M',
+                    'hidden' => 0,
+                    'componentPath' => 'modules/',
+                    'componentSuffix' => '.vue',
+                    'breadcrumbEnable' => 1,
+                    'copyright' => 1,
+                    'cache' => 1,
+                    'affix' => 0,
+                ]),
+                'children' => [
+                    [
+                        'name' => 'search:keyword:list',
+                        'meta' => new Meta([
+                            'title' => 'List',
+                            'type' => 'B',
+                            'i18n' => 'crud.list',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:create',
+                        'meta' => new Meta([
+                            'title' => 'Add',
+                            'type' => 'B',
+                            'i18n' => 'crud.add',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:save',
+                        'meta' => new Meta([
+                            'title' => 'Edit',
+                            'type' => 'B',
+                            'i18n' => 'crud.edit',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:delete',
+                        'meta' => new Meta([
+                            'title' => 'Delete',
+                            'type' => 'B',
+                            'i18n' => 'crud.delete',
+                        ]),
+                    ],
+                ],
+            ],
         ];
     }
 

@@ -46,7 +46,7 @@
     
     // 权限名称生成
     $permissionName = $isAdminTarget
-        ? ($permissionPrefix ? implode(':', $permissionPrefix) . ':' : '') . Str::snake($controllerName)
+        ? ($permissionPrefix ? implode(':', $permissionPrefix) . ':' : ($modulePath ? $modulePath . ':' : '')) . Str::snake($controllerName)
         : ($pluginNamespace ? implode('', array_map('ucwords', $permissionPrefix)) : '') . ucwords($module) . ucwords($controllerName);
     
     // URL路径生成

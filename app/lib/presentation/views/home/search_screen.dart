@@ -11,10 +11,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<String> _historyRecords = ['TON/USDT'];
-  final List<String> _hotSearchTabs = ['AI 热搜', '现货热搜', 'Alpha 热搜', '热门类'];
-  int _selectedTabIndex = 0;
 
-  final List<Map<String, dynamic>> _hotSearchItems = [
+  final List<Map<String, String?>> _hotSearchItems = [
     {'text': '美联储降息预期升至87%', 'badge': 'HOT'},
     {'text': '贝莱德大额增持BTC与ETH', 'badge': 'HOT'},
     {'text': '比特币止跌反弹超9万美元', 'badge': null},
@@ -23,6 +21,11 @@ class _SearchScreenState extends State<SearchScreen> {
     {'text': 'Tom Lee预期ETH达7000美元', 'badge': 'NEW'},
     {'text': '爆涨币种MBL行情解析', 'badge': null},
   ];
+
+  static const _sectionTitleStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+  );
 
   @override
   void dispose() {
@@ -40,7 +43,7 @@ class _SearchScreenState extends State<SearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHistorySection(),
-            _buildMajorEventsSection(),
+            _buildUpcomingSection(),
             _buildHotSearchSection(),
           ],
         ),
@@ -78,26 +81,16 @@ class _SearchScreenState extends State<SearchScreen> {
       child: TextField(
         controller: _searchController,
         autofocus: true,
-        style: const TextStyle(
-          color: Colors.black87,
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: Colors.black87, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'ZEC',
-          hintStyle: TextStyle(
-            color: Colors.grey[700],
-            fontSize: 14,
-          ),
+          hintStyle: TextStyle(color: Colors.grey[700], fontSize: 14),
           prefixIcon: const Icon(
             Icons.local_fire_department,
             size: 18,
             color: Colors.deepOrange,
           ),
-          suffixIcon: const Icon(
-            Icons.search,
-            size: 18,
-            color: Colors.grey,
-          ),
+          suffixIcon: const Icon(Icons.search, size: 18, color: Colors.grey),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           isDense: true,
@@ -118,29 +111,16 @@ class _SearchScreenState extends State<SearchScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '历史记录',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('历史记录', style: _sectionTitleStyle),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () {
-                  setState(() {
-                    _historyRecords.clear();
-                  });
-                },
+                onPressed: () => setState(() => _historyRecords.clear()),
               ),
             ],
           ),
           const SizedBox(height: 12),
           if (_historyRecords.isEmpty)
-            const Text(
-              '暂无历史记录',
-              style: TextStyle(color: Colors.grey),
-            )
+            const Text('暂无历史记录', style: TextStyle(color: Colors.grey))
           else
             Wrap(
               spacing: 8,
@@ -152,10 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(
-                    record,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  child: Text(record, style: const TextStyle(fontSize: 14)),
                 );
               }).toList(),
             ),
@@ -164,72 +141,46 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildMajorEventsSection() {
+  Widget _buildUpcomingSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '重大活动',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          const Text('即将开启', style: _sectionTitleStyle),
           const SizedBox(height: 12),
-          _buildEventItem(
-            icon: Icons.circle,
-            title: 'ASTERIDR 即将上线',
-            subtitle: '结束日期 2025-11-29',
-            iconColor: Colors.brown,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color iconColor,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: iconColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: Colors.brown,
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Icons.circle, color: Colors.white, size: 20),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ASTERIDR 即将上线',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '结束日期 2025-11-29',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -239,141 +190,57 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '热搜排行榜',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          const Text('热搜排行榜', style: _sectionTitleStyle),
           const SizedBox(height: 12),
-          _buildTabBar(),
-          const SizedBox(height: 16),
-          _buildHotSearchList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(_hotSearchTabs.length, (index) {
-          final isSelected = index == _selectedTabIndex;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedTabIndex = index;
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.blue[50] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.transparent,
-                ),
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
+          ..._hotSearchItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
                 children: [
-                  Text(
-                    _hotSearchTabs[index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.blue : Colors.black87,
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      '${index + 1}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: index < 3 ? Colors.red : Colors.grey[600],
+                      ),
                     ),
                   ),
-                  if (index == 0)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 12,
-                          minHeight: 10,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Hot',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 7,
-                              fontWeight: FontWeight.bold,
-                              height: 1.0,
-                            ),
-                          ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item['text']!,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  if (item['badge'] != null)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: item['badge'] == 'HOT' ? Colors.amber : Colors.blue,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item['badge']!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                 ],
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ],
       ),
-    );
-  }
-
-  Widget _buildHotSearchList() {
-    return Column(
-      children: List.generate(_hotSearchItems.length, (index) {
-        final item = _hotSearchItems[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: index < 3 ? Colors.red : Colors.grey[600],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item['text'] as String,
-                  style: const TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              if (item['badge'] != null)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: item['badge'] == 'HOT' ? Colors.amber : Colors.blue,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    item['badge'] as String,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      }),
     );
   }
 }

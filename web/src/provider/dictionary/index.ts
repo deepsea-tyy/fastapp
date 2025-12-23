@@ -7,10 +7,11 @@ const dictionary: Record<string, Dictionary[]> = {}
 async function getDictionary() {
   const data = import.meta.glob('./data/**.{ts,js}')
   const pluginData = import.meta.glob('../../plugins/*/*/dictionary/**.{ts,js}')
-  const allData = { ...data, ...pluginData }
+  const modulesData = import.meta.glob('../../modules/**/dictionary/**.{ts,js}')
+  const allData = { ...data, ...pluginData, ...modulesData }
   for (const dic in allData) {
     const d: any = await allData[dic]()
-    const name: string | undefined = dic.match(/\/(data|plugins\/.*\/dictionary)\/(.*)\.(ts|js)/)?.[2] ?? undefined
+    const name: string | undefined = dic.match(/\/(data|plugins\/.*\/dictionary|modules\/.*\/dictionary)\/(.*)\.(ts|js)/)?.[2] ?? undefined
     if (name) {
       dictionary[name] = d.default
     }

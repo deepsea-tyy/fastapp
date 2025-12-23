@@ -1,0 +1,26 @@
+search:
+  Keyword: Keyword
+  KeywordFields:
+    keyword: Keyword
+    hit_count: HitCount
+    icon: Icon
+    color: Color
+    source: Source
+    sort: Sort
+    last_searched_at: LastSearchedAt
+  Dict:
+    KeywordSource:
+      userSearch: User Search
+      hotRecommendation: Hot Recommendation
+      systemRecommendation: System Recommendation
+    KeywordIcon:
+      fire: Fire Icon(Hot)
+      search: Search Icon
+      history: History Icon
+      star: Star Icon(Favorite)
+      trendingUp: Trending Up Icon
+      location: Location Icon(Nearby)
+      label: Label Icon
+      flash: Flash Icon(Quick)
+      newReleases: New Releases Icon
+      recommend: Recommend Icon

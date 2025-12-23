@@ -1,0 +1,27 @@
+search:
+  Keyword: 搜索关键词记录
+  KeywordFields:
+    keyword: 搜索关键词
+    hit_count: 命中次数
+    icon: 图标
+    color: 图标颜色
+    source: 来源
+    sort: 排序
+    last_searched_at: 最后搜索时间
+  Dict:
+    KeywordSource:
+      userSearch: 用户搜索
+      hotRecommendation: 热门推荐
+      systemRecommendation: 系统推荐
+    KeywordIcon:
+      fire: 火焰图标(热门)
+      search: 搜索图标
+      history: 时钟图标(历史)
+      star: 星标图标(收藏)
+      trendingUp: 趋势图标(上升)
+      location: 位置图标(附近)
+      label: 标签图标
+      flash: 闪电图标(快速)
+      newReleases: 新品图标
+      recommend: 推荐图标
+
