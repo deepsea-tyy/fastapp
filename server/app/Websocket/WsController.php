@@ -352,7 +352,7 @@ LUA;
         $this->removeConnection($fd);
 
         // 从连接管理器中移除
-        WsConnectionManager::removeConnection($fd, $userId);
+        WsConnectionManager::removeConnection($fd);
 
         // 离开所有房间
         WsRoomManager::leaveAllRooms($fd, $userId);

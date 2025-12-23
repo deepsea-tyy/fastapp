@@ -14,7 +14,7 @@ class WsConnectionManager
     /**
      * Redis key: ws:connections:info (Hash)
      * 存储所有连接的详细信息
-     * 字段: fd => json(user_id, connect_time, ip, user_agent, last_ping_time)
+     * 字段: fd => json(user_id, connect_time, ip, user_agent, device_type, last_ping_time)
      */
     private const REDIS_KEY_CONNECTIONS_INFO = 'ws:connections:info';
 
@@ -25,11 +25,10 @@ class WsConnectionManager
     private const REDIS_KEY_STATS_TOTAL = 'ws:stats:total';
 
     /**
-     * Redis key: ws:user:info:{user_id} (Hash)
-     * 用户连接详细信息
-     * 字段: fd => json(connect_time, ip, user_agent, device_type)
+     * Redis key: ws:user:fds:{user_id} (Set)
+     * 用户ID到Fd列表的映射（由 WsController 维护）
      */
-    private const REDIS_KEY_USER_INFO = 'ws:user:info:';
+    private const REDIS_KEY_USER_FDS = 'ws:user:fds:';
 
     private static function getRedis(): Redis
     {
@@ -40,12 +39,13 @@ class WsConnectionManager
      * 记录连接信息
      */
     public static function recordConnection(
-        int $fd,
+        int        $fd,
         int|string $userId,
-        string $ip = '',
-        string $userAgent = '',
-        string $deviceType = 'unknown'
-    ): void {
+        string     $ip = '',
+        string     $userAgent = '',
+        string     $deviceType = 'unknown'
+    ): void
+    {
         $redis = self::getRedis();
         $now = time();
 
@@ -61,16 +61,6 @@ class WsConnectionManager
         // 存储全局连接信息
         $redis->hSet(self::REDIS_KEY_CONNECTIONS_INFO, (string)$fd, $connectionInfo);
 
-        // 存储用户级连接信息
-        $userInfoKey = self::REDIS_KEY_USER_INFO . $userId;
-        $userConnectionInfo = json_encode([
-            'connect_time' => $now,
-            'ip' => $ip,
-            'user_agent' => $userAgent,
-            'device_type' => $deviceType,
-        ], JSON_UNESCAPED_UNICODE);
-        $redis->hSet($userInfoKey, (string)$fd, $userConnectionInfo);
-
         // 增加总连接数
         $redis->incr(self::REDIS_KEY_STATS_TOTAL);
     }
@@ -78,35 +68,17 @@ class WsConnectionManager
     /**
      * 移除连接信息
      */
-    public static function removeConnection(int $fd, int|string|null $userId = null): void
+    public static function removeConnection(int $fd): void
     {
         $redis = self::getRedis();
 
-        // 如果没有传userId，从连接信息中获取
-        if ($userId === null) {
-            $info = $redis->hGet(self::REDIS_KEY_CONNECTIONS_INFO, (string)$fd);
-            if ($info) {
-                $data = json_decode($info, true);
-                $userId = $data['user_id'] ?? null;
-            }
-        }
-
         // 删除全局连接信息
-        $redis->hDel(self::REDIS_KEY_CONNECTIONS_INFO, (string)$fd);
+        $deleted = $redis->hDel(self::REDIS_KEY_CONNECTIONS_INFO, (string)$fd);
 
-        // 删除用户级连接信息
-        if ($userId !== null) {
-            $userInfoKey = self::REDIS_KEY_USER_INFO . $userId;
-            $redis->hDel($userInfoKey, (string)$fd);
-
-            // 如果用户没有其他连接了，删除整个hash
-            if ($redis->hLen($userInfoKey) === 0) {
-                $redis->del($userInfoKey);
-            }
+        // 只有成功删除时才减少计数
+        if ($deleted > 0) {
+            $redis->decr(self::REDIS_KEY_STATS_TOTAL);
         }
-
-        // 减少总连接数
-        $redis->decr(self::REDIS_KEY_STATS_TOTAL);
     }
 
     /**
@@ -130,12 +102,45 @@ class WsConnectionManager
     }
 
     /**
-     * 获取所有在线连接信息
-     * @return array [['fd' => 123, 'user_id' => 1, 'connect_time' => 1234567890, ...], ...]
+     * 分页获取连接信息
+     * @param int|string|null $userId 用户ID筛选（可选）
+     * @param int $page 页码（从1开始）
+     * @param int $pageSize 每页数量
+     * @return array ['list' => [...], 'total' => 100]
      */
-    public static function getAllConnections(): array
+    public static function getConnectionsList(
+        int|string|null $userId = null,
+        int             $page = 1,
+        int             $pageSize = 20
+    ): array
     {
         $redis = self::getRedis();
+
+        // 如果指定了用户ID，查询该用户的连接
+        if ($userId) {
+            $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+            $total = $redis->sCard($userFdsKey);
+            $fds = $redis->sMembers($userFdsKey);
+
+            $result = [];
+            foreach ($fds as $fd) {
+                $info = $redis->hGet(self::REDIS_KEY_CONNECTIONS_INFO, (string)$fd);
+                if ($info) {
+                    $data = json_decode($info, true);
+                    $data['fd'] = (int)$fd;
+                    $result[] = $data;
+                }
+            }
+
+            $offset = ($page - 1) * $pageSize;
+            return [
+                'list' => array_slice($result, $offset, $pageSize),
+                'total' => $total,
+            ];
+        }
+
+        // 查询所有连接
+        $total = (int)$redis->get(self::REDIS_KEY_STATS_TOTAL) ?: 0;
         $connections = $redis->hGetAll(self::REDIS_KEY_CONNECTIONS_INFO);
 
         $result = [];
@@ -145,26 +150,11 @@ class WsConnectionManager
             $result[] = $data;
         }
 
-        return $result;
-    }
-
-    /**
-     * 获取用户的所有连接详情
-     */
-    public static function getUserConnections(int|string $userId): array
-    {
-        $redis = self::getRedis();
-        $userInfoKey = self::REDIS_KEY_USER_INFO . $userId;
-        $connections = $redis->hGetAll($userInfoKey);
-
-        $result = [];
-        foreach ($connections as $fd => $info) {
-            $data = json_decode($info, true);
-            $data['fd'] = (int)$fd;
-            $result[] = $data;
-        }
-
-        return $result;
+        $offset = ($page - 1) * $pageSize;
+        return [
+            'list' => array_slice($result, $offset, $pageSize),
+            'total' => $total,
+        ];
     }
 
     /**
@@ -189,7 +179,6 @@ class WsConnectionManager
     public static function getStats(): array
     {
         $redis = self::getRedis();
-
         $totalConnections = (int)$redis->get(self::REDIS_KEY_STATS_TOTAL) ?: 0;
         $allConnections = $redis->hGetAll(self::REDIS_KEY_CONNECTIONS_INFO);
 
@@ -232,10 +221,36 @@ class WsConnectionManager
         $result = [];
 
         foreach ($userIds as $userId) {
-            $userInfoKey = self::REDIS_KEY_USER_INFO . $userId;
-            $result[$userId] = $redis->hLen($userInfoKey) > 0;
+            $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
+            $result[$userId] = $redis->sCard($userFdsKey) > 0;
         }
 
         return $result;
+    }
+
+    /**
+     * 修复总连接数统计
+     * 当 REDIS_KEY_STATS_TOTAL 统计值与实际连接数不一致时，使用此方法修复
+     * @return array ['before' => int, 'after' => int, 'fixed' => bool, 'diff' => int]
+     */
+    public static function fixConnectionStats(): array
+    {
+        $redis = self::getRedis();
+
+        // 获取修复前的统计值
+        $beforeCount = (int)$redis->get(self::REDIS_KEY_STATS_TOTAL) ?: 0;
+
+        // 从实际连接信息中获取真实的连接数
+        $actualCount = $redis->hLen(self::REDIS_KEY_CONNECTIONS_INFO);
+
+        // 更新统计值
+        $redis->set(self::REDIS_KEY_STATS_TOTAL, $actualCount);
+
+        return [
+            'before' => $beforeCount,
+            'after' => $actualCount,
+            'fixed' => $beforeCount !== $actualCount,
+            'diff' => $actualCount - $beforeCount,
+        ];
     }
 }
