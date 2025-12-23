@@ -228,9 +228,8 @@ class UserController extends AbstractController
         }
 
         // 检测是否需要二次验证
-        $hasPassword = $validated['type'] == LoginType::USERNAME_PASSWORD->value;
-        if ($this->twoFAService->needsVerification($user, $validated)) {
-            $verifyInfo = $this->twoFAService->detectVerifyMethod($user, true, $hasPassword);
+        $verifyInfo = $this->twoFAService->detectVerifyMethod($user);
+        if ($this->twoFAService->needsVerification($verifyInfo, $validated)) {
             $verifyInfo['device_id'] = $deviceId;
             return $this->success($verifyInfo);
         }

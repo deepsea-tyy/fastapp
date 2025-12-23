@@ -118,10 +118,10 @@ class CurrentUser
             $md = User::create($data);
             if ($md->wasRecentlyCreated) {
                 if (empty($md->username)) {
-                    $md->username = '@user' . $md->no;
+                    $md->username = '@u' . $md->no;
                     $md->save();
                 }
-                UserProfile::query()->create(['user_id' => $md->id]);
+                UserProfile::query()->create(['user_id' => $md->id, 'nickname' => 'u' . $md->no]);
             }
             Tools::eventDispatcher(new UserRegisterEvent($md, $data['invite_code'] ?? ''));
             return $md;

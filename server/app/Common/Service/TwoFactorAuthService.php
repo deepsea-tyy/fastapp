@@ -41,7 +41,6 @@ class TwoFactorAuthService
      *
      * @param User $user 用户对象
      * @param bool $check2faConfig 是否检查全局2FA配置（默认true）
-     * @param bool $hasPassword 用户是否输入了密码（用于判断验证方式数量）
      * @return array{
      *     verify_again: string,
      *     email?: string,
@@ -49,56 +48,27 @@ class TwoFactorAuthService
      *     code?: string
      * }
      */
-    public function detectVerifyMethod(User $user, bool $check2faConfig = true, bool $hasPassword = false): array
+    public function detectVerifyMethod(User $user, bool $check2faConfig = false): array
     {
         $result = [
             'verify_again' => self::VERIFY_TYPE_NONE,
         ];
 
-        // 如果需要检查全局2FA配置
-        if ($check2faConfig) {
-            $fa = CacheConfigHelper::getConfigByKey('user_2FA')['value'] ?? true;
-            if (!$fa) {
-                return $result;
-            }
-        }
-
-        // 统计用户拥有的验证方式数量
-        $verifyMethods = [];
-
-        if (!empty($user->google2fa)) {
-            $verifyMethods[] = self::VERIFY_TYPE_GOOGLE2FA;
-        }
-
-        if (!empty($user->email)) {
-            $verifyMethods[] = self::VERIFY_TYPE_EMAIL;
-        }
-
-        if (!empty($user->mobile)) {
-            $verifyMethods[] = self::VERIFY_TYPE_MOBILE;
-        }
-
-        if ($hasPassword && !empty($user->getOriginal('password'))) {
-            $verifyMethods[] = 'password';
-        }
-
-        // 只有当用户拥有多于1种验证方式时才需要二次验证
-        if (count($verifyMethods) <= 1) {
+        // 如果需要检查全局2FA配置 并且开启全局设置 否则走账号二次验证
+        if ($check2faConfig && (CacheConfigHelper::getConfigByKey('user_2FA')['value'] ?? false)) {
             return $result;
         }
-
         // 按优先级返回需要的二次验证方式
-        if (in_array(self::VERIFY_TYPE_GOOGLE2FA, $verifyMethods)) {
+        if (!empty($user->google2fa)) {
             $result['verify_again'] = self::VERIFY_TYPE_GOOGLE2FA;
-        } elseif (in_array(self::VERIFY_TYPE_EMAIL, $verifyMethods)) {
+        } elseif (!empty($user->email)) {
             $result['verify_again'] = self::VERIFY_TYPE_EMAIL;
             $result['email'] = $user->email;
-        } elseif (in_array(self::VERIFY_TYPE_MOBILE, $verifyMethods)) {
+        } elseif (!empty($user->mobile)) {
             $result['verify_again'] = self::VERIFY_TYPE_MOBILE;
             $result['mobile'] = $user->mobile;
             $result['code'] = (string)$user->code;
         }
-
         return $result;
     }
 
@@ -259,28 +229,25 @@ class TwoFactorAuthService
     /**
      * 检查用户是否需要二次验证
      *
-     * @param User $user 用户对象
+     * @param array|User $verifyInfo
      * @param array $params 已提交的参数
      * @return bool true=需要二次验证, false=不需要
      */
-    public function needsVerification(User $user, array $params): bool
+    public function needsVerification(array|User $verifyInfo, array $params): bool
     {
-        $verifyInfo = $this->detectVerifyMethod($user);
-
+        if ($verifyInfo instanceof User) {
+            $verifyInfo = $this->detectVerifyMethod($verifyInfo);
+        }
         if ($verifyInfo['verify_again'] === self::VERIFY_TYPE_NONE) {
             return false;
         }
 
         // 检查是否已提供验证码
-        switch ($verifyInfo['verify_again']) {
-            case self::VERIFY_TYPE_GOOGLE2FA:
-                return empty($params['google2fa_code']);
-            case self::VERIFY_TYPE_EMAIL:
-            case self::VERIFY_TYPE_MOBILE:
-                return empty($params['vcode']);
-            default:
-                return false;
-        }
+        return match ($verifyInfo['verify_again']) {
+            self::VERIFY_TYPE_GOOGLE2FA => empty($params['google2fa_code']),
+            self::VERIFY_TYPE_EMAIL, self::VERIFY_TYPE_MOBILE => empty($params['vcode']),
+            default => false,
+        };
     }
 
     /**

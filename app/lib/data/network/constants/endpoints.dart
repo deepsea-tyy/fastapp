@@ -66,6 +66,7 @@ class Endpoints {
   static const String userLogin = '/api/user/login';
   static const String userRegister = '/api/user/register';
   static const String userInfo = '/api/user/info';
+  static const String userBaseInfo = '/api/user/baseInfo';
   static const String userLogout = '/api/user/logout';
   static const String userRefreshToken = '/api/user/refreshToken';
   static const String userAccountLogs = '/api/user/accountLogs';

@@ -190,9 +190,10 @@ class MarketWebSocket {
 
   Future<void> subscribeHotTickers() async {
     if (!_isConnected) throw Exception('WebSocket未连接');
-    if (!_isAuthenticated) return;
-    _sendMessage('market.subscribe.hot', {});
     _subscribedChannels.add('market:hot');
+    if (_isAuthenticated) {
+      _sendMessage('market.subscribe.hot', {});
+    }
   }
 
   void subscribe(String channel, {String? symbol}) {
@@ -230,11 +231,11 @@ class MarketWebSocket {
           return;
         } else if (msgText.contains('Auth successfully')) {
           _isAuthenticated = true;
-          if (_subscribedChannels.contains('market:hot')) {
-            _sendMessage('market.subscribe.hot', {});
-          }
+          _subscribedChannels.add('market:hot');
+          _sendMessage('market.subscribe.hot', {});
           return;
         } else if (msgText.contains('Bind key successfully')) {
+          _subscribedChannels.add('market:hot');
           _sendMessage('visitor.market.subscribe.hot', {});
           return;
         }

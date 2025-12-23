@@ -9,6 +9,9 @@ abstract class UserRepository {
 
   Future<Map<String, dynamic>?> getUserInfo();
 
+  /// 获取用户基本信息
+  Future<Map<String, dynamic>> getUserBaseInfo({required int userId});
+
   Future<void> saveIsLoggedIn(bool value);
 
   Future<bool> get isLoggedIn;

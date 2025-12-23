@@ -205,6 +205,21 @@ class UserApi {
     return response.data;
   }
 
+  /// 获取用户基本信息
+  /// [userId] 用户ID
+  Future<Map<String, dynamic>> getUserBaseInfo({
+    required int userId,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.userBaseInfo,
+      queryParameters: {
+        'user_id': userId,
+      },
+    );
+
+    return response.data;
+  }
+
   /// 退出登录
   Future<Map<String, dynamic>> logout() async {
     final response = await _dioClient.dio.post(

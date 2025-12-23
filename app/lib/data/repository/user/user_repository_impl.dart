@@ -66,11 +66,23 @@ class UserRepositoryImpl extends UserRepository {
     try {
       // 响应拦截器已处理响应格式，response 直接是用户数据
       final response = await _userApi.getUserInfo();
-      
+
       // 响应拦截器已提取 data，直接返回
       return response;
     } on DioException catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取用户信息失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getUserBaseInfo({required int userId}) async {
+    try {
+      final response = await _userApi.getUserBaseInfo(userId: userId);
+      return response;
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取用户基本信息失败'));
     } catch (e) {
       throw Exception(e.toString());
     }

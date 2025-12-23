@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/domain/repository/user/user_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_post.dart';
 import 'package:fastapp/domain/entity/feed/feed_user_profile.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_item.dart';
@@ -25,6 +26,7 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final FeedRepository _feedRepository = getIt<FeedRepository>();
+  final UserRepository _userRepository = getIt<UserRepository>();
   final UserStore _userStore = getIt<UserStore>();
   final ScrollController _scrollController = ScrollController();
 
@@ -64,7 +66,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
   void initState() {
     super.initState();
 
-    // 先加载帖子列表（会从中获取用户资料）
+    // 先加载用户基本信息
+    _loadUserBaseInfo();
+
+    // 加载帖子列表
     _loadUserPosts();
 
     // 加载关注状态
@@ -87,6 +92,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadMorePosts();
+    }
+  }
+
+  /// 加载用户基本信息
+  Future<void> _loadUserBaseInfo() async {
+    try {
+      final response = await _userRepository.getUserBaseInfo(userId: widget.userId);
+
+      if (mounted) {
+        setState(() {
+          _nickname = response['nickname'] ?? '';
+          _avatar = response['avatar'] ?? '';
+          _signed = response['signed'] ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('加载用户基本信息失败: $e');
     }
   }
 
@@ -159,13 +181,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _allPosts.addAll(posts);
         }
 
-        // 从第一个帖子获取用户基本信息
+        // 从第一个帖子获取认证状态
         if (_allPosts.isNotEmpty) {
           final firstPost = _allPosts.first;
-          _nickname = firstPost.profile?.nickname ?? firstPost.username ?? '用户${widget.userId}';
-          _avatar = firstPost.profile?.avatar ?? firstPost.avatar ?? '';
           _isVerified = firstPost.isVerified ?? false;
-          _signed = firstPost.profile?.signed ?? '';
         }
 
         // 根据当前选中的类型过滤内容
