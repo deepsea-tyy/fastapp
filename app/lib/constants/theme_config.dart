@@ -9,6 +9,9 @@ class ThemeConfig {
   final BorderColors border;
   final StatusColors status;
   final BackgroundColors background;
+  final FeedColors feed;
+  final EmptyStateColors emptyState;
+  final BottomNavColors bottomNav;
 
   const ThemeConfig({
     required this.id,
@@ -20,6 +23,9 @@ class ThemeConfig {
     required this.border,
     required this.status,
     required this.background,
+    required this.feed,
+    required this.emptyState,
+    required this.bottomNav,
   });
 }
 
@@ -101,5 +107,64 @@ class BackgroundColors {
     this.dialog,
     this.bottomSheet,
     this.elevated,
+  });
+}
+
+/// Feed 信息流颜色配置
+class FeedColors {
+  final String cardBackground;
+  final String userNameText;
+  final String timeText;
+  final String contentText;
+  final String titleText;
+  final String linkText;
+  final String menuIcon;
+  final String actionIconActive;
+  final String actionIconDefault;
+  final String actionTextActive;
+  final String actionTextDefault;
+
+  const FeedColors({
+    required this.cardBackground,
+    required this.userNameText,
+    required this.timeText,
+    required this.contentText,
+    required this.titleText,
+    required this.linkText,
+    required this.menuIcon,
+    required this.actionIconActive,
+    required this.actionIconDefault,
+    required this.actionTextActive,
+    required this.actionTextDefault,
+  });
+}
+
+/// 空状态颜色配置
+class EmptyStateColors {
+  final String icon;
+  final String titleText;
+  final String descriptionText;
+  final String buttonBackground;
+  final String buttonForeground;
+
+  const EmptyStateColors({
+    required this.icon,
+    required this.titleText,
+    required this.descriptionText,
+    required this.buttonBackground,
+    required this.buttonForeground,
+  });
+}
+
+/// 底部导航颜色配置
+class BottomNavColors {
+  final String background;
+  final String selectedItem;
+  final String unselectedItem;
+
+  const BottomNavColors({
+    required this.background,
+    required this.selectedItem,
+    required this.unselectedItem,
   });
 }

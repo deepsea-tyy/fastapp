@@ -6,6 +6,7 @@ import 'package:fastapp/domain/entity/user/user_profile.dart';
 import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/presentation/views/common/image_preview_page.dart';
 import 'package:fastapp/presentation/views/common/safe_network_image.dart';
+import 'package:fastapp/core/theme/feed_theme_extension.dart';
 import 'feed_detail.dart';
 import 'feed_action_bar.dart';
 import 'feed_comment_input_sheet.dart';
@@ -86,8 +87,9 @@ class _FeedItemState extends State<FeedItem> {
 
   @override
   Widget build(BuildContext context) {
+    final feedTheme = context.feedTheme;
     return Container(
-      color: Colors.white,
+      color: feedTheme.cardBackground,
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,6 +143,7 @@ class _FeedItemState extends State<FeedItem> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final feedTheme = context.feedTheme;
     return Row(
       children: [
         UserAvatar(
@@ -157,17 +160,17 @@ class _FeedItemState extends State<FeedItem> {
               children: [
                 Text(
                   widget.profile.displayNickname,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: feedTheme.userNameText,
                   ),
                 ),
                 Text(
                   widget.time,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: feedTheme.timeText,
                   ),
                 ),
               ],
@@ -179,7 +182,7 @@ class _FeedItemState extends State<FeedItem> {
             icon: Icon(
               widget.menuIcon ?? Icons.close,
               size: 20,
-              color: Colors.grey.shade500,
+              color: feedTheme.menuIcon,
             ),
             onPressed: () => _showMenu(context),
           ),
@@ -196,6 +199,7 @@ class _FeedItemState extends State<FeedItem> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final feedTheme = context.feedTheme;
     final hasTitle = widget.title != null && widget.title!.isNotEmpty;
     final fontSize = hasTitle ? 14.0 : 15.0;
     return GestureDetector(
@@ -209,10 +213,10 @@ class _FeedItemState extends State<FeedItem> {
               width: double.infinity,
               child: Text(
                 widget.title!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: feedTheme.titleText,
                   height: 1.4,
                 ),
               ),
@@ -228,7 +232,7 @@ class _FeedItemState extends State<FeedItem> {
                   margin: Margins.zero,
                   padding: HtmlPaddings.zero,
                   fontSize: FontSize(fontSize),
-                  color: Colors.black87,
+                  color: feedTheme.contentText,
                   lineHeight: const LineHeight(1.5),
                   maxLines: 5,
                   textOverflow: TextOverflow.ellipsis,
@@ -242,7 +246,7 @@ class _FeedItemState extends State<FeedItem> {
               widget.originalLink!,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.blue.shade600,
+                color: feedTheme.linkText,
                 decoration: TextDecoration.underline,
               ),
             ),

@@ -45,20 +45,9 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'title',
     },
     {
-      label: () => t('search.IndexsFields.author'), // '作者/发布者'
-      minWidth: 150,
-      prop: 'author',
-    },
-    {
-      label: () => t('search.IndexsFields.weight'), // '权重'
+      label: () => t('search.IndexsFields.weight'), // '浏览量'
       minWidth: 150,
       prop: 'weight',
-      sortable: 'custom',
-    },
-    {
-      label: () => t('search.IndexsFields.view_count'), // '浏览量'
-      minWidth: 150,
-      prop: 'view_count',
       sortable: 'custom',
     },
     {
@@ -69,9 +58,9 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       cellRender: ({ row }) => row.status,
     },
     {
-      label: () => t('search.IndexsFields.published_at'), // '发布时间'
+      label: () => t('search.IndexsFields.last_at'), // '最新时间'
       minWidth: 150,
-      prop: 'published_at',
+      prop: 'last_at',
       sortable: 'custom',
     },
     // 操作列

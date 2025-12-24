@@ -35,11 +35,6 @@ search:
     target_id: TargetId
     title: Title
     keyword: Keyword
-    author: Author
     tags: Tags
-    extra: Extra
     weight: Weight
-    view_count: ViewCount
-    status: Status
-    published_at: PublishedAt
-    deleted_at: DeletedAt
+    last_at: LastAt

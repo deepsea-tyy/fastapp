@@ -4,6 +4,7 @@ import 'package:fastapp/presentation/views/feed/widgets/announcement_item.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_article.dart';
 import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 公告列表组件
 ///
@@ -57,18 +58,32 @@ class _AnnouncementListState extends State<AnnouncementList> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildContent(),
-        ],
-      ),
+    final backgroundTheme = context.backgroundTheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight.isFinite
+                ? constraints.maxHeight
+                : MediaQuery.of(context).size.height,
+          ),
+          color: backgroundTheme.card, // 使用卡片背景色（白色）
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildContent(),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildContent() {
+    // 获取主题颜色
+    final textTheme = context.textTheme;
+
     if (_isLoading && _announcementList.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32.0),
@@ -89,7 +104,7 @@ class _AnnouncementListState extends State<AnnouncementList> {
                 '加载失败',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade700,
+                  color: textTheme.secondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -97,7 +112,7 @@ class _AnnouncementListState extends State<AnnouncementList> {
                 _errorMessage!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: textTheme.hint,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -120,7 +135,7 @@ class _AnnouncementListState extends State<AnnouncementList> {
             '暂无公告',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              color: textTheme.hint,
             ),
           ),
         ),

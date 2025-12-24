@@ -15,6 +15,7 @@ use Hyperf\Swagger\Annotation\Get;
 use App\Common\Swagger\ResultResponse;
 use OpenApi\Attributes\QueryParameter;
 use Hyperf\DbConnection\Db;
+use Swoole\Coroutine;
 
 /**
  * 搜索控制器
@@ -27,9 +28,14 @@ use Hyperf\DbConnection\Db;
  */
 #[OA\Tag('搜索')]
 #[OA\HyperfServer('http')]
-#[Middleware(middleware: TokenMiddleware::class)]
+//#[Middleware(middleware: TokenMiddleware::class)]
 class SearchController extends AbstractController
 {
+
+    public function __construct(public SearchService $searchService)
+    {
+    }
+
     /**
      * 全局搜索接口
      *
@@ -39,7 +45,6 @@ class SearchController extends AbstractController
     #[Get(path: '/api/search', operationId: 'search', summary: '全局搜索', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
     #[QueryParameter(name: 'keyword', description: '搜索关键词', required: true, example: 'BTC')]
     #[QueryParameter(name: 'type', description: '类型筛选: all|article|feed|activity', example: 'all')]
-    #[QueryParameter(name: 'sort', description: '排序方式: relevance|time|weight|hot', example: 'relevance')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
@@ -56,8 +61,17 @@ class SearchController extends AbstractController
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
 
-        // 记录搜索关键词
-        $this->recordKeyword($keyword);
+        Coroutine::create(function () use ($keyword) {
+            SearchKeyword::query()->updateOrInsert(
+                ['keyword' => $keyword],
+                [
+                    'keyword' => $keyword,
+                    'hit_count' => Db::raw('hit_count + 1'),
+                    'last_searched_at' => date('Y-m-d H:i:s'),
+                    'source' => 1
+                ]
+            );
+        });
 
         // 构建搜索选项
         $options = [
@@ -72,26 +86,14 @@ class SearchController extends AbstractController
         }
 
         // 执行搜索
-        $searchService = new SearchService();
-        $result = $searchService->search($keyword, $options);
-
-        return $this->success([
-            'list' => $result['list'],
-            'total' => $result['total'],
-            'page' => $result['page'],
-            'page_size' => $result['page_size'],
-            'took' => $result['took'],
-            'driver' => $searchService->getDriverName(),
-        ]);
+        return $this->success($this->searchService->search($keyword, $options));
     }
 
     /**
      * 搜索建议接口
-     *
-     * 根据用户输入前缀，返回搜索建议
      */
     #[Get(path: '/api/search/suggest', operationId: 'search:suggest', summary: '搜索建议', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
-    #[QueryParameter(name: 'keyword', description: '搜索关键词前缀', required: true, example: 'BT')]
+    #[QueryParameter(name: 'keyword', description: '搜索关键词前缀', example: 'BT')]
     #[QueryParameter(name: 'limit', description: '返回数量', example: '10')]
     #[ResultResponse(instance: new Result())]
     public function suggest(): Result
@@ -104,10 +106,19 @@ class SearchController extends AbstractController
 
         $limit = (int)$this->getRequest()->input('limit', 10);
 
-        $searchService = new SearchService();
-        $suggestions = $searchService->suggest($keyword, $limit);
+        $suggestions = $this->searchService->suggest($keyword, $limit);
 
         return $this->success(['list' => $suggestions]);
+    }
+
+    /**
+     * 搜索排行
+     */
+    #[Get(path: '/api/search/ranking', operationId: 'search:ranking', summary: '搜索排行榜', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
+    #[ResultResponse(instance: new Result())]
+    public function ranking(): Result
+    {
+        return $this->success(['list' => $this->searchService->ranking()]);
     }
 
     /**
@@ -123,79 +134,33 @@ class SearchController extends AbstractController
         $limit = (int)$this->getRequest()->input('limit', 10);
 
         $list = SearchKeyword::query()
-            ->select(['keyword', 'hit_count', 'icon', 'color'])
+            ->select(['id', 'keyword', 'hit_count', 'icon', 'color', 'sort', 'last_searched_at'])
             ->where('source', '!=', 1) // 排除用户搜索，只显示推荐的
             ->orderByDesc('sort')
             ->orderByDesc('hit_count')
             ->limit($limit)
-            ->get();
+            ->get()
+            ->map(function ($item, $index) {
+                // 根据排名和热度添加徽章
+                $badge = null;
+                if ($index < 3 && $item->hit_count > 100) {
+                    $badge = 'HOT';
+                } elseif ($item->last_searched_at &&
+                    (time() - strtotime($item->last_searched_at)) < 86400) {
+                    $badge = 'NEW';
+                }
+
+                return [
+                    'id' => $item->id,
+                    'keyword' => $item->keyword,
+                    'hit_count' => $item->hit_count,
+                    'icon' => $item->icon,
+                    'color' => $item->color,
+                    'sort' => $item->sort,
+                    'badge' => $badge,
+                ];
+            });
 
         return $this->success(['list' => $list]);
-    }
-
-    /**
-     * 搜索历史记录
-     *
-     * 返回当前用户的搜索历史
-     */
-    #[Get(path: '/api/search/history', operationId: 'search:history', summary: '搜索历史', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
-    #[QueryParameter(name: 'limit', description: '返回数量', example: '10')]
-    #[ResultResponse(instance: new Result())]
-    public function history(): Result
-    {
-        $limit = (int)$this->getRequest()->input('limit', 10);
-
-        // TODO: 这里应该从用户的搜索历史表中获取
-        // 目前先返回用户搜索过的关键词
-        $list = SearchKeyword::query()
-            ->select(['keyword', 'last_searched_at'])
-            ->where('source', 1) // 用户搜索
-            ->orderByDesc('last_searched_at')
-            ->limit($limit)
-            ->get();
-
-        return $this->success(['list' => $list]);
-    }
-
-    /**
-     * 关键词列表（兼容旧接口）
-     */
-    #[Get(path: '/api/keyword/list', operationId: 'Keyword:list', summary: '搜索关键词记录列表', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
-    #[QueryParameter(name: 'page', description: '页码', example: '1')]
-    #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
-    #[ResultResponse(instance: new Result())]
-    public function list(): Result
-    {
-        $page = $this->getPage();
-        $pageSize = $this->getPageSize();
-        $list = SearchKeyword::query()
-            ->select(['keyword', 'hit_count', 'icon', 'color'])
-            ->orderByDesc('sort')
-            ->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->get();
-        return $this->success(['list' => $list]);
-    }
-
-    /**
-     * 记录搜索关键词
-     *
-     * @param string $keyword
-     */
-    private function recordKeyword(string $keyword): void
-    {
-        try {
-            SearchKeyword::query()->updateOrInsert(
-                ['keyword' => $keyword],
-                [
-                    'keyword' => $keyword,
-                    'hit_count' => Db::raw('hit_count + 1'),
-                    'last_searched_at' => date('Y-m-d H:i:s'),
-                    'source' => 1, // 用户搜索
-                ]
-            );
-        } catch (\Throwable $e) {
-            // 记录失败不影响搜索
-        }
     }
 }

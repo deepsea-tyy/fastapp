@@ -3,7 +3,7 @@ git
 git push --force origin main
 
 空目录删除
-find ’目录 -type d -empty -delete
+find "目录" -type d -empty -delete
 
 DNS
 日常上网（混合国内外）	223.5.5.5（阿里） + 119.29.29.29（腾讯）
@@ -25,6 +25,7 @@ Claude ai全局设置
 
 代码规范
 - 代码保持简洁直接，避免过度工程
+- 不生产测试脚本
 
 API 响应处理规则
 - 直接使用 response 作为解包后的数据，无需检查 code 或访问 data 字段

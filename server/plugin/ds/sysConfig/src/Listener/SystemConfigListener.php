@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysConfig\Listener;
 
 use Hyperf\Database\Model\Events\Created;
+use Hyperf\Database\Model\Events\Deleted;
 use Hyperf\Database\Model\Events\Updated;
 use Hyperf\Event\Annotation\Listener;
 use Hyperf\Event\Contract\ListenerInterface;
-use OpenApi\Attributes\Delete;
 use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 use Plugin\Ds\SysConfig\Model\Config;
 use Psr\Container\ContainerInterface;
@@ -25,7 +25,7 @@ class SystemConfigListener implements ListenerInterface
         return [
             Created::class,
             Updated::class,
-            Delete::class,
+            Deleted::class,
         ];
     }
 

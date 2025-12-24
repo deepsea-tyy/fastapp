@@ -1,28 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'service_item_model.dart';
 import 'quick_entrance_state.dart';
 import 'package:fastapp/utils/routes/routes.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
+import 'package:fastapp/presentation/store/app/theme_store.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 /// 快捷入口组件
 ///
 /// 显示用户自定义的快捷功能入口
 /// 配置数据由 QuickEntranceState 管理
-class QuickEntranceWidget extends StatelessWidget {
+class QuickEntranceWidget extends StatefulWidget {
   const QuickEntranceWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<QuickEntranceState>(
-      builder: (context, manager, child) {
-        final entrances = manager.getQuickEntrances();
+  State<QuickEntranceWidget> createState() => _QuickEntranceWidgetState();
+}
 
-        if (entrances.isEmpty) {
-          return const SizedBox.shrink();
-        }
+class _QuickEntranceWidgetState extends State<QuickEntranceWidget> {
+  @override
+  Widget build(BuildContext context) {
+    final themeStore = getIt<ThemeStore>();
+
+    return Observer(
+      builder: (_) {
+        // 访问 themeStore.currentTheme 确保主题变化时重建
+        final _ = themeStore.currentTheme;
+
+        return Consumer<QuickEntranceState>(
+          builder: (context, manager, child) {
+            final entrances = manager.getQuickEntrances();
+
+            if (entrances.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            // 在 Consumer 内部获取主题颜色，确保主题变化时能更新
+            final backgroundTheme = context.backgroundTheme;
 
         return Container(
-          color: Colors.white,
+          color: backgroundTheme.card,
           child: Column(
             children: [
               // 标题栏
@@ -75,24 +94,28 @@ class QuickEntranceWidget extends StatelessWidget {
             ],
           ),
         );
+          },
+        );
       },
     );
   }
 
   /// 构建标题栏
   Widget _buildHeader(BuildContext context) {
+    final textTheme = context.textTheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 左侧标题
-          const Text(
+          Text(
             '快捷入口',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: textTheme.primary,
             ),
           ),
           // 右侧"更多"按钮
@@ -100,19 +123,19 @@ class QuickEntranceWidget extends StatelessWidget {
             onTap: () => Navigator.of(context).pushNamed(Routes.service),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Text(
                   '更多',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: textTheme.secondary,
                   ),
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 12,
-                  color: Colors.black54,
+                  color: textTheme.secondary,
                 ),
               ],
             ),
@@ -126,6 +149,9 @@ class QuickEntranceWidget extends StatelessWidget {
     BuildContext context, {
     required AppServiceItem item,
   }) {
+    final backgroundTheme = context.backgroundTheme;
+    final textTheme = context.textTheme;
+
     return GestureDetector(
       onTap: () => item.onTap?.call(context),
       child: Column(
@@ -138,11 +164,11 @@ class QuickEntranceWidget extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: backgroundTheme.card,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: textTheme.hint.withOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -151,7 +177,7 @@ class QuickEntranceWidget extends StatelessWidget {
                 child: Icon(
                   item.icon,
                   size: 28,
-                  color: Colors.black87,
+                  color: textTheme.primary,
                 ),
               ),
               if (item.decorationColor != null && item.decorationPosition != null)
@@ -176,9 +202,9 @@ class QuickEntranceWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             item.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.black87,
+              color: textTheme.primary,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,

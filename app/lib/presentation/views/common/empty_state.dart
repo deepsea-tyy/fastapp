@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 通用空状态组件
 ///
 /// 用于显示空数据、无内容、无搜索结果等场景
-class CommonEmptyState extends StatelessWidget {
+class EmptyState extends StatelessWidget {
   /// 图标
   final IconData? icon;
 
@@ -40,7 +41,7 @@ class CommonEmptyState extends StatelessWidget {
   /// 内边距
   final EdgeInsetsGeometry padding;
 
-  const CommonEmptyState({
+  const EmptyState({
     super.key,
     this.icon,
     this.iconSize = 64,
@@ -57,13 +58,13 @@ class CommonEmptyState extends StatelessWidget {
   });
 
   /// 预设：无数据状态
-  factory CommonEmptyState.noData({
+  factory EmptyState.noData({
     String title = '暂无数据',
     String? description,
     String? actionText,
     VoidCallback? onAction,
   }) {
-    return CommonEmptyState(
+    return EmptyState(
       icon: Icons.inbox_outlined,
       title: title,
       description: description,
@@ -73,12 +74,12 @@ class CommonEmptyState extends StatelessWidget {
   }
 
   /// 预设：无搜索结果
-  factory CommonEmptyState.noSearchResults({
+  factory EmptyState.noSearchResults({
     String title = '未找到相关内容',
     String? description,
     VoidCallback? onAction,
   }) {
-    return CommonEmptyState(
+    return EmptyState(
       icon: Icons.search_off,
       title: title,
       description: description ?? '试试其他搜索词',
@@ -88,12 +89,12 @@ class CommonEmptyState extends StatelessWidget {
   }
 
   /// 预设：网络错误
-  factory CommonEmptyState.networkError({
+  factory EmptyState.networkError({
     String title = '网络连接失败',
     String? description,
     VoidCallback? onAction,
   }) {
-    return CommonEmptyState(
+    return EmptyState(
       icon: Icons.wifi_off,
       title: title,
       description: description ?? '请检查您的网络连接',
@@ -103,13 +104,13 @@ class CommonEmptyState extends StatelessWidget {
   }
 
   /// 预设：无内容（信息流等）
-  factory CommonEmptyState.noContent({
+  factory EmptyState.noContent({
     String title = '暂无内容',
     String? description,
     String? actionText,
     VoidCallback? onAction,
   }) {
-    return CommonEmptyState(
+    return EmptyState(
       icon: Icons.article_outlined,
       title: title,
       description: description,
@@ -120,6 +121,8 @@ class CommonEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final emptyStateTheme = context.emptyStateTheme;
+
     return Center(
       child: Padding(
         padding: padding,
@@ -132,7 +135,7 @@ class CommonEmptyState extends StatelessWidget {
               Icon(
                 icon,
                 size: iconSize,
-                color: iconColor ?? Colors.grey.shade400,
+                color: iconColor ?? emptyStateTheme.icon,
               ),
 
             if (icon != null) const SizedBox(height: 16),
@@ -143,7 +146,7 @@ class CommonEmptyState extends StatelessWidget {
               style: titleStyle ?? TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade700,
+                color: emptyStateTheme.titleText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -155,7 +158,7 @@ class CommonEmptyState extends StatelessWidget {
                 description!,
                 style: descriptionStyle ?? TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: emptyStateTheme.descriptionText,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -173,8 +176,8 @@ class CommonEmptyState extends StatelessWidget {
               ElevatedButton(
                 onPressed: onAction,
                 style: actionButtonStyle ?? ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade600,
-                  foregroundColor: Colors.white,
+                  backgroundColor: emptyStateTheme.buttonBackground,
+                  foregroundColor: emptyStateTheme.buttonForeground,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 12,

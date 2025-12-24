@@ -23,8 +23,10 @@ import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/store/orders/order_store.dart';
 import 'package:fastapp/presentation/store/kyc/ex_kyc_store.dart';
+import 'package:fastapp/presentation/store/search/search_store.dart';
 import 'package:fastapp/domain/usecase/kyc/get_kyc_detail_usecase.dart';
 import 'package:fastapp/domain/usecase/kyc/submit_kyc_usecase.dart';
+import 'package:fastapp/core/data/network/dio/dio_client.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
@@ -169,6 +171,12 @@ class StoreModule {
         getIt<GetKycDetailUseCase>(),
         getIt<SubmitKycUseCase>(),
         getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<SearchStore>(
+      SearchStore(
+        getIt<DioClient>(),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/utils/image_utils.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 关注源列表组件
 class SourcesBar extends StatefulWidget {
@@ -37,8 +38,10 @@ class _SourcesBarState extends State<SourcesBar> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundTheme = context.backgroundTheme;
+
     return Container(
-      color: Colors.white,
+      color: backgroundTheme.card,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: _isLoading
@@ -49,6 +52,7 @@ class _SourcesBarState extends State<SourcesBar> {
                 ..._followingUsers.map((item) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: _buildItem(
+                        context,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -63,6 +67,7 @@ class _SourcesBarState extends State<SourcesBar> {
                       ),
                     )),
                 _buildItem(
+                  context,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const FollowingPage()),
@@ -76,12 +81,16 @@ class _SourcesBarState extends State<SourcesBar> {
     );
   }
 
-  Widget _buildItem({
+  Widget _buildItem(
+    BuildContext context, {
     required VoidCallback onTap,
     String? avatar,
     IconData? icon,
     required String label,
   }) {
+    final textTheme = context.textTheme;
+    final backgroundTheme = context.backgroundTheme;
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -93,17 +102,17 @@ class _SourcesBarState extends State<SourcesBar> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: textTheme.hint.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: icon != null
-                  ? Icon(icon, color: Colors.grey.shade700, size: 20)
+                  ? Icon(icon, color: textTheme.secondary, size: 20)
                   : _buildAvatarContent(avatar!, label),
             ),
             const SizedBox(height: 3),
             Text(
               label,
-              style: const TextStyle(fontSize: 10, color: Colors.black87, height: 1.1),
+              style: TextStyle(fontSize: 10, color: textTheme.primary, height: 1.1),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

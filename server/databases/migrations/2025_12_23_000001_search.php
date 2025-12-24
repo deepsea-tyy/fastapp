@@ -30,34 +30,18 @@ return new class extends Migration {
         });
 
         Schema::create('search_index', static function (Blueprint $table) {
-            $table->comment('搜索索引表 - 统一存储可搜索内容');
+            $table->comment('搜索索引表');
             $table->bigIncrements('id')->comment('主键ID');
-
-            // 多态关联字段
             $table->string('target_type', 50)->comment('内容类型: article|feed|activity|news');
             $table->unsignedBigInteger('target_id')->comment('内容ID');
-
-            // 搜索字段
             $table->string('title', 200)->comment('标题');
+            $table->string('content', 100)->nullable()->comment('内容');
             $table->json('keyword')->nullable()->comment('关键词数组');
-            $table->string('author', 100)->nullable()->comment('作者/发布者');
             $table->json('tags')->nullable()->comment('标签数组');
-            $table->json('extra')->nullable()->comment('扩展字段JSON');
-
-            // 权重和排序
-            $table->integer('weight')->unsigned()->default(1)->comment('权重: 1-100');
-            $table->integer('view_count')->unsigned()->default(0)->comment('浏览量');
-
-            // 状态和时间
-            $table->tinyInteger('status')->default(1)->comment('状态: 1=正常 0=禁用');
-            $table->timestamp('published_at')->nullable()->comment('发布时间');
-            $table->timestamps();
-            $table->softDeletes();
-
-            // 索引优化
+            $table->integer('weight')->unsigned()->default(0)->comment('权重');
+            $table->timestamp('last_at')->nullable()->comment('最新时间');
             $table->unique(['target_type', 'target_id']);
-            $table->index('published_at');
-            $table->index(['status', 'weight']);
+            $table->index('last_at');
         });
     }
 

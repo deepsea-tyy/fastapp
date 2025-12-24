@@ -542,7 +542,7 @@ class MenuInit20251017 extends Seeder
                 'component' => 'search/views/indexs/index',
                 'sort' => 103,
                 'meta' => new Meta([
-                    'title' => '搜索索引 - 统一存储可搜索内容',
+                    'title' => '搜索索引',
                     'i18n' => 'search.Indexs',
                     'icon' => 'mdi:menu',
                     'type' => 'M',

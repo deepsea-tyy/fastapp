@@ -25,14 +25,9 @@ class IndexsRequest extends FormRequest
             'target_id' => 'integer',
             'title' => 'sometimes',
             'keyword' => 'array|nullable',
-            'author' => 'sometimes|nullable',
             'tags' => 'array|nullable',
-            'extra' => 'array|nullable',
             'weight' => 'integer',
-            'view_count' => 'integer',
-            'like_count' => 'integer',
-            'status' => 'integer',
-            'published_at' => 'date|nullable',
+            'last_at' => 'date|nullable',
         ];
     }
 
@@ -62,14 +57,9 @@ class IndexsRequest extends FormRequest
             'target_id' => trans('indexs.target_id') ?: '内容ID',
             'title' => trans('indexs.title') ?: '标题',
             'keyword' => trans('indexs.keyword') ?: '关键词数组',
-            'author' => trans('indexs.author') ?: '作者/发布者',
             'tags' => trans('indexs.tags') ?: '标签数组',
-            'extra' => trans('indexs.extra') ?: '扩展字段JSON',
             'weight' => trans('indexs.weight') ?: '权重',
-            'view_count' => trans('indexs.view_count') ?: '浏览量',
-            'like_count' => trans('indexs.like_count') ?: '点赞数',
-            'status' => trans('indexs.status') ?: '状态',
-            'published_at' => trans('indexs.published_at') ?: '发布时间',
+            'last_at' => trans('indexs.last_at') ?: '发布时间',
         ];
     }
 

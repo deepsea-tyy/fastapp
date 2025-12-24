@@ -97,6 +97,19 @@ class SharedPreferenceHelper {
     return _sharedPreference.setString(Preferences.current_language, language);
   }
 
+  // Search History:---------------------------------------------------
+  List<String> get searchHistory {
+    return _sharedPreference.getStringList(Preferences.search_history) ?? [];
+  }
+
+  Future<bool> saveSearchHistory(List<String> history) {
+    return _sharedPreference.setStringList(Preferences.search_history, history);
+  }
+
+  Future<bool> clearSearchHistory() {
+    return _sharedPreference.remove(Preferences.search_history);
+  }
+
   // Batch Clear Methods:-----------------------------------------------
 
   /// 清除所有认证数据（包括 token 和登录状态）

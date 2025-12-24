@@ -153,4 +153,15 @@ class Endpoints {
 
   // 举报管理
   static const String feedReportSubmit = '/api/feed/report/submit';
+
+  // ==================== 搜索相关 ====================
+
+  // 全局搜索
+  static const String search = '/api/search';
+
+  // 搜索建议
+  static const String searchSuggest = '/api/search/suggest';
+
+  // 热门关键词
+  static const String searchKeywordsHot = '/api/search/keywords/hot';
 }

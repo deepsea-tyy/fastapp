@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/presentation/store/search/search_store.dart';
 import 'package:fastapp/constants/app_backgrounds.dart';
 import 'package:fastapp/utils/icon_mapper.dart';
 
-class TopBar extends StatelessWidget implements PreferredSizeWidget {
+class TopBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final int unreadMessageCount; // 未读消息数
 
@@ -24,6 +26,24 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     this.searchIconColor,
     this.searchRoute,
   });
+
+  @override
+  State<TopBar> createState() => _TopBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _TopBarState extends State<TopBar> {
+  late final SearchStore _searchStore;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchStore = getIt<SearchStore>();
+    // 自动刷新（如果需要）
+    _searchStore.autoRefresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,61 +75,50 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
 
   Widget _buildSearchBar(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final backgrounds = AppBackgrounds.of(context);
 
-    // 获取图标和颜色配置，如果没有配置则使用默认值
-    final iconData = searchIconName != null
-        ? IconMapper.getIcon(searchIconName)
-        : Icons.local_fire_department;
+    return Observer(
+      builder: (_) {
+        final topKeyword = _searchStore.topHotKeyword;
+        final keyword = widget.searchKeyword ?? topKeyword?.keyword;
+        final iconName = widget.searchIconName ?? topKeyword?.icon;
+        final hasCustomIcon = iconName?.isNotEmpty ?? false;
 
-    final iconColor = searchIconColor ??
-        (searchIconName != null
-            ? IconMapper.getColor(searchIconName)
-            : colorScheme.primary);
+        // 确定显示内容
+        final displayText = keyword?.isNotEmpty == true ? keyword! : '搜索';
+        final displayIcon = hasCustomIcon ? IconMapper.getIcon(iconName) : Icons.search;
+        final displayColor = hasCustomIcon
+            ? (widget.searchIconColor ??
+                IconMapper.parseColor(topKeyword?.color) ??
+                IconMapper.getColor(iconName))
+            : theme.hintColor;
 
-    final keyword = searchKeyword ?? 'MBL';
-
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).pushNamed(searchRoute ?? Routes.homeSearch);
-      },
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          color: backgrounds.input,
+        return InkWell(
+          onTap: () => Navigator.of(context).pushNamed(widget.searchRoute ?? Routes.homeSearch),
           borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            // 可配置的图标
-            Icon(
-              iconData,
-              size: 18,
-              color: iconColor,
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: backgrounds.input,
+              borderRadius: BorderRadius.circular(18),
             ),
-            const SizedBox(width: 8),
-            // 可配置的文字
-            Text(
-              keyword,
-              style: TextStyle(
-                color: theme.textTheme.bodySmall?.color,
-                fontSize: 14,
-              ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Icon(displayIcon, size: 18, color: displayColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    displayText,
+                    style: TextStyle(color: theme.hintColor, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
             ),
-            const Spacer(),
-            // 搜索图标
-            Icon(
-              Icons.search,
-              size: 18,
-              color: theme.hintColor,
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -126,7 +135,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           onPressed: () => Navigator.of(context).pushNamed(Routes.message),
         ),
-        if (unreadMessageCount > 0)
+        if (widget.unreadMessageCount > 0)
           Positioned(
             right: 8,
             top: 8,
@@ -142,7 +151,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               child: Center(
                 child: Text(
-                  unreadMessageCount > 99 ? '99+' : '$unreadMessageCount',
+                  widget.unreadMessageCount > 99 ? '99+' : '${widget.unreadMessageCount}',
                   style: TextStyle(
                     color: colorScheme.onError,
                     fontSize: 9,
@@ -179,13 +188,10 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       return;
     }
 
-    if (onMenuPressed != null) {
-      onMenuPressed!();
+    if (widget.onMenuPressed != null) {
+      widget.onMenuPressed!();
     } else {
       Scaffold.of(context).openEndDrawer();
     }
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

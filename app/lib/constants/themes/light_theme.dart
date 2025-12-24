@@ -48,4 +48,32 @@ const lightTheme = ThemeConfig(
     bottomSheet: '#FFFFFF',  // 底部抽屉背景 - 纯白
     elevated: '#FFFFFF',     // 悬浮元素背景 - 纯白
   ),
+
+  feed: FeedColors(
+    cardBackground: '#FFFFFF',      // 信息流卡片背景 - 纯白
+    userNameText: '#212121',        // 用户名 - 深黑
+    timeText: '#757575',            // 时间文字 - 中灰
+    contentText: '#424242',         // 内容文字 - 深灰
+    titleText: '#212121',           // 标题文字 - 深黑
+    linkText: '#FF9500',            // 链接文字 - 主题橙色
+    menuIcon: '#9E9E9E',            // 菜单图标 - 浅灰
+    actionIconActive: '#FF9500',    // 操作按钮激活状态 - 主题橙色
+    actionIconDefault: '#757575',   // 操作按钮默认状态 - 中灰
+    actionTextActive: '#FF9500',    // 操作文字激活状态 - 主题橙色
+    actionTextDefault: '#757575',   // 操作文字默认状态 - 中灰
+  ),
+
+  emptyState: EmptyStateColors(
+    icon: '#BDBDBD',                // 空状态图标 - 浅灰
+    titleText: '#616161',           // 空状态标题 - 中深灰
+    descriptionText: '#9E9E9E',     // 空状态描述 - 浅灰
+    buttonBackground: '#FF9500',    // 按钮背景 - 主题橙色
+    buttonForeground: '#FFFFFF',    // 按钮文字 - 纯白
+  ),
+
+  bottomNav: BottomNavColors(
+    background: '#FFFFFF',          // 底部导航背景 - 纯白
+    selectedItem: '#FF9500',        // 选中项 - 主题橙色
+    unselectedItem: '#9E9E9E',      // 未选中项 - 浅灰
+  ),
 );

@@ -35,11 +35,6 @@ search:
     target_id: 内容ID
     title: 标题
     keyword: 关键词数组
-    author: 作者/发布者
     tags: 标签数组
-    extra: 扩展字段JSON
     weight: 权重
-    view_count: 浏览量
-    status: 状态
-    published_at: 发布时间
-    deleted_at: 删除时间
+    last_at: 最新时间

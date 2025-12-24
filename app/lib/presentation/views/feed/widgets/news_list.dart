@@ -3,6 +3,7 @@ import 'package:fastapp/presentation/views/feed/widgets/news_item.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_article.dart';
 import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 新闻列表组件
 ///
@@ -55,9 +56,28 @@ class _NewsListState extends State<NewsList> {
 
   @override
   Widget build(BuildContext context) {
+    // 获取主题颜色
+    final textTheme = context.textTheme;
+    final backgroundTheme = context.backgroundTheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight.isFinite
+                ? constraints.maxHeight
+                : MediaQuery.of(context).size.height,
+          ),
+          color: backgroundTheme.card, // 使用卡片背景色（白色）
+          child: _buildContent(textTheme),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(TextThemeColors textTheme) {
     if (_isLoading && _newsList.isEmpty) {
       return Container(
-        color: Colors.white,
         padding: const EdgeInsets.all(32.0),
         child: const Center(
           child: CircularProgressIndicator(),
@@ -67,7 +87,6 @@ class _NewsListState extends State<NewsList> {
 
     if (_errorMessage != null && _newsList.isEmpty) {
       return Container(
-        color: Colors.white,
         padding: const EdgeInsets.all(32.0),
         child: Center(
           child: Column(
@@ -77,7 +96,7 @@ class _NewsListState extends State<NewsList> {
                 '加载失败',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade700,
+                  color: textTheme.secondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -85,7 +104,7 @@ class _NewsListState extends State<NewsList> {
                 _errorMessage!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: textTheme.hint,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -102,27 +121,23 @@ class _NewsListState extends State<NewsList> {
 
     if (_newsList.isEmpty) {
       return Container(
-        color: Colors.white,
         padding: const EdgeInsets.all(32.0),
         child: Center(
           child: Text(
             '暂无新闻',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              color: textTheme.hint,
             ),
           ),
         ),
       );
     }
 
-    return Container(
-      color: Colors.white,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _buildGroupedNewsList(),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _buildGroupedNewsList(),
     );
   }
 
@@ -175,7 +190,7 @@ class _NewsListState extends State<NewsList> {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.black87,
+              color: context.textTheme.primary,
               shape: BoxShape.rectangle,
               borderRadius: BorderRadius.circular(2),
             ),
@@ -184,10 +199,10 @@ class _NewsListState extends State<NewsList> {
           const SizedBox(width: 12),
           Text(
             date,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: context.textTheme.primary,
             ),
           ),
         ],

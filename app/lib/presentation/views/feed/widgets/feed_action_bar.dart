@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/core/theme/feed_theme_extension.dart';
 
 /// Feed 互动操作栏（通用组件）
 ///
@@ -97,49 +98,54 @@ class FeedActionBar extends StatelessWidget {
     VoidCallback? onTap,
     bool isActive = false,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-        child: isVertical
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 24,
-                    color: isActive ? Colors.blue : Colors.grey.shade600,
+    return Builder(
+      builder: (context) {
+        final feedTheme = context.feedTheme;
+        return GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+            child: isVertical
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 24,
+                        color: isActive ? feedTheme.actionIconActive : feedTheme.actionIconDefault,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatCount(count),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isActive ? feedTheme.actionTextActive : feedTheme.actionTextDefault,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: isActive ? feedTheme.actionIconActive : feedTheme.actionIconDefault,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatCount(count),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isActive ? feedTheme.actionTextActive : feedTheme.actionTextDefault,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatCount(count),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isActive ? Colors.blue : Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 20,
-                    color: isActive ? Colors.blue : Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatCount(count),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isActive ? Colors.blue : Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-      ),
+          ),
+        );
+      },
     );
   }
 

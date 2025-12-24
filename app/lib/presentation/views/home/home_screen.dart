@@ -35,7 +35,8 @@ import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/constants/app_backgrounds.dart';
-import 'package:fastapp/core/widgets/common_empty_state.dart';
+import 'package:fastapp/presentation/views/common/empty_state.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
@@ -172,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 50,
                     child: Container(
                       key: _feedTabsKey,
-                      color: Colors.white,
+                      color: backgrounds.card,
                       child: ListenableBuilder(
                         listenable: _feedController,
                         builder: (context, _) {
@@ -272,10 +273,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Tab 0 和 1: Feed 列表
-    return _buildFeedList();
+    return _buildFeedList(backgrounds);
   }
 
-  Widget _buildFeedList() {
+  Widget _buildFeedList(dynamic backgrounds) {
     if (_feedController.isLoading && _feedController.feedList.isEmpty) {
       return const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
@@ -284,6 +285,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_feedController.errorMessage != null &&
         _feedController.feedList.isEmpty) {
+      final textTheme = context.textTheme;
+
       return SliverFillRemaining(
         child: Center(
           child: Column(
@@ -291,12 +294,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 '加载失败',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                style: TextStyle(fontSize: 16, color: textTheme.secondary),
               ),
               const SizedBox(height: 8),
               Text(
                 _feedController.errorMessage!,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: textTheme.hint),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -329,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       return SliverFillRemaining(
-        child: CommonEmptyState.noContent(
+        child: EmptyState.noContent(
           title: emptyTitle,
           description: emptyDescription,
           actionText: '刷新',
@@ -355,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final post = _feedController.feedList[index];
 
           return Container(
-            color: Colors.white,
+            color: backgrounds.card,
             child: FeedItem(
               postId: post.id,
               profile: post.profile!,

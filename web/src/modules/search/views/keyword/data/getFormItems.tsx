@@ -47,6 +47,7 @@ placeholder: t('search.KeywordFields.keyword'),
         placeholder: t('search.KeywordFields.icon'),
         dictName: 'search-keyword-icon',
         filterable: true,
+clearable: true, 
         onChange: (value: string) => {
           // 当选择图标时，如果颜色为空，自动填充字典中的默认颜色
           if (!model.color && value) {
@@ -90,13 +91,12 @@ placeholder: t('search.KeywordFields.keyword'),
     {
       label: () => t('search.KeywordFields.source'), // '来源'
       prop: 'source',
-      render: () =>  <ma-dict-select
-        dictName="search-keyword-source"
-        filterable={true}  // 支持搜索
-      />,
+      render: () => <ma-dict-select dictName="search-keyword-source" />,
       renderProps: {
-placeholder: t('search.KeywordFields.source'),
-            },
+        filterable: true,
+clearable: true, 
+        placeholder: t('search.KeywordFields.source'),
+      },
       cols: { lg: 12, md: 24 },
     },
     {

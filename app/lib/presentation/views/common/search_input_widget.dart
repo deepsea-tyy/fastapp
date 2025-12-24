@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/views/home/search_result_screen.dart';
 
 /// 通用搜索结果项模型
 class SearchResultItem {
@@ -32,6 +33,7 @@ class SearchInputWidget extends StatefulWidget {
   final void Function(SearchResultItem item)? onItemTap;
   final VoidCallback? onTap;
   final VoidCallback? onBack;
+  final void Function(String keyword)? onNavigateToSearch;
   final EdgeInsets? margin;
   final double? height;
   final double? borderRadius;
@@ -48,6 +50,7 @@ class SearchInputWidget extends StatefulWidget {
     this.onItemTap,
     this.onTap,
     this.onBack,
+    this.onNavigateToSearch,
     this.margin,
     this.height,
     this.borderRadius,
@@ -60,25 +63,18 @@ class SearchInputWidget extends StatefulWidget {
 }
 
 class _SearchInputWidgetState extends State<SearchInputWidget> {
-  // 常量定义
-  static const double _overlayMargin = 16.0;
-  static const double _overlayGap = 8.0;
-  static const double _maxResultHeight = 300.0;
-  static const int _overlayCloseDelay = 200;
-
-  // 控制器和状态
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   final GlobalKey _searchBarKey = GlobalKey();
 
   List<SearchResultItem> _results = [];
   bool _isSearching = false;
-  bool _showResults = false;
   OverlayEntry? _overlayEntry;
 
   bool get _isNavigationMode => widget.onTap != null;
   bool get _hasInput => _controller.text.trim().isNotEmpty;
-  bool get _shouldShowOverlay => _hasInput && (_showResults || !_isSearching);
+  bool get _shouldShowOverlay => _hasInput;
+  bool _isEnglishOrNumber(String text) => RegExp(r'^[a-zA-Z0-9]+$').hasMatch(text);
 
   @override
   void initState() {
@@ -108,16 +104,26 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
   }
 
   void _onTextChanged() {
-    setState(() {});
-    _shouldShowOverlay ? _updateOverlay() : _removeOverlay();
+    final keyword = _controller.text.trim();
+
+    if (keyword.isEmpty) {
+      setState(() => _results = []);
+      _removeOverlay();
+      return;
+    }
+
+    if (_isEnglishOrNumber(keyword)) {
+      _performSearch(keyword);
+    } else {
+      setState(() => _results = []);
+    }
+    _updateOverlay();
   }
 
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
-      Future.delayed(const Duration(milliseconds: _overlayCloseDelay), () {
-        if (mounted && !_focusNode.hasFocus) {
-          _removeOverlay();
-        }
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && !_focusNode.hasFocus) _removeOverlay();
       });
     }
   }
@@ -145,49 +151,41 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
   }
 
   Widget _buildOverlay(Offset offset, Size size, Size screenSize) {
+    final keyword = _controller.text.trim();
+
     return Stack(
       children: [
-        _buildOverlayMask(offset, size, screenSize),
-        _buildOverlayContent(offset, size, screenSize.width),
+        Positioned(
+          top: offset.dy + size.height,
+          width: screenSize.width,
+          height: screenSize.height - (offset.dy + size.height),
+          child: GestureDetector(
+            onTap: _closeOverlay,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          top: offset.dy + size.height + 8,
+          width: screenSize.width - 32,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            child: _isEnglishOrNumber(keyword)
+                ? _buildEnglishSearchList()
+                : _buildSearchSuggestion(),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildOverlayMask(Offset offset, Size size, Size screenSize) {
-    return Positioned(
-      top: offset.dy + size.height,
-      width: screenSize.width,
-      height: screenSize.height - (offset.dy + size.height),
-      child: GestureDetector(
-        onTap: () {
-          _removeOverlay();
-          _focusNode.unfocus();
-        },
-        child: Container(color: Colors.transparent),
-      ),
-    );
-  }
-
-  Widget _buildOverlayContent(Offset offset, Size size, double screenWidth) {
-    return Positioned(
-      left: _overlayMargin,
-      top: offset.dy + size.height + _overlayGap,
-      width: screenWidth - _overlayMargin * 2,
-      child: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
-        child: _showResults ? _buildResultsList() : _buildSearchSuggestion(),
-      ),
-    );
-  }
-
   Future<void> _performSearch(String keyword) async {
-    if (widget.onSearch == null) return;
+    if (widget.onSearch == null) {
+      return;
+    }
 
-    setState(() {
-      _isSearching = true;
-      _showResults = true;
-    });
+    setState(() => _isSearching = true);
 
     try {
       final results = await widget.onSearch!(keyword);
@@ -196,7 +194,6 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
           _results = results;
           _isSearching = false;
         });
-        _updateOverlay();
       }
     } catch (e) {
       if (mounted) {
@@ -204,26 +201,61 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
           _results = [];
           _isSearching = false;
         });
-        _updateOverlay();
       }
     }
+
+    if (mounted) _updateOverlay();
   }
 
   void _clearSearch() {
     _controller.clear();
-    setState(() {
-      _results = [];
-      _showResults = false;
-    });
+    setState(() => _results = []);
     _removeOverlay();
   }
 
   void _handleItemTap(SearchResultItem item) {
+    _closeOverlay();
     widget.onItemTap?.call(item);
-    setState(() => _showResults = false);
+  }
+
+  void _closeOverlay() {
     _removeOverlay();
     _focusNode.unfocus();
   }
+
+  void _navigateToSearchResult(String keyword) {
+    _closeOverlay();
+
+    // 调用回调通知父组件（例如保存历史记录）
+    widget.onNavigateToSearch?.call(keyword);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultScreen(initialKeyword: keyword),
+      ),
+    );
+  }
+
+  void _handleSubmit(String value) {
+    var keyword = value.trim();
+
+    // 如果输入为空但有预览关键词（不是默认的"搜索"），使用预览关键词
+    if (keyword.isEmpty && _isValidHintKeyword) {
+      keyword = widget.hintText!;
+    }
+
+    if (keyword.isEmpty) return;
+
+    _isEnglishOrNumber(keyword)
+        ? _navigateToSearchResult(keyword)
+        : _handleItemTap(SearchResultItem(id: keyword, title: keyword));
+  }
+
+  bool get _isValidHintKeyword =>
+      widget.hintText != null &&
+      widget.hintText != '搜索' &&
+      widget.hintText!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -263,11 +295,15 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
   }
 
   Widget _buildSearchInput({required bool enabled, bool withPadding = false}) {
+    final padding = withPadding
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+        : null;
+
     return Container(
       key: _searchBarKey,
       height: widget.height ?? 40,
       margin: widget.showBackButton ? null : (widget.margin ?? const EdgeInsets.fromLTRB(16, 16, 16, 0)),
-      padding: withPadding ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10) : null,
+      padding: padding,
       decoration: BoxDecoration(
         color: widget.backgroundColor ?? Colors.grey.shade100,
         borderRadius: BorderRadius.circular(widget.borderRadius ?? 8),
@@ -281,181 +317,187 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
             color: widget.iconColor ?? Colors.grey.shade600,
           ),
           const SizedBox(width: 8),
-          Expanded(child: _buildTextField(enabled, withPadding)),
-          _buildTrailingWidget(enabled, withPadding),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: enabled,
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: widget.hintText ?? '搜索',
+                hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: withPadding ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              ),
+              onSubmitted: enabled ? _handleSubmit : null,
+            ),
+          ),
+          if (enabled && _isSearching)
+            Padding(
+              padding: EdgeInsets.only(left: withPadding ? 8 : 0, right: withPadding ? 0 : 12),
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (enabled && _hasInput)
+            IconButton(
+              icon: const Icon(Icons.clear, size: 18),
+              color: Colors.grey,
+              onPressed: _clearSearch,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          else
+            SizedBox(width: withPadding ? 0 : 12),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(bool enabled, bool withPadding) {
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      enabled: enabled,
-      style: const TextStyle(color: Colors.black87, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: widget.hintText ?? '搜索',
-        hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        disabledBorder: InputBorder.none,
-        filled: false,
-        isDense: true,
-        contentPadding: withPadding ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      ),
-      onSubmitted: enabled ? (value) {
-        final keyword = value.trim();
-        if (keyword.isNotEmpty) _performSearch(keyword);
-      } : null,
-    );
-  }
-
-  Widget _buildTrailingWidget(bool enabled, bool withPadding) {
-    if (!enabled) {
-      return const SizedBox(width: 12);
-    }
-
-    if (_isSearching) {
-      return Padding(
-        padding: EdgeInsets.only(left: withPadding ? 8 : 0, right: withPadding ? 0 : 12),
-        child: const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    if (_hasInput) {
-      return IconButton(
-        icon: const Icon(Icons.clear, size: 18),
-        color: Colors.grey,
-        onPressed: _clearSearch,
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-      );
-    }
-
-    return SizedBox(width: withPadding ? 0 : 12);
-  }
-
   Widget _buildSearchSuggestion() {
-    return InkWell(
-      onTap: () => _performSearch(_controller.text.trim()),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.search, size: 20, color: Colors.grey[600]),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _controller.text.trim(),
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-          ],
-        ),
-      ),
+    final keyword = _controller.text.trim();
+    return _buildSearchItem(
+      text: keyword,
+      onTap: () {
+        _handleItemTap(SearchResultItem(
+          id: keyword,
+          title: keyword,
+        ));
+      },
     );
   }
 
-  Widget _buildResultsList() {
-    if (_results.isEmpty && !_isSearching) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          '无搜索结果',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          textAlign: TextAlign.center,
-        ),
-      );
+  Widget _buildEnglishSearchList() {
+    final keyword = _controller.text.trim();
+
+    // 正在搜索或无结果：只显示"搜索 XXX"
+    if (_isSearching || _results.isEmpty) {
+      return _buildSearchAllItem(keyword);
     }
+
+    // 有结果：显示最多5个结果 + "搜索 XXX"
+    final displayResults = _results.take(5).toList();
 
     return Container(
-      constraints: const BoxConstraints(maxHeight: _maxResultHeight),
+      constraints: const BoxConstraints(maxHeight: 500),
       child: ListView.separated(
         shrinkWrap: true,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _results.length,
+        itemCount: displayResults.length + 1,
         separatorBuilder: (_, __) => Divider(
           height: 1,
           color: Colors.grey[200],
           indent: 16,
           endIndent: 16,
         ),
-        itemBuilder: (_, index) => _buildResultItem(_results[index]),
+        itemBuilder: (_, index) {
+          return index < displayResults.length
+              ? _buildResultItem(displayResults[index])
+              : _buildSearchAllItem(keyword);
+        },
       ),
     );
   }
 
-  Widget _buildResultItem(SearchResultItem item) {
+  Widget _buildSearchAllItem(String keyword) {
+    return _buildSearchItem(
+      text: '搜索 $keyword',
+      onTap: () {
+        _navigateToSearchResult(keyword);
+      },
+    );
+  }
+
+  Widget _buildSearchItem({required String text, required VoidCallback onTap}) {
     return InkWell(
-      onTap: () => _handleItemTap(item),
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            if (item.imageUrl != null) ...[
-              _buildResultImage(item.imageUrl!),
-              const SizedBox(width: 12),
-            ],
-            Expanded(child: _buildResultText(item)),
-            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+            Icon(Icons.search, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildResultImage(String imageUrl) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          width: 40,
-          height: 40,
-          color: Colors.grey[200],
-          child: const Icon(Icons.image, size: 20, color: Colors.grey),
+  Widget _buildResultItem(SearchResultItem item) {
+    return InkWell(
+      onTap: () {
+        _handleItemTap(item);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            if (item.imageUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item.imageUrl!,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 40,
+                    height: 40,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image, size: 20, color: Colors.grey),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (item.subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle!,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildResultText(SearchResultItem item) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          item.title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if (item.subtitle != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            item.subtitle!,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ],
     );
   }
 }
@@ -509,9 +551,6 @@ class SearchBarWithCancel extends StatelessWidget {
                       focusNode: focusNode,
                       decoration: InputDecoration(
                         border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
                         hintText: hintText ?? '搜索',
                         hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         isDense: true,

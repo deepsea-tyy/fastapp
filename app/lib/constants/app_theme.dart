@@ -111,6 +111,13 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: seedColor,
         brightness: brightness,
+        // 显式设置 surface 颜色，避免使用自动生成的带粉色调的颜色
+        surface: cardBgColor,
+        surfaceContainerLowest: cardBgColor,
+        surfaceContainerLow: cardBgColor,
+        surfaceContainer: cardBgColor,
+        surfaceContainerHigh: cardBgColor,
+        surfaceContainerHighest: cardBgColor,
       ),
       scaffoldBackgroundColor: scaffoldBgColor,
       dialogBackgroundColor: dialogBgColor,

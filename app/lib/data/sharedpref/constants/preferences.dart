@@ -14,6 +14,9 @@ class Preferences {
   static const String is_dark_mode = "is_dark_mode";
   static const String current_language = "current_language";
 
+  // 搜索相关
+  static const String search_history = "search_history";
+
   // 存储类别定义
   static const List<String> authKeys = [
     auth_token,

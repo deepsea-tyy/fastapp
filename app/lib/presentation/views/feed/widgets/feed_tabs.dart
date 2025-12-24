@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 信息流顶部标签栏组件
 ///
@@ -32,24 +33,28 @@ class _FeedTabsState extends State<FeedTabs> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundTheme = context.backgroundTheme;
+
     return Container(
-      color: Colors.white,
+      color: backgroundTheme.card,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 9.0),
       child: Row(
         children: List.generate(
           _tabs.length,
           (index) => Padding(
             padding: EdgeInsets.only(right: index < _tabs.length - 1 ? 20.0 : 0),
-            child: _buildTabItem(index),
+            child: _buildTabItem(context, index),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTabItem(int index) {
+  Widget _buildTabItem(BuildContext context, int index) {
     final isSelected = _selectedIndex == index;
     final hasNotification = _hasNotification[index];
+    final textTheme = context.textTheme;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: () {
@@ -72,7 +77,7 @@ class _FeedTabsState extends State<FeedTabs> {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? Colors.black87 : Colors.black54,
+                  color: isSelected ? textTheme.primary : textTheme.secondary,
                   height: 1.2,
                 ),
               ),
@@ -83,8 +88,8 @@ class _FeedTabsState extends State<FeedTabs> {
                   child: Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: Colors.orange,
+                    decoration: BoxDecoration(
+                      color: primaryColor,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -98,7 +103,7 @@ class _FeedTabsState extends State<FeedTabs> {
             child: isSelected
                 ? Container(
                     decoration: BoxDecoration(
-                      color: Colors.orange,
+                      color: primaryColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   )

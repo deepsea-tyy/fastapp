@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
 import 'package:fastapp/domain/entity/user/user_profile.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 新闻项组件
 ///
@@ -48,10 +49,11 @@ class NewsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = context.textTheme;
+
     return InkWell(
       onTap: onTap ?? () => _navigateToDetail(context),
       child: Container(
-        color: Colors.white,
         padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0, bottom: 12.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +68,7 @@ class NewsItem extends StatelessWidget {
                     width: 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
+                      color: textTheme.hint,
                       shape: BoxShape.rectangle,
                       borderRadius: BorderRadius.circular(1),
                     ),
@@ -78,10 +80,10 @@ class NewsItem extends StatelessWidget {
                       width: 1,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: textTheme.hint.withValues(alpha: 0.5),
                         border: Border(
                           left: BorderSide(
-                            color: Colors.grey.shade300,
+                            color: textTheme.hint.withValues(alpha: 0.5),
                             width: 1,
                             style: BorderStyle.solid,
                           ),
@@ -101,16 +103,16 @@ class NewsItem extends StatelessWidget {
                     time,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: textTheme.hint,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     title ?? '',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: textTheme.primary,
                       height: 1.4,
                     ),
                   ),

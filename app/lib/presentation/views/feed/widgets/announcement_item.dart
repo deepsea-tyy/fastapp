@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
 import 'package:fastapp/domain/entity/user/user_profile.dart';
+import 'package:fastapp/core/theme/app_theme_extension.dart';
 
 /// 公告项组件
 ///
@@ -46,17 +47,18 @@ class AnnouncementItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = context.textTheme;
+
     return InkWell(
       onTap: onTap ?? () => _navigateToDetail(context),
       child: Container(
-        color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               Icons.campaign,
-              color: Colors.grey.shade700,
+              color: textTheme.secondary,
               size: 24,
             ),
             const SizedBox(width: 12),
@@ -66,10 +68,10 @@ class AnnouncementItem extends StatelessWidget {
                 children: [
                   Text(
                     title ?? '',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: textTheme.primary,
                       height: 1.4,
                     ),
                   ),
@@ -78,7 +80,7 @@ class AnnouncementItem extends StatelessWidget {
                     timestamp,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: textTheme.hint,
                     ),
                   ),
                 ],
