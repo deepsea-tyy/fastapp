@@ -536,6 +536,59 @@ class MenuInit20251017 extends Seeder
                     ],
                 ],
             ],
+            [
+                'name' => 'search:indexs',
+                'path' => '/search/indexs',
+                'component' => 'search/views/indexs/index',
+                'sort' => 103,
+                'meta' => new Meta([
+                    'title' => '搜索索引 - 统一存储可搜索内容',
+                    'i18n' => 'search.Indexs',
+                    'icon' => 'mdi:menu',
+                    'type' => 'M',
+                    'hidden' => 0,
+                    'componentPath' => 'modules/',
+                    'componentSuffix' => '.vue',
+                    'breadcrumbEnable' => 1,
+                    'copyright' => 1,
+                    'cache' => 1,
+                    'affix' => 0,
+                ]),
+                'children' => [
+                    [
+                        'name' => 'search:indexs:list',
+                        'meta' => new Meta([
+                            'title' => 'List',
+                            'type' => 'B',
+                            'i18n' => 'crud.list',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:create',
+                        'meta' => new Meta([
+                            'title' => 'Add',
+                            'type' => 'B',
+                            'i18n' => 'crud.add',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:save',
+                        'meta' => new Meta([
+                            'title' => 'Edit',
+                            'type' => 'B',
+                            'i18n' => 'crud.edit',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:delete',
+                        'meta' => new Meta([
+                            'title' => 'Delete',
+                            'type' => 'B',
+                            'i18n' => 'crud.delete',
+                        ]),
+                    ],
+                ],
+            ],
         ];
     }
 

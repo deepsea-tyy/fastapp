@@ -104,14 +104,14 @@ class GenerateCodeCommand extends Command
             $codeGenerator['target'] = $target;
 
             // 生成后端代码
-            $this->generateModel($codeGenerator, $force);
-            $this->generateRequest($codeGenerator, $force);
-            $this->generateService($codeGenerator, $force);
             $this->generateController($codeGenerator, $force);
-            $this->generateRepository($codeGenerator, $force);
 
             // 根据target参数决定是否生成前端代码
             if ($target !== 'api') {
+                $this->generateRepository($codeGenerator, $force);
+                $this->generateModel($codeGenerator, $force);
+                $this->generateRequest($codeGenerator, $force);
+                $this->generateService($codeGenerator, $force);
                 // 生成前端模板
                 $this->generateForm($codeGenerator, $force);
                 $this->generateFormItems($codeGenerator, $force);

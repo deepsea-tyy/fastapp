@@ -24,4 +24,22 @@ search:
       flash: 闪电图标(快速)
       newReleases: 新品图标
       recommend: 推荐图标
-
+    TargetType:
+      article: 文章
+      feed: 动态
+      activity: 活动
+      news: 资讯
+  Indexs: 搜索索引 - 统一存储可搜索内容
+  IndexsFields:
+    target_type: 内容类型
+    target_id: 内容ID
+    title: 标题
+    keyword: 关键词数组
+    author: 作者/发布者
+    tags: 标签数组
+    extra: 扩展字段JSON
+    weight: 权重
+    view_count: 浏览量
+    status: 状态
+    published_at: 发布时间
+    deleted_at: 删除时间

@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Model\Search;
 
 use Hyperf\DbConnection\Model\Model;
@@ -15,12 +16,11 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $source 来源:1=用户搜索,2=热门推荐,3=系统推荐
  * @property int $sort 排序(数字越大越靠前)
  * @property \Carbon\Carbon $last_searched_at 最后搜索时间
- * @property \Carbon\Carbon $created_at 创建时间
- * @property \Carbon\Carbon $updated_at 更新时间
  */
-class Keyword extends Model
+class SearchKeyword extends Model
 {
-    protected ?string $table = 'keyword';
+    protected ?string $table = 'search_keyword';
+    public bool $timestamps = false;
 
     protected array $fillable = [
         'keyword',
@@ -30,8 +30,6 @@ class Keyword extends Model
         'source',
         'sort',
         'last_searched_at',
-        'created_at',
-        'updated_at',
     ];
 
     protected array $casts = [
@@ -42,8 +40,6 @@ class Keyword extends Model
         'source' => 'integer',
         'sort' => 'integer',
         'last_searched_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
     protected array $hidden = [];
 }

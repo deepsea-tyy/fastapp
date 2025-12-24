@@ -7,6 +7,7 @@ import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
+import 'package:fastapp/presentation/views/common/search_input_widget.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -93,45 +94,12 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-              child: Row(
-                children: [
-                  Icon(Icons.search, size: 20, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _focusNode,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        filled: false,
-                        hintText: '搜索币种/币对/合约',
-                        hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      style: const TextStyle(fontSize: 14, color: Colors.black87),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消', style: TextStyle(fontSize: 14, color: Colors.black87)),
-          ),
-        ],
-      ),
+    return SearchBarWithCancel(
+      controller: _searchController,
+      focusNode: _focusNode,
+      hintText: '搜索币种/币对/合约',
+      onChanged: (_) => setState(() {}),
+      onCancel: () => Navigator.of(context).pop(),
     );
   }
 
@@ -153,11 +121,9 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
           return _buildEmptyState(Icons.search_off, '暂无结果', '请尝试其他关键词');
         }
 
-        return Observer(
-          builder: (_) => ListView.builder(
-            itemCount: results.length,
-            itemBuilder: (context, index) => _buildSearchResultItem(results[index], index),
-          ),
+        return ListView.builder(
+          itemCount: results.length,
+          itemBuilder: (context, index) => _buildSearchResultItem(results[index], index),
         );
       },
     );
@@ -237,8 +203,8 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
 
     // 添加币种
     for (final currency in _marketDataStore.allCurrencies) {
-      if (!processedCurrencySymbols.contains(currency.symbol) && 
-          (_matches(currency.symbol) || _matches(currency.name))) {
+      if (!processedCurrencySymbols.contains(currency.symbol) &&
+          (_matches(currency.symbol) || (currency.name.isNotEmpty && _matches(currency.name)))) {
         results.add(SearchResult(
           type: SearchResultType.currency,
           symbol: currency.symbol,
@@ -265,7 +231,10 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
   Widget _buildSearchResultItem(SearchResult result, int index) {
     final baseCurrency = result.baseCurrency ?? result.symbol;
     final currency = result.currency ?? _marketDataStore.getCurrency(baseCurrency);
-    final logoUrl = currency?.logo != null ? ImageUtils.formatSingleImagePath(currency!.logo) : null;
+    final logo = currency?.logo;
+    final logoUrl = logo != null && logo.isNotEmpty
+        ? ImageUtils.formatSingleImagePath(logo)
+        : null;
     final ticker = result.ticker;
     final hasPrice = ticker != null && !ticker.lastPrice.isNaN && !ticker.lastPrice.isInfinite && ticker.lastPrice > 0;
     final futuresPair = result.futuresPair;
@@ -296,10 +265,7 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 0.5)),
-        ),
+        color: Colors.white,
         child: Row(
           children: [
             Text('${index + 1}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.amber.shade700)),
@@ -331,10 +297,10 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
                               _buildTag('${maxLeverage}x', Colors.orange.shade100, Colors.orange.shade700),
                             ],
                             const SizedBox(width: 8),
-                            _buildTag(typeInfo.label, typeInfo.color.withOpacity(0.1), typeInfo.color),
+                            _buildTag(typeInfo.label, typeInfo.color.withValues(alpha: 0.1), typeInfo.color),
                           ],
                         ),
-                        if (result.type == SearchResultType.currency && result.currency?.name != null)
+                        if (result.type == SearchResultType.currency && result.currency?.name != null && result.currency!.name.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(result.currency!.name, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),

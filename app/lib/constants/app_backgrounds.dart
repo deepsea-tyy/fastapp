@@ -7,17 +7,15 @@ import 'package:fastapp/constants/app_theme.dart';
 class AppBackgrounds {
   AppBackgrounds._();
 
-  // 缓存当前主题配置
-  static ThemeConfig? _currentConfig;
-
-  /// 初始化背景色配置
-  static Future<void> init(AppThemeType themeType) async {
-    _currentConfig = await ThemeConfigManager.loadTheme(themeType.themeId);
-  }
-
   /// 从 BuildContext 获取背景色（推荐）
   static AppBackgroundColors of(BuildContext context) {
     return AppBackgroundColors.fromTheme(Theme.of(context));
+  }
+
+  /// 从主题类型获取背景色
+  static AppBackgroundColors fromThemeType(AppThemeType themeType) {
+    final config = AppTheme.getConfig(themeType);
+    return fromConfig(config);
   }
 
   /// 从主题配置获取背景色

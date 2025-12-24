@@ -5,6 +5,7 @@ import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:fastapp/presentation/views/market/market_search_screen.dart';
 import 'package:fastapp/presentation/views/market/widgets/market_list_item.dart';
+import 'package:fastapp/presentation/views/common/search_input_widget.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -93,31 +94,15 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MarketSearchScreen()),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search, size: 20, color: Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '搜索币种/币对/合约',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-              ),
-            ],
-          ),
-        ),
+    return SearchInputWidget(
+      hintText: '搜索币种/币对/合约',
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      height: 44,
+      borderRadius: 8,
+      backgroundColor: Colors.grey.shade100,
+      iconColor: Colors.grey.shade600,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const MarketSearchScreen()),
       ),
     );
   }
@@ -375,18 +360,6 @@ class _MarketScreenState extends State<MarketScreen> {
         );
       },
     );
-  }
-
-  int _compareTickers(dynamic a, dynamic b) {
-    if (_sortField == null) return 0;
-
-    final result = switch (_sortField) {
-      'name' => (a.symbol ?? '').compareTo(b.symbol ?? ''),
-      'price' => _compareNumbers(a.lastPrice, b.lastPrice),
-      'change' => _compareNumbers(a.changePercent, b.changePercent),
-      _ => 0,
-    };
-    return _sortAscending ? result : -result;
   }
 
   int _compareNumbers(num a, num b) {

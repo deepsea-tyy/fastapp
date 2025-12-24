@@ -95,7 +95,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - config/themes/
 
   fonts:
     - family: ProductSans

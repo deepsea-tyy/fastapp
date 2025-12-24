@@ -24,3 +24,22 @@ search:
       flash: Flash Icon(Quick)
       newReleases: New Releases Icon
       recommend: Recommend Icon
+    TargetType:
+      article: Article
+      feed: Feed
+      activity: Activity
+      news: News
+  Indexs: Indexs
+  IndexsFields:
+    target_type: TargetType
+    target_id: TargetId
+    title: Title
+    keyword: Keyword
+    author: Author
+    tags: Tags
+    extra: Extra
+    weight: Weight
+    view_count: ViewCount
+    status: Status
+    published_at: PublishedAt
+    deleted_at: DeletedAt

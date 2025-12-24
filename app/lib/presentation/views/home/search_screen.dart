@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/search_input_widget.dart';
 
 /// 搜索页面
 class SearchScreen extends StatefulWidget {
@@ -9,7 +10,6 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
   final List<String> _historyRecords = ['TON/USDT'];
 
   final List<Map<String, String?>> _hotSearchItems = [
@@ -27,82 +27,76 @@ class _SearchScreenState extends State<SearchScreen> {
     fontWeight: FontWeight.bold,
   );
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<List<SearchResultItem>> _handleSearch(String keyword) async {
+    // TODO: 实现实际的搜索逻辑
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // 返回模拟数据
+    return [
+      SearchResultItem(
+        id: '1',
+        title: 'TON/USDT',
+        subtitle: 'The Open Network',
+      ),
+      SearchResultItem(
+        id: '2',
+        title: 'BTC/USDT',
+        subtitle: 'Bitcoin',
+      ),
+    ];
+  }
+
+  void _handleItemTap(SearchResultItem item) {
+    // TODO: 处理搜索结果项点击
+    setState(() {
+      if (!_historyRecords.contains(item.title)) {
+        _historyRecords.insert(0, item.title);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHistorySection(),
-            _buildUpcomingSection(),
-            _buildHotSearchSection(),
+            SearchInputWidget(
+              hintText: 'ZEC',
+              prefixIcon: Icons.search,
+              iconColor: Colors.grey.shade600,
+              backgroundColor: Colors.grey[100],
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              autofocus: true,
+              showBackButton: true,
+              onBack: () => Navigator.of(context).pop(),
+              onSearch: _handleSearch,
+              onItemTap: _handleItemTap,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHistorySection(),
+                    _buildUpcomingSection(),
+                    _buildHotSearchSection(),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: _buildSearchBar(),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.black),
-          onPressed: () {
-            // TODO: 清空搜索
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: TextField(
-        controller: _searchController,
-        autofocus: true,
-        style: const TextStyle(color: Colors.black87, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'ZEC',
-          hintStyle: TextStyle(color: Colors.grey[700], fontSize: 14),
-          prefixIcon: const Icon(
-            Icons.local_fire_department,
-            size: 18,
-            color: Colors.deepOrange,
-          ),
-          suffixIcon: const Icon(Icons.search, size: 18, color: Colors.grey),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          isDense: true,
-        ),
-        onSubmitted: (value) {
-          // TODO: 处理搜索
-        },
-      ),
-    );
-  }
-
   Widget _buildHistorySection() {
+    if (_historyRecords.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -119,23 +113,20 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          if (_historyRecords.isEmpty)
-            const Text('暂无历史记录', style: TextStyle(color: Colors.grey))
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _historyRecords.map((record) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(record, style: const TextStyle(fontSize: 14)),
-                );
-              }).toList(),
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _historyRecords.map((record) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(record, style: const TextStyle(fontSize: 14)),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

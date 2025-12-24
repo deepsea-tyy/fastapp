@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fastapp/presentation/views/home/search_screen.dart';
 import 'package:fastapp/utils/routes/routes.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
@@ -14,6 +13,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final String? searchIconName; // Web 端图标名称，如 'material-symbols:local-fire-department'
   final String? searchKeyword; // 搜索关键词文本，如 'MBL'
   final Color? searchIconColor; // 图标颜色，如果为 null 则使用配置的默认颜色
+  final String? searchRoute; // 点击搜索框跳转的路由，默认为 homeSearch
 
   const TopBar({
     super.key,
@@ -22,6 +22,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     this.searchIconName,
     this.searchKeyword,
     this.searchIconColor,
+    this.searchRoute,
   });
 
   @override
@@ -71,11 +72,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
 
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const SearchScreen(),
-          ),
-        );
+        Navigator.of(context).pushNamed(searchRoute ?? Routes.homeSearch);
       },
       borderRadius: BorderRadius.circular(18),
       child: Container(

@@ -24,6 +24,9 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
       renderProps: {
 placeholder: t('search.KeywordFields.keyword'),
             },
+      itemProps: {
+        rules: [{ required: true, message: t('form.pleaseInput', { msg: t('permission.KeywordFields.keyword') }) }],
+      },
       cols: { lg: 12, md: 24 },
     },
     {
