@@ -5,14 +5,14 @@ import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
 import 'package:fastapp/di/service_locator.dart';
 
 /// 公告列表页面
-class AnnouncementScreen extends StatefulWidget {
-  const AnnouncementScreen({super.key});
+class NoticeScreen extends StatefulWidget {
+  const NoticeScreen({super.key});
 
   @override
-  State<AnnouncementScreen> createState() => _AnnouncementScreenState();
+  State<NoticeScreen> createState() => _NoticeScreenState();
 }
 
-class _AnnouncementScreenState extends State<AnnouncementScreen> {
+class _NoticeScreenState extends State<NoticeScreen> {
   final FeedRepository _feedRepository = getIt<FeedRepository>();
   List<FeedArticle> _announcements = [];
   bool _isLoading = true;

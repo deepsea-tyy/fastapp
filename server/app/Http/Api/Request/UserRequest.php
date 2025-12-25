@@ -271,7 +271,12 @@ class UserRequest extends FormRequest
             'setting.feed_msg_at' => 'numeric|in:0,1',
             'setting.feed_msg_content' => 'numeric|in:0,1',
             'setting.feed_msg_frequency' => 'numeric|in:1,2,3',
-            'setting.feed_msg_news' => 'numeric|in:0,1',
+            'setting.zex_msg_marketing' => 'numeric|in:0,1',
+            'setting.zex_msg_trade' => 'numeric|in:0,1',
+            'setting.zex_msg_price' => 'numeric|in:0,1',
+            'setting.zex_msg_account' => 'numeric|in:0,1',
+            'setting.zex_msg_feedback' => 'numeric|in:0,1',
+            'setting.zex_msg_order_trade' => 'numeric|in:0,1',
         ];
     }
 

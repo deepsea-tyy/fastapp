@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/presentation/views/user/message/activity_screen.dart';
-import 'package:fastapp/presentation/views/user/message/announcement_screen.dart';
+import 'package:fastapp/presentation/views/user/message/notice_screen.dart';
 import 'package:fastapp/presentation/views/user/message/message_setting.dart';
-import 'package:fastapp/presentation/views/user/message/account_detail_screen.dart';
+import 'package:fastapp/presentation/views/user/setting/account_activity.dart';
 import 'package:fastapp/data/network/apis/message/message_notify_api.dart';
 import 'package:fastapp/domain/entity/message/unread_statistics.dart';
 import 'package:fastapp/di/service_locator.dart';
@@ -346,7 +346,7 @@ class _MessageScreenState extends State<MessageScreen> {
                             // 跳转到列表页
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const AnnouncementScreen(),
+                                builder: (context) => const NoticeScreen(),
                               ),
                             );
                           },
@@ -392,7 +392,7 @@ class _MessageScreenState extends State<MessageScreen> {
                             // 跳转到列表页
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const AccountDetailScreen(),
+                                builder: (context) => const AccountActivityScreen(),
                               ),
                             );
                           },

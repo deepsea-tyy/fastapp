@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/data/network/apis/user/user_api.dart';
+import 'package:fastapp/presentation/views/common/modern_switch.dart';
+import 'package:fastapp/presentation/views/common/modern_settings_tile.dart';
 
 /// 通知偏好设置页面
 class MessageSettingScreen extends StatefulWidget {
@@ -9,180 +14,153 @@ class MessageSettingScreen extends StatefulWidget {
 }
 
 class _MessageSettingScreenState extends State<MessageSettingScreen> {
+  final UserStore _userStore = getIt<UserStore>();
+  final UserApi _userApi = getIt<UserApi>();
+
   bool _marketingActivities = false;
   bool _transactions = false;
-  bool _priceAlerts = true;
-  bool _account = true;
-  bool _feedbackSuggestions = true;
+  bool _priceAlerts = false;
+  bool _account = false;
+  bool _feedbackSuggestions = false;
+  bool _orderTrade = false;
+
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  /// 从用户信息加载设置
+  void _loadSettings() {
+    final setting = _userStore.currentUser?.profile?.setting;
+    if (setting != null) {
+      setState(() {
+        _marketingActivities = setting['zex_msg_marketing'] == 1;
+        _transactions = setting['zex_msg_trade'] == 1;
+        _priceAlerts = setting['zex_msg_price'] == 1;
+        _account = setting['zex_msg_account'] == 1;
+        _feedbackSuggestions = setting['zex_msg_feedback'] == 1;
+        _orderTrade = setting['zex_msg_order_trade'] == 1;
+      });
+    }
+  }
+
+  /// 更新设置到服务器
+  Future<void> _updateSetting(Map<String, dynamic> updates) async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _userApi.updateProfile(setting: updates);
+    } catch (e) {
+      _loadSettings();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题和描述
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '消息设置',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            _buildToggleItem(
-              context,
-              '营销与活动',
-              _marketingActivities,
-              (value) => setState(() => _marketingActivities = value),
-            ),
-            _buildToggleItem(
-              context,
-              '交易',
-              _transactions,
-              (value) => setState(() => _transactions = value),
-            ),
-            _buildToggleItem(
-              context,
-              '价格提醒',
-              _priceAlerts,
-              (value) => setState(() => _priceAlerts = value),
-            ),
-            _buildToggleItem(
-              context,
-              '账户',
-              _account,
-              (value) => setState(() => _account = value),
-            ),
-            _buildToggleItem(
-              context,
-              '反馈与产品建议',
-              _feedbackSuggestions,
-              (value) => setState(() => _feedbackSuggestions = value),
-            ),
-            _buildNavigationItemWithValue(
-              context,
-              '订单交易推送',
-              '自动订单推送设置',
-              null,
-              onTap: () {
-                // TODO: 跳转到订单交易推送设置
-              },
-            ),
-          ],
+        title: const Text(
+          '消息设置',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+            letterSpacing: -0.3,
+          ),
         ),
+        centerTitle: false,
       ),
-    );
-  }
-
-  /// 构建分组标题
-  Widget _buildSectionHeader(String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14.0,
-          fontWeight: FontWeight.w500,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-
-  /// 构建开关项
-  Widget _buildToggleItem(
-    BuildContext context,
-    String title,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    return ListTile(
-      title: Text(title),
-      trailing: Transform.scale(
-        scale: 0.7,
-        child: Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.amber,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      ),
-    );
-  }
-
-  /// 构建导航项
-  Widget _buildNavigationItem(
-    BuildContext context,
-    String title, {
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
-  }
-
-  /// 构建带值的导航项
-  Widget _buildNavigationItemWithValue(
-    BuildContext context,
-    String title,
-    String? subtitle,
-    String? value, {
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      title: Text(title),
-      subtitle: subtitle != null
-          ? Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+      body: ListView(
         children: [
-          if (value != null) ...[
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const ModernSectionHeader(
+            title: '消息通知',
+            subtitle: '管理各类消息推送设置',
+          ),
+          ModernSettingsGroup(
+            children: [
+              ModernSwitchTile(
+                icon: Icons.campaign_outlined,
+                title: '营销与活动',
+                subtitle: '接收平台的营销活动和推广信息',
+                value: _marketingActivities,
+                onChanged: (value) {
+                  setState(() => _marketingActivities = value);
+                  _updateSetting({'zex_msg_marketing': value ? 1 : 0});
+                },
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          const Icon(Icons.chevron_right),
+              ModernSwitchTile(
+                icon: Icons.swap_horiz,
+                title: '交易',
+                subtitle: '接收交易相关的通知',
+                value: _transactions,
+                onChanged: (value) {
+                  setState(() => _transactions = value);
+                  _updateSetting({'zex_msg_trade': value ? 1 : 0});
+                },
+              ),
+              ModernSwitchTile(
+                icon: Icons.notifications_active_outlined,
+                title: '价格提醒',
+                subtitle: '接收价格变动提醒',
+                value: _priceAlerts,
+                onChanged: (value) {
+                  setState(() => _priceAlerts = value);
+                  _updateSetting({'zex_msg_price': value ? 1 : 0});
+                },
+              ),
+              ModernSwitchTile(
+                icon: Icons.account_circle_outlined,
+                title: '账户',
+                subtitle: '接收账户安全和状态变更通知',
+                value: _account,
+                onChanged: (value) {
+                  setState(() => _account = value);
+                  _updateSetting({'zex_msg_account': value ? 1 : 0});
+                },
+              ),
+              ModernSwitchTile(
+                icon: Icons.feedback_outlined,
+                title: '反馈与产品建议',
+                subtitle: '接收反馈回复和产品更新通知',
+                value: _feedbackSuggestions,
+                onChanged: (value) {
+                  setState(() => _feedbackSuggestions = value);
+                  _updateSetting({'zex_msg_feedback': value ? 1 : 0});
+                },
+              ),
+              ModernSwitchTile(
+                icon: Icons.receipt_long_outlined,
+                title: '订单交易推送',
+                subtitle: '接收订单状态和交易完成通知',
+                value: _orderTrade,
+                onChanged: (value) {
+                  setState(() => _orderTrade = value);
+                  _updateSetting({'zex_msg_order_trade': value ? 1 : 0});
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
         ],
       ),
-      onTap: onTap,
     );
   }
 }
