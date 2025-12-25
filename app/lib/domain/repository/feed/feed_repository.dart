@@ -56,8 +56,13 @@ abstract class FeedRepository {
 
   // ==================== 帖子管理 ====================
 
-  /// 获取帖子详情
+  /// 获取帖子详情（短贴、标题贴）
   Future<FeedPost?> getPostDetail({
+    required int id,
+  });
+
+  /// 获取文章详情（公告、新闻、文章）
+  Future<FeedPost?> getArticleDetail({
     required int id,
   });
 

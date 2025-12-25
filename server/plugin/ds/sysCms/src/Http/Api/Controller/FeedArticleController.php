@@ -16,14 +16,19 @@ use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\QueryParameter;
 use Plugin\Ds\SysCms\Http\Api\Service\FeedService;
+use Plugin\Ds\SysCms\Http\Api\Service\FeedUserFollowService;
+use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\Category;
+use Plugin\Ds\SysCms\Model\FeedCollect;
+use Plugin\Ds\SysCms\Model\FeedLike;
 
 #[HyperfServer(name: 'http')]
 class FeedArticleController extends AbstractController
 {
     public function __construct(
-        private readonly CurrentUser $currentUser,
-        private readonly FeedService $feedService,
+        private readonly CurrentUser           $currentUser,
+        private readonly FeedService           $feedService,
+        private readonly FeedUserFollowService $followService,
     )
     {
         // 设置为API场景
@@ -36,6 +41,7 @@ class FeedArticleController extends AbstractController
         summary: '获取新闻列表',
         tags: ['信息流-文章']
     )]
+    #[QueryParameter(name: 'keyword', description: '搜索关键词', example: '')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
@@ -44,9 +50,10 @@ class FeedArticleController extends AbstractController
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $uid = $this->currentUser->id();
+        $keyword = trim($this->getRequest()->input('keyword', ''));
 
         // 从缓存获取文章ID列表
-        $articleIds = $this->feedService->getCategoryArticleIds('news', $page, $pageSize);
+        $articleIds = $this->feedService->getCategoryArticleIds('news', $page, $pageSize, $keyword);
 
         // 批量获取格式化后的文章（带缓存）
         $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
@@ -63,6 +70,7 @@ class FeedArticleController extends AbstractController
         summary: '获取公告列表',
         tags: ['信息流-文章']
     )]
+    #[QueryParameter(name: 'keyword', description: '搜索关键词', example: '')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
@@ -71,9 +79,10 @@ class FeedArticleController extends AbstractController
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $uid = $this->currentUser->id();
+        $keyword = trim($this->getRequest()->input('keyword', ''));
 
         // 从缓存获取文章ID列表
-        $articleIds = $this->feedService->getCategoryArticleIds('notice', $page, $pageSize);
+        $articleIds = $this->feedService->getCategoryArticleIds('notice', $page, $pageSize, $keyword);
 
         // 批量获取格式化后的文章（带缓存）
         $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
@@ -120,5 +129,78 @@ class FeedArticleController extends AbstractController
         $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
 
         return $this->success(['list' => $list]);
+    }
+
+    #[Get(
+        path: '/api/feed/article/list',
+        operationId: 'getArticleList',
+        summary: '获取文章列表',
+        tags: ['信息流-文章']
+    )]
+    #[QueryParameter(name: 'keyword', description: '搜索关键词', example: '')]
+    #[QueryParameter(name: 'page', description: '页码', example: '1')]
+    #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
+    #[ResultResponse(instance: new Result())]
+    public function list(): Result
+    {
+        $page = $this->getPage();
+        $pageSize = $this->getPageSize();
+        $uid = $this->currentUser->id();
+        $keyword = trim($this->getRequest()->input('keyword', ''));
+        $offset = ($page - 1) * $pageSize;
+
+        // 查询所有已发布的文章
+        $query = Article::query()->where('status', 1);
+
+        // 如果有关键词，进行模糊查询
+        if (!empty($keyword)) {
+            $query->where(function ($q) use ($keyword) {
+                $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
+                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"])
+                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(brief, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
+                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(brief, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"])
+                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(content, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
+                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(content, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"]);
+            });
+        }
+
+        $articleIds = $query->orderByDesc('release_at')
+            ->orderByDesc('id')
+            ->offset($offset)
+            ->limit($pageSize)
+            ->pluck('id')
+            ->toArray();
+
+        // 批量获取格式化后的文章（带缓存）
+        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
+
+        return $this->success(['list' => $list]);
+    }
+
+    #[Get(
+        path: '/api/feed/article/detail',
+        operationId: 'feedArticleDetail',
+        summary: '获取帖子详情',
+        tags: ['信息流-帖子']
+    )]
+    #[QueryParameter(name: 'id', description: '帖子ID', example: '1')]
+    #[ResultResponse(instance: new Result())]
+    public function detail(): Result
+    {
+        $id = (int)$this->getRequest()->input('id');
+        $article = $this->feedService->getArticle($id, $this->getLang());
+
+        if (!$article) {
+            return $this->error();
+        }
+        $this->feedService->incrementViewCount(2, $id);
+        $userId = $this->currentUser->id();
+        if ($userId) {
+            $map['user_id'] = $userId;
+            $article['is_liked'] = FeedLike::query()->where($map)->exists() ? 1 : 0;
+            $article['is_collected'] = FeedCollect::query()->where($map)->exists() ? 1 : 0;
+            $article['is_following'] = $this->followService->isFollowing($userId, $article['created_by']);
+        }
+        return $this->success($article);
     }
 }

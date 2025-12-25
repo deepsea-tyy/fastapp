@@ -264,7 +264,10 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
             label: () => t('crud.remark'), // '备注'
             prop: 'remark',
             render: () => <el-input/>,
-            renderProps: {placeholder: t('crud.remark')},
+            renderProps: {
+                type:'textarea',
+                placeholder: t('crud.remark')
+            },
             cols: { lg: 24, md: 24 },
         },
         {
@@ -300,7 +303,7 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
                 defaultItemValue: {lang: 'zh_CN', text: ''},
                 placeholder: t('form.pleaseInput', {msg: t('article.ArticleFields.brief')}),
             },
-            cols: { lg: 12, md: 24 },
+            cols: { lg: 24, md: 24 },
         },
         {
             label: () => t('article.ArticleFields.content'), // '内容'

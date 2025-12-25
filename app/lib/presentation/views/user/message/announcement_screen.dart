@@ -1,26 +1,81 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/domain/repository/feed/feed_repository.dart';
+import 'package:fastapp/domain/entity/feed/feed_article.dart';
+import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 /// 公告列表页面
-class AnnouncementScreen extends StatelessWidget {
+class AnnouncementScreen extends StatefulWidget {
   const AnnouncementScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final announcements = [
-      {
-        'content': '加入币安钱包链上交易体验赛,瓜分100 BNB奖励!',
-        'time': '19:30:15',
-      },
-      {
-        'content': '币安钱包现已支持创建多个无私钥钱包',
-        'time': '18:00:07',
-      },
-      {
-        'content': '币安合约将下架多个永续合约 (2025-12-05)',
-        'time': '16:14:27',
-      },
-    ];
+  State<AnnouncementScreen> createState() => _AnnouncementScreenState();
+}
 
+class _AnnouncementScreenState extends State<AnnouncementScreen> {
+  final FeedRepository _feedRepository = getIt<FeedRepository>();
+  List<FeedArticle> _announcements = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnnouncements();
+  }
+
+  Future<void> _loadAnnouncements() async {
+    try {
+      final list = await _feedRepository.getAnnouncementList(page: 1);
+
+      if (mounted) {
+        setState(() {
+          _announcements = list;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      debugPrint('加载公告失败: $e');
+    }
+  }
+
+  String _getDisplayContent(FeedArticle article) {
+    if (article.title.isNotEmpty) return article.title;
+    if (article.subtitle?.isNotEmpty == true) return article.subtitle!;
+    if (article.brief?.isNotEmpty == true) return article.brief!;
+    if (article.content?.isNotEmpty == true) return article.content!;
+    return '暂无内容';
+  }
+
+  void _navigateToDetail(FeedArticle article) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FeedDetail(
+          postId: article.id,
+          userId: article.profile?.userId ?? 0,
+          username: article.profile?.nickname ?? article.author ?? '',
+          time: article.getFormattedTime(),
+          content: article.content ?? '',
+          title: article.title,
+          mediaUrls: article.cover,
+          commentCount: article.commentCount,
+          likeCount: article.likeCount,
+          repostCount: 0,
+          shareCount: article.shareCount,
+          avatarAsset: article.profile?.avatar ?? '',
+          isVerified: false,
+          viewCount: article.viewCount,
+          type: 3,
+          isLiked: article.isLiked ?? false,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -49,65 +104,62 @@ class AnnouncementScreen extends StatelessWidget {
                       color: Colors.black87,
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.tune,
-                        color: Colors.grey.shade600,
-                      ),
-                      onPressed: () {
-                        // TODO: 筛选功能
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
                 ],
               ),
             ),
             // 公告列表
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: announcements.length,
-                itemBuilder: (context, index) {
-                  final announcement = announcements[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            announcement['content'] as String,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Colors.black87,
-                            ),
-                          ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _announcements.isEmpty
+                      ? const Center(child: Text('暂无公告'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _announcements.length,
+                          itemBuilder: (context, index) {
+                            final announcement = _announcements[index];
+                            return GestureDetector(
+                              onTap: () => _navigateToDetail(announcement),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        _getDisplayContent(announcement),
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: Text(
+                                        announcement.getFormattedTime(),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Text(
-                            announcement['time'] as String,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ),
           ],
         ),

@@ -31,10 +31,11 @@ class FeedService
 
     // 内容类型
     public const TYPE_POST = 1;        // 帖子
-    public const TYPE_ARTICLE = 2;     // 文章（FeedPost type=2）
+    public const TYPE_POST_ARTICLE = 2;     // 标题贴（FeedPost type=2）
     public const TYPE_NOTICE = 3;      // 公告
     public const TYPE_NEWS = 4;        // 新闻
     public const TYPE_COMMENT = 5;     // 评论（用于点赞）
+    public const TYPE_ARTICLE = 6;        // 新闻
 
     // ==================== 帖子查询 ====================
 
@@ -75,12 +76,10 @@ class FeedService
     }
 
     /**
-     * 获取文章详情（存储原始数据）
+     * 获取标题贴详情（存储原始数据）
      *
-     * 注意：此方法返回的是原始的多语言JSON数据
-     * 使用 getArticleFormatted() 获取格式化后的数据
      */
-    public function getArticle(int $id): array
+    public function getArticle(int $id, string $lang): array
     {
         $article = Article::query()
             ->where('id', $id)
@@ -91,15 +90,14 @@ class FeedService
             return [];
         }
 
-        // 存储原始数据（包含多语言JSON）
+
         return [
             'id' => $article->id,
             'profile' => self::getProfile($article->created_by),
-            'title' => $article->title ?? [],
-            'subtitle' => $article->subtitle ?? [],
-            'brief' => $article->brief ?? [],
-            'content' => $article->content ?? [],
-            'cover' => $article->cover ?? [],
+            'title' => Tools::formatLang($article->title ?? [], $lang),
+            'subtitle' => Tools::formatLang($article->subtitle ?? [], $lang),
+            'content' => Tools::formatLang($article->content ?? [], $lang),
+            'cover' => Tools::formatLang($article->cover ?? [], $lang),
             'author' => $article->author ?? '',
             'view_count' => $article->view_count ?? 0,
             'like_count' => $article->like_count ?? 0,
@@ -107,46 +105,15 @@ class FeedService
             'share_count' => $article->share_count ?? 0,
             'collect_count' => $article->collect_count ?? 0,
             'created_at' => $article->created_at->toDateTimeString(),
-        ];
-    }
-
-    /**
-     * 获取格式化后的文章详情（支持多语言）
-     *
-     * @param int $id 文章ID
-     * @param int $userId 用户ID（用于获取用户语言偏好）
-     * @return array|null
-     */
-    public function getArticleFormatted(int $id, int $userId = 0): ?array
-    {
-        $article = $this->getArticle($id);
-
-        if (empty($article)) {
-            return null;
-        }
-
-        return [
-            'id' => $article['id'],
-            'title' => Tools::formatLang($article['title'] ?? [], $userId),
-            'subtitle' => Tools::formatLang($article['subtitle'] ?? [], $userId),
-            'brief' => Tools::formatLang($article['brief'] ?? [], $userId),
-            'content' => Tools::formatLang($article['content'] ?? [], $userId),
-            'cover' => Tools::formatLang($article['cover'] ?? [], $userId),
-            'author' => $article['author'] ?? '',
-            'view_count' => $article['view_count'] ?? 0,
-            'like_count' => $article['like_count'] ?? 0,
-            'comment_count' => $article['comment_count'] ?? 0,
-            'share_count' => $article['share_count'] ?? 0,
-            'collect_count' => $article['collect_count'] ?? 0,
-            'created_at' => $article['created_at'] ?? '',
+            'created_by' => $article->created_by,
         ];
     }
 
 
     /**
-     * 批量获取格式化后的文章列表
+     * 批量获取格式化后的标题贴列表
      *
-     * @param array $articleIds 文章ID数组
+     * @param array $articleIds 标题贴ID数组
      * @param int $userId 用户ID（用于多语言格式化）
      * @return array
      */
@@ -156,7 +123,7 @@ class FeedService
             return [];
         }
 
-        // 批量查询文章（避免N+1问题）
+        // 批量查询标题贴（避免N+1问题）
         $articles = Article::query()
             ->whereIn('id', $articleIds)
             ->where('status', 1)
@@ -195,9 +162,10 @@ class FeedService
      * @param string $categoryCode 分类代码（news/notice/helpManual等）
      * @param int $page 页码
      * @param int $pageSize 每页数量
+     * @param string $keyword 搜索关键词
      * @return array
      */
-    public function getCategoryArticleIds(string $categoryCode, int $page = 1, int $pageSize = 20): array
+    public function getCategoryArticleIds(string $categoryCode, int $page = 1, int $pageSize = 20, string $keyword = ''): array
     {
         $offset = ($page - 1) * $pageSize;
 
@@ -210,11 +178,26 @@ class FeedService
             return [];
         }
 
-        // 查询文章ID列表
-        return \Plugin\Ds\SysCms\Model\CategoryCorrelation::query()
+        // 查询标题贴ID列表
+        $query = \Plugin\Ds\SysCms\Model\CategoryCorrelation::query()
             ->where('type', self::TYPE_POST)
-            ->where('category_id', $categoryId)
-            ->offset($offset)
+            ->where('category_id', $categoryId);
+
+        // 如果有关键词，关联Article表进行模糊查询
+        if (!empty($keyword)) {
+            $query->join('article', 'category_correlation.data_id', '=', 'article.id')
+                ->where('article.status', 1)
+                ->where(function ($q) use ($keyword) {
+                    $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.title, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
+                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.title, '$.\"en\"')) LIKE ?", ["%{$keyword}%"])
+                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.brief, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
+                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.brief, '$.\"en\"')) LIKE ?", ["%{$keyword}%"])
+                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.content, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
+                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.content, '$.\"en\"')) LIKE ?", ["%{$keyword}%"]);
+                });
+        }
+
+        return $query->offset($offset)
             ->limit($pageSize)
             ->orderByDesc('data_id')
             ->pluck('data_id')
@@ -222,7 +205,7 @@ class FeedService
     }
 
     /**
-     * 获取指定分类ID的文章ID列表
+     * 获取指定分类ID的标题贴ID列表
      *
      * @param int $categoryId 分类ID
      * @return array
@@ -341,10 +324,10 @@ class FeedService
     {
         Coroutine::create(function () use ($targetType, $targetId) {
             // 使用数据库原子操作更新计数
-            if ($targetType === self::TYPE_POST || $targetType === self::TYPE_ARTICLE) {
-                // 帖子/文章
+            if ($targetType === self::TYPE_POST || $targetType === self::TYPE_POST_ARTICLE) {
+                // 帖子/标题贴
                 FeedPost::query()->where('id', $targetId)->increment('view_count');
-            } elseif ($targetType === self::TYPE_NOTICE || $targetType === self::TYPE_NEWS) {
+            } elseif ($targetType === self::TYPE_NOTICE || $targetType === self::TYPE_NEWS || $targetType === self::TYPE_ARTICLE) {
                 // 公告/新闻
                 Article::query()->where('id', $targetId)->increment('view_count');
             }
@@ -454,7 +437,6 @@ class FeedService
         return CurrentUser::baseInfo($userId);
     }
 
-    // ==================== 信息流列表查询 ====================
     public static function formatData(FeedPost $post): array
     {
         return [
@@ -476,12 +458,21 @@ class FeedService
 
     /**
      * 获取信息流列表
-     * 合并帖子和文章，按时间倒序排列
+     * 合并帖子和标题贴，按时间倒序排列
      */
-    public function getFeedList(string $filter, int $page = 1, int $pageSize = 20): array
+    public function getFeedList(string $filter, int $page = 1, int $pageSize = 20, string $keyword = ''): array
     {
         $offset = ($page - 1) * $pageSize;
         $query = FeedPost::query()->where(['status' => 1, 'audit_status' => 1]);
+
+        // 如果有关键词，进行模糊查询
+        if (!empty($keyword)) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', "%{$keyword}%")
+                    ->orWhere('content', 'like', "%{$keyword}%");
+            });
+        }
+
         if ($filter == 'latest') $query->orderByDesc('id');
         elseif ($filter == 'top') $query->orderByDesc('is_top');
         elseif ($filter == 'hot') $query->orderByDesc('is_hot');
@@ -492,39 +483,6 @@ class FeedService
     }
 
     // ==================== 批量操作 ====================
-
-    /**
-     * 批量获取内容详情
-     *
-     * @param array $items 格式: [['type' => TYPE_POST, 'id' => 1], ...]
-     * @param int $userId 用户ID（用于文章多语言格式化）
-     * @return array
-     */
-    public function batchGetContents(array $items, int $userId = 0): array
-    {
-        $result = [];
-
-        foreach ($items as $item) {
-            $type = $item['type'];
-            $id = $item['id'];
-
-            if ($type === self::TYPE_POST || $type === self::TYPE_ARTICLE) {
-                // 帖子/文章
-                $post = $this->getPost($id);
-                if (!empty($post)) {
-                    $result[] = $post;
-                }
-            } elseif ($type === self::TYPE_NOTICE || $type === self::TYPE_NEWS) {
-                // 公告/新闻
-                $article = $this->getArticleFormatted($id, $userId);
-                if ($article !== null) {
-                    $result[] = $article;
-                }
-            }
-        }
-
-        return $result;
-    }
 
     public static function readMessage(int $userId, $feed_type): void
     {

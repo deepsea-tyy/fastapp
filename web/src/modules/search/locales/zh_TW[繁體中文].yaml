@@ -31,10 +31,11 @@ search:
       news: 資訊
   Indexs: 搜索索引 - 统一存储可搜索内容
   IndexsFields:
-    target_type: 内容类型
-    target_id: 内容ID
-    title: 标题
-    keyword: 关键词数组
-    tags: 标签数组
-    weight: 权重
-    last_at: 最新时间
+    target_type: 內容類型
+    target_id: 內容ID
+    title: 標題
+    keyword: 關鍵詞數組
+    tags: 標籤數組
+    weight: 權重
+    click_count: 點擊量
+    last_at: 最新時間

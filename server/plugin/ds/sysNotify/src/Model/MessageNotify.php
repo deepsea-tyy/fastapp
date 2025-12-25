@@ -14,7 +14,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property array $content 通知内容
  * @property int $type 通知类型:1-全局,2-个人
  * @property int $user_id 用户ID 全局通知为0
- * @property int $notify_type 通知分类:1-系统通知,2-业务通知,3-其他
+ * @property int $notify_type 通知分类:1-公告,2-业务通知(活动等),3-账号,4-广场,5-资金
  * @property string $link 跳转链接
  * @property int $created_by 创建者
  * @property int $updated_by 更新者

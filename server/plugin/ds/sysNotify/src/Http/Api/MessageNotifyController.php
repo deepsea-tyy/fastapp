@@ -32,8 +32,10 @@ class MessageNotifyController extends AbstractController
 {
     public function __construct(
         private readonly MessageNotifyService $service,
-        private readonly CurrentUser $currentUser
-    ) {}
+        private readonly CurrentUser          $currentUser
+    )
+    {
+    }
 
     /**
      * 消息列表接口
@@ -59,7 +61,7 @@ class MessageNotifyController extends AbstractController
 
         // 验证 notify_type 参数
         if (isset($params['notify_type'])) {
-            $notifyType = (int) $params['notify_type'];
+            $notifyType = (int)$params['notify_type'];
             $validNotifyTypes = [1, 2, 3]; // 1-系统通知,2-业务通知,3-其他
             if (!in_array($notifyType, $validNotifyTypes, true)) {
                 return $this->error('通知分类参数错误');
@@ -102,8 +104,8 @@ class MessageNotifyController extends AbstractController
             return $this->error('参数不能为空');
         }
 
-        $notifyType = (int) $notifyType;
-        $notifyId = (int) $notifyId;
+        $notifyType = (int)$notifyType;
+        $notifyId = (int)$notifyId;
 
         if (!in_array($notifyType, [1, 2, 3], true)) {
             return $this->error('通知分类参数错误');
@@ -113,7 +115,7 @@ class MessageNotifyController extends AbstractController
             return $this->error('消息ID参数错误');
         }
 
-        $this->service->updateReadStatus($userId, $notifyType, $notifyId);
+        $this->service->read($userId, $notifyType, $notifyId);
         return $this->success([], '更新成功');
     }
 
@@ -133,5 +135,49 @@ class MessageNotifyController extends AbstractController
         $userId = $this->currentUser->id();
         $data = $this->service->getUnreadStatistics($userId);
         return $this->success($data);
+    }
+
+    /**
+     * 总未读数接口
+     */
+    #[Get(
+        path: '/api/sysNotify/unread-total',
+        operationId: 'ApiMessageNotifyUnreadTotal',
+        summary: '总未读数',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['消息通知'],
+    )]
+    #[ResultResponse(instance: new Result())]
+    public function unreadTotal(): Result
+    {
+        $userId = $this->currentUser->id();
+        $statistics = $this->service->getUnreadStatistics($userId);
+        return $this->success(['total' => $statistics['total']]);
+    }
+
+    /**
+     * 清除未读消息接口
+     */
+    #[Post(
+        path: '/api/sysNotify/clear-unread',
+        operationId: 'ApiMessageNotifyClearUnread',
+        summary: '清除未读消息',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['消息通知'],
+    )]
+    #[RequestBody(
+        content: new JsonContent(
+            properties: [
+                new OA\Property(property: 'notify_type', description: '通知分类:1-系统通知,2-业务通知,3-其他。不传则清除所有分类', type: 'integer', example: 1),
+            ],
+            example: '{"notify_type": 1}'
+        )
+    )]
+    #[ResultResponse(instance: new Result())]
+    public function clearUnread(Request $request): Result
+    {
+        $userId = $this->currentUser->id();
+        $this->service->clearAllUnread($userId);
+        return $this->success([], '清除成功');
     }
 }

@@ -37,6 +37,12 @@ class FeedPost {
   /// 标题（可选）
   final String? title;
 
+  /// 副标题（可选）
+  final String? subtitle;
+
+  /// 简介（可选）
+  final String? brief;
+
   /// 内容
   final String? content;
 
@@ -110,7 +116,7 @@ class FeedPost {
   @JsonKey(name: 'created_at')
   final String? createdAt;
 
-  /// 帖子类型：1帖子 2文章
+  /// 帖子类型：1短贴 2标题贴
   final int? type;
 
   /// 帖子状态：0草稿 1已发布 2已删除
@@ -125,6 +131,8 @@ class FeedPost {
     this.profile,
     this.contentType,
     this.title,
+    this.subtitle,
+    this.brief,
     this.content,
     this.images,
     this.videos,
@@ -163,6 +171,8 @@ class FeedPost {
     UserProfile? profile,
     int? contentType,
     String? title,
+    String? subtitle,
+    String? brief,
     String? content,
     List<String>? images,
     List<String>? videos,
@@ -194,6 +204,8 @@ class FeedPost {
       profile: profile ?? this.profile,
       contentType: contentType ?? this.contentType,
       title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      brief: brief ?? this.brief,
       content: content ?? this.content,
       images: images ?? this.images,
       videos: videos ?? this.videos,

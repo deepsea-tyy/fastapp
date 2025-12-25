@@ -5,10 +5,12 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Repository;
 
+use App\Common\Tools;
 use App\Repository\IRepository;
 use Hyperf\Collection\Arr;
 use Hyperf\Collection\Collection;
 use Hyperf\Database\Model\Builder;
+use Plugin\Ds\SysCms\Event\ArticleEvent;
 use Plugin\Ds\SysCms\Model\Article as Model;
 use Plugin\Ds\SysCms\Model\CategoryCorrelation;
 
@@ -43,6 +45,7 @@ class ArticleRepository extends IRepository
         unset($data['category_id']);
         $md = parent::create($data);
         $this->syncCategories($md->id, $categoryIds);
+        Tools::eventDispatcher(new ArticleEvent($md->id, $categoryIds ?? []));
         return $md;
     }
 
@@ -52,14 +55,25 @@ class ArticleRepository extends IRepository
         if ($s) {
             $this->syncCategories($id, $data['category_id'] ?? []);
         }
+        Tools::eventDispatcher(new ArticleEvent($id, $data['category_id'] ?? []));
         return $s;
     }
 
     public function deleteById(mixed $id, array $where = []): int
     {
+        $id = is_array($id) ? $id : [$id];
         $this->deleteCategoryRelations($id);
-
-        return parent::deleteById($id);
+        $s = parent::deleteById($id);
+        $res = CategoryCorrelation::query()
+            ->whereIn('data_id', $id)
+            ->where('type', 1)
+            ->get()->mapToGroups(function ($item) {
+                return [$item['data_id'] => $item->category_id];
+            })->toArray();
+        foreach ($id as $v) {
+            Tools::eventDispatcher(new ArticleEvent($v, $res[$v] ?? []));
+        }
+        return $s;
     }
 
     /**
@@ -67,7 +81,7 @@ class ArticleRepository extends IRepository
      */
     private function syncCategories(int $articleId, array $categoryIds): void
     {
-        $this->deleteCategoryRelations($articleId);
+        $this->deleteCategoryRelations([$articleId]);
 
         if (!empty($categoryIds)) {
             $insertData = [];
@@ -85,10 +99,10 @@ class ArticleRepository extends IRepository
     /**
      * 删除分类关联
      */
-    private function deleteCategoryRelations(int $articleId): void
+    private function deleteCategoryRelations(array $articleId): void
     {
         CategoryCorrelation::query()
-            ->where('data_id', $articleId)
+            ->whereIn('data_id', $articleId)
             ->where('type', 1)
             ->delete();
     }

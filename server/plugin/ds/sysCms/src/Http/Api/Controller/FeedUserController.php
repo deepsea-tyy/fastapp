@@ -199,9 +199,9 @@ class FeedUserController extends AbstractController
 
                 // 更新帖子作者的总点赞数统计
                 if ($increment > 0) {
-                    $this->followService->incrementUserLikeCount($post->user_id);
+                    $this->followService->updateStatsCount($post->user_id, 'total_likes', 1);
                 } else {
-                    $this->followService->decrementUserLikeCount($post->user_id);
+                    $this->followService->updateStatsCount($post->user_id, 'total_likes', -1);
                 }
                 return FeedPost::query()->where('id', $targetId)->value('like_count');
             }
@@ -213,9 +213,9 @@ class FeedUserController extends AbstractController
 
                 // 更新作者的总点赞数统计
                 if ($increment > 0) {
-                    $this->followService->incrementUserLikeCount($article->created_by);
+                    $this->followService->updateStatsCount($article->created_by, 'total_likes', 1);
                 } else {
-                    $this->followService->decrementUserLikeCount($article->created_by);
+                    $this->followService->updateStatsCount($article->created_by, 'total_likes', -1);
                 }
                 return Article::query()->where('id', $targetId)->value('like_count');
             }
@@ -227,9 +227,9 @@ class FeedUserController extends AbstractController
 
                 // 更新评论作者的总点赞数统计
                 if ($increment > 0) {
-                    $this->followService->incrementUserLikeCount($comment->user_id);
+                    $this->followService->updateStatsCount($comment->user_id, 'total_likes', 1);
                 } else {
-                    $this->followService->decrementUserLikeCount($comment->user_id);
+                    $this->followService->updateStatsCount($comment->user_id, 'total_likes', -1);
                 }
                 return FeedComment::query()->where('id', $targetId)->value('like_count');
             }

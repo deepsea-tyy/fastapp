@@ -85,11 +85,16 @@ class Tools
      */
     public static function formatLang(array $data, int|string $userId = 0): string
     {
-        $lang = is_int($userId) ? Tools::lang($userId) : $userId;
-        foreach ($data as $v) {
-            if ($v['lang'] == $lang) return $v['text'];
+        try {
+            $lang = is_int($userId) ? Tools::lang($userId) : $userId;
+            foreach ($data as $v) {
+                if ($v['lang'] == $lang) return $v['text'];
+            }
+            return $data[0]['text'] ?? '';
+        } catch (\Throwable $exception) {
+            self::logAsync('格式化翻译' . $exception->getMessage());
+            return '';
         }
-        return $data[0]['text'] ?? '';
     }
 
     /**

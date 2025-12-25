@@ -62,8 +62,6 @@ class FeedPostController extends AbstractController
         $userId = $this->currentUser->id();
         if ($userId) {
             $map['user_id'] = $userId;
-            $map['target_type'] = $post['type'];
-            $map['target_id'] = $id;
             $post['is_liked'] = FeedLike::query()->where($map)->exists() ? 1 : 0;
             $post['is_collected'] = FeedCollect::query()->where($map)->exists() ? 1 : 0;
             $post['is_following'] = $this->followService->isFollowing($userId, $post['user_id']);
@@ -155,7 +153,7 @@ class FeedPostController extends AbstractController
         $post->fill($data)->save();
 
         // 增加用户帖子数统计
-        $this->followService->incrementUserPostCount($userId);
+        $this->followService->updateStatsCount($userId, 'posts_count', 1);
 
         return $this->success([
             'id' => $post->id,
@@ -239,7 +237,7 @@ class FeedPostController extends AbstractController
         $post->delete();
 
         // 减少用户帖子数统计
-        $this->followService->decrementUserPostCount($userId);
+        $this->followService->updateStatsCount($userId, 'posts_count', -1);
 
         return $this->success(['message' => '删除成功']);
     }

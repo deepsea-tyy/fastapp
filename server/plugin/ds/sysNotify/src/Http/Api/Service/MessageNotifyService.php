@@ -45,7 +45,7 @@ class MessageNotifyService
         }
 
         // 分页
-        $paginator = $query->simplePaginate($pageSize, ['*'], 'page', $page);
+        $paginator = $query->simplePaginate($pageSize, page: $page);
 
         // 获取已读状态
         $readStatus = $this->getReadStatus($userId);
@@ -68,86 +68,84 @@ class MessageNotifyService
     }
 
     /**
-     * 更新已读状态
-     *
-     * @param int $userId 用户ID
-     * @param int $notifyType 通知分类
-     * @param int $notifyId 消息ID
-     * @return bool
-     */
-    public function updateReadStatus(int $userId, int $notifyType, int $notifyId): bool
-    {
-        // 查询已读记录
-        $readRecord = MessageNotifyRead::query()
-            ->where('user_id', $userId)
-            ->where('notify_type', $notifyType)
-            ->first();
-
-        if ($readRecord) {
-            // 更新已读最大ID（取较大值）
-            if ($notifyId > $readRecord->notify_id) {
-                $readRecord->notify_id = $notifyId;
-                $readRecord->save();
-            }
-        } else {
-            // 创建新记录
-            MessageNotifyRead::query()->create([
-                'user_id' => $userId,
-                'notify_type' => $notifyType,
-                'notify_id' => $notifyId,
-            ]);
-        }
-
-        return true;
-    }
-
-    /**
      * 获取分类未读统计
      *
      * @param int $userId 用户ID
-     * @return array [['notify_type' => int, 'unread_count' => int], ...]
+     * @return array ['1' => ['unread_count' => int, 'title' => array, 'content' => array, 'created_at' => string], 'total' => int]
      */
     public function getUnreadStatistics(int $userId): array
     {
-        // 使用 LEFT JOIN 和 CASE WHEN 一次性查询所有分类的未读数
-        $results = $this->repository->getQuery()
-            ->from('message_notify as mn')
-            ->leftJoin('message_notify_read as mnr', function ($join) use ($userId) {
-                $join->on('mn.notify_type', '=', 'mnr.notify_type')
-                    ->where('mnr.user_id', '=', $userId);
-            })
-            ->where(function ($q) use ($userId) {
-                // 全局消息 (user_id=0) 或者个人消息 (user_id=当前用户)
-                $q->where('mn.user_id', 0)
-                    ->orWhere('mn.user_id', $userId);
-            })
-            ->whereRaw('mn.id > COALESCE(mnr.notify_id, 0)')
-            ->selectRaw('mn.notify_type, COUNT(*) as unread_count')
-            ->groupBy('mn.notify_type')
-            ->get();
+        // 使用一条 SQL 查询同时获取所有分类的未读数统计和最新消息
+        $sql = "
+            WITH notify_types AS (
+                SELECT 1 AS notify_type UNION ALL
+                SELECT 2 UNION ALL
+                SELECT 3 UNION ALL
+                SELECT 4 UNION ALL
+                SELECT 5
+            ),
+            -- 未读统计
+            unread_stats AS (
+                SELECT
+                    mn.notify_type,
+                    COUNT(*) as unread_count
+                FROM message_notify mn
+                LEFT JOIN message_notify_read mnr ON mn.notify_type = mnr.notify_type
+                    AND mnr.user_id = ?
+                WHERE (mn.user_id = 0 OR mn.user_id = ?)
+                  AND mn.id > COALESCE(mnr.notify_id, 0)
+                GROUP BY mn.notify_type
+            ),
+            -- 每个分类最新消息
+            latest_messages AS (
+                SELECT
+                    mn1.notify_type,
+                    mn1.id,
+                    mn1.title,
+                    mn1.content,
+                    mn1.created_at
+                FROM message_notify mn1
+                INNER JOIN (
+                    SELECT notify_type, MAX(id) as max_id
+                    FROM message_notify
+                    WHERE user_id = 0 OR user_id = ?
+                    GROUP BY notify_type
+                ) mn2 ON mn1.notify_type = mn2.notify_type AND mn1.id = mn2.max_id
+            )
+            SELECT
+                nt.notify_type,
+                COALESCE(us.unread_count, 0) as unread_count,
+                COALESCE(lm.id, 0) as latest_id,
+                COALESCE(lm.title, '[]') as latest_title,
+                COALESCE(lm.content, '[]') as latest_content,
+                COALESCE(lm.created_at, '') as latest_created_at
+            FROM notify_types nt
+            LEFT JOIN unread_stats us ON nt.notify_type = us.notify_type
+            LEFT JOIN latest_messages lm ON nt.notify_type = lm.notify_type
+            ORDER BY nt.notify_type
+        ";
 
-        // 转换为数组格式
-        $result = [];
-        foreach ($results as $item) {
-            $result[] = [
-                'notify_type' => $item->notify_type,
-                'unread_count' => (int) $item->unread_count,
+        $results = \Hyperf\DbConnection\Db::select($sql, [$userId, $userId, $userId]);
+
+        // 使用 array_reduce 处理结果
+        $data = array_reduce($results, function ($carry, $row) {
+            $title = json_decode($row->latest_title ?: '', true);
+            $content = json_decode($row->latest_content ?: '', true);
+            $carry[(string)$row->notify_type] = [
+                'unread_count' => (int)$row->unread_count,
+                'title' => Tools::formatLang($title ?: []),
+                'content' => Tools::formatLang($content ?: []),
+                'last_id' => (int)$row->latest_id,
+                'created_at' => $row->latest_created_at ?? '',
             ];
-        }
+            return $carry;
+        }, []);
 
-        // 确保所有分类都有结果（即使未读数为0）
-        $notifyTypes = [1, 2, 3]; // 1-系统通知,2-业务通知,3-其他
-        $existingTypes = array_column($result, 'notify_type');
-        foreach ($notifyTypes as $notifyType) {
-            if (!in_array($notifyType, $existingTypes)) {
-                $result[] = [
-                    'notify_type' => $notifyType,
-                    'unread_count' => 0,
-                ];
-            }
-        }
+        // 计算总未读数
+        $total = array_sum(array_column($data, 'unread_count'));
+        $data['total'] = $total;
 
-        return $result;
+        return $data;
     }
 
     /**
@@ -168,6 +166,52 @@ class MessageNotifyService
         }
 
         return $readStatus;
+    }
+
+    /**
+     * 更新已读状态
+     *
+     * @param int $userId 用户ID
+     * @param int $notifyType 通知分类
+     * @param int $notifyId 消息ID
+     * @return bool
+     */
+    public function read(int $userId, int $notifyType, int $notifyId): bool
+    {
+        $readRecord = MessageNotifyRead::query()
+            ->firstOrCreate(['user_id'=>$userId, 'notify_type'=>$notifyType]);
+        $readRecord->notify_id = $notifyId;
+        $readRecord->save();
+        return true;
+    }
+
+    /**
+     * 清除所有分类的未读消息
+     *
+     * @param int $userId 用户ID
+     * @return bool
+     */
+    public function clearAllUnread(int $userId): bool
+    {
+        // 获取所有分类（1-5）
+        $notifyTypes = [1, 2, 3, 4, 5];
+
+        foreach ($notifyTypes as $notifyType) {
+            // 获取该分类下的最大消息ID
+            $maxNotifyId = MessageNotify::query()
+                ->where('notify_type', $notifyType)
+                ->where(function ($q) use ($userId) {
+                    // 全局消息或个人消息
+                    $q->where('user_id', 0)
+                        ->orWhere('user_id', $userId);
+                })
+                ->max('id');
+            if ($maxNotifyId) {
+                $this->read($userId, $notifyType, $maxNotifyId);
+            }
+        }
+
+        return true;
     }
 
     /**

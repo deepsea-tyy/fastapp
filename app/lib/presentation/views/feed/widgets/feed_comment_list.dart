@@ -97,10 +97,7 @@ class FeedCommentListState extends State<FeedCommentList> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.commentCount == 0 && _comments.isEmpty) {
-      return _buildEmptyComments();
-    }
-
+    // 加载中且没有评论数据时显示加载指示器
     if (_isLoading && _comments.isEmpty) {
       return const Center(
         child: Padding(
@@ -108,6 +105,11 @@ class FeedCommentListState extends State<FeedCommentList> {
           child: CircularProgressIndicator(),
         ),
       );
+    }
+
+    // 加载完成后评论列表为空时显示空状态
+    if (!_isLoading && _comments.isEmpty) {
+      return _buildEmptyComments();
     }
 
     return Column(

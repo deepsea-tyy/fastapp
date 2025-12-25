@@ -40,6 +40,7 @@ class FeedListController extends AbstractController
         tags: ['信息流-列表']
     )]
     #[QueryParameter(name: 'filter', description: '筛选条件：latest最新 hot热门', example: 'latest')]
+    #[QueryParameter(name: 'keyword', description: '搜索关键词', example: '')]
     #[QueryParameter(name: 'page', description: '页码', example: '1')]
     #[QueryParameter(name: 'page_size', description: '每页数量', example: '20')]
     #[ResultResponse(instance: new Result())]
@@ -48,9 +49,11 @@ class FeedListController extends AbstractController
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
         $userId = $this->currentUser->id();
+        $keyword = trim($this->getRequest()->input('keyword', ''));
 
         // 判断是否需要去重（推荐Feed需要去重）
-        $needDedup = in_array($filter, ['latest', 'hot']);
+        // 如果有keyword，则不去重
+        $needDedup = in_array($filter, ['latest', 'hot']) && empty($keyword);
 
         if ($needDedup && $userId) {
             // 直接获取已去重的数据（SQL层面过滤）
@@ -58,7 +61,7 @@ class FeedListController extends AbstractController
 
             // 如果去重后没数据，降级为不去重（确保有内容显示）
             if ($list->isEmpty()) {
-                $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize));
+                $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize, $keyword));
             } else {
                 // 异步记录曝光
                 Coroutine::create(function () use ($list, $userId) {
@@ -77,7 +80,7 @@ class FeedListController extends AbstractController
             });
         } else {
             // 不需要去重或用户未登录，直接获取列表
-            $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize));
+            $list = collect($this->cacheService->getFeedList($filter, $page, $pageSize, $keyword));
         }
 
         // 如果用户已登录，批量获取用户动作状态

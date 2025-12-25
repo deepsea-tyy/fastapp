@@ -37,6 +37,7 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/constants/app_backgrounds.dart';
 import 'package:fastapp/presentation/views/common/empty_state.dart';
 import 'package:fastapp/core/theme/app_theme_extension.dart';
+import 'package:fastapp/data/network/apis/message/message_notify_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
@@ -65,23 +66,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final UserStore _userStore = getIt<UserStore>();
+  final MessageNotifyApi _messageNotifyApi = getIt<MessageNotifyApi>();
   late final FeedController _feedController;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _feedTabsKey = GlobalKey();
   bool _showFab = false;
-  int _unreadMessageCount = 3; // TODO: 从实际数据源获取未读消息数
+  int _unreadMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
     // 立即初始化 Feed 控制器（避免 build 时访问未初始化的字段）
     _feedController = FeedController();
-    
+
     // 等待页面内容下载完成后再发送请求
     afterPageContentDownloadedAsync(() async {
       // 页面初始化时，如果已登录但用户信息未加载，则获取用户信息
       if (_userStore.isLoggedIn && _userStore.currentUser == null) {
         _userStore.getUserInfo();
+      }
+      // 加载未读消息数
+      if (_userStore.isLoggedIn) {
+        _loadUnreadMessageCount();
       }
       // 初始化 Feed 控制器（加载数据）
       await _feedController.init();
@@ -97,6 +103,20 @@ class _HomeScreenState extends State<HomeScreen> {
     // 当页面重新可见时（例如从其他页面返回），检查是否需要刷新用户信息
     if (_userStore.isLoggedIn && _userStore.currentUser == null) {
       _userStore.getUserInfo();
+    }
+  }
+
+  /// 加载未读消息数
+  Future<void> _loadUnreadMessageCount() async {
+    try {
+      final total = await _messageNotifyApi.getUnreadTotal();
+      if (mounted) {
+        setState(() {
+          _unreadMessageCount = total;
+        });
+      }
+    } catch (e) {
+      debugPrint('加载未读消息数失败: $e');
     }
   }
 
@@ -144,8 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: backgrounds.page,
       appBar: TopBar(
         unreadMessageCount: _unreadMessageCount,
-        onMenuPressed: () {
-          Navigator.of(context).pushNamed(Routes.userCenter);
+        onUnreadMessageTap: () {
+          setState(() {
+            _unreadMessageCount = 0;
+          });
         },
       ),
       floatingActionButton: _showFab ? _buildFloatingButtons() : null,

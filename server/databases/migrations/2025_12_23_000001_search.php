@@ -32,16 +32,18 @@ return new class extends Migration {
         Schema::create('search_index', static function (Blueprint $table) {
             $table->comment('搜索索引表');
             $table->bigIncrements('id')->comment('主键ID');
-            $table->string('target_type', 50)->comment('内容类型: article|feed|activity|news');
+            $table->string('target_type', 50)->comment('内容类型: feed(短贴)|feed_article(标题贴)|article(普通文章)|notice(公告)|news(新闻)');
             $table->unsignedBigInteger('target_id')->comment('内容ID');
             $table->string('title', 200)->comment('标题');
             $table->string('content', 100)->nullable()->comment('内容');
             $table->json('keyword')->nullable()->comment('关键词数组');
             $table->json('tags')->nullable()->comment('标签数组');
             $table->integer('weight')->unsigned()->default(0)->comment('权重');
+            $table->integer('click_count')->unsigned()->default(0)->comment('点击量');
             $table->timestamp('last_at')->nullable()->comment('最新时间');
             $table->unique(['target_type', 'target_id']);
             $table->index('last_at');
+            $table->index('click_count');
         });
     }
 

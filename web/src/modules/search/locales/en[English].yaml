@@ -37,4 +37,5 @@ search:
     keyword: Keyword
     tags: Tags
     weight: Weight
+    click_count: ClickCount
     last_at: LastAt

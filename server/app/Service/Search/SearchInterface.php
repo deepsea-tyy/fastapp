@@ -38,4 +38,13 @@ interface SearchInterface
      * @return array 排行榜列表
      */
     public function ranking(): array;
+
+    /**
+     * 记录搜索结果点击
+     *
+     * @param string $targetType 内容类型
+     * @param int $targetId 内容ID
+     * @return bool
+     */
+    public function recordClick(string $targetType, int $targetId): bool;
 }

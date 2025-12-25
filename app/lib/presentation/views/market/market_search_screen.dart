@@ -155,8 +155,12 @@ class _MarketSearchScreenState extends State<MarketSearchScreen> {
     // 辅助函数
     TickerData? _findTicker(String symbol) {
       try {
+        final symbolNoSlash = symbol.replaceAll('/', '');
         return _marketStore.tickerList.firstWhere(
-          (t) => t.symbol == symbol || t.symbol.replaceAll('/', '') == symbol,
+          (t) {
+            final tSymbolNoSlash = t.symbol.replaceAll('/', '');
+            return t.symbol == symbol || tSymbolNoSlash == symbolNoSlash;
+          },
         );
       } catch (_) {
         return null;

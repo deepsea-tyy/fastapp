@@ -170,12 +170,12 @@ class FeedCommentController extends AbstractController
         $comment->fill($data);
         $comment->save();
         // 更新目标内容的评论数
-        $this->updateCommentCount($targetType, $targetId, 1);
+        $this->followService->updateCommentCount($targetType, $targetId, 1);
 
         // 更新目标内容作者的总评论数统计
-        $targetAuthorId = $this->getTargetAuthorId($targetType, $targetId);
+        $targetAuthorId = $this->followService->getSourceUserId($targetType, $targetId);
         if ($targetAuthorId) {
-            $this->followService->incrementUserCommentCount($targetAuthorId);
+            $this->followService->updateStatsCount($targetAuthorId, 'total_comments', 1);
         }
 
         // 更新父评论的回复数
@@ -241,12 +241,12 @@ class FeedCommentController extends AbstractController
         }
 
         // 更新目标内容的评论数
-        $this->updateCommentCount($comment->target_type, $comment->target_id, -1);
+        $this->followService->updateCommentCount($comment->target_type, $comment->target_id, -1);
 
         // 更新目标内容作者的总评论数统计
-        $targetAuthorId = $this->getTargetAuthorId($comment->target_type, $comment->target_id);
+        $targetAuthorId = $this->followService->getSourceUserId($comment->target_type, $comment->target_id);
         if ($targetAuthorId) {
-            $this->followService->decrementUserCommentCount($targetAuthorId);
+            $this->followService->updateStatsCount($targetAuthorId, 'total_comments', -1);
         }
 
         // 更新父评论的回复数
@@ -262,34 +262,5 @@ class FeedCommentController extends AbstractController
         $comment->delete();
 
         return $this->success();
-    }
-
-    private function updateCommentCount(int $targetType, int $targetId, int $increment): void
-    {
-        if ($targetType === 1 || $targetType === 2) {
-            // 帖子/文章（FeedPost）
-            FeedPost::query()->where('id', $targetId)->increment('comment_count', $increment);
-        } elseif ($targetType === 3 || $targetType === 4) {
-            // 公告/新闻（Article）
-            Article::query()->where('id', $targetId)->increment('comment_count', $increment);
-        }
-    }
-
-    /**
-     * 获取目标内容的作者ID
-     */
-    private function getTargetAuthorId(int $targetType, int $targetId): ?int
-    {
-        if ($targetType === 1 || $targetType === 2) {
-            // 帖子/文章（FeedPost）
-            $post = $this->feedService->getPost($targetId);
-            return $post['user_id'] ?? null;
-        } elseif ($targetType === 3 || $targetType === 4) {
-            // 公告/新闻（Article）
-            $article = $this->feedService->getArticle($targetId);
-            return $article['profile']['user_id'] ?? null;
-        }
-
-        return null;
     }
 }

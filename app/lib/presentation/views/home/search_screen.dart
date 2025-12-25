@@ -10,6 +10,9 @@ import 'package:fastapp/utils/image_utils.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:fastapp/data/sharedpref/shared_preference_helper.dart';
+import 'package:fastapp/presentation/views/feed/widgets/feed_detail.dart';
+import 'package:fastapp/data/network/models/search_index_item.dart';
+import 'package:fastapp/presentation/views/home/search_result_screen.dart';
 
 /// 搜索页面
 class SearchScreen extends StatefulWidget {
@@ -31,15 +34,6 @@ class _SearchScreenState extends State<SearchScreen> {
     fontWeight: FontWeight.bold,
   );
 
-  static const _hotSearchItems = [
-    {'text': '美联@储降息预期升至87%', 'badge': 'HOT'},
-    {'text': '贝莱德大额增持BTC与ETH', 'badge': 'HOT'},
-    {'text': '比特币止跌反弹超9万美元'},
-    {'text': '白银价格创历史新高'},
-    {'text': '山寨币ETF集中上市'},
-    {'text': 'Tom Lee预期ETH达7000美元', 'badge': 'NEW'},
-    {'text': '爆涨币种MBL行情解析'},
-  ];
 
   @override
   void initState() {
@@ -86,8 +80,12 @@ class _SearchScreenState extends State<SearchScreen> {
     // 辅助函数：查找 ticker 数据
     TickerData? findTicker(String symbol) {
       try {
+        final symbolNoSlash = symbol.replaceAll('/', '');
         return _marketStore.tickerList.firstWhere(
-          (t) => t.symbol == symbol || t.symbol.replaceAll('/', '') == symbol,
+          (t) {
+            final tSymbolNoSlash = t.symbol.replaceAll('/', '');
+            return t.symbol == symbol || tSymbolNoSlash == symbolNoSlash;
+          },
         );
       } catch (_) {
         return null;
@@ -122,6 +120,8 @@ class _SearchScreenState extends State<SearchScreen> {
           extra: {
             'tickerData': ticker?.toJson(),
             'isFutures': true,
+            'contractMultiplier': pair.contractMultiplier,
+            'maxLeverage': pair.maxLeverage,
           },
         ));
         processedSymbols.add(pair.baseCurrencySymbol);
@@ -211,6 +211,42 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  /// 类型映射：targetType -> FeedComment.target_type
+  static const _targetTypeMap = {
+    'feed': 1,        // 短贴
+    'feed_article': 2, // 标题贴
+    'notice': 3,      // 公告
+    'news': 4,        // 新闻
+    'article': 6,     // 文章
+  };
+
+  /// 处理热搜排行榜项点击
+  void _handleRankingItemTap(SearchIndexItem item) {
+    final type = _targetTypeMap[item.targetType];
+
+    if (type == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('不支持的内容类型: ${item.targetType}')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FeedDetail(
+          postId: item.targetId,
+          userId: 0,
+          username: '',
+          time: '',
+          content: '',
+          title: item.title,
+          type: type,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,10 +281,16 @@ class _SearchScreenState extends State<SearchScreen> {
         final hasKeyword = topKeyword?.keyword?.isNotEmpty ?? false;
         final hasIcon = topKeyword?.icon?.isNotEmpty ?? false;
 
+        // 确定图标颜色，参考 top_bar.dart 的处理方式
+        final iconColor = hasIcon
+            ? (IconMapper.parseColor(topKeyword!.color) ??
+                IconMapper.getColor(topKeyword!.icon))
+            : null;
+
         return SearchInputWidget(
           hintText: hasKeyword ? topKeyword!.keyword : '搜索',
           prefixIcon: hasIcon ? IconMapper.getIcon(topKeyword!.icon) : Icons.search,
-          iconColor: hasIcon ? IconMapper.parseColor(topKeyword!.color) : null,
+          iconColor: iconColor,
           backgroundColor: Colors.grey[100],
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           autofocus: true,
@@ -291,7 +333,14 @@ class _SearchScreenState extends State<SearchScreen> {
               return GestureDetector(
                 onTap: () {
                   _addToHistory(record);
-                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SearchResultScreen(
+                        initialKeyword: record,
+                      ),
+                    ),
+                  );
                 },
                 child: _buildTag(record, const Color(0xFFEEEEEE)),
               );
@@ -305,7 +354,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildHotKeywordsSection() {
     return Observer(
       builder: (_) {
-        if (_searchStore.hotKeywords.isEmpty) return const SizedBox.shrink();
+        if (_searchStore.hotKeywords.length <= 1) return const SizedBox.shrink();
 
         return Padding(
           padding: const EdgeInsets.all(16.0),
@@ -317,14 +366,21 @@ class _SearchScreenState extends State<SearchScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: _searchStore.hotKeywords.map((keyword) {
+                children: _searchStore.hotKeywords.skip(1).map((keyword) {
                   final color = (keyword.color != null
                       ? IconMapper.parseColor(keyword.color!)
                       : null) ?? const Color(0xFFE0E0E0);
                   return GestureDetector(
                     onTap: () {
                       _addToHistory(keyword.keyword);
-                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchResultScreen(
+                            initialKeyword: keyword.keyword,
+                          ),
+                        ),
+                      );
                     },
                     child: _buildTag(keyword.keyword, color, Colors.white),
                   );
@@ -381,47 +437,78 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildHotSearchSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('热搜排行榜', style: _sectionTitleStyle),
-          const SizedBox(height: 12),
-          ..._hotSearchItems.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final badge = item['badge'];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 24,
-                    child: Text(
-                      '${index + 1}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: index < 3 ? Colors.red : Colors.grey[600],
-                      ),
+    return Observer(
+      builder: (_) {
+        if (_searchStore.rankingList.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('热搜排行榜', style: _sectionTitleStyle),
+              const SizedBox(height: 12),
+              ..._searchStore.rankingList.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return InkWell(
+                  onTap: () => _handleRankingItemTap(item),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Ink(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          child: Text(
+                            '${index + 1}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: index < 3 ? Colors.red : Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  item.title,
+                                  style: const TextStyle(fontSize: 14),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (item.tags.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                ...item.tags.take(2).indexed.map((record) {
+                                  final (index, tag) = record;
+                                  return Container(
+                                    margin: const EdgeInsets.only(left: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: index == 0 ? const Color(0xFFE3F2FD) : const Color(0xFFE8F5E9),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(tag, style: TextStyle(fontSize: 10, color: Colors.grey[700])),
+                                  );
+                                }),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (item.badge != null) _buildBadge(item.badge!),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      item['text'] as String,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  if (badge != null) _buildBadge(badge),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:fastapp/domain/repository/feed/feed_repository.dart';
 import 'package:fastapp/domain/entity/feed/feed_comment.dart';
+import 'package:fastapp/domain/entity/feed/feed_post.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/views/feed/feed_profile.dart';
 import 'package:fastapp/presentation/views/common/image_preview_page.dart';
@@ -29,7 +30,7 @@ class FeedDetail extends StatefulWidget {
   final bool isVerified;
   final int viewCount;
   final bool scrollToComments;
-  final int type; // 帖子类型：1帖子 2文章
+  final int type; // 内容类型：1=短贴 2=标题贴 3=公告 4=新闻 6=文章
   final bool isLiked; // 是否已点赞
 
   const FeedDetail({
@@ -74,6 +75,9 @@ class _FeedDetailState extends State<FeedDetail> {
   bool _isLoadingDetail = true;
   late int _commentCount;
 
+  // 从 API 加载的帖子数据
+  FeedPost? _loadedPost;
+
   // 评论列表的key，用于刷新评论列表
   final GlobalKey<_FeedCommentListWrapperState> _commentListKey = GlobalKey();
 
@@ -100,25 +104,73 @@ class _FeedDetailState extends State<FeedDetail> {
   /// 加载帖子详情（包含所有状态）
   Future<void> _loadPostDetail() async {
     try {
-      final post = await _feedRepository.getPostDetail(id: widget.postId);
-      if (post != null && mounted) {
-        setState(() {
-          // 更新所有状态
-          _isCollected = post.isCollected ?? false;
-          _isFollowing = post.isFollowing ?? false;
-          _isLiked = post.isLiked ?? _isLiked;
-          _likeCount = post.likeCount;
-          _commentCount = post.commentCount;
-          _viewCount = post.viewCount ?? _viewCount;
-          _isLoadingDetail = false;
-        });
-      }
+      // 根据类型调用不同的接口
+      // 1, 2: post/detail (短贴、标题贴)
+      // 3, 4, 6: article/detail (公告、新闻、文章)
+      final post = await (widget.type == 1 || widget.type == 2
+          ? _feedRepository.getPostDetail(id: widget.postId)
+          : _feedRepository.getArticleDetail(id: widget.postId));
+
+      if (post == null || !mounted) return;
+
+      setState(() {
+        // 保存加载的帖子数据
+        _loadedPost = post;
+        // 更新所有状态
+        _isCollected = post.isCollected ?? false;
+        _isFollowing = post.isFollowing ?? false;
+        _isLiked = post.isLiked ?? _isLiked;
+        _likeCount = post.likeCount;
+        _commentCount = post.commentCount;
+        _viewCount = post.viewCount ?? _viewCount;
+        _isLoadingDetail = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingDetail = false);
       }
       debugPrint('加载帖子详情失败: $e');
     }
+  }
+
+  // 获取显示用的数据，优先使用加载的数据
+  int get _displayUserId {
+    if (_loadedPost?.profile?.userId != null) return _loadedPost!.profile!.userId!;
+    if (_loadedPost?.userId != null) return _loadedPost!.userId!;
+    return widget.userId;
+  }
+
+  String get _displayUsername {
+    if (_loadedPost?.profile?.nickname?.isNotEmpty == true) return _loadedPost!.profile!.nickname!;
+    if (_loadedPost?.username?.isNotEmpty == true) return _loadedPost!.username!;
+    return widget.username;
+  }
+
+  String get _displayAvatar {
+    if (_loadedPost?.profile?.avatar?.isNotEmpty == true) return _loadedPost!.profile!.avatar!;
+    if (_loadedPost?.avatar?.isNotEmpty == true) return _loadedPost!.avatar!;
+    return widget.avatarAsset;
+  }
+
+  String get _displayTime {
+    if (_loadedPost != null) return _loadedPost!.getFormattedTime();
+    return widget.time;
+  }
+
+  String get _displayContent {
+    if (_loadedPost != null) {
+      if (_loadedPost!.brief?.isNotEmpty == true) return _loadedPost!.brief!;
+      if (_loadedPost!.content?.isNotEmpty == true) return _loadedPost!.content!;
+    }
+    return widget.content;
+  }
+
+  String? get _displayTitle {
+    if (_loadedPost != null) {
+      if (_loadedPost!.title?.isNotEmpty == true) return _loadedPost!.title;
+      if (_loadedPost!.subtitle?.isNotEmpty == true) return _loadedPost!.subtitle;
+    }
+    return widget.title;
   }
 
   @override
@@ -201,7 +253,7 @@ class _FeedDetailState extends State<FeedDetail> {
       child: Row(
         children: [
           UserAvatar(
-            avatarAsset: widget.avatarAsset,
+            avatarAsset: _displayAvatar,
             isVerified: widget.isVerified,
             onTap: _navigateToUserProfile,
           ),
@@ -213,7 +265,7 @@ class _FeedDetailState extends State<FeedDetail> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.username,
+                    _displayUsername,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -221,7 +273,7 @@ class _FeedDetailState extends State<FeedDetail> {
                     ),
                   ),
                   Text(
-                    widget.time,
+                    _displayTime,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -274,7 +326,7 @@ class _FeedDetailState extends State<FeedDetail> {
   void _navigateToUserProfile() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => UserProfilePage(userId: widget.userId),
+        builder: (context) => UserProfilePage(userId: _displayUserId),
       ),
     );
   }
@@ -291,7 +343,7 @@ class _FeedDetailState extends State<FeedDetail> {
 
     try {
       final result = await _feedRepository.toggleFollow(
-        followUserId: widget.userId,
+        followUserId: _displayUserId,
       );
       if (mounted) {
         setState(() {
@@ -385,11 +437,11 @@ class _FeedDetailState extends State<FeedDetail> {
   void _navigateToReport() async {
     final result = await FeedMenuSheet.show(
       context,
-      username: widget.username,
+      username: _displayUsername,
       topic: null, // TODO: 从帖子内容中提取话题
       targetId: widget.postId,
       targetType: widget.type,
-      userId: widget.userId,
+      userId: _displayUserId,
     );
 
     // 处理不感兴趣操作
@@ -407,13 +459,13 @@ class _FeedDetailState extends State<FeedDetail> {
   }
 
   Widget _buildTitle() {
-    if (widget.title == null || widget.title!.isEmpty) {
+    if (_displayTitle == null || _displayTitle!.isEmpty) {
       return const SizedBox.shrink();
     }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
-        widget.title!,
+        _displayTitle!,
         style: const TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.bold,
@@ -428,7 +480,7 @@ class _FeedDetailState extends State<FeedDetail> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Html(
-        data: widget.content,
+        data: _displayContent,
         style: {
           "body": Style(
             margin: Margins.zero,

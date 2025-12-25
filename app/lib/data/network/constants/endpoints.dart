@@ -125,6 +125,8 @@ class Endpoints {
   // 文章相关（新闻、公告）
   static const String feedArticleNews = '/api/feed/article/news';
   static const String feedArticleNotice = '/api/feed/article/notice';
+  static const String feedArticleList = '/api/feed/article/list';
+  static const String feedArticleDetail = '/api/feed/article/detail';
 
   // 帖子管理
   static const String feedPostDetail = '/api/feed/post/detail';
@@ -164,4 +166,27 @@ class Endpoints {
 
   // 热门关键词
   static const String searchKeywordsHot = '/api/search/keywords/hot';
+
+  // 搜索排行榜
+  static const String searchRanking = '/api/search/ranking';
+
+  // 记录搜索结果点击
+  static const String searchClick = '/api/search/click';
+
+  // ==================== 消息通知相关 ====================
+
+  // 消息列表
+  static const String messageNotifyList = '/api/sysNotify/list';
+
+  // 更新已读状态
+  static const String messageNotifyRead = '/api/sysNotify/read';
+
+  // 分类未读统计
+  static const String messageNotifyUnreadStatistics = '/api/sysNotify/unread-statistics';
+
+  // 总未读数
+  static const String messageNotifyUnreadTotal = '/api/sysNotify/unread-total';
+
+  // 清除未读消息
+  static const String messageNotifyClearUnread = '/api/sysNotify/clear-unread';
 }

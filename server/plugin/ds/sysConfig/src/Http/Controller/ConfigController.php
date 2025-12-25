@@ -18,6 +18,7 @@ use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
+use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 use Plugin\Ds\SysConfig\Http\Request\ConfigRequest as Request;
 use Plugin\Ds\SysConfig\Service\ConfigService as Service;
 
@@ -61,6 +62,7 @@ class ConfigController extends AbstractController
         $this->service->create(array_merge($request->all(), [
             'created_by' => $this->currentUser->id(),
         ]));
+        CacheConfigHelper::clear();
         return $this->success();
     }
 
@@ -72,6 +74,7 @@ class ConfigController extends AbstractController
         $this->service->updateById($id, array_merge($request->validated(), [
             'updated_by' => $this->currentUser->id(),
         ]));
+        CacheConfigHelper::clear();
         return $this->success();
     }
 
@@ -81,6 +84,7 @@ class ConfigController extends AbstractController
     public function delete(): Result
     {
         $this->service->deleteByKey($this->getRequestData());
+        CacheConfigHelper::clear();
         return $this->success();
     }
 

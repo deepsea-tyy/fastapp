@@ -14,6 +14,8 @@ export interface IndexsVo {
   tags: string
   // 权重: 1-100
   weight: number
+  // 点击量
+  click_count: number
   // 最新时间
   last_at: string
 }

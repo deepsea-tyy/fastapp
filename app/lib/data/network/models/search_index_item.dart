@@ -6,7 +6,9 @@ class SearchIndexItem {
   final String? content;
   final List<String> tags;
   final int weight;
+  final int clickCount;
   final DateTime lastAt;
+  final String? badge;
 
   SearchIndexItem({
     required this.targetType,
@@ -15,7 +17,9 @@ class SearchIndexItem {
     this.content,
     required this.tags,
     required this.weight,
+    required this.clickCount,
     required this.lastAt,
+    this.badge,
   });
 
   factory SearchIndexItem.fromJson(Map<String, dynamic> json) {
@@ -26,9 +30,11 @@ class SearchIndexItem {
       content: json['content'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       weight: json['weight'] as int? ?? 0,
-      lastAt: json['last_at'] != null 
-          ? DateTime.parse(json['last_at'] as String) 
+      clickCount: json['click_count'] as int? ?? 0,
+      lastAt: json['last_at'] != null
+          ? DateTime.parse(json['last_at'] as String)
           : DateTime.now(),
+      badge: json['badge'] as String?,
     );
   }
 
@@ -40,7 +46,9 @@ class SearchIndexItem {
       'content': content,
       'tags': tags,
       'weight': weight,
+      'click_count': clickCount,
       'last_at': lastAt.toIso8601String(),
+      'badge': badge,
     };
   }
 }

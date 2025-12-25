@@ -8,6 +8,7 @@ use App\Model\Search\SearchIndex;
 use App\Service\Search\SearchInterface;
 use Hyperf\Redis\Redis;
 use Hyperf\Context\ApplicationContext;
+use Hyperf\DbConnection\Db;
 
 /**
  * MySQL 全文搜索驱动
@@ -49,7 +50,7 @@ class MySQLSearchDriver implements SearchInterface
         // 构建查询
         $query = SearchIndex::query()->select([
             'target_type', 'target_id', 'title',
-            'content', 'tags', 'weight', 'last_at'
+            'content', 'tags', 'weight', 'click_count', 'last_at'
         ]);
         // 关键词搜索
         if (!empty($keyword)) {
@@ -90,7 +91,7 @@ class MySQLSearchDriver implements SearchInterface
             })
             ->select([
                 'target_type', 'target_id', 'title',
-                'content', 'tags', 'weight', 'last_at'
+                'content', 'tags', 'weight', 'click_count', 'last_at'
             ])->distinct()
             ->limit($limit)
             ->orderByDesc('weight')
@@ -103,9 +104,30 @@ class MySQLSearchDriver implements SearchInterface
         return SearchIndex::query()
             ->select([
                 'target_type', 'target_id', 'title',
-                'content', 'tags', 'weight', 'last_at'
-            ])->orderByDesc('last_at')
-            ->orderByDesc('weight')->get()->toArray();
+                'content', 'tags', 'weight', 'click_count', 'last_at'
+            ])
+            ->orderByDesc('click_count')
+            ->orderByDesc('weight')
+            ->orderByDesc('last_at')
+            ->limit(20)
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * 记录搜索结果点击
+     */
+    public function recordClick(string $targetType, int $targetId): bool
+    {
+        try {
+            SearchIndex::query()
+                ->where('target_type', $targetType)
+                ->where('target_id', $targetId)
+                ->update(['click_count' => Db::raw('click_count + 1')]);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

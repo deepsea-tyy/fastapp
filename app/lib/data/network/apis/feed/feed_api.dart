@@ -11,10 +11,12 @@ class FeedApi {
 
   /// 获取信息流列表
   /// [filter] 筛选条件：latest最新 hot热门
+  /// [keyword] 搜索关键词
   /// [page] 页码
   /// [pageSize] 每页数量
   Future<dynamic> getFeedList({
     String filter = 'latest',
+    String? keyword,
     int page = 1,
     int pageSize = 20,
   }) async {
@@ -22,6 +24,7 @@ class FeedApi {
       Endpoints.feedList,
       queryParameters: {
         'filter': filter,
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
         'page': page,
         'page_size': pageSize,
       },
@@ -98,15 +101,18 @@ class FeedApi {
   }
 
   /// 获取新闻列表
+  /// [keyword] 搜索关键词
   /// [page] 页码
   /// [pageSize] 每页数量
   Future<dynamic> getNewsList({
+    String? keyword,
     int page = 1,
     int pageSize = 20,
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.feedArticleNews,
       queryParameters: {
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
         'page': page,
         'page_size': pageSize,
       },
@@ -115,15 +121,38 @@ class FeedApi {
   }
 
   /// 获取公告列表
+  /// [keyword] 搜索关键词
   /// [page] 页码
   /// [pageSize] 每页数量
   Future<dynamic> getAnnouncementList({
+    String? keyword,
     int page = 1,
     int pageSize = 20,
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.feedArticleNotice,
       queryParameters: {
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return response.data;
+  }
+
+  /// 获取文章列表（所有类型）
+  /// [keyword] 搜索关键词
+  /// [page] 页码
+  /// [pageSize] 每页数量
+  Future<dynamic> getArticleList({
+    String? keyword,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedArticleList,
+      queryParameters: {
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
         'page': page,
         'page_size': pageSize,
       },
@@ -140,6 +169,20 @@ class FeedApi {
   }) async {
     final response = await _dioClient.dio.get(
       Endpoints.feedPostDetail,
+      queryParameters: {
+        'id': id,
+      },
+    );
+    return response.data;
+  }
+
+  /// 获取文章详情（公告、新闻、文章）
+  /// [id] 文章ID
+  Future<Map<String, dynamic>> getArticleDetail({
+    required int id,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.feedArticleDetail,
       queryParameters: {
         'id': id,
       },

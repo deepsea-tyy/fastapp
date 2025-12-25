@@ -12,8 +12,12 @@ use Hyperf\HttpServer\Annotation\Middleware;
 use App\Common\Middleware\TokenMiddleware;
 use Hyperf\Swagger\Annotation as OA;
 use Hyperf\Swagger\Annotation\Get;
+use Hyperf\Swagger\Annotation\Post;
 use App\Common\Swagger\ResultResponse;
 use OpenApi\Attributes\QueryParameter;
+use OpenApi\Attributes\RequestBody;
+use OpenApi\Attributes\JsonContent;
+use OpenApi\Attributes\Property;
 use Hyperf\DbConnection\Db;
 use Swoole\Coroutine;
 
@@ -68,7 +72,6 @@ class SearchController extends AbstractController
                     'keyword' => $keyword,
                     'hit_count' => Db::raw('hit_count + 1'),
                     'last_searched_at' => date('Y-m-d H:i:s'),
-                    'source' => 1
                 ]
             );
         });
@@ -146,7 +149,7 @@ class SearchController extends AbstractController
                 if ($index < 3 && $item->hit_count > 100) {
                     $badge = 'HOT';
                 } elseif ($item->last_searched_at &&
-                    (time() - strtotime($item->last_searched_at)) < 86400) {
+                    (time() - $item->last_searched_at->getTimestamp()) < 86400) {
                     $badge = 'NEW';
                 }
 
@@ -162,5 +165,28 @@ class SearchController extends AbstractController
             });
 
         return $this->success(['list' => $list]);
+    }
+
+    /**
+     * 记录搜索结果点击
+     */
+    #[Post(path: '/api/search/click', operationId: 'search:click', summary: '记录搜索结果点击', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['搜索'])]
+    #[RequestBody(content: new JsonContent(required: ['target_type', 'target_id'], properties: [
+        new Property(property: 'target_type', description: '内容类型', type: 'string', example: 'article'),
+        new Property(property: 'target_id', description: '内容ID', type: 'integer', example: 1)
+    ]))]
+    #[ResultResponse(instance: new Result())]
+    public function click(): Result
+    {
+        $targetType = $this->getRequest()->input('target_type');
+        $targetId = (int)$this->getRequest()->input('target_id');
+
+        if (empty($targetType) || empty($targetId)) {
+            return $this->error('参数错误');
+        }
+
+        $this->searchService->recordClick($targetType, $targetId);
+
+        return $this->success();
     }
 }

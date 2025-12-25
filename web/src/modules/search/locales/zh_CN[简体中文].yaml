@@ -37,4 +37,5 @@ search:
     keyword: 关键词数组
     tags: 标签数组
     weight: 权重
+    click_count: 点击量
     last_at: 最新时间

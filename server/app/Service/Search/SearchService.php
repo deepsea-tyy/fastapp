@@ -70,4 +70,16 @@ class SearchService
     {
         return $this->driver()->ranking();
     }
+
+    /**
+     * 记录搜索结果点击
+     *
+     * @param string $targetType
+     * @param int $targetId
+     * @return bool
+     */
+    public function recordClick(string $targetType, int $targetId): bool
+    {
+        return $this->driver()->recordClick($targetType, $targetId);
+    }
 }

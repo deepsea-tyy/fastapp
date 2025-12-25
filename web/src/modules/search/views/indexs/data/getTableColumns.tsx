@@ -45,10 +45,17 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'title',
     },
     {
-      label: () => t('search.IndexsFields.weight'), // '浏览量'
+      label: () => t('search.IndexsFields.weight'), // '权重'
       minWidth: 150,
       prop: 'weight',
       sortable: 'custom',
+    },
+    {
+      label: () => t('search.IndexsFields.click_count'), // '点击量'
+      minWidth: 150,
+      prop: 'click_count',
+      sortable: 'custom',
+      cellRender: ({ row }) => row.click_count || 0,
     },
     {
       label: () => t('crud.status'), // '状态'

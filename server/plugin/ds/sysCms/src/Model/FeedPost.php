@@ -12,7 +12,7 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * @property int $id 主键
  * @property int $user_id 发布用户ID
- * @property int $type 帖子类型：1帖子 2文章
+ * @property int $type 帖子类型：1短贴 2标题贴
  * @property int $content_type 内容类型：1纯文本 2图文 3视频 4链接
  * @property string $title 标题（可选）
  * @property string $content 内容
@@ -20,7 +20,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property array $videos 视频列表（JSON数组）
  * @property string $link_url 外链地址
  * @property array $link_meta 链接元数据（标题、描述、封面等）
- * @property int $quoted_type 引用类型：1帖子 2文章
+ * @property int $quoted_type 引用类型：1短贴 2标题贴
  * @property int $quoted_id 引用的内容ID
  * @property int $audit_status 审核状态：0待审核 1已通过 2已拒绝
  * @property string $audited_at 审核时间
@@ -42,6 +42,10 @@ use Hyperf\DbConnection\Model\Model;
 class FeedPost extends Model
 {
     use SoftDeletes;
+
+    // 帖子类型常量
+    public const TYPE_FEED = 1;    // 短贴
+    public const TYPE_ARTICLE = 2; // 标题贴
 
     /**
      * The table associated with the model.

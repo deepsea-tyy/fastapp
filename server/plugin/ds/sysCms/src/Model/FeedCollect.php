@@ -9,7 +9,7 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * @property int $id 主键
  * @property int $user_id 收藏用户ID
- * @property int $target_type 目标类型：1帖子 2文章 3公告 4新闻
+ * @property int $target_type 目标类型：1短贴 2标题贴 3公告 4新闻
  * @property int $target_id 目标ID
  * @property string $created_at 收藏时间
  */

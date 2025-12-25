@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->json('content')->nullable()->comment('通知内容');
             $table->tinyInteger('type')->comment('通知类型:1-全局,2-个人')->default(1);
             $table->bigInteger('user_id')->unsigned()->comment('用户ID 全局通知为0')->default(0);
-            $table->tinyInteger('notify_type')->default(1)->comment('通知分类:1-系统通知,2-业务通知,3-其他');
+            $table->tinyInteger('notify_type')->default(1)->comment('通知分类:1-公告,2-业务通知(活动等),3-账号,4-广场,5-资金');
             $table->string('link')->nullable()->comment('跳转链接');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
@@ -35,7 +35,7 @@ return new class extends Migration {
             $table->comment('消息已读状态表');
             $table->bigIncrements('id')->comment('ID');
             $table->bigInteger('notify_type')->unsigned()->comment('通知分类');
-            $table->bigInteger('notify_id')->unsigned()->comment('已读最大ID');
+            $table->bigInteger('notify_id')->unsigned()->default(0)->comment('已读最大ID');
             $table->bigInteger('user_id')->unsigned()->comment('用户ID');
             $table->index('user_id');
         });

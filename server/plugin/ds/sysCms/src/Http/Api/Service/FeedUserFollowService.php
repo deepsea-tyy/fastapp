@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysCms\Http\Api\Service;
 
 use App\Model\UserProfile;
+use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedPost;
 use Plugin\Ds\SysCms\Model\FeedUserFollow;
 use Plugin\Ds\SysCms\Model\FeedUserStats;
@@ -34,8 +35,8 @@ class FeedUserFollowService
                 ->delete();
 
             // 更新统计：减少关注数和粉丝数
-            $this->decrementFollowingCount($userId);
-            $this->decrementFollowersCount($followUserId);
+            $this->updateStatsCount($userId, 'following_count', -1);
+            $this->updateStatsCount($followUserId, 'followers_count', -1);
 
             return false;
         } else {
@@ -47,8 +48,8 @@ class FeedUserFollowService
             ]);
 
             // 更新统计：增加关注数和粉丝数
-            $this->incrementFollowingCount($userId);
-            $this->incrementFollowersCount($followUserId);
+            $this->updateStatsCount($userId, 'following_count', 1);
+            $this->updateStatsCount($followUserId, 'followers_count', 1);
 
             return true;
         }
@@ -63,20 +64,6 @@ class FeedUserFollowService
             ->where('user_id', $userId)
             ->where('follow_user_id', $followUserId)
             ->exists() ? 1 : 0;
-    }
-
-    /**
-     * 获取关注的用户ID列表
-     *
-     * @param int $userId 用户ID
-     * @return array 关注的用户ID数组
-     */
-    public function getFollowingIds(int $userId): array
-    {
-        return FeedUserFollow::query()
-            ->where('user_id', $userId)
-            ->pluck('follow_user_id')
-            ->toArray();
     }
 
     /**
@@ -131,7 +118,7 @@ class FeedUserFollowService
     }
 
     /**
-     * 获取关注用户的帖子和文章（信息流）
+     * 获取关注用户的帖子和标题贴（信息流）
      */
     public function getFollowingUserPosts(int $userId, int $page = 1, int $pageSize = 20): array
     {
@@ -181,123 +168,6 @@ class FeedUserFollowService
     }
 
     /**
-     * 增加关注数
-     */
-    public function incrementFollowingCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('following_count');
-    }
-
-    /**
-     * 减少关注数
-     */
-    public function decrementFollowingCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('following_count', 1, ['following_count' => 0]);
-    }
-
-    /**
-     * 增加粉丝数
-     */
-    public function incrementFollowersCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('followers_count');
-    }
-
-    /**
-     * 减少粉丝数
-     */
-    public function decrementFollowersCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('followers_count', 1, ['followers_count' => 0]);
-    }
-
-    /**
-     * 增加用户获得的点赞数
-     */
-    public function incrementUserLikeCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('total_likes');
-    }
-
-    /**
-     * 减少用户获得的点赞数
-     */
-    public function decrementUserLikeCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('total_likes', 1, ['total_likes' => 0]);
-    }
-
-    /**
-     * 增加用户获得的分享数
-     */
-    public function incrementUserShareCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('total_shares');
-    }
-
-    /**
-     * 减少用户获得的分享数
-     */
-    public function decrementUserShareCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('total_shares', 1, ['total_shares' => 0]);
-    }
-
-    /**
-     * 增加用户获得的评论数
-     */
-    public function incrementUserCommentCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('total_comments');
-    }
-
-    /**
-     * 减少用户获得的评论数
-     */
-    public function decrementUserCommentCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('total_comments', 1, ['total_comments' => 0]);
-    }
-
-    /**
-     * 增加用户帖子数
-     */
-    public function incrementUserPostCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('posts_count');
-    }
-
-    /**
-     * 减少用户帖子数
-     */
-    public function decrementUserPostCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->decrement('posts_count', 1, ['posts_count' => 0]);
-    }
-
-    /**
-     * 增加用户获得的浏览数
-     */
-    public function incrementUserViewCount(int $userId): void
-    {
-        $stats = FeedUserStats::getOrCreate($userId);
-        $stats->increment('total_views');
-    }
-
-    /**
      * 获取用户统计信息
      */
     public function getUserStats(int $userId): array
@@ -314,5 +184,38 @@ class FeedUserFollowService
             'total_comments' => $stats->total_comments,
             'total_views' => $stats->total_views,
         ];
+    }
+
+    public function updateStatsCount(int $userId, string $field, int $n): void
+    {
+        $query = FeedUserStats::query()->where(['user_id' => $userId]);
+        if ($n > 0) $query->increment($field); else $query->decrement($field);
+    }
+
+    public function updateCommentCount(int $targetType, int $targetId, int $increment): void
+    {
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
+            FeedPost::query()->where('id', $targetId)->increment('comment_count', $increment);
+        } elseif ($targetType === 3 || $targetType === 4 || $targetType === 6) {
+            // 公告/新闻（Article）
+            Article::query()->where('id', $targetId)->increment('comment_count', $increment);
+        }
+    }
+
+    /**
+     * 获取目标内容的作者ID
+     */
+    public function getSourceUserId(int $targetType, int $targetId): ?int
+    {
+        if ($targetType === 1 || $targetType === 2) {
+            // 帖子/文章（FeedPost）
+            return FeedPost::query()->where('id', $targetId)->value('user_id');
+        } elseif ($targetType === 3 || $targetType === 4 || $targetType === 6) {
+            // 公告/新闻（Article）
+            return Article::query()->where('id', $targetId)->value('created_by');
+        }
+
+        return null;
     }
 }

@@ -250,6 +250,24 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
+  Future<FeedPost?> getArticleDetail({
+    required int id,
+  }) async {
+    try {
+      final response = await _feedApi.getArticleDetail(id: id);
+
+      if (response is Map<String, dynamic>) {
+        return FeedPost.fromJson(response);
+      }
+      return null;
+    } on DioException catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e, defaultMessage: '获取文章详情失败'));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
   Future<List<FeedPost>> getUserPostList({
     required int userId,
     int? type,

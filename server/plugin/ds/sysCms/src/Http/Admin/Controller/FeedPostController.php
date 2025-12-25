@@ -1,11 +1,14 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Plugin\Ds\SysCms\Http\Admin\Controller;
 
+use App\Common\Tools;
 use App\Http\Admin\Controller\AbstractController;
 use App\Common\Result;
 use App\Http\CurrentUser;
+use Plugin\Ds\SysCms\Event\FeedEvent;
 use Plugin\Ds\SysCms\Http\Admin\Request\FeedPostRequest as Request;
 use Plugin\Ds\SysCms\Http\Admin\Service\FeedPostService as Service;
 use Hyperf\HttpServer\Annotation\Middleware;
@@ -22,7 +25,7 @@ use Hyperf\HttpServer\Annotation\DeleteMapping;
 
 /**
  * 用户帖子（UGC）控制器
- * 
+ *
  * @author FastApp代码生成器
  * @date 2025-12-16 09:41:28
  */
@@ -32,9 +35,11 @@ use Hyperf\HttpServer\Annotation\DeleteMapping;
 class FeedPostController extends AbstractController
 {
     public function __construct(
-        private readonly Service $service,
+        private readonly Service     $service,
         private readonly CurrentUser $currentUser
-    ) {}
+    )
+    {
+    }
 
     #[GetMapping(path: '/admin/ds/syscms/feed_post/list')]
     #[Permission(code: 'ds:syscms:feed_post:list')]
@@ -56,9 +61,10 @@ class FeedPostController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(Request $request): Result
     {
-        $this->service->create(array_merge($this->getRequestData(), [
+        $md = $this->service->create(array_merge($this->getRequestData(), [
             'user_id' => $this->currentUser->id(),
         ]));
+        Tools::eventDispatcher(new FeedEvent($md->id));
         return $this->success();
     }
 
@@ -70,6 +76,7 @@ class FeedPostController extends AbstractController
         $this->service->updateById($id, array_merge($this->getRequestData(), [
             'updated_by' => $this->currentUser->id(),
         ]));
+        Tools::eventDispatcher(new FeedEvent($id));
         return $this->success();
     }
 
@@ -79,6 +86,7 @@ class FeedPostController extends AbstractController
     public function delete(): Result
     {
         $this->service->deleteById($this->getRequestData(), []);
+        foreach ($this->getRequestData() as $id) Tools::eventDispatcher(new FeedEvent($id));
         return $this->success();
     }
 }

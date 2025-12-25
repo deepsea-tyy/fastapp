@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->comment('用户帖子表（UGC）');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('发布用户ID');
-            $table->tinyInteger('type')->comment('帖子类型：1帖子 2文章')->unsigned()->default(1);
+            $table->tinyInteger('type')->comment('帖子类型：1短贴 2标题贴')->unsigned()->default(1);
             $table->tinyInteger('content_type')->comment('内容类型：1纯文本 2图文 3视频 4链接')->unsigned()->default(1);
 
             // 内容字段
@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->json('link_meta')->nullable()->comment('链接元数据（标题、描述、封面等）');
 
             // 引用功能
-            $table->tinyInteger('quoted_type')->nullable()->comment('引用类型：1帖子 2文章')->unsigned();
+            $table->tinyInteger('quoted_type')->nullable()->comment('引用类型：1短贴 2标题贴')->unsigned();
             $table->bigInteger('quoted_id')->nullable()->unsigned()->comment('引用的内容ID');
 
             // 审核状态
@@ -68,7 +68,7 @@ return new class extends Migration {
             $table->engine = 'Innodb';
             $table->comment('评论表（通用）');
             $table->bigIncrements('id')->comment('主键');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->bigInteger('user_id')->unsigned()->comment('评论用户ID');
             $table->bigInteger('parent_id')->unsigned()->comment('父评论ID（0为顶级评论）')->default(0);
@@ -99,7 +99,7 @@ return new class extends Migration {
             $table->comment('点赞表（通用）');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('点赞用户ID');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻 5评论')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻 5评论')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->timestamp('created_at')->nullable()->comment('点赞时间');
 
@@ -113,7 +113,7 @@ return new class extends Migration {
             $table->comment('分享表（通用）');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('分享用户ID');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->tinyInteger('share_type')->comment('分享类型：1复制链接 2分享平台 3站内引用')->unsigned();
             $table->string('platform', 32)->nullable()->comment('分享平台');
@@ -129,7 +129,7 @@ return new class extends Migration {
             $table->comment('收藏表（通用）');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('收藏用户ID');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->timestamp('created_at')->nullable()->comment('收藏时间');
 
@@ -245,7 +245,7 @@ return new class extends Migration {
         Schema::create('feed_content_tag', function (Blueprint $table) {
             $table->engine = 'Innodb';
             $table->comment('内容标签关联表');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->bigInteger('tag_id')->unsigned()->comment('标签ID');
             $table->timestamp('created_at')->nullable()->comment('创建时间');
@@ -283,7 +283,7 @@ return new class extends Migration {
             $table->comment('内容质量反馈表');
             $table->bigIncrements('id')->comment('主键');
             $table->bigInteger('user_id')->unsigned()->comment('反馈用户ID');
-            $table->tinyInteger('target_type')->comment('目标类型：1帖子 2文章 3公告 4新闻')->unsigned();
+            $table->tinyInteger('target_type')->comment('目标类型：1短贴 2标题贴 3公告 4新闻')->unsigned();
             $table->bigInteger('target_id')->unsigned()->comment('目标ID');
             $table->tinyInteger('quality_type')->comment('质量类型：1对投资没有帮助 2内容质量差')->unsigned();
             $table->timestamp('created_at')->nullable()->comment('反馈时间');

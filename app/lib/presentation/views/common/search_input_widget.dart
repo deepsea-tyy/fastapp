@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:fastapp/presentation/views/home/search_result_screen.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/domain/entity/market/ticker_data.dart';
+import 'package:fastapp/di/service_locator.dart';
 
 /// 通用搜索结果项模型
 class SearchResultItem {
@@ -66,6 +70,7 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   final GlobalKey _searchBarKey = GlobalKey();
+  late final MarketStore _marketStore;
 
   List<SearchResultItem> _results = [];
   bool _isSearching = false;
@@ -81,6 +86,7 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
     super.initState();
     _controller = TextEditingController();
     _focusNode = FocusNode();
+    _marketStore = getIt<MarketStore>();
 
     // 跳转模式下不需要任何监听器
     if (_isNavigationMode) return;
@@ -311,10 +317,18 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
       child: Row(
         children: [
           if (!withPadding) const SizedBox(width: 12),
-          Icon(
-            widget.prefixIcon ?? Icons.search,
-            size: 20,
-            color: widget.iconColor ?? Colors.grey.shade600,
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: widget.iconColor?.withOpacity(0.15) ?? Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              widget.prefixIcon ?? Icons.search,
+              size: 16,
+              color: widget.iconColor ?? Colors.grey.shade600,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -442,6 +456,17 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
   }
 
   Widget _buildResultItem(SearchResultItem item) {
+    // 判断是否是合约
+    final isFutures = item.extra?['isFutures'] as bool? ?? false;
+    // 获取 ticker 数据
+    final tickerDataJson = item.extra?['tickerData'];
+    // 获取合约信息
+    final contractMultiplier = item.extra?['contractMultiplier'] as String?;
+    final maxLeverage = item.extra?['maxLeverage'] as String?;
+    final multiplier = contractMultiplier != null ? double.tryParse(contractMultiplier) : null;
+    final showMultiplier = multiplier != null && multiplier > 1;
+    final showLeverage = isFutures && maxLeverage != null && maxLeverage.isNotEmpty;
+
     return InkWell(
       onTap: () {
         _handleItemTap(item);
@@ -472,15 +497,55 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (showMultiplier) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${multiplier!.toInt()}x',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (showLeverage) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${maxLeverage}x',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   if (item.subtitle != null) ...[
                     const SizedBox(height: 4),
@@ -494,7 +559,65 @@ class _SearchInputWidgetState extends State<SearchInputWidget> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+            // 显示实时价格
+            if (tickerDataJson != null)
+              Observer(
+                builder: (_) {
+                  // 从 JSON 恢复 ticker 数据
+                  final cachedTicker = TickerData.fromJson(tickerDataJson as Map<String, dynamic>);
+                  final symbol = cachedTicker.symbol;
+
+                  // 实时获取最新的 ticker 数据
+                  TickerData? currentTicker;
+                  try {
+                    final symbolNoSlash = symbol.replaceAll('/', '');
+                    currentTicker = _marketStore.tickerList.firstWhere(
+                      (t) {
+                        final tSymbolNoSlash = t.symbol.replaceAll('/', '');
+                        return t.symbol == symbol || tSymbolNoSlash == symbolNoSlash;
+                      },
+                    );
+                  } catch (_) {
+                    currentTicker = cachedTicker;
+                  }
+
+                  final hasValidPrice = !currentTicker.lastPrice.isNaN &&
+                      !currentTicker.lastPrice.isInfinite &&
+                      currentTicker.lastPrice > 0;
+
+                  if (!hasValidPrice) {
+                    return const SizedBox(width: 20);
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          currentTicker.lastPrice.toString(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${currentTicker.changePercent >= 0 ? '+' : ''}${currentTicker.changePercent.toStringAsFixed(2)}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: currentTicker.changePercent >= 0 ? Colors.red : Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
+            else
+              const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
           ],
         ),
       ),
@@ -551,6 +674,11 @@ class SearchBarWithCancel extends StatelessWidget {
                       focusNode: focusNode,
                       decoration: InputDecoration(
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
                         hintText: hintText ?? '搜索',
                         hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
                         isDense: true,

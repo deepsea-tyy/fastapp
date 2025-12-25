@@ -20,6 +20,13 @@ use Hyperf\DbConnection\Model\Model;
  */
 class SearchIndex extends Model
 {
+    // 内容类型常量定义
+    public const TYPE_FEED = 'feed';              // 短贴（对应 feed_post.type=1）
+    public const TYPE_FEED_ARTICLE = 'feed_article'; // 标题贴（对应 feed_post.type=2）
+    public const TYPE_ARTICLE = 'article';        // 普通文章（对应 article 表）
+    public const TYPE_NOTICE = 'notice';          // 公告（对应 article 表）
+    public const TYPE_NEWS = 'news';              // 新闻（对应 article 表）
+
     protected ?string $table = 'search_index';
 
     public bool $timestamps = false;
@@ -32,6 +39,7 @@ class SearchIndex extends Model
         'tags',
         'keyword',
         'weight',
+        'click_count',
         'last_at',
     ];
 
@@ -39,6 +47,7 @@ class SearchIndex extends Model
         'target_id' => 'integer',
         'tags' => 'array',
         'keyword' => 'array',
+        'click_count' => 'integer',
         'last_at' => 'datetime',
     ];
 

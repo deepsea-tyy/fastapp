@@ -66,4 +66,28 @@ class SearchApi {
 
     return response.data;
   }
+
+  /// 搜索排行榜
+  Future<Map<String, dynamic>> ranking() async {
+    final response = await _dioClient.dio.get(Endpoints.searchRanking);
+    return response.data;
+  }
+
+  /// 记录搜索结果点击
+  /// [targetType] 内容类型
+  /// [targetId] 内容ID
+  Future<Map<String, dynamic>> recordClick({
+    required String targetType,
+    required int targetId,
+  }) async {
+    final response = await _dioClient.dio.post(
+      Endpoints.searchClick,
+      data: {
+        'target_type': targetType,
+        'target_id': targetId,
+      },
+    );
+
+    return response.data;
+  }
 }

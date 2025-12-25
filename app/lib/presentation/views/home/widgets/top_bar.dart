@@ -10,17 +10,19 @@ import 'package:fastapp/utils/icon_mapper.dart';
 class TopBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final int unreadMessageCount; // 未读消息数
+  final VoidCallback? onUnreadMessageTap;
 
   // 搜索框配置
-  final String? searchIconName; // Web 端图标名称，如 'material-symbols:local-fire-department'
-  final String? searchKeyword; // 搜索关键词文本，如 'MBL'
-  final Color? searchIconColor; // 图标颜色，如果为 null 则使用配置的默认颜色
-  final String? searchRoute; // 点击搜索框跳转的路由，默认为 homeSearch
+  final String? searchIconName;
+  final String? searchKeyword;
+  final Color? searchIconColor;
+  final String? searchRoute;
 
   const TopBar({
     super.key,
     this.onMenuPressed,
     this.unreadMessageCount = 0,
+    this.onUnreadMessageTap,
     this.searchIconName,
     this.searchKeyword,
     this.searchIconColor,
@@ -41,7 +43,6 @@ class _TopBarState extends State<TopBar> {
   void initState() {
     super.initState();
     _searchStore = getIt<SearchStore>();
-    // 自动刷新（如果需要）
     _searchStore.autoRefresh();
   }
 
@@ -84,7 +85,6 @@ class _TopBarState extends State<TopBar> {
         final iconName = widget.searchIconName ?? topKeyword?.icon;
         final hasCustomIcon = iconName?.isNotEmpty ?? false;
 
-        // 确定显示内容
         final displayText = keyword?.isNotEmpty == true ? keyword! : '搜索';
         final displayIcon = hasCustomIcon ? IconMapper.getIcon(iconName) : Icons.search;
         final displayColor = hasCustomIcon
@@ -133,30 +133,41 @@ class _TopBarState extends State<TopBar> {
             Icons.notifications_outlined,
             color: colorScheme.onSurface,
           ),
-          onPressed: () => Navigator.of(context).pushNamed(Routes.message),
+          onPressed: () {
+            widget.onUnreadMessageTap?.call();
+            Navigator.of(context).pushNamed(Routes.message);
+          },
         ),
         if (widget.unreadMessageCount > 0)
           Positioned(
             right: 8,
             top: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.error,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              constraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
-              child: Center(
-                child: Text(
-                  widget.unreadMessageCount > 99 ? '99+' : '${widget.unreadMessageCount}',
-                  style: TextStyle(
-                    color: colorScheme.onError,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    height: 1.0,
+            child: GestureDetector(
+              onTap: () {
+                widget.onUnreadMessageTap?.call();
+                Navigator.of(context).pushNamed(Routes.message);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: Center(
+                  child: Text(
+                    widget.unreadMessageCount > 99
+                        ? '99+'
+                        : '${widget.unreadMessageCount}',
+                    style: TextStyle(
+                      color: colorScheme.onError,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      height: 1.0,
+                    ),
                   ),
                 ),
               ),
@@ -188,10 +199,6 @@ class _TopBarState extends State<TopBar> {
       return;
     }
 
-    if (widget.onMenuPressed != null) {
-      widget.onMenuPressed!();
-    } else {
-      Scaffold.of(context).openEndDrawer();
-    }
+    Navigator.of(context).pushNamed(Routes.userCenter);
   }
 }
