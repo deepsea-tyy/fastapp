@@ -21,6 +21,7 @@ import 'package:fastapp/presentation/views/user/setting/email_binding.dart';
 import 'package:fastapp/presentation/views/user/setting/mobile_binding.dart';
 import 'package:fastapp/presentation/views/user/setting/password_setting.dart';
 import 'package:fastapp/presentation/views/user/message/message_screen.dart';
+import 'package:fastapp/presentation/views/customer_service/customer_service_chat_screen.dart';
 import 'package:flutter/material.dart';
 
 class Routes {
@@ -50,6 +51,7 @@ class Routes {
   static const String settings = '/settings';
   static const String message = '/message';
   static const String service = '/service';
+  static const String customerServiceChat = '/customer-service-chat';
 
   static final routes = <String, WidgetBuilder>{
     home: (BuildContext context) => const HomeScreen(),
@@ -76,5 +78,6 @@ class Routes {
     settings: (BuildContext context) => const SettingsScreen(),
     message: (BuildContext context) => const MessageScreen(),
     service: (BuildContext context) => const ServiceScreen(),
+    customerServiceChat: (BuildContext context) => const CustomerServiceChatScreen(),
   };
 }

@@ -182,11 +182,11 @@ class _TopBarState extends State<TopBar> {
 
     return IconButton(
       icon: Icon(
-        Icons.headphones_outlined,
+        Icons.headset_mic_outlined,
         color: colorScheme.onSurface,
       ),
       onPressed: () {
-        // TODO: 打开音频支持
+        Navigator.of(context).pushNamed(Routes.customerServiceChat);
       },
     );
   }
