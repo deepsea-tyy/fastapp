@@ -3,7 +3,7 @@ import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/domain/entity/market/market_pair.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
-import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:mobx/mobx.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
 
@@ -15,7 +15,7 @@ abstract class _MarketStore with Store {
   final GetTickerUseCase _getTickerUseCase;
   final GetAllTickerUseCase _getAllTickerUseCase;
   final ErrorStore _errorStore;
-  final MarketWebSocket _webSocket;
+  final AppWebSocket _webSocket;
   final MarketDataStore _marketDataStore;
 
   _MarketStore(
@@ -84,8 +84,8 @@ abstract class _MarketStore with Store {
   // 当前订阅的主题（用于取消订阅）
   String? _currentTickerTopic;
 
-  // 对外暴露 MarketWebSocket
-  MarketWebSocket get webSocket => _webSocket;
+  // 对外暴露 AppWebSocket
+  AppWebSocket get webSocket => _webSocket;
 
   /// 确保 WebSocket 已连接（游客模式）
   /// 在 App 启动时调用，建立基础连接

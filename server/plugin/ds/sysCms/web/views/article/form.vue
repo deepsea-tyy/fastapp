@@ -6,7 +6,6 @@ import type { MaFormExpose } from '@/components/ma-form'
 import useForm from '@/hooks/useForm.ts'
 import useFormResponsive from '@/hooks/useFormResponsive.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
-import { processUrl } from '@/utils/common.ts'
 
 const { formType = 'add', data = null } = defineProps<{
   formType: 'add' | 'edit'
@@ -34,37 +33,9 @@ useFormResponsive(maFormRef, {
   lgLabelWidth: '120px',
 })
 
-/**
- * 处理多语言对象数组中的图片路径
- */
-function processLangImagePath(field: any): any {
-  if (!field || !Array.isArray(field)) {
-    return field
-  }
-  
-  return field.map((item: any) => {
-    if (item && typeof item === 'object' && item.text) {
-      return {
-        ...item,
-        text: processUrl(item.text)
-      }
-    }
-    return item
-  })
-}
-
 // 创建操作
 function add(): Promise<any> {
   return new Promise((resolve, reject) => {
-    // 处理封面图片路径
-    if (formModel.value.cover) {
-      formModel.value.cover = processLangImagePath(formModel.value.cover)
-    }
-    // 处理视频路径
-    if (formModel.value.video) {
-      formModel.value.video = processLangImagePath(formModel.value.video)
-    }
-    
     create(formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {
@@ -76,15 +47,6 @@ function add(): Promise<any> {
 // 更新操作
 function edit(): Promise<any> {
   return new Promise((resolve, reject) => {
-    // 处理封面图片路径
-    if (formModel.value.cover) {
-      formModel.value.cover = processLangImagePath(formModel.value.cover)
-    }
-    // 处理视频路径
-    if (formModel.value.video) {
-      formModel.value.video = processLangImagePath(formModel.value.video)
-    }
-    
     save(formModel.value.id as number, formModel.value).then((res: any) => {
       res.code === ResultCode.SUCCESS ? resolve(res) : reject(res)
     }).catch((err) => {

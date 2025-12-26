@@ -20,14 +20,15 @@ class ArticleRequest extends FormRequest
     public function commonRules(): array
     {
         return [
-            'title' => ['array'],
-            'subtitle' => ['array'],
+            'title' => ['string', 'max:128'],
+            'lang' => ['required'],
+            'subtitle' => ['nullable', 'string', 'max:128'],
             'author' => ['sometimes'],
-            'cover' => ['array'],
-            'video' => ['array'],
+            'cover' => ['nullable', 'string', 'max:128'],
+            'video' => ['nullable', 'string', 'max:128'],
             'release_at' => ['date', 'nullable'],
-            'brief' => ['array'],
-            'content' => ['array'],
+            'brief' => ['nullable', 'string', 'max:300'],
+            'content' => ['nullable', 'string'],
             'remark' => ['sometimes'],
             'sort' => ['integer'],
             'view_count' => ['integer'],

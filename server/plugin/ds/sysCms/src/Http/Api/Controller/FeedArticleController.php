@@ -52,12 +52,7 @@ class FeedArticleController extends AbstractController
         $uid = $this->currentUser->id();
         $keyword = trim($this->getRequest()->input('keyword', ''));
 
-        // 从缓存获取文章ID列表
-        $articleIds = $this->feedService->getCategoryArticleIds('news', $page, $pageSize, $keyword);
-
-        // 批量获取格式化后的文章（带缓存）
-        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
-
+        $list = $this->feedService->getCategoryArticleIds('news', $page, $pageSize, $keyword, $this->getLang());
         // 标记消息已读
         $this->feedService::readMessage($uid, 3);
 
@@ -81,12 +76,7 @@ class FeedArticleController extends AbstractController
         $uid = $this->currentUser->id();
         $keyword = trim($this->getRequest()->input('keyword', ''));
 
-        // 从缓存获取文章ID列表
-        $articleIds = $this->feedService->getCategoryArticleIds('notice', $page, $pageSize, $keyword);
-
-        // 批量获取格式化后的文章（带缓存）
-        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
-
+        $list = $this->feedService->getCategoryArticleIds('notice', $page, $pageSize, $keyword, $this->getLang());
         // 标记消息已读
         $this->feedService::readMessage($uid, 2);
 
@@ -120,13 +110,7 @@ class FeedArticleController extends AbstractController
     public function categoryList(): Result
     {
         $categoryId = (int)$this->getRequest()->input('category_id');
-        $uid = $this->currentUser->id();
-
-        // 从缓存获取文章ID列表
-        $articleIds = $this->feedService->getArticleIdsByCategoryId($categoryId);
-
-        // 批量获取格式化后的文章（带缓存）
-        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
+        $list = $this->feedService->getArticleIdsByCategoryId($categoryId);
 
         return $this->success(['list' => $list]);
     }
@@ -145,35 +129,8 @@ class FeedArticleController extends AbstractController
     {
         $page = $this->getPage();
         $pageSize = $this->getPageSize();
-        $uid = $this->currentUser->id();
         $keyword = trim($this->getRequest()->input('keyword', ''));
-        $offset = ($page - 1) * $pageSize;
-
-        // 查询所有已发布的文章
-        $query = Article::query()->where('status', 1);
-
-        // 如果有关键词，进行模糊查询
-        if (!empty($keyword)) {
-            $query->where(function ($q) use ($keyword) {
-                $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"])
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(brief, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(brief, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"])
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(content, '$.\"zh-CN\"')) LIKE ?", ["%{$keyword}%"])
-                    ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(content, '$.\"en-US\"')) LIKE ?", ["%{$keyword}%"]);
-            });
-        }
-
-        $articleIds = $query->orderByDesc('release_at')
-            ->orderByDesc('id')
-            ->offset($offset)
-            ->limit($pageSize)
-            ->pluck('id')
-            ->toArray();
-
-        // 批量获取格式化后的文章（带缓存）
-        $list = $this->feedService->batchGetArticlesFormatted($articleIds, $uid);
-
+        $list = $this->feedService->getArticleSearch($keyword, $page, $pageSize, $this->getLang());
         return $this->success(['list' => $list]);
     }
 

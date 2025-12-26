@@ -7,7 +7,7 @@ import { deleteByIds } from '$/ds/sysCms/api/article.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import hasAuth from '@/utils/permission/hasAuth.ts'
 import { ElTag } from 'element-plus'
-import {formatLang} from "@/utils/common.ts";
+import {formatLang, lang} from "@/utils/common.ts";
 import MaImagePreview from '@/components/ma-image-preview/index.vue'
 
 export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
@@ -30,7 +30,12 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       prop: 'code',
     },
     {
-      label: () => t('crud.category'), // '作者'
+      label: () => t('crud.remark'), // '备注'
+      minWidth: 120,
+      prop: 'remark',
+    },
+    {
+      label: () => t('crud.category'),
       minWidth: 120,
       prop: 'categories',
 
@@ -40,9 +45,13 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       }
     },
     {
-      label: () => t('article.ArticleFields.author'), // '作者'
+      label: () => t('common.language'),
       minWidth: 120,
-      prop: 'author',
+      prop: 'lang',
+
+      cellRender: ({row}) => {
+        return lang(t).find(item => item.value === row.lang)?.label
+      }
     },
     {
       label: () => t('article.ArticleFields.release_at'), // '发布日期'
@@ -53,18 +62,12 @@ export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t
       label: () => t('article.ArticleFields.title'), // '标题'
       minWidth: 120,
       prop: 'title',
-      cellRender: ({row}) => formatLang(row.title)
     },
     {
       label: () => t('article.ArticleFields.cover'), // '封面'
       minWidth: 120,
         prop: 'title',
         cellRender: ({row}) => <MaImagePreview images={row.cover}/>
-    },
-    {
-      label: () => t('crud.remark'), // '备注'
-      minWidth: 120,
-      prop: 'remark',
     },
     {
       label: () => t('crud.sort'), // '排序'

@@ -2,7 +2,7 @@ import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart' as kline_usecase;
-import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:mobx/mobx.dart';
 
 part 'kline_store.g.dart';
@@ -12,7 +12,7 @@ class KlineStore = _KlineStore with _$KlineStore;
 abstract class _KlineStore with Store {
   final GetKlineUseCase _getKlineUseCase;
   final ErrorStore _errorStore;
-  final MarketWebSocket _webSocket;
+  final AppWebSocket _webSocket;
 
   _KlineStore(
     this._getKlineUseCase,

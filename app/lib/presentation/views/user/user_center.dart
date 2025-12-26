@@ -331,6 +331,13 @@ class _UserCenterScreenState extends State<UserCenterScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).pushNamed(Routes.accountSecurity),
             ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.settings_outlined,
+              title: '系统设置',
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).pushNamed(Routes.settings),
+            ),
           ],
         );
       },

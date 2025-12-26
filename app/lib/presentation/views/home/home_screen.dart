@@ -38,8 +38,11 @@ import 'package:fastapp/constants/app_backgrounds.dart';
 import 'package:fastapp/presentation/views/common/empty_state.dart';
 import 'package:fastapp/core/theme/app_theme_extension.dart';
 import 'package:fastapp/data/network/apis/message/message_notify_api.dart';
+import 'package:fastapp/data/network/apis/customer_service/customer_service_api.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'dart:async';
 
 /// 移动端首页组件
 ///
@@ -67,17 +70,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final UserStore _userStore = getIt<UserStore>();
   final MessageNotifyApi _messageNotifyApi = getIt<MessageNotifyApi>();
+  final AppWebSocket _appWebSocket = getIt<AppWebSocket>();
   late final FeedController _feedController;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _feedTabsKey = GlobalKey();
   bool _showFab = false;
   int _unreadMessageCount = 0;
+  bool _hasCustomerServiceUnread = false; // 客服是否有未读消息
+  StreamSubscription<WebSocketMessage>? _wsSubscription;
 
   @override
   void initState() {
     super.initState();
     // 立即初始化 Feed 控制器（避免 build 时访问未初始化的字段）
     _feedController = FeedController();
+
+    // 监听客服消息推送
+    _listenToCustomerServiceMessages();
 
     // 等待页面内容下载完成后再发送请求
     afterPageContentDownloadedAsync(() async {
@@ -95,6 +104,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 监听滚动，实现加载更多
     _scrollController.addListener(_onScroll);
+  }
+
+  /// 监听客服消息推送
+  void _listenToCustomerServiceMessages() {
+    _wsSubscription = _appWebSocket.messageStream
+        .where((msg) => msg.type == WebSocketMessageType.customerServiceMessage)
+        .listen((msg) {
+      // 收到客服消息，显示未读状态
+      if (mounted) {
+        setState(() {
+          _hasCustomerServiceUnread = true;
+        });
+      }
+    });
   }
 
   @override
@@ -122,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _wsSubscription?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _feedController.dispose();
@@ -167,6 +191,13 @@ class _HomeScreenState extends State<HomeScreen> {
         onUnreadMessageTap: () {
           setState(() {
             _unreadMessageCount = 0;
+          });
+        },
+        hasCustomerServiceUnread: _hasCustomerServiceUnread,
+        onCustomerServiceTap: () {
+          // 点击客服图标，清除未读状态
+          setState(() {
+            _hasCustomerServiceUnread = false;
           });
         },
       ),

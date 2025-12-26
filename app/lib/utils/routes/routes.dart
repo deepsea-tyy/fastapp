@@ -22,6 +22,9 @@ import 'package:fastapp/presentation/views/user/setting/mobile_binding.dart';
 import 'package:fastapp/presentation/views/user/setting/password_setting.dart';
 import 'package:fastapp/presentation/views/user/message/message_screen.dart';
 import 'package:fastapp/presentation/views/customer_service/customer_service_chat_screen.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
+import 'package:fastapp/data/network/apis/customer_service/customer_service_api.dart';
+import 'package:fastapp/di/service_locator.dart';
 import 'package:flutter/material.dart';
 
 class Routes {
@@ -78,6 +81,9 @@ class Routes {
     settings: (BuildContext context) => const SettingsScreen(),
     message: (BuildContext context) => const MessageScreen(),
     service: (BuildContext context) => const ServiceScreen(),
-    customerServiceChat: (BuildContext context) => const CustomerServiceChatScreen(),
+    customerServiceChat: (BuildContext context) => CustomerServiceChatScreen(
+      webSocket: getIt<AppWebSocket>(),
+      customerServiceApi: getIt<CustomerServiceApi>(),
+    ),
   };
 }

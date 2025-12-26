@@ -4,7 +4,7 @@ import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/store/market/depth_store.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
-import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
@@ -108,7 +108,7 @@ class DetailKlineChart extends StatefulWidget {
 class _DetailKlineChartState extends State<DetailKlineChart> {
   final KlineStore _klineStore = getIt<KlineStore>();
   final DepthStore _depthStore = getIt<DepthStore>();
-  final MarketWebSocket _marketWebSocket = getIt<MarketWebSocket>();
+  final AppWebSocket _marketWebSocket = getIt<AppWebSocket>();
   final LanguageStore _languageStore = getIt<LanguageStore>();
   
   StreamSubscription? _websocketSubscription;

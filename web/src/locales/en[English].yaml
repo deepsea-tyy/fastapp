@@ -180,6 +180,7 @@ crud:
   rejectFailed: Rejection failed
   userNotAllow: This feature is not accessible or available to current users
   superAdminNoEdit: SuperAdmin not allow edit
+  refresh: Refresh
   category: Category
 form:
   pleaseInput: Please input {msg}

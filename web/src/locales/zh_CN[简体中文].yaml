@@ -180,6 +180,7 @@ crud:
   rejectFailed: 拒绝失败
   userNotAllow: 当前用户不可访问或使用此功能
   superAdminNoEdit: 超管不可修改
+  refresh: 刷新
   category: 分类
 form:
   pleaseInput: 请输入{msg}

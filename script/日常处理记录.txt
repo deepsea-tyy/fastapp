@@ -5,6 +5,12 @@ git push --force origin main
 空目录删除
 find "目录" -type d -empty -delete
 
+启动模拟器
+flutter emulators --launch Pixel_9_Pro_XL
+
+强制关闭服务
+ps -ef | grep -v grep | grep php | awk '{print $2}'|xargs -r kill -9
+
 DNS
 日常上网（混合国内外）	223.5.5.5（阿里） + 119.29.29.29（腾讯）
 开发/测试/访问 GitHub 等	8.8.8.8 + 1.1.1.1
@@ -27,6 +33,7 @@ Claude ai全局设置
 - 不考虑向后兼容
 - 不考虑向后兼容
 - 文档只在必要时生成，内容精简
+- 不使用rest风格接口
 
 API 响应处理规则
 - 直接使用 response 作为解包后的数据，无需检查 code 或访问 data 字段

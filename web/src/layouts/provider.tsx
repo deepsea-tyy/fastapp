@@ -23,7 +23,10 @@ export default defineComponent({
       attrsMerged.value.locale = locales[lang]
     }, { immediate: true })
 
-    onMounted(async () => await usePluginStore().callHooks('setup'))
+    onMounted(async () => {
+      await usePluginStore().callHooks('setup')
+      // WebSocket 会在 useWebSocketStore 中自动初始化（如果有 token）
+    })
     return () => (
       <el-config-provider {...attrsMerged.value}>
         {slots.default?.()}

@@ -66,12 +66,11 @@ class Tools
      */
     public static function lang(int $userId = 0, bool $format = false): string
     {
-        $lang = '';
         if ($userId) {
             $cache = self::getUserCache($userId, ['lang']);
-            $lang = $cache['lang'] ?? 'zh_CN';
+            return $cache['lang'] ?: 'zh_CN';
         }
-        if (!$lang) $lang = self::getHeader('accept-language');
+        $lang = self::getHeader('accept-language');
         if ($format) $lang = str_replace('_', '-', $lang);
         return $lang ?: 'zh_CN';
     }
@@ -85,16 +84,16 @@ class Tools
      */
     public static function formatLang(array $data, int|string $userId = 0): string
     {
-        try {
-            $lang = is_int($userId) ? Tools::lang($userId) : $userId;
-            foreach ($data as $v) {
-                if ($v['lang'] == $lang) return $v['text'];
-            }
-            return $data[0]['text'] ?? '';
-        } catch (\Throwable $exception) {
-            self::logAsync('格式化翻译' . $exception->getMessage());
-            return '';
+        $lang = is_int($userId) ? Tools::lang($userId) : $userId;
+        foreach ($data as $v) {
+            if ($v['lang'] == $lang) return $v['text'];
         }
+        return $data[0]['text'] ?? '';
+    }
+
+    public static function console(string $msg, string $level = 'notice'): void
+    {
+        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($msg);
     }
 
     /**
@@ -109,7 +108,7 @@ class Tools
     {
         Coroutine::create(static function () use ($message, $level, $name, $group) {
             try {
-                if (\Hyperf\Config\config('debug')) self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($message);
+                if (\Hyperf\Config\config('debug')) self::console($message, $level);
 
                 // 使用单例模式获取或创建 Logger 实例
                 $cacheKey = "{$name}:{$group}";

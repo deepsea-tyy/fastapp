@@ -144,7 +144,7 @@ class FeedUserFollowService
             ->limit($pageSize)
             ->get()
             ->map(function ($post) {
-                return FeedService::formatData($post);
+                return FeedService::formatPost($post);
             })->toArray();
 
     }

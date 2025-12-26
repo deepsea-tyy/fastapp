@@ -15,7 +15,7 @@ use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Plugin\Ds\SysKefu\Service\KefuConversationService;
+use Plugin\Ds\SysKefu\Http\Admin\Service\KefuConversationService;
 
 /**
  * 客服会话表控制器

@@ -14,6 +14,8 @@ use Hyperf\DbConnection\Model\Model;
  * @property int $status 1启用2禁用
  * @property int $max_concurrent 最大会话数
  * @property int $current_concurrent 当前会话数
+ * @property int $is_auto_reply 是否自动回复：0=否，1=是
+ * @property int $auto_reply_rule_id 自动回复规则ID
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property int $created_by 创建者
@@ -29,12 +31,12 @@ class Kefu extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'nickname', 'avatar', 'status', 'max_concurrent', 'current_concurrent', 'created_at', 'updated_at', 'created_by', 'updated_by'];
+    protected array $fillable = ['id', 'nickname', 'avatar', 'status', 'max_concurrent', 'current_concurrent', 'created_at', 'is_auto_reply', 'auto_reply_rule_id', 'updated_at', 'created_by', 'updated_by'];
 
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'status' => 'integer', 'max_concurrent' => 'integer', 'current_concurrent' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'created_by' => 'integer', 'updated_by' => 'integer'];
+    protected array $casts = ['id' => 'integer', 'status' => 'integer', 'max_concurrent' => 'integer', 'current_concurrent' => 'integer', 'is_auto_reply' => 'integer', 'auto_reply_rule_id' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'created_by' => 'integer', 'updated_by' => 'integer'];
 
     public function conversation(): HasMany
     {

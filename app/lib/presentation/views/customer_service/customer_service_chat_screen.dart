@@ -1,17 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/domain/entity/customer_service/customer_service.dart';
-import 'package:fastapp/domain/entity/customer_service/quick_question.dart';
 import 'package:fastapp/domain/entity/customer_service/chat_message.dart';
 import 'package:fastapp/constants/app_backgrounds.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
+import 'package:fastapp/data/network/apis/customer_service/customer_service_api.dart';
+import 'package:fastapp/core/services/message_service.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 /// 客服聊天页面
 class CustomerServiceChatScreen extends StatefulWidget {
-  const CustomerServiceChatScreen({super.key});
+  final AppWebSocket webSocket;
+  final CustomerServiceApi customerServiceApi;
+
+  const CustomerServiceChatScreen({
+    super.key,
+    required this.webSocket,
+    required this.customerServiceApi,
+  });
 
   @override
   State<CustomerServiceChatScreen> createState() =>
       _CustomerServiceChatScreenState();
+}
+
+// 样式常量
+class _ChatStyles {
+  static const double avatarRadiusLarge = 20.0;
+  static const double avatarRadiusSmall = 16.0;
+  static const double messageBubbleRadius = 12.0;
+  static const double messagePadding = 12.0;
+  static const double spacing = 8.0;
+}
+
+// 配置常量
+class _ChatConfig {
+  /// 用户发送消息后多久内不显示欢迎语（分钟）
+  static const int welcomeMessageThresholdMinutes = 5;
 }
 
 class _CustomerServiceChatScreenState
@@ -20,33 +45,269 @@ class _CustomerServiceChatScreenState
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   late CustomerService _customerService;
-  late List<QuickQuestion> _quickQuestions;
+  List<String> _quickQuestions = [];
   bool _showQuickQuestions = true;
+  int? _conversationId;
+  StreamSubscription<WebSocketMessage>? _messageSubscription;
+
+  // 分页相关
+  int _currentPage = 1;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  final int _pageSize = 20;
+  bool _isInitializing = true; // 初始化加载状态
 
   @override
   void initState() {
     super.initState();
     _customerService = CustomerService.defaultService();
-    _quickQuestions = QuickQuestion.getDefaultQuestions();
+    _listenToWebSocket();
     _initializeChat();
+    _setupScrollListener();
   }
 
-  void _initializeChat() {
-    // 添加欢迎消息
-    setState(() {
-      _messages.add(
-        ChatMessage.createServiceMessage(
-          content: '您好！我是${_customerService.nickname}，很高兴为您服务。请问有什么可以帮助您的？',
-          serviceId: _customerService.id,
-          serviceName: _customerService.nickname,
-          serviceAvatar: _customerService.avatar,
-        ),
-      );
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      // 当滚动到接近顶部时加载更多（因为使用了reverse，实际是向上滚动）
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        _loadMoreMessages();
+      }
     });
+  }
+
+  void _listenToWebSocket() {
+    _messageSubscription = widget.webSocket.messageStream
+        .where((msg) =>
+            msg.type == WebSocketMessageType.customerServiceMessage ||
+            msg.type == WebSocketMessageType.customerServiceMessageEnd)
+        .listen((msg) {
+      if (msg.type == WebSocketMessageType.customerServiceMessage) {
+        _handleIncomingMessage(msg.data);
+      } else if (msg.type == WebSocketMessageType.customerServiceMessageEnd) {
+        _handleConversationEnd(msg.data);
+      }
+    });
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      final response = await widget.customerServiceApi.getConversation();
+      _conversationId = response['id'] as int?;
+
+      // 更新客服信息
+      if (response['kefu_info'] != null) {
+        final kefuInfo = response['kefu_info'] as Map<String, dynamic>;
+        _customerService = CustomerService(
+          id: kefuInfo['id'] as int? ?? 0,
+          nickname: kefuInfo['nickname'] as String? ?? '在线客服',
+          avatar: kefuInfo['avatar'] as String? ?? '',
+          level: CustomerServiceLevel.intermediate,
+          isOnline: kefuInfo['is_online'] as bool? ?? true,
+        );
+      }
+
+      // 更新快捷问题
+      if (response['help'] != null) {
+        _quickQuestions = List<String>.from(response['help'] as List);
+      }
+
+      // 先加载历史消息
+      if (_conversationId != null) {
+        await _loadHistoryMessages();
+      }
+
+      // 判断是否需要显示欢迎消息
+      final shouldShowWelcome = _shouldShowWelcomeMessage();
+
+      // 历史消息加载完成后添加欢迎消息并更新状态
+      setState(() {
+        _isInitializing = false;
+        if (shouldShowWelcome) {
+          _messages.add(
+            ChatMessage.createServiceMessage(
+              content: '您好！我是${_customerService.nickname}，很高兴为您服务。请问有什么可以帮助您的？',
+              serviceId: _customerService.id,
+              serviceName: _customerService.nickname,
+              serviceAvatar: _customerService.avatar,
+            ),
+          );
+        }
+      });
+
+      _scrollToBottom();
+    } catch (e) {
+      setState(() => _isInitializing = false);
+      MessageService.error('加载会话失败');
+    }
+  }
+
+  /// 判断是否应该显示欢迎消息
+  /// 规则：如果最新消息是用户在指定时间内发送的且客服未回复，则不显示欢迎语
+  bool _shouldShowWelcomeMessage() {
+    if (_messages.isEmpty) return true;
+
+    final latestMessage = _messages.last;
+
+    // 如果最新消息是客服发的，说明客服已经回复了，不显示欢迎消息
+    if (latestMessage.senderType == SenderType.service) return false;
+
+    // 如果最新消息是系统消息，显示欢迎消息
+    if (latestMessage.senderType == SenderType.system) return true;
+
+    // 如果最新消息是用户发的，判断时间
+    final messageAge = DateTime.now().difference(latestMessage.timestamp);
+
+    // 如果消息在指定时间内，不显示欢迎语（用户刚发了消息等待回复）
+    if (messageAge.inMinutes < _ChatConfig.welcomeMessageThresholdMinutes) {
+      return false;
+    }
+
+    // 超过指定时间了，显示欢迎语
+    return true;
+  }
+
+  Future<void> _loadHistoryMessages() async {
+    if (_conversationId == null) return;
+
+    try {
+      final messages = await widget.customerServiceApi.getMessages(
+        conversationId: _conversationId!,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
+
+      setState(() {
+        _messages.insertAll(0, messages.map(_parseMessage));
+        _hasMoreData = messages.length >= _pageSize;
+      });
+    } catch (e) {
+      MessageService.error('加载历史消息失败');
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    if (_isLoadingMore || !_hasMoreData || _conversationId == null) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      _currentPage++;
+      final messages = await widget.customerServiceApi.getMessages(
+        conversationId: _conversationId!,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
+
+      setState(() {
+        if (messages.isEmpty) {
+          _hasMoreData = false;
+        } else {
+          _messages.insertAll(0, messages.map(_parseMessage));
+          _hasMoreData = messages.length >= _pageSize;
+        }
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _currentPage--;
+        _isLoadingMore = false;
+      });
+      MessageService.error('加载更多消息失败');
+    }
+  }
+
+  ChatMessage _parseMessage(dynamic data) {
+    final messageType = data['message_type'] as int? ?? 1;
+    final senderType = data['sender_type'] as int? ?? 1;
+
+    return ChatMessage(
+      id: (data['id'] ?? data['message_id']).toString(),
+      content: data['content'] ?? '',
+      type: _intToMessageType(messageType),
+      senderType: senderType == 1 ? SenderType.user : SenderType.service,
+      senderId: data['sender_id'] as int?,
+      timestamp: DateTime.parse(data['created_at']),
+      isRead: data['is_read'] == 1,
+    );
+  }
+
+  MessageType _intToMessageType(int type) {
+    switch (type) {
+      case 2: return MessageType.image;
+      case 3: return MessageType.file;
+      default: return MessageType.text;
+    }
+  }
+
+  void _handleIncomingMessage(dynamic data) {
+    try {
+      final message = _parseMessage(data);
+
+      setState(() => _messages.add(message));
+
+      // 标记客服消息为已读
+      if (message.senderType == SenderType.service && _conversationId != null) {
+        widget.webSocket.markCustomerServiceMessageRead(
+          conversationId: _conversationId!,
+          messageIds: [int.parse(message.id)],
+        );
+      }
+
+      _scrollToBottom();
+    } catch (e, stack) {
+      debugPrint('处理消息失败: $e\n$stack');
+    }
+  }
+
+  void _handleConversationEnd(dynamic data) {
+    setState(() => _messages.add(ChatMessage.createSystemMessage('会话已结束')));
+    _conversationId = null;
+  }
+
+  // 构建通用头像组件
+  Widget _buildAvatar({
+    required String? avatarUrl,
+    required IconData icon,
+    required double radius,
+    required ThemeData theme,
+    bool showOnlineIndicator = false,
+  }) {
+    final avatar = CircleAvatar(
+      radius: radius,
+      backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+      backgroundImage: (avatarUrl?.isNotEmpty ?? false)
+          ? NetworkImage(avatarUrl!)
+          : null,
+      child: (avatarUrl?.isEmpty ?? true)
+          ? Icon(icon, size: radius, color: theme.colorScheme.primary)
+          : null,
+    );
+
+    if (!showOnlineIndicator) return avatar;
+
+    return Stack(
+      children: [
+        avatar,
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -78,40 +339,12 @@ class _CustomerServiceChatScreenState
       title: Row(
         children: [
           // 客服头像
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                backgroundImage: _customerService.avatar.isNotEmpty
-                    ? NetworkImage(_customerService.avatar)
-                    : null,
-                child: _customerService.avatar.isEmpty
-                    ? Icon(
-                        Icons.support_agent,
-                        color: theme.colorScheme.primary,
-                      )
-                    : null,
-              ),
-              // 在线状态指示器
-              if (_customerService.isOnline)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.scaffoldBackgroundColor,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          _buildAvatar(
+            avatarUrl: _customerService.avatar,
+            icon: Icons.support_agent,
+            radius: _ChatStyles.avatarRadiusLarge,
+            theme: theme,
+            showOnlineIndicator: _customerService.isOnline,
           ),
           const SizedBox(width: 12),
           // 客服信息
@@ -224,11 +457,7 @@ class _CustomerServiceChatScreenState
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
-                onPressed: () {
-                  setState(() {
-                    _showQuickQuestions = false;
-                  });
-                },
+                onPressed: () => setState(() => _showQuickQuestions = false),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -238,7 +467,7 @@ class _CustomerServiceChatScreenState
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _quickQuestions.take(6).map((question) {
+            children: _quickQuestions.map((question) {
               return _buildQuickQuestionChip(question, theme);
             }).toList(),
           ),
@@ -247,7 +476,7 @@ class _CustomerServiceChatScreenState
     );
   }
 
-  Widget _buildQuickQuestionChip(QuickQuestion question, ThemeData theme) {
+  Widget _buildQuickQuestionChip(String question, ThemeData theme) {
     return InkWell(
       onTap: () => _handleQuickQuestionTap(question),
       borderRadius: BorderRadius.circular(16),
@@ -262,7 +491,7 @@ class _CustomerServiceChatScreenState
           ),
         ),
         child: Text(
-          question.question,
+          question,
           style: TextStyle(
             fontSize: 13,
             color: theme.colorScheme.primary,
@@ -273,6 +502,26 @@ class _CustomerServiceChatScreenState
   }
 
   Widget _buildMessageList() {
+    // 初始化加载中
+    if (_isInitializing) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              '正在加载聊天记录...',
+              style: TextStyle(
+                color: Theme.of(context).hintColor,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_messages.isEmpty) {
       return Center(
         child: Text(
@@ -287,11 +536,39 @@ class _CustomerServiceChatScreenState
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _messages.length,
+      reverse: true, // 反向显示，从底部开始
+      itemCount: _messages.length + (_hasMoreData ? 1 : 0),
       itemBuilder: (context, index) {
-        final message = _messages[index];
+        // 加载指示器显示在最后（因为reverse，实际在顶部）
+        if (index == _messages.length) {
+          return _buildLoadingIndicator();
+        }
+
+        // 因为reverse=true，需要反向索引
+        final message = _messages[_messages.length - 1 - index];
         return _buildMessageItem(message);
       },
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: _isLoadingMore
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                '上滑加载更多',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).hintColor,
+                ),
+              ),
+      ),
     );
   }
 
@@ -307,41 +584,29 @@ class _CustomerServiceChatScreenState
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 客服头像（左侧）
           if (!isUser) ...[
-            // 客服头像
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              backgroundImage: message.senderAvatar?.isNotEmpty == true
-                  ? NetworkImage(message.senderAvatar!)
-                  : null,
-              child: message.senderAvatar?.isEmpty ?? true
-                  ? Icon(
-                      Icons.support_agent,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    )
-                  : null,
+            _buildAvatar(
+              avatarUrl: message.senderAvatar,
+              icon: Icons.support_agent,
+              radius: _ChatStyles.avatarRadiusSmall,
+              theme: theme,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: _ChatStyles.spacing),
           ],
           // 消息内容
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(_ChatStyles.messagePadding),
                   decoration: BoxDecoration(
-                    color: isUser
-                        ? theme.colorScheme.primary
-                        : theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
+                    color: isUser ? theme.colorScheme.primary : theme.cardColor,
+                    borderRadius: BorderRadius.circular(_ChatStyles.messageBubbleRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -354,39 +619,26 @@ class _CustomerServiceChatScreenState
                     message.content,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isUser
-                          ? Colors.white
-                          : theme.colorScheme.onSurface,
+                      color: isUser ? Colors.white : theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _formatTime(message.timestamp),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: theme.hintColor,
-                  ),
+                  style: TextStyle(fontSize: 11, color: theme.hintColor),
                 ),
               ],
             ),
           ),
+          // 用户头像（右侧）
           if (isUser) ...[
-            const SizedBox(width: 8),
-            // 用户头像
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              backgroundImage: message.senderAvatar?.isNotEmpty == true
-                  ? NetworkImage(message.senderAvatar!)
-                  : null,
-              child: message.senderAvatar?.isEmpty ?? true
-                  ? Icon(
-                      Icons.person,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    )
-                  : null,
+            SizedBox(width: _ChatStyles.spacing),
+            _buildAvatar(
+              avatarUrl: message.senderAvatar,
+              icon: Icons.person,
+              radius: _ChatStyles.avatarRadiusSmall,
+              theme: theme,
             ),
           ],
         ],
@@ -440,11 +692,7 @@ class _CustomerServiceChatScreenState
                 _showQuickQuestions ? Icons.keyboard_hide : Icons.help_outline,
                 color: theme.colorScheme.primary,
               ),
-              onPressed: () {
-                setState(() {
-                  _showQuickQuestions = !_showQuickQuestions;
-                });
-              },
+              onPressed: () => setState(() => _showQuickQuestions = !_showQuickQuestions),
             ),
             const SizedBox(width: 8),
             // 输入框
@@ -487,94 +735,51 @@ class _CustomerServiceChatScreenState
     );
   }
 
-  void _handleQuickQuestionTap(QuickQuestion question) {
-    _messageController.text = question.question;
+  void _handleQuickQuestionTap(String question) {
+    _messageController.text = question;
     _sendMessage();
   }
 
   void _sendMessage() {
     final content = _messageController.text.trim();
-    if (content.isEmpty) return;
+    if (content.isEmpty || _conversationId == null) return;
 
+    final tempMessage = ChatMessage.createUserMessage(content: content);
     setState(() {
-      // 添加用户消息
-      _messages.add(
-        ChatMessage.createUserMessage(
-          content: content,
-        ),
-      );
-
-      // 清空输入框
+      _messages.add(tempMessage);
       _messageController.clear();
-
-      // 模拟客服回复
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() {
-            _messages.add(
-              ChatMessage.createServiceMessage(
-                content: _getAutoReply(content),
-                serviceId: _customerService.id,
-                serviceName: _customerService.nickname,
-                serviceAvatar: _customerService.avatar,
-              ),
-            );
-          });
-          _scrollToBottom();
-        }
-      });
     });
+
+    widget.webSocket.sendCustomerServiceMessage(
+      conversationId: _conversationId!,
+      content: content,
+    );
 
     _scrollToBottom();
   }
 
-  String _getAutoReply(String userMessage) {
-    // 简单的自动回复逻辑
-    if (userMessage.contains('充值')) {
-      return '充值方式：\n1. 点击首页"充值"按钮\n2. 选择充值币种和网络\n3. 复制充值地址或扫描二维码\n4. 从您的钱包转账到该地址\n\n一般情况下，充值会在10-30分钟内到账。';
-    } else if (userMessage.contains('提现')) {
-      return '提现步骤：\n1. 进入资产页面\n2. 选择要提现的币种\n3. 点击"提现"\n4. 输入提现地址和数量\n5. 完成安全验证\n\n提现一般会在1-2小时内到账，具体时间取决于区块链网络状况。';
-    } else if (userMessage.contains('交易')) {
-      return '交易指南：\n1. 进入交易页面\n2. 选择交易对（如BTC/USDT）\n3. 选择交易类型（限价/市价）\n4. 输入价格和数量\n5. 确认并提交订单\n\n如需更多帮助，请告诉我具体遇到的问题。';
-    } else if (userMessage.contains('手续费')) {
-      return '我们的手续费非常优惠：\n• 现货交易：0.1%\n• 合约交易：挂单0.02%，吃单0.05%\n• 充值：免费\n• 提现：根据不同币种收取网络费用\n\nVIP用户可享受更低手续费，详情请查看VIP等级说明。';
-    } else if (userMessage.contains('密码')) {
-      return '重置密码步骤：\n1. 点击登录页面的"忘记密码"\n2. 输入注册邮箱或手机号\n3. 获取验证码\n4. 设置新密码\n\n如无法接收验证码，请联系我们的人工客服协助处理。';
-    } else if (userMessage.contains('实名') || userMessage.contains('认证')) {
-      return '实名认证流程：\n1. 进入个人中心\n2. 点击"身份认证"\n3. 上传身份证正反面照片\n4. 进行人脸识别\n5. 等待审核（一般1-2个工作日）\n\n完成实名认证后可享受更高的交易额度和更多功能。';
-    } else if (userMessage.contains('活动') || userMessage.contains('优惠')) {
-      return '当前活动：\n• 新用户注册送50 USDT体验金\n• 完成首次交易返20 USDT\n• 邀请好友双方各得佣金\n\n更多活动详情请查看"活动中心"。';
-    } else {
-      return '感谢您的咨询。如果您需要更详细的帮助，请描述具体问题，或者选择上方的快捷问题。我会尽快为您解答。';
-    }
-  }
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      // 因为使用了reverse，滚动到0位置就是最新消息
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
   }
 
   String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
+    final difference = DateTime.now().difference(time);
 
-    if (difference.inMinutes < 1) {
-      return '刚刚';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}分钟前';
-    } else if (difference.inDays < 1) {
-      return DateFormat('HH:mm').format(time);
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}天前';
-    } else {
-      return DateFormat('MM-dd HH:mm').format(time);
-    }
+    if (difference.inMinutes < 1) return '刚刚';
+    if (difference.inHours < 1) return '${difference.inMinutes}分钟前';
+    if (difference.inDays < 1) return DateFormat('HH:mm').format(time);
+    if (difference.inDays < 7) return '${difference.inDays}天前';
+    return DateFormat('MM-dd HH:mm').format(time);
   }
 }

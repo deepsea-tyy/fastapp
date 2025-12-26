@@ -378,8 +378,8 @@ LUA;
         } catch (\Throwable $e) {
             Tools::logAsync(
                 "Message action error for action {$action}, fd {$fd}: " . $e->getMessage(),
-                'warning',
-                'warning',
+                'error',
+                'error',
                 'websocket'
             );
             return WsResponse::error('Internal error');
@@ -453,12 +453,7 @@ LUA;
                         continue;
                     }
                     if (isset(self::$actionHandle[$actionName])) {
-                        Tools::logAsync(
-                            "Action {$actionName} is already registered by " . self::$actionHandle[$actionName]['class'] . ", will be overridden by {$className}",
-                            'warning',
-                            'warning',
-                            'websocket'
-                        );
+                        Tools::console("Action {$actionName} is already registered by " . self::$actionHandle[$actionName]['class'] . ", will be overridden by {$className}");
                     }
 
                     self::$actionHandle[$actionName] = [
@@ -477,22 +472,12 @@ LUA;
 
                     // 确保 action 以 'visitor.' 开头
                     if (!str_starts_with($actionName, 'visitor.')) {
-                        Tools::logAsync(
-                            "Visitor action {$actionName} in {$className} must start with 'visitor.', skipping",
-                            'warning',
-                            'warning',
-                            'websocket'
-                        );
+                        Tools::console("Visitor action {$actionName} in {$className} must start with 'visitor.', skipping");
                         continue;
                     }
 
                     if (isset(self::$visitorActionHandle[$actionName])) {
-                        Tools::logAsync(
-                            "Visitor action {$actionName} is already registered by " . self::$visitorActionHandle[$actionName]['class'] . ", will be overridden by {$className}",
-                            'warning',
-                            'warning',
-                            'websocket'
-                        );
+                        Tools::console("Visitor action {$actionName} is already registered by " . self::$visitorActionHandle[$actionName]['class'] . ", will be overridden by {$className}");
                     }
 
                     self::$visitorActionHandle[$actionName] = [
@@ -549,12 +534,13 @@ LUA;
      * @return bool 是否成功添加连接
      */
     private function addConnection(
-        int $fd,
+        int        $fd,
         int|string $userId,
-        string $ip = '',
-        string $userAgent = '',
-        string $deviceType = 'unknown'
-    ): bool {
+        string     $ip = '',
+        string     $userAgent = '',
+        string     $deviceType = 'unknown'
+    ): bool
+    {
         if (!$this->acquireLock($fd)) {
             return false;
         }

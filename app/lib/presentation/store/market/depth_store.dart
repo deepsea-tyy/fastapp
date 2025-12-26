@@ -2,7 +2,7 @@ import 'package:fastapp/core/stores/error/error_store.dart';
 import 'package:fastapp/domain/entity/market/depth_data.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart' as depth_usecase;
-import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:mobx/mobx.dart';
 
 part 'depth_store.g.dart';
@@ -12,7 +12,7 @@ class DepthStore = _DepthStore with _$DepthStore;
 abstract class _DepthStore with Store {
   final GetDepthUseCase _getDepthUseCase;
   final ErrorStore _errorStore;
-  final MarketWebSocket _webSocket;
+  final AppWebSocket _webSocket;
 
   _DepthStore(
     this._getDepthUseCase,

@@ -14,11 +14,16 @@ use Plugin\Ds\SysKefu\Model\KefuConversation;
 use Plugin\Ds\SysKefu\Model\KefuMessage;
 use Plugin\Ds\SysKefu\WebSocket\KefuMessageEndFormat;
 use Plugin\Ds\SysKefu\WebSocket\KefuMessageSendFormat;
+use Hyperf\Context\ApplicationContext;
+use Hyperf\Coroutine\Coroutine;
 
 class KefuMessageService
 {
+    private KefuAutoReplyService $autoReplyService;
+
     public function __construct()
     {
+        $this->autoReplyService = ApplicationContext::getContainer()->get(KefuAutoReplyService::class);
     }
 
     /**
@@ -29,18 +34,32 @@ class KefuMessageService
      */
     public function getConversation(int $userId): array
     {
-        $c = KefuConversation::query()->where(['user_id' => $userId, 'status' => 1])->first();
-        if (!$c) {
-            $kefuId = Kefu::query()->orderBy('current_concurrent')->value('id');
+        $c = KefuConversation::query()->where(['user_id' => $userId])->first();
+        if ($c) {
+            $kefu = Kefu::query()->where(['id' => $c->kefu_id])->first();
+        } else {
+            $kefu = Kefu::query()->orderBy('current_concurrent')->first();
             $c = new KefuConversation();
             $c->fill([
                 'user_id' => $userId,
-                'kefu_id' => $kefuId,
+                'kefu_id' => $kefu->id,
             ]);
             $c->save();
-            Kefu::query()->where(['id' => $kefuId])->increment('current_concurrent');
+            Kefu::query()->where(['id' => $kefu->id])->increment('current_concurrent');
         }
-        return $c->toArray();
+        return [
+            'id' => $c->id,
+            'kefu_id' => $c->kefu_id,
+            'user_id' => $c->user_id,
+            'status' => $c->status,
+            'kefu_info' => [
+                'id' => $kefu->id,
+                'nickname' => $kefu->nickname,
+                'avatar' => $kefu->avatar,
+                'is_online' => $kefu->status == 1,
+            ],
+            'help' => array_column(KefuAutoReplyService::getEnabledRules(Tools::lang($userId)),'title')
+        ];
     }
 
     /**
@@ -49,10 +68,10 @@ class KefuMessageService
     public function list(array $params): array
     {
         $paginate = KefuMessage::query()
-            ->where(['conversation_id' => $params['conversation_id'], 'user_id' => $params['user_id']])
+            ->where(['conversation_id' => $params['conversation_id']])
             ->orderByDesc('id')
             ->simplePaginate(perPage: (int)$params['page_size'] ?? 10, page: (int)$params['page'] ?? 1);
-        return array_reverse($paginate->items());
+        return ['list' => array_reverse($paginate->items())];
     }
 
     /**
@@ -100,11 +119,36 @@ class KefuMessageService
                 ]
             ));
             Tools::eventDispatcher(new MessageSendEvent($messageFormat));
+
+            // 如果是用户消息，异步处理自动回复
+            if ($senderType == 1 && !empty($data['content'])) {
+                $this->triggerAutoReply($conversationId, $userId, $data['content']);
+            }
+
             return $message;
         } catch (\Throwable $th) {
             Db::rollBack();
             return null;
         }
+    }
+
+    /**
+     * 触发自动回复（异步）
+     *
+     * @param int $conversationId 会话ID
+     * @param int $userId 用户ID
+     * @param string $userMessage 用户消息内容
+     */
+    private function triggerAutoReply(int $conversationId, int $userId, string $userMessage): void
+    {
+        // 使用协程异步处理自动回复，不阻塞消息发送
+        Coroutine::create(function () use ($conversationId, $userId, $userMessage) {
+            try {
+                $this->autoReplyService->handleUserMessage($conversationId, $userId, $userMessage);
+            } catch (\Throwable $e) {
+                Tools::logAsync($e->getMessage());
+            }
+        });
     }
 
     /**

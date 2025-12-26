@@ -59,7 +59,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
           time: article.getFormattedTime(),
           content: article.content ?? '',
           title: article.title,
-          mediaUrls: article.cover,
+          mediaUrls: article.cover != null ? [article.cover!] : null,
           commentCount: article.commentCount,
           likeCount: article.likeCount,
           repostCount: 0,

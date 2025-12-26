@@ -11,6 +11,8 @@ class TopBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final int unreadMessageCount; // 未读消息数
   final VoidCallback? onUnreadMessageTap;
+  final bool hasCustomerServiceUnread; // 客服是否有未读消息
+  final VoidCallback? onCustomerServiceTap;
 
   // 搜索框配置
   final String? searchIconName;
@@ -23,6 +25,8 @@ class TopBar extends StatefulWidget implements PreferredSizeWidget {
     this.onMenuPressed,
     this.unreadMessageCount = 0,
     this.onUnreadMessageTap,
+    this.hasCustomerServiceUnread = false,
+    this.onCustomerServiceTap,
     this.searchIconName,
     this.searchKeyword,
     this.searchIconColor,
@@ -180,14 +184,40 @@ class _TopBarState extends State<TopBar> {
   Widget _buildHeadphonesIcon(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return IconButton(
-      icon: Icon(
-        Icons.headset_mic_outlined,
-        color: colorScheme.onSurface,
-      ),
-      onPressed: () {
-        Navigator.of(context).pushNamed(Routes.customerServiceChat);
-      },
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.headset_mic_outlined,
+            color: colorScheme.onSurface,
+          ),
+          onPressed: () {
+            widget.onCustomerServiceTap?.call();
+            Navigator.of(context).pushNamed(Routes.customerServiceChat);
+          },
+        ),
+        // 未读红点
+        if (widget.hasCustomerServiceUnread)
+          Positioned(
+            right: 10,
+            top: 10,
+            child: GestureDetector(
+              onTap: () {
+                widget.onCustomerServiceTap?.call();
+                Navigator.of(context).pushNamed(Routes.customerServiceChat);
+              },
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

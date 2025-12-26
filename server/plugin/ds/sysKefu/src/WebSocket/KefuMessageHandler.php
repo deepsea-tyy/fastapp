@@ -92,6 +92,7 @@ class KefuMessageHandler implements WsMessageHandlerInterface
             'file_url' => $data['file_url'] ?? null,
         ];
 
+
         $message = $this->messageService->save($messageData, $userId, $data['sender_type'] ?? 1);
         if (!$message) {
             return WsResponse::error('Failed to save message');

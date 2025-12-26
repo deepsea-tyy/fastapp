@@ -160,6 +160,59 @@ class MenuSysKefu extends Seeder
                             ],
                         ],
                     ],
+                    [
+                        'name' => 'ds:syskefu:kefu_auto_reply',
+                        'path' => '/ds/sysKefu/admin/kefuAutoReply',
+                        'component' => 'ds/sysKefu/views/kefuAutoReply/index',
+                        'sort' => 4,
+                        'meta' => new Meta([
+                            'title' => '客服自动回复规则',
+                            'i18n' => 'admin.KefuAutoReply',
+                            'icon' => 'mdi:menu',
+                            'type' => 'M',
+                            'hidden' => false,
+                            'componentPath' => 'plugins/',
+                            'componentSuffix' => '.vue',
+                            'breadcrumbEnable' => true,
+                            'copyright' => true,
+                            'cache' => true,
+                            'affix' => false,
+                        ]),
+                        'children' => [
+                            [
+                                'name' => 'ds:syskefu:kefu_auto_reply:list',
+                                'meta' => new Meta([
+                                    'title' => 'List',
+                                    'type' => 'B',
+                                    'i18n' => 'crud.list',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:syskefu:kefu_auto_reply:create',
+                                'meta' => new Meta([
+                                    'title' => 'Add',
+                                    'type' => 'B',
+                                    'i18n' => 'crud.add',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:syskefu:kefu_auto_reply:save',
+                                'meta' => new Meta([
+                                    'title' => 'Edit',
+                                    'type' => 'B',
+                                    'i18n' => 'crud.edit',
+                                ]),
+                            ],
+                            [
+                                'name' => 'ds:syskefu:kefu_auto_reply:delete',
+                                'meta' => new Meta([
+                                    'title' => 'Delete',
+                                    'type' => 'B',
+                                    'i18n' => 'crud.delete',
+                                ]),
+                            ],
+                        ],
+                    ],
                 ]
             ],
         ];

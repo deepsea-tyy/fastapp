@@ -10,7 +10,6 @@ namespace Plugin\Ds\SysCms\Http\Api\Service;
 
 use App\Common\Tools;
 use App\Http\CurrentUser;
-use Hyperf\DbConnection\Db;
 use Hyperf\Engine\Coroutine;
 use Plugin\Ds\SysCms\Model\Article;
 use Plugin\Ds\SysCms\Model\FeedCollect;
@@ -83,6 +82,7 @@ class FeedService
     {
         $article = Article::query()
             ->where('id', $id)
+            ->where('lang', $lang)
             ->where('status', 1)
             ->first();
 
@@ -94,10 +94,10 @@ class FeedService
         return [
             'id' => $article->id,
             'profile' => self::getProfile($article->created_by),
-            'title' => Tools::formatLang($article->title ?? [], $lang),
-            'subtitle' => Tools::formatLang($article->subtitle ?? [], $lang),
-            'content' => Tools::formatLang($article->content ?? [], $lang),
-            'cover' => Tools::formatLang($article->cover ?? [], $lang),
+            'title' => $article->title ?? '',
+            'subtitle' => $article->subtitle ?? '',
+            'content' => $article->content ?? '',
+            'cover' => $article->cover ?? '',
             'author' => $article->author ?? '',
             'view_count' => $article->view_count ?? 0,
             'like_count' => $article->like_count ?? 0,
@@ -111,52 +111,6 @@ class FeedService
 
 
     /**
-     * 批量获取格式化后的标题贴列表
-     *
-     * @param array $articleIds 标题贴ID数组
-     * @param int $userId 用户ID（用于多语言格式化）
-     * @return array
-     */
-    public function batchGetArticlesFormatted(array $articleIds, int $userId = 0): array
-    {
-        if (empty($articleIds)) {
-            return [];
-        }
-
-        // 批量查询标题贴（避免N+1问题）
-        $articles = Article::query()
-            ->whereIn('id', $articleIds)
-            ->where('status', 1)
-            ->get()
-            ->keyBy('id');
-
-        $result = [];
-        foreach ($articleIds as $id) {
-            $article = $articles->get($id);
-            if ($article) {
-                $result[] = [
-                    'id' => $article->id,
-                    'profile' => self::getProfile($article->created_by),
-                    'title' => Tools::formatLang($article->title ?? [], $userId),
-                    'subtitle' => Tools::formatLang($article->subtitle ?? [], $userId),
-                    'brief' => Tools::formatLang($article->brief ?? [], $userId),
-                    'content' => Tools::formatLang($article->content ?? [], $userId),
-                    'cover' => $article->cover ?? [],
-                    'author' => $article->author ?? '',
-                    'view_count' => $article->view_count ?? 0,
-                    'like_count' => $article->like_count ?? 0,
-                    'comment_count' => $article->comment_count ?? 0,
-                    'share_count' => $article->share_count ?? 0,
-                    'collect_count' => $article->collect_count ?? 0,
-                    'created_at' => $article->created_at->toDateTimeString(),
-                ];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 获取分类文章ID列表
      *
      * @param string $categoryCode 分类代码（news/notice/helpManual等）
@@ -165,7 +119,7 @@ class FeedService
      * @param string $keyword 搜索关键词
      * @return array
      */
-    public function getCategoryArticleIds(string $categoryCode, int $page = 1, int $pageSize = 20, string $keyword = ''): array
+    public function getCategoryArticleIds(string $categoryCode, int $page = 1, int $pageSize = 20, string $keyword = '', string $lang = ''): array
     {
         $offset = ($page - 1) * $pageSize;
 
@@ -180,28 +134,68 @@ class FeedService
 
         // 查询标题贴ID列表
         $query = \Plugin\Ds\SysCms\Model\CategoryCorrelation::query()
+            ->join('article', 'category_correlation.data_id', '=', 'article.id')
             ->where('type', self::TYPE_POST)
+            ->where('article.lang', $lang)
             ->where('category_id', $categoryId);
 
         // 如果有关键词，关联Article表进行模糊查询
         if (!empty($keyword)) {
-            $query->join('article', 'category_correlation.data_id', '=', 'article.id')
-                ->where('article.status', 1)
-                ->where(function ($q) use ($keyword) {
-                    $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.title, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
-                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.title, '$.\"en\"')) LIKE ?", ["%{$keyword}%"])
-                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.brief, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
-                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.brief, '$.\"en\"')) LIKE ?", ["%{$keyword}%"])
-                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.content, '$.\"zh_CN\"')) LIKE ?", ["%{$keyword}%"])
-                        ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(article.content, '$.\"en\"')) LIKE ?", ["%{$keyword}%"]);
-                });
+            $query->where('article.status', 1)
+                ->where('article.title', 'like', '%' . $keyword . '%')
+                ->where('article.content', 'like', '%' . $keyword . '%');
         }
 
-        return $query->offset($offset)
+        $ids = $query->offset($offset)
             ->limit($pageSize)
-            ->orderByDesc('data_id')
+            ->orderByDesc('article.sort')
             ->pluck('data_id')
             ->toArray();
+
+        // 批量查询标题贴（避免N+1问题）
+        return Article::query()
+            ->whereIn('id', $ids)
+            ->where('lang', $lang)
+            ->where('status', 1)
+            ->orderByDesc('sort')
+            ->get()->map(function ($article) {
+                return FeedService::formatArticle($article);
+            })->toArray();
+    }
+
+    public function getArticleSearch($keyword = '', int $page = 1, int $pageSize = 20, string $lang = ''): array
+    {
+        return Article::query()
+            ->where('lang', $lang)
+            ->where('status', 1)
+            ->where('article.status', 1)
+            ->where('article.title', 'like', '%' . $keyword . '%')
+            ->where('article.content', 'like', '%' . $keyword . '%')
+            ->orderByDesc('sort')
+            ->get()->map(function ($article) {
+                return FeedService::formatArticle($article);
+            })->toArray();
+    }
+
+    public static function formatArticle(Article $article): array
+    {
+
+        return [
+            'id' => $article->id,
+            'profile' => self::getProfile($article->created_by),
+            'title' => $article->title ?? '',
+            'subtitle' => $article->subtitle ?? '',
+            'brief' => $article->brief ?? '',
+            'content' => $article->content ?? '',
+            'cover' => $article->cover ?? '',
+            'author' => $article->author ?? '',
+            'view_count' => $article->view_count ?? 0,
+            'like_count' => $article->like_count ?? 0,
+            'comment_count' => $article->comment_count ?? 0,
+            'share_count' => $article->share_count ?? 0,
+            'collect_count' => $article->collect_count ?? 0,
+            'created_at' => $article->created_at->toDateTimeString(),
+        ];
     }
 
     /**
@@ -437,7 +431,7 @@ class FeedService
         return CurrentUser::baseInfo($userId);
     }
 
-    public static function formatData(FeedPost $post): array
+    public static function formatPost(FeedPost $post): array
     {
         return [
             'type' => $post->type,
@@ -478,7 +472,7 @@ class FeedService
         elseif ($filter == 'hot') $query->orderByDesc('is_hot');
         return $query->offset($offset)->limit($pageSize)->get()
             ->map(function ($post) {
-                return static::formatData($post);
+                return static::formatPost($post);
             })->toArray();
     }
 

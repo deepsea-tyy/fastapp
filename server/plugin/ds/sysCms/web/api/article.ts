@@ -1,49 +1,53 @@
 import type { ResponseStruct } from '#/global'
 
 export interface ArticleVo {
-  id: number
+  id?: number
   // 标题
-  title: string
+  title?: string
   // 副标题
-  subtitle: string
+  subtitle?: string
+  // 语言
+  lang?: string
   // 作者
-  author: string
+  author?: string
   // 封面
-  cover: string
+  cover?: string
   // 视频
-  video: string
+  video?: string
   // 发布日期
-  release_at: string
+  release_at?: string
   // 摘要
-  brief: string
+  brief?: string
   // 内容
-  content: string
+  content?: string
   // 备注
-  remark: string
+  remark?: string
   // 排序
-  sort: number
+  sort?: number
   // 浏览数
-  view_count: number
+  view_count?: number
   // 点赞数
-  like_count: number
+  like_count?: number
   // 评论数
-  comment_count: number
+  comment_count?: number
   // 分享数
-  share_count: number
+  share_count?: number
   // 收藏数
-  collect_count: number
+  collect_count?: number
   // 1显示
-  status: number
+  status?: number
   // 调用代码
-  code: string
+  code?: string
+  // 分类ID
+  category_id?: number[]
   // 创建者
-  created_by: number
+  created_by?: number
   // 更新者
-  updated_by: number
+  updated_by?: number
   // 创建时间
-  created_at: string
+  created_at?: string
   // 更新时间
-  updated_at: string
+  updated_at?: string
 }
 
 // 文章表查询

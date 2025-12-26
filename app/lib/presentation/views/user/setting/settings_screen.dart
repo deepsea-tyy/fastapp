@@ -33,9 +33,6 @@ class SettingsScreen extends StatelessWidget {
             value: _getLanguageDisplayName(languageStore.locale),
             onTap: () {},
           ),
-          SettingItem(title: '提现地址', onTap: () {}),
-          SettingItem(title: '悬浮窗设置', onTap: () {}),
-          SettingItem(title: '使用 BNB', onTap: () {}),
 
           SectionHeader(title: '主题'),
           SettingItemWithValue(
@@ -55,11 +52,6 @@ class SettingsScreen extends StatelessWidget {
             ),
             onTap: () {},
           ),
-          SettingItemWithValue(
-            title: '涨跌幅与图表时区',
-            value: '近24小时',
-            onTap: () {},
-          ),
 
           SectionHeader(title: '支付方式'),
           SettingItemWithValue(
@@ -75,8 +67,6 @@ class SettingsScreen extends StatelessWidget {
             value: '327.98MB',
             onTap: () {},
           ),
-          SettingItem(title: '帮助与支持', onTap: () {}),
-          SettingItem(title: 'Cookie 设置', onTap: () {}),
           SettingItem(title: '隐私中心', onTap: () {}),
           SettingItem(title: '关于我们', onTap: () {}),
           SettingItem(

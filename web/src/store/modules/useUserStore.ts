@@ -1,4 +1,3 @@
-
 import useCache from '@/hooks/useCache.ts'
 import type { ResponseStruct } from '#/global'
 import useThemeColor from '@/hooks/useThemeColor.ts'
@@ -6,6 +5,7 @@ import useHttp from '@/hooks/auto-imports/useHttp.ts'
 import * as PermissionApi from '~/base/api/permission.ts'
 import type { MenuVo, RoleVo } from '~/base/api/permission.ts'
 import { recursionGetKey } from '@/utils/recursionGetKey.ts'
+import useWebSocketStore from './useWebSocketStore'
 
 export interface LoginParams {
   username: string
@@ -108,6 +108,7 @@ const useUserStore = defineStore(
           cache.set('expire', useDayjs().unix() + res.data.expire_at, { exp: res.data.expire_at })
           cache.set('refresh_token', res.data.refresh_token)
           await usePluginStore().callHooks('login', { username: data.username, ...res.data })
+          // WebSocket 会通过 token watch 自动初始化
           resolve(res.data)
         }).catch((error) => {
           reject(error)
@@ -140,7 +141,18 @@ const useUserStore = defineStore(
 
     async function logout(redirect = router.currentRoute.value.fullPath) {
       await usePluginStore().callHooks('logout')
+
+      // 调用退出登录接口
+      try {
+        await logoutApi()
+      } catch (error) {
+        // 即使接口失败也继续执行本地清理
+      }
+
       useTabStore().clearTab()
+      // 退出登录时关闭 WebSocket 连接
+      const wsStore = useWebSocketStore()
+      wsStore.closeWebSocket()
       clearInfo()
       await router.push({
         name: 'login',

@@ -109,6 +109,10 @@ async function bootstrap(app: App): Promise<void> {
   await usePluginStore().registerPlugin(app)
   await router.isReady()
   useThemeColor().initThemeColor()
+
+  // 初始化 WebSocket Store（确保在 pinia 和 userStore 之后）
+  const wsStore = useWebSocketStore()
+  wsStore.setupTokenWatch()
 }
 
 export default bootstrap

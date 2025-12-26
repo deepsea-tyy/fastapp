@@ -17,7 +17,7 @@ import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/store/market/depth_store.dart';
-import 'package:fastapp/data/network/websocket/market_websocket.dart';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
@@ -105,7 +105,7 @@ class StoreModule {
         getIt<GetTickerUseCase>(),
         getIt<GetAllTickerUseCase>(),
         getIt<ErrorStore>(),
-        getIt<MarketWebSocket>(),
+        getIt<AppWebSocket>(),
         getIt<MarketDataStore>(),
       ),
     );
@@ -114,7 +114,7 @@ class StoreModule {
       KlineStore(
         getIt<GetKlineUseCase>(),
         getIt<ErrorStore>(),
-        getIt<MarketWebSocket>(),
+        getIt<AppWebSocket>(),
       ),
     );
 
@@ -122,7 +122,7 @@ class StoreModule {
       DepthStore(
         getIt<GetDepthUseCase>(),
         getIt<ErrorStore>(),
-        getIt<MarketWebSocket>(),
+        getIt<AppWebSocket>(),
       ),
     );
 

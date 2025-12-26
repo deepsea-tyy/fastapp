@@ -17,7 +17,7 @@ use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
-use Plugin\Ds\SysKefu\Service\KefuService;
+use Plugin\Ds\SysKefu\Http\Admin\Service\KefuService;
 
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]

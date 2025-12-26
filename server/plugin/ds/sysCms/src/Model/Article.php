@@ -14,14 +14,15 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * 文章表模型.
  *
- * @property array $title 标题
- * @property array $subtitle 副标题
+ * @property string $title 标题
+ * @property string $subtitle 副标题
  * @property string $author 作者
- * @property array $cover 封面
- * @property array $video 视频
+ * @property string $cover 封面
+ * @property string $video 视频
+ * @property string $lang
  * @property string $release_at 发布日期
- * @property array $brief 摘要
- * @property array $content 内容
+ * @property string $brief 摘要
+ * @property string $content 内容
  * @property string $remark 备注
  * @property int $sort 排序
  * @property int $view_count 浏览数
@@ -51,6 +52,7 @@ final class Article extends Model
         'subtitle',
         'author',
         'cover',
+        'lang',
         'video',
         'release_at',
         'brief',
@@ -74,15 +76,6 @@ final class Article extends Model
      * 数据转换设置.
      */
     protected array $casts = [
-        'title' => 'array',
-        'subtitle' => 'array',
-        'author' => 'string',
-        'cover' => 'array',
-        'video' => 'array',
-        'release_at' => 'string',
-        'brief' => 'array',
-        'content' => 'array',
-        'remark' => 'string',
         'sort' => 'integer',
         'view_count' => 'integer',
         'like_count' => 'integer',
@@ -90,7 +83,6 @@ final class Article extends Model
         'share_count' => 'integer',
         'collect_count' => 'integer',
         'status' => 'integer',
-        'code' => 'string',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',

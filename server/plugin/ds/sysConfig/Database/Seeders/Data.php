@@ -16,8 +16,7 @@ class Data extends Seeder
 
         // 插入配置组
         $group = [
-            ['code' => 'sys_storage', 'name' => '[{"lang": "zh_CN", "text": "存储设置"}], {"lang": "en", "text": "save setting"}]'],
-            ['code' => 'feed_config', 'name' => '[{"lang": "zh_CN", "text": "信息流账户配置"}, {"lang": "en", "text": "Information flow account configuration"}]'],
+            ['code' => 'sys_storage', 'name' => '[{"lang": "zh_CN", "text": "存储设置"}], {"lang": "en", "text": "save setting"}]', 'icon' => 'ri:folder-history-fill'],
         ];
         foreach ($group as $item) {
             $groupExists = Db::table('system_config_group')->where('code', $item['code'])->exists();
@@ -45,10 +44,6 @@ class Data extends Seeder
             ['sys_storage', 'cos_bucket', null, '[{"lang": "zh_CN", "text": "腾讯云bucket"}]', 'input', '[]', 76],
             ['sys_storage', 'cos_domain', null, '[{"lang": "zh_CN", "text": "腾讯云domain"}]', 'input', '[]', 75],
             ['sys_storage', 'cos_region', null, '[{"lang": "zh_CN", "text": "腾讯云region"}]', 'input', '[]', 74],
-            //信息流配置
-            ['feed_config', 'feed_account_new', null, '[{"lang": "zh_CN", "text": "新闻发布账户ID"}, {"lang": "en", "text": "News Release Account ID"}]', 'input', '[]', 99],
-            ['feed_config', 'feed_account_notice', null, '[{"lang": "zh_CN", "text": "公告发布账户"}, {"lang": "en", "text": "Announcement Release Account"}]', 'input', '[]', 89],
-            ['feed_config', 'feed_account_post', null, '[{"lang": "zh_CN", "text": "帖子发布账户 ID"}, {"lang": "zh_CN", "text": "Post posting account ID"}]', 'input', '[]', 79],
         ];
 
         foreach ($configs as $config) {

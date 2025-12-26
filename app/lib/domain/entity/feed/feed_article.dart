@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:fastapp/domain/entity/user/user_profile.dart';
-import 'package:fastapp/domain/entity/feed/converters/multi_lang_list_converter.dart';
 import 'package:fastapp/utils/image_utils.dart';
 
 part 'feed_article.g.dart';
@@ -13,21 +12,23 @@ class FeedArticle {
   /// 文章ID
   final int id;
 
-  /// 标题（多语言字段，后端会格式化为字符串）
+  /// 标题
   final String title;
 
-  /// 副标题（多语言字段，后端会格式化为字符串）
+  /// 副标题
   final String? subtitle;
 
-  /// 摘要（多语言字段，后端会格式化为字符串）
+  /// 摘要
   final String? brief;
 
-  /// 内容（多语言字段，后端会格式化为字符串）
+  /// 内容
   final String? content;
 
-  /// 封面图（多语言数组格式，会自动转换为字符串列表）
-  @MultiLangListConverter()
-  final List<String>? cover;
+  /// 封面图
+  final String? cover;
+
+  /// 视频
+  final String? video;
 
   /// 作者
   final String? author;
@@ -73,6 +74,7 @@ class FeedArticle {
     this.brief,
     this.content,
     this.cover,
+    this.video,
     this.author,
     this.profile,
     this.viewCount = 0,
@@ -136,19 +138,11 @@ class FeedArticle {
     }
   }
 
-  /// 获取格式化后的封面图列表
-  List<String> get formattedCovers {
+  /// 获取格式化后的封面图
+  String? get formattedCover {
     if (cover == null || cover!.isEmpty) {
-      return [];
+      return null;
     }
-    return cover!
-        .map((url) => ImageUtils.formatSingleImagePath(url))
-        .toList();
-  }
-
-  /// 获取第一张封面图
-  String? get firstCover {
-    final covers = formattedCovers;
-    return covers.isEmpty ? null : covers.first;
+    return ImageUtils.formatSingleImagePath(cover!);
   }
 }

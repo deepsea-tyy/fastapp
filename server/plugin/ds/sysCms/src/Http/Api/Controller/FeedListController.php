@@ -76,7 +76,7 @@ class FeedListController extends AbstractController
 
             // 格式化数据
             $list = $list->map(function ($item) {
-                return FeedService::formatData($item);
+                return FeedService::formatPost($item);
             });
         } else {
             // 不需要去重或用户未登录，直接获取列表
@@ -155,7 +155,7 @@ class FeedListController extends AbstractController
         foreach ($postIds as $postId) {
             $post = $posts->get($postId);
             if ($post) {
-                $list[] = FeedService::formatData($post);
+                $list[] = FeedService::formatPost($post);
             }
         }
 
