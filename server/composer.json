@@ -89,7 +89,8 @@
     "pragmarx/google2fa": "^9.0",
     "ramsey/uuid": "^4.9",
     "w7corp/easywechat": "^6.18",
-    "yansongda/pay": "^3.7"
+    "yansongda/pay": "^3.7",
+    "ext-bcmath": "*"
   },
   "require-dev": {
     "doctrine/dbal": "^3.6",

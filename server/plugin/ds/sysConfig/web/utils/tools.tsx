@@ -5,6 +5,7 @@ import MaDictRadio from '@/components/ma-dict-picker/ma-dict-radio.vue'
 import MaKeyValue from '@/components/ma-key-value/index.vue'
 import MaUploadImage from '@/components/ma-upload-image/index.vue'
 import NmTinyMCE from '@/components/ma-editor/index.vue'
+import MaJsonEditor from '@/components/ma-json-editor/index.vue'
 
 export function buildRenderProps(item: ConfigItem) {
   const isSelect = item.input_type === 'select'
@@ -62,6 +63,8 @@ export function renderInputTypeComponent(inputType: string, item: ConfigItem) {
       return <el-input type="textarea" modelValue={item.value} onUpdate:modelValue={v => (item.value = v)} />
     case 'editor':
       return <NmTinyMCE modelValue={item.value} onUpdate:modelValue={v => (item.value = v)} />
+    case 'json':
+      return <MaJsonEditor modelValue={item.config_select_data} onUpdate:modelValue={v => (item.config_select_data = v)} />
     default:
       return <el-input modelValue={item.value} onUpdate:modelValue={v => (item.value = v)} />
   }

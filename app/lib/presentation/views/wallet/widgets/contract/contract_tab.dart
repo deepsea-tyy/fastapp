@@ -14,7 +14,6 @@ class ContractTab extends StatefulWidget {
 
 class _ContractTabState extends State<ContractTab> {
   int _selectedIndex = 0;
-  String _selectedSubTab = '持有仓位';
 
   Widget _buildTabItem(String text, int index) {
     final isSelected = _selectedIndex == index;
@@ -73,16 +72,9 @@ class _ContractTabState extends State<ContractTab> {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ContractListHeader(
-                        selectedTab: _selectedSubTab,
-                        onTabChanged: (tab) {
-                          setState(() {
-                            _selectedSubTab = tab;
-                          });
-                        },
-                      ),
-                      ContractList(selectedTab: _selectedSubTab),
+                    children: const [
+                      ContractListHeader(),
+                      ContractList(),
                     ],
                   ),
                 ),

@@ -1,21 +1,9 @@
 import 'package:flutter/material.dart';
 
 /// 合约列表头部
-class ContractListHeader extends StatefulWidget {
-  final String selectedTab;
-  final ValueChanged<String> onTabChanged;
+class ContractListHeader extends StatelessWidget {
+  const ContractListHeader({super.key});
 
-  const ContractListHeader({
-    super.key,
-    required this.selectedTab,
-    required this.onTabChanged,
-  });
-
-  @override
-  State<ContractListHeader> createState() => _ContractListHeaderState();
-}
-
-class _ContractListHeaderState extends State<ContractListHeader> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -25,40 +13,16 @@ class _ContractListHeaderState extends State<ContractListHeader> {
           bottom: BorderSide(color: Colors.grey.shade200),
         ),
       ),
-      child: Row(
-        children: [
-          _buildSubTab('持有仓位', widget.selectedTab == '持有仓位'),
-          const SizedBox(width: 24),
-          _buildSubTab('资产', widget.selectedTab == '资产'),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubTab(String text, bool isSelected) {
-    return GestureDetector(
-      onTap: () => widget.onTabChanged(text),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: const Row(
         children: [
           Text(
-            text,
+            '持有仓位',
             style: TextStyle(
               fontSize: 14,
-              color: isSelected ? Colors.black87 : Colors.grey.shade600,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
-          if (isSelected)
-            Container(
-              width: 20,
-              height: 2,
-              color: Colors.amber,
-            )
-          else
-            const SizedBox(height: 2),
         ],
       ),
     );

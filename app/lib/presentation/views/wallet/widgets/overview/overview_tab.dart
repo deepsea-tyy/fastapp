@@ -4,15 +4,8 @@ import 'package:fastapp/presentation/views/wallet/widgets/overview/overview_list
 import 'package:flutter/material.dart';
 
 /// 总览 Tab
-class OverviewTab extends StatefulWidget {
+class OverviewTab extends StatelessWidget {
   const OverviewTab({super.key});
-
-  @override
-  State<OverviewTab> createState() => _OverviewTabState();
-}
-
-class _OverviewTabState extends State<OverviewTab> {
-  String _selectedCurrencyTab = '币种';
 
   @override
   Widget build(BuildContext context) {
@@ -22,27 +15,10 @@ class _OverviewTabState extends State<OverviewTab> {
         const SizedBox(height: 16),
         const ActionButtons(),
         const SizedBox(height: 16),
-        AssetListHeader(
-          selectedTab: _selectedCurrencyTab,
-          onTabChanged: (tab) {
-            setState(() {
-              _selectedCurrencyTab = tab;
-            });
-          },
-        ),
-        Expanded(
-          child: IndexedStack(
-            index: _selectedCurrencyTab == '账户' ? 1 : 0,
-            children: [
-              SingleChildScrollView(
-                key: const PageStorageKey('currency_tab_scroll'),
-                child: const CurrencyAssetList(),
-              ),
-              SingleChildScrollView(
-                key: const PageStorageKey('account_tab_scroll'),
-                child: const AccountAssetList(),
-              ),
-            ],
+        const AssetListHeader(),
+        const Expanded(
+          child: SingleChildScrollView(
+            child: AccountAssetList(),
           ),
         ),
       ],

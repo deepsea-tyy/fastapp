@@ -164,18 +164,22 @@ class Tools
         });
     }
 
+    public static function getRedis(): Redis
+    {
+        return self::getContainer()->get(Redis::class);
+    }
+
     /**
      * 设置用户缓存（Hash结构）
      *
      * @param int $uid 用户ID
      * @param array $param 缓存数据数组，格式：['key1' => 'value1', 'key2' => 'value2']
      * @return bool 操作结果
+     * @throws \RedisException
      */
     public static function setUserCache(int $uid, array $param): bool
     {
-        /* @var redis $redis */
-        $redis = self::getContainer()->get(Redis::class);
-        return $redis->hMSet('u:' . $uid, $param);
+        return self::getRedis()->hMSet('u:' . $uid, $param);
     }
 
     /**
@@ -184,14 +188,11 @@ class Tools
      * @param int $uid 用户ID
      * @param array|string $fields 要获取的字段数组或单个字段名，格式：['key1', 'key2'] 或 'key1'
      * @return array|string 返回字段值数组或单个值，格式：['key1' => 'value1', 'key2' => 'value2'] 或 'value1'
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      * @throws \RedisException
      */
     public static function getUserCache(int $uid, array|string $fields): array|string
     {
-        /* @var redis $redis */
-        $redis = self::getContainer()->get(Redis::class);
+        $redis = self::getRedis();
         if (is_array($fields)) {
             return $redis->hMGet('u:' . $uid, $fields) ?: [];
         }

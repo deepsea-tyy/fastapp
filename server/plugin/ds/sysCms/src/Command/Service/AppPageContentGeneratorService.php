@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugin\Ds\SysCms\Command\Service;
 
+use App\Common\Tools;
 use App\Exception\BusinessException;
 use Plugin\Ds\SysCms\Repository\AppPageContentRepository;
 use Plugin\Ds\SysCms\Model\AppPageContentSync;
@@ -21,7 +22,8 @@ class AppPageContentGeneratorService
 
     public function __construct(
         protected readonly AppPageContentRepository $contentRepository
-    ) {
+    )
+    {
     }
 
     /**
@@ -40,7 +42,7 @@ class AppPageContentGeneratorService
         }
 
         if (empty($results)) {
-            throw new BusinessException('没有可用的页面内容数据，请先添加并启用页面内容后再生成文件');
+            throw new BusinessException(message: '没有可用的页面内容数据，请先添加并启用页面内容后再生成文件');
         }
 
         return $results;
@@ -52,7 +54,7 @@ class AppPageContentGeneratorService
     private function generateJSON(int $platform, string $suffix, $contents, string $version): array
     {
         $filePath = $this->getFilePath($suffix);
-        
+
         // 构建数据字典
         $data = [];
         foreach ($contents as $content) {
@@ -67,12 +69,12 @@ class AppPageContentGeneratorService
         if (\Hyperf\Config\config('env') !== 'prod') {
             $jsonFlags |= JSON_PRETTY_PRINT;
         }
-        file_put_contents($filePath, json_encode($data, $jsonFlags));
-
+        $json = json_encode($data, $jsonFlags);
+        file_put_contents($filePath, $json);
+        Tools::getRedis()->set('app:init' . $platform, $json);
         // 保存记录并返回结果
         $fileSize = filesize($filePath);
         $relativePath = str_replace(BASE_PATH . '/', '', $filePath);
-        
         AppPageContentSync::create([
             'version' => $version,
             'platform' => $platform,

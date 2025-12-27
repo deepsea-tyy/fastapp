@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugin\Ds\SysCms\Http\Api\Controller;
 
 use App\Common\AbstractController;
+use App\Common\Tools;
 use Plugin\Ds\SysCms\Http\Api\Service\AppPageContentService;
 use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
@@ -16,7 +17,7 @@ use Hyperf\Swagger\Annotation\QueryParameter;
 
 /**
  * App页面内容API控制器
- * 
+ *
  * @author FastApp代码生成器
  * @date 2025-12-08
  */
@@ -26,8 +27,10 @@ class AppPageContentController extends AbstractController
 {
     public function __construct(
         private readonly AppPageContentService $service,
-        private readonly HttpResponse $response
-    ) {}
+        private readonly HttpResponse          $response
+    )
+    {
+    }
 
     #[Get(
         path: '/api/app/page-content/download',
@@ -40,18 +43,17 @@ class AppPageContentController extends AbstractController
     {
         $params = $this->getRequestData();
         $platform = (int)($params['platform'] ?? 2);
-        
+
         // 直接使用固定文件名格式
         $relativePath = $this->service->getFixedFilePath($platform);
         $filePath = BASE_PATH . '/' . $relativePath;
-        
+
         if (!file_exists($filePath)) {
             return $this->jsonResponse(404, '文件不存在');
         }
-        
-        $fileContent = file_get_contents($filePath);
+
         $mimeType = 'application/json; charset=utf-8';
-        
+        $fileContent = Tools::getRedis()->get('app:init' . $platform);
         return $this->response->withHeader('Content-Type', $mimeType)
             ->withHeader('Content-Disposition', 'attachment; filename="' . basename($filePath) . '"')
             ->withHeader('Content-Length', (string)strlen($fileContent))
