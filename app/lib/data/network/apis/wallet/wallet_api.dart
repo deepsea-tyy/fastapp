@@ -1,30 +1,49 @@
 import 'dart:async';
-import '../../../mock/mock_wallet_data.dart';
+import '../../../../core/data/network/dio/dio_client.dart';
+import '../../../../domain/entity/wallet/account_balance.dart';
 import '../../../../domain/entity/wallet/asset.dart';
 import '../../../../domain/entity/wallet/balance.dart';
 import '../../../../domain/entity/wallet/transaction.dart';
+import '../../constants/endpoints.dart';
 
-/// 资产API实现（使用模拟数据）
+/// 钱包API
 class WalletApi {
-  /// 模拟延迟
-  Future<void> _simulateDelay() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+  final DioClient _dioClient;
+
+  WalletApi(this._dioClient);
+
+  Future<AccountBalance> getAccountBalance() async {
+    final response = await _dioClient.dio.get(Endpoints.walletBalance);
+    return AccountBalance.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// 获取资产信息
   Future<Asset> getAsset() async {
-    await _simulateDelay();
-    return MockWalletData.generateAsset();
+    final accountBalance = await getAccountBalance();
+    final allBalances = accountBalance.getAllBalances();
+
+    final totalStats = allBalances.fold<Map<String, double>>(
+      {'available': 0.0, 'frozen': 0.0, 'total': 0.0},
+      (stats, balance) => {
+        'available': stats['available']! + balance.available,
+        'frozen': stats['frozen']! + balance.frozen,
+        'total': stats['total']! + balance.total,
+      },
+    );
+
+    return Asset(
+      totalAsset: totalStats['total']!,
+      availableAsset: totalStats['available']!,
+      frozenAsset: totalStats['frozen']!,
+      balances: allBalances,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
-  /// 根据币种获取余额
   Future<Balance?> getBalanceByCurrency(String currency) async {
-    await _simulateDelay();
-    final asset = MockWalletData.generateAsset();
+    final asset = await getAsset();
     return asset.getBalanceByCurrency(currency);
   }
 
-  /// 获取交易记录列表
   Future<List<Transaction>> getTransactions({
     String? currency,
     TransactionType? type,
@@ -32,18 +51,25 @@ class WalletApi {
     int? endTime,
     int? limit,
   }) async {
-    await _simulateDelay();
-    return MockWalletData.generateTransactions(
-      currency: currency,
-      type: type,
-      limit: limit,
+    final response = await _dioClient.dio.get(
+      Endpoints.walletBalanceLog,
+      queryParameters: {
+        if (currency != null) 'symbol': currency,
+        if (type != null) 'change_type': type.name,
+        if (startTime != null) 'startTime': startTime,
+        if (endTime != null) 'endTime': endTime,
+        if (limit != null) 'limit': limit,
+      },
     );
+
+    final list = (response.data as Map<String, dynamic>)['list'] as List?;
+    return list
+            ?.map((item) => Transaction.fromJson(item as Map<String, dynamic>))
+            .toList() ??
+        [];
   }
 
-  /// 根据ID获取交易记录
-  Future<Transaction?> getTransactionById(String transactionId) async {
-    await _simulateDelay();
-    return MockWalletData.generateTransactionById(transactionId);
-  }
+  Future<Transaction?> getTransactionById(String transactionId) =>
+      Future.value(null);
 }
 

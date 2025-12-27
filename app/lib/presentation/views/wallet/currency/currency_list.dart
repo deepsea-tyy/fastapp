@@ -1,3 +1,5 @@
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:flutter/material.dart';
 
 /// 币种列表页面
@@ -16,24 +18,18 @@ class _CurrencyListState extends State<CurrencyList> {
     {
       'currency': 'USDT',
       'currencyName': 'TetherUS',
-      'iconColor': Colors.green,
-      'iconText': '¥',
       'price': null,
       'changePercent': null,
     },
     {
       'currency': 'BTC',
       'currencyName': 'Bitcoin',
-      'iconColor': Colors.orange,
-      'iconText': 'B',
       'price': 86907.60,
       'changePercent': 0.84,
     },
     {
       'currency': 'BNB',
       'currencyName': 'BNB',
-      'iconColor': Colors.amber,
-      'iconText': 'BNB',
       'price': 830.21,
       'changePercent': 0.48,
     },
@@ -47,6 +43,8 @@ class _CurrencyListState extends State<CurrencyList> {
 
   @override
   Widget build(BuildContext context) {
+    final marketDataStore = getIt<MarketDataStore>();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -138,7 +136,9 @@ class _CurrencyListState extends State<CurrencyList> {
                               .contains(_searchQuery.toLowerCase())) {
                         return const SizedBox.shrink();
                       }
-                      return _buildCurrencyItem(currency);
+                      final currencyData =
+                          marketDataStore.getCurrency(currency['currency']);
+                      return _buildCurrencyItem(currency, currencyData?.logo);
                     },
                   ),
                 ),
@@ -150,7 +150,8 @@ class _CurrencyListState extends State<CurrencyList> {
     );
   }
 
-  Widget _buildCurrencyItem(Map<String, dynamic> currency) {
+  Widget _buildCurrencyItem(Map<String, dynamic> currency, String? logoUrl) {
+    final symbol = currency['currency'] as String;
     return InkWell(
       onTap: () {
         _showTopUpMethodBottomSheet(context, currency);
@@ -168,19 +169,37 @@ class _CurrencyListState extends State<CurrencyList> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: currency['iconColor'] as Color,
+                color: logoUrl == null ? _getIconColor(symbol) : null,
                 shape: BoxShape.circle,
               ),
-              child: Center(
-                child: Text(
-                  currency['iconText'] as String,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: logoUrl != null
+                  ? Image.network(
+                      logoUrl,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Text(
+                          symbol.isNotEmpty ? symbol[0] : 'C',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        symbol.isNotEmpty ? symbol[0] : 'C',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -337,7 +356,7 @@ class _CurrencyListState extends State<CurrencyList> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -386,5 +405,24 @@ class _CurrencyListState extends State<CurrencyList> {
         ),
       ),
     );
+  }
+
+  Color _getIconColor(String symbol) {
+    switch (symbol.toUpperCase()) {
+      case 'BTC':
+        return Colors.orange;
+      case 'ETH':
+        return Colors.blue;
+      case 'USDT':
+        return Colors.green;
+      case 'BNB':
+        return Colors.amber;
+      case 'SOL':
+        return Colors.purple;
+      case 'ADA':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/wallet/currency/currency_list.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/empty_state.dart';
@@ -45,29 +46,41 @@ class AccountAssetList extends StatelessWidget {
 
     return Observer(
       builder: (_) {
-        final asset = store.asset;
-        final contractBalance = asset?.balances
-                .where((b) => b.currency == 'USDT')
-                .fold(0.0, (sum, b) => sum + b.total) ??
-            0.78221273;
-        final spotBalance = 0.00118263;
-        final fundsBalance = 0.00;
+        final accounts = store.accountTotals;
 
-        final totalBalance = contractBalance + spotBalance + fundsBalance;
-
-        if (totalBalance == 0) {
+        if (accounts.isEmpty) {
           return const EmptyState(text: '暂无资产');
         }
 
         return Column(
-          children: [
-            _buildAccountItem('合约', contractBalance, ExchangeRate.getUsdToCnySync()),
-            _buildAccountItem('现货', spotBalance, ExchangeRate.getUsdToCnySync()),
-            _buildAccountItem('资金', fundsBalance, ExchangeRate.getUsdToCnySync(), showCny: false),
-          ],
+          children: accounts.entries.map((entry) {
+            return _buildAccountItem(
+              _getAccountLabel(entry.key),
+              entry.value,
+              ExchangeRate.getUsdToCnySync(),
+              showCny: entry.key != WalletType.FUNDING,
+            );
+          }).toList(),
         );
       },
     );
+  }
+
+  String _getAccountLabel(WalletType type) {
+    switch (type) {
+      case WalletType.SPOT:
+        return '现货';
+      case WalletType.FUTURES:
+        return '合约';
+      case WalletType.FUNDING:
+        return '资金';
+      case WalletType.MARGIN:
+        return '杠杆';
+      case WalletType.EARN:
+        return '理财';
+      case WalletType.OPTIONS:
+        return '期权';
+    }
   }
 
   Widget _buildAccountItem(String label, double usdtValue, double exchangeRate,
@@ -166,3 +179,4 @@ class AccountAssetList extends StatelessWidget {
     );
   }
 }
+

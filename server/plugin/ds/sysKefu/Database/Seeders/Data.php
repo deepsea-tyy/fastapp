@@ -22,7 +22,7 @@ class Data extends Seeder
 
         // 插入配置组
         $group = [
-            ['code' => 'feed_config', 'name' => '[{"lang": "zh_CN", "text": "信息流账户配置"}, {"lang": "en", "text": "Information flow account configuration"}]', 'icon' => 'ri:message-2-fill'],
+            ['code' => 'feed_config', 'name' => '[{"lang": "zh_CN", "text": "信息流配置"}, {"lang": "en", "text": "Information flow configuration"}]', 'icon' => 'ri:message-2-fill'],
             ['code' => 'kefu_config', 'name' => '[{"lang": "zh_CN", "text": "客服配置"}, {"lang": "en", "text": "customer service"}]', 'icon' => 'ri:customer-service-2-line']
         ];
         foreach ($group as $item) {

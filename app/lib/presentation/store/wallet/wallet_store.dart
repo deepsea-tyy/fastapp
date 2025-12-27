@@ -1,10 +1,11 @@
 import 'package:fastapp/core/stores/error/error_store.dart';
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/domain/entity/wallet/asset.dart';
 import 'package:fastapp/domain/entity/wallet/balance.dart';
 import 'package:fastapp/domain/entity/wallet/transaction.dart';
+import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
-import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart' as asset_usecase;
 import 'package:mobx/mobx.dart';
 
 part 'wallet_store.g.dart';
@@ -13,50 +14,46 @@ class WalletStore = _WalletStore with _$WalletStore;
 
 abstract class _WalletStore with Store {
   final GetAssetUseCase _getAssetUseCase;
+  final GetAccountBalanceUseCase _getAccountBalanceUseCase;
   final GetBalanceUseCase _getBalanceUseCase;
   final GetTransactionsUseCase _getTransactionsUseCase;
   final ErrorStore _errorStore;
 
   _WalletStore(
     this._getAssetUseCase,
+    this._getAccountBalanceUseCase,
     this._getBalanceUseCase,
     this._getTransactionsUseCase,
     this._errorStore,
   );
 
-  // 资产信息
   @observable
   Asset? asset;
 
-  // 余额列表
+  @observable
+  AccountBalance? accountBalance;
+
   @observable
   ObservableList<Balance> balances = ObservableList<Balance>();
 
-  // 交易记录列表
   @observable
   ObservableList<Transaction> transactions = ObservableList<Transaction>();
 
-  // 选中的币种（筛选用）
   @observable
   String? selectedCurrency;
 
-  // 选中的交易类型（筛选用）
   @observable
   TransactionType? selectedType;
 
-  // 是否正在加载资产
   @observable
   bool isLoadingAsset = false;
 
-  // 是否正在加载交易记录
   @observable
   bool isLoadingTransactions = false;
 
-  // 错误消息
   @observable
   String? errorMessage;
 
-  // Actions
   @action
   void setSelectedCurrency(String? currency) {
     selectedCurrency = currency;
@@ -75,10 +72,15 @@ abstract class _WalletStore with Store {
     errorMessage = null;
 
     try {
-      final assetData = await _getAssetUseCase.call(params: null);
-      asset = assetData;
+      final results = await Future.wait([
+        _getAccountBalanceUseCase.call(params: null),
+        _getAssetUseCase.call(params: null),
+      ]);
+
+      accountBalance = results[0] as AccountBalance;
+      asset = results[1] as Asset;
       balances.clear();
-      balances.addAll(assetData.balances);
+      balances.addAll(asset!.balances);
     } catch (e) {
       errorMessage = e.toString();
       _errorStore.setErrorMessage(e.toString());
@@ -88,19 +90,18 @@ abstract class _WalletStore with Store {
   }
 
   @action
-  Future<void> loadTransactions({
-    int? limit,
-  }) async {
+  Future<void> loadTransactions({int? limit}) async {
     isLoadingTransactions = true;
     errorMessage = null;
 
     try {
-      final params = GetTransactionsParams(
-        currency: selectedCurrency,
-        type: selectedType,
-        limit: limit ?? 50,
+      final txList = await _getTransactionsUseCase.call(
+        params: GetTransactionsParams(
+          currency: selectedCurrency,
+          type: selectedType,
+          limit: limit ?? 50,
+        ),
       );
-      final txList = await _getTransactionsUseCase.call(params: params);
       transactions.clear();
       transactions.addAll(txList);
     } catch (e) {
@@ -112,21 +113,15 @@ abstract class _WalletStore with Store {
   }
 
   @action
-  Future<void> refreshAsset() async {
-    await loadAsset();
-  }
+  Future<void> refreshAsset() => loadAsset();
 
   @action
-  Future<void> refreshTransactions() async {
-    await loadTransactions();
-  }
+  Future<void> refreshTransactions() => loadTransactions();
 
   @computed
   List<Balance> get filteredBalances {
-    if (selectedCurrency == null) {
-      return balances.toList();
-    }
-    return balances.where((b) => b.currency == selectedCurrency).toList();
+    if (selectedCurrency == null) return balances.toList();
+    return balances.where((b) => b.symbol == selectedCurrency).toList();
   }
 
   @computed
@@ -136,12 +131,24 @@ abstract class _WalletStore with Store {
     if (selectedCurrency != null) {
       result = result.where((t) => t.currency == selectedCurrency).toList();
     }
-
     if (selectedType != null) {
       result = result.where((t) => t.type == selectedType).toList();
     }
 
     return result;
+  }
+
+  @computed
+  Map<WalletType, double> get accountTotals {
+    if (accountBalance == null) return {};
+
+    final totals = <WalletType, double>{};
+    accountBalance!.balances.forEach((type, balanceList) {
+      final total = balanceList.fold(0.0, (sum, b) => sum + b.total);
+      if (total > 0) totals[type] = total;
+    });
+
+    return totals;
   }
 
   void dispose() {}

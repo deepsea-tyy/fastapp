@@ -1,108 +1,123 @@
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/empty_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 
-/// 现货列表
 class SpotList extends StatelessWidget {
-  const SpotList({super.key});
+  final WalletType walletType;
+
+  const SpotList({super.key, required this.walletType});
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      {
-        'currency': 'TON',
-        'currencyName': 'Toncoin',
-        'iconColor': Colors.blue,
-        'iconText': 'T',
-        'balance': 0.00079,
-        'value': 0.00123793,
-        'averageCost': 3.65,
-        'todayPnL': 0.00,
-        'todayPnLPercent': -0.76,
+    final store = getIt<WalletStore>();
+    final marketDataStore = getIt<MarketDataStore>();
+
+    return Observer(
+      builder: (_) {
+        final balances = store.accountBalance?.getBalancesByType(walletType);
+
+        if (balances == null || balances.isEmpty) {
+          return const EmptyState(text: '暂无资产');
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: balances.length,
+          itemBuilder: (context, index) {
+            final balance = balances[index];
+            final currency = marketDataStore.getCurrency(balance.symbol);
+
+            return _buildAssetItem(
+              symbol: balance.symbol,
+              name: balance.name ?? balance.symbol,
+              available: balance.available,
+              frozen: balance.frozen,
+              total: balance.total,
+              profit: balance.profit,
+              profitRate: balance.profitRate,
+              avgPrice: balance.avgPrice,
+              logoUrl: currency?.logo,
+              isLast: index == balances.length - 1,
+            );
+          },
+        );
       },
-    ];
-
-    if (items.isEmpty) {
-      return const EmptyState(text: '暂无资产');
-    }
-
-    return ListView(
-      padding: EdgeInsets.zero,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        for (int i = 0; i < items.length; i++)
-          _buildAssetItem(
-            currency: items[i]['currency'] as String,
-            currencyName: items[i]['currencyName'] as String,
-            iconColor: items[i]['iconColor'] as Color,
-            iconText: items[i]['iconText'] as String,
-            balance: items[i]['balance'] as double,
-            value: items[i]['value'] as double,
-            averageCost: items[i]['averageCost'] as double,
-            todayPnL: items[i]['todayPnL'] as double,
-            todayPnLPercent: items[i]['todayPnLPercent'] as double,
-            isLast: i == items.length - 1,
-          ),
-      ],
     );
   }
 
   Widget _buildAssetItem({
-    required String currency,
-    required String currencyName,
-    required Color iconColor,
-    required String iconText,
-    required double balance,
-    required double value,
-    required double averageCost,
-    required double todayPnL,
-    required double todayPnLPercent,
+    required String symbol,
+    required String name,
+    required double available,
+    required double frozen,
+    required double total,
+    double? profit,
+    double? profitRate,
+    double? avgPrice,
+    String? logoUrl,
     bool isLast = false,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(color: Colors.grey.shade100),
-              ),
+        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade100)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: iconColor,
+              color: logoUrl == null ? _getIconColor(symbol) : null,
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Text(
-                iconText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: logoUrl != null
+                ? Image.network(
+                    logoUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Text(
+                        symbol.isNotEmpty ? symbol[0] : 'C',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      symbol.isNotEmpty ? symbol[0] : 'C',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          currency,
+                          symbol,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -111,11 +126,8 @@ class SpotList extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          currencyName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
+                          name,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                         ),
                       ],
                     ),
@@ -123,70 +135,87 @@ class SpotList extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          balance.toStringAsFixed(5),
+                          total.toStringAsFixed(8),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$value USDT',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                        if (profit != null && profit != 0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '${profit > 0 ? '+' : ''}${profit.toStringAsFixed(8)} USDT(${profitRate != null ? '${profitRate > 0 ? '+' : ''}${profitRate.toStringAsFixed(2)}%' : '0.00%'})',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: profit > 0 ? Colors.green : profit < 0 ? Colors.red : Colors.grey.shade600,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '平均成本',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    Text(
-                      '$averageCost USDT',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '今日盈亏',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    Text(
-                      '${todayPnL.toStringAsFixed(2)} USDT(${todayPnLPercent >= 0 ? '+' : ''}${todayPnLPercent.toStringAsFixed(2)}%)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: todayPnL >= 0 ? Colors.green : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
+                // 构建动态信息行
+                ..._buildInfoRows(available, frozen, avgPrice),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildInfoRows(double available, double frozen, double? avgPrice) {
+    final List<Widget> rows = [];
+
+    // 可用余额 - 始终显示
+    if (available != 0) {
+      rows.add(_buildInfoRow('可用', available.toStringAsFixed(8)));
+    }
+
+    // 冻结 - 仅当大于0时显示
+    if (frozen > 0) {
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
+      rows.add(_buildInfoRow('冻结', frozen.toStringAsFixed(8)));
+    }
+
+    // 平均买入价 - 仅当有值且大于0时显示
+    if (avgPrice != null && avgPrice > 0) {
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
+      rows.add(_buildInfoRow('平均买入价', '${avgPrice.toStringAsFixed(2)} USDT'));
+    }
+
+    return rows;
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(value, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+      ],
+    );
+  }
+
+  Color _getIconColor(String symbol) {
+    switch (symbol.toUpperCase()) {
+      case 'BTC':
+        return Colors.orange;
+      case 'ETH':
+        return Colors.blue;
+      case 'USDT':
+        return Colors.green;
+      case 'BNB':
+        return Colors.amber;
+      case 'SOL':
+        return Colors.purple;
+      case 'ADA':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
   }
 }

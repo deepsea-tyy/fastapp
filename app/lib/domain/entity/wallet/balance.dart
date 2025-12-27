@@ -1,51 +1,53 @@
-/// 余额实体
 class Balance {
-  /// 币种符号
-  final String currency;
-  
-  /// 可用余额
+  final String symbol;
   final double available;
-  
-  /// 冻结余额
   final double frozen;
-  
-  /// 总余额（可用+冻结）
-  double get total => available + frozen;
-  
-  /// 币种名称
+  final double total;
   final String? name;
-  
-  /// 币种图标URL
   final String? logoUrl;
+  final double? profit;  // 今日盈亏
+  final double? profitRate;  // 今日盈亏率
+  final double? avgPrice;  // 平均买入价
 
   Balance({
-    required this.currency,
+    required this.symbol,
     required this.available,
     required this.frozen,
+    required this.total,
     this.name,
     this.logoUrl,
+    this.profit,
+    this.profitRate,
+    this.avgPrice,
   });
 
-  /// 从JSON创建
   factory Balance.fromJson(Map<String, dynamic> json) {
     return Balance(
-      currency: json['currency'] as String,
-      available: (json['available'] as num).toDouble(),
-      frozen: (json['frozen'] as num).toDouble(),
+      symbol: json['symbol'] as String,
+      available: double.parse(json['available'].toString()),
+      frozen: double.parse(json['frozen'].toString()),
+      total: double.parse(json['total'].toString()),
       name: json['name'] as String?,
       logoUrl: json['logoUrl'] as String?,
+      profit: json['profit'] != null ? double.parse(json['profit'].toString()) : null,
+      profitRate: json['profitRate'] != null ? double.parse(json['profitRate'].toString()) : null,
+      avgPrice: json['avgPrice'] != null ? double.parse(json['avgPrice'].toString()) : null,
     );
   }
 
-  /// 转换为JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'currency': currency,
-      'available': available,
-      'frozen': frozen,
-      'name': name,
-      'logoUrl': logoUrl,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'symbol': symbol,
+        'available': available,
+        'frozen': frozen,
+        'total': total,
+        'name': name,
+        'logoUrl': logoUrl,
+        'profit': profit,
+        'profitRate': profitRate,
+        'avgPrice': avgPrice,
+      };
+
+  @Deprecated('使用 symbol 替代')
+  String get currency => symbol;
 }
 

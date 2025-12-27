@@ -50,10 +50,15 @@ class Endpoints {
   // static const String orderDetail = '/api/v1/order/detail';
 
   // ==================== 钱包相关 ====================
-  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
 
-  // static const String walletBalance = '/api/v1/wallet/balance';
-  // static const String walletTransactions = '/api/v1/wallet/transactions';
+  static const String walletBalance = '/api/ex/wallet/balance';
+  static const String walletBalanceLog = '/api/ex/wallet/balance-log';
+  static const String walletTransfer = '/api/ex/wallet/transfer';
+  static const String walletTransferHistory = '/api/ex/wallet/transfer-history';
+  static const String walletDepositAddress = '/api/ex/wallet/deposit-address';
+  static const String walletDepositHistory = '/api/ex/wallet/deposit-history';
+  static const String walletWithdraw = '/api/ex/wallet/withdraw';
+  static const String walletWithdrawHistory = '/api/ex/wallet/withdraw-history';
 
   // ==================== 合约相关 ====================
   // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新

@@ -12,39 +12,43 @@ class MockWalletData {
   static Asset generateAsset() {
     final balances = [
       Balance(
-        currency: 'USDT',
+        symbol: 'USDT',
         available: 10000.0 + _random.nextDouble() * 5000,
         frozen: _random.nextDouble() * 1000,
+        total: 11000.0 + _random.nextDouble() * 6000,
         name: 'Tether',
       ),
       Balance(
-        currency: 'BTC',
+        symbol: 'BTC',
         available: 0.1 + _random.nextDouble() * 0.1,
         frozen: _random.nextDouble() * 0.01,
+        total: 0.1 + _random.nextDouble() * 0.11,
         name: 'Bitcoin',
         logoUrl: '',
       ),
       Balance(
-        currency: 'ETH',
+        symbol: 'ETH',
         available: 1.0 + _random.nextDouble() * 2,
         frozen: _random.nextDouble() * 0.1,
+        total: 1.0 + _random.nextDouble() * 2.1,
         name: 'Ethereum',
         logoUrl: '',
       ),
       Balance(
-        currency: 'SOL',
+        symbol: 'SOL',
         available: 10.0 + _random.nextDouble() * 20,
         frozen: _random.nextDouble() * 2,
+        total: 10.0 + _random.nextDouble() * 22,
         name: 'Solana',
         logoUrl: '',
       ),
     ];
-    
+
     // 计算总资产（USDT等值，简化计算）
     final totalAsset = balances.fold<double>(
       0.0,
       (sum, balance) {
-        final price = _getCurrencyPrice(balance.currency);
+        final price = _getCurrencyPrice(balance.symbol);
         return sum + (balance.total * price);
       },
     );

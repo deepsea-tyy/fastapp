@@ -3,34 +3,28 @@ import '../../entity/wallet/asset.dart';
 import '../../entity/wallet/balance.dart';
 import '../../repository/wallet_repository.dart';
 
-/// 获取资产UseCase
 class GetAssetUseCase implements UseCase<Asset, void> {
-  final WalletRepository _walletRepository;
+  final WalletRepository _repository;
 
-  GetAssetUseCase(this._walletRepository);
+  GetAssetUseCase(this._repository);
 
   @override
-  Future<Asset> call({required params}) async {
-    return _walletRepository.getAsset();
-  }
+  Future<Asset> call({required params}) => _repository.getAsset();
 }
 
-/// 获取余额的参数
 class GetBalanceParams {
   final String currency;
 
   GetBalanceParams({required this.currency});
 }
 
-/// 获取余额UseCase
 class GetBalanceUseCase implements UseCase<Balance?, GetBalanceParams> {
-  final WalletRepository _walletRepository;
+  final WalletRepository _repository;
 
-  GetBalanceUseCase(this._walletRepository);
+  GetBalanceUseCase(this._repository);
 
   @override
-  Future<Balance?> call({required GetBalanceParams params}) async {
-    return _walletRepository.getBalanceByCurrency(params.currency);
-  }
+  Future<Balance?> call({required GetBalanceParams params}) =>
+      _repository.getBalanceByCurrency(params.currency);
 }
 

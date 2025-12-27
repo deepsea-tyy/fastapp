@@ -18,6 +18,7 @@ import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/download_market_data_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_currency_detail_usecase.dart';
 import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
 import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
@@ -92,6 +93,9 @@ class UseCaseModule {
     );
 
     // wallet:------------------------------------------------------------------
+    getIt.registerSingleton<GetAccountBalanceUseCase>(
+      GetAccountBalanceUseCase(getIt<WalletRepository>()),
+    );
     getIt.registerSingleton<GetAssetUseCase>(
       GetAssetUseCase(getIt<WalletRepository>()),
     );

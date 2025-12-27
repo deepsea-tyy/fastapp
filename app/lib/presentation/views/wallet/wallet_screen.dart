@@ -1,9 +1,9 @@
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/contract/contract_tab.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/funds/funds_tab.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/overview/overview_tab.dart';
-import 'package:fastapp/presentation/views/wallet/widgets/spot/spot_tab.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/contract/contract.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/funds/funds.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/overview/overview.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/spot/spot.dart';
 import 'package:flutter/material.dart';
 
 /// 资产管理页面
