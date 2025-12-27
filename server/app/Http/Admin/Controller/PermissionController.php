@@ -27,7 +27,6 @@ use Psr\SimpleCache\CacheInterface;
 final class PermissionController extends AbstractController
 {
     public function __construct(
-        private readonly MenuRepository $repository,
         private readonly RoleRepository $roleRepository,
         private readonly AdminUserService $adminUserService
     ) {}
@@ -35,15 +34,7 @@ final class PermissionController extends AbstractController
     #[GetMapping(path: '/admin/permission/menus')]
     public function menus(): Result
     {
-        return $this->success(
-            data: $this->adminUserService->isSuperAdmin()
-                ? $this->repository->list([
-                    'status' => Status::Normal,
-                    'children' => true,
-                    'parent_id' => 0,
-                ])
-                : $this->adminUserService->filterCurrentUser()
-        );
+        return $this->success($this->adminUserService->filterCurrentUser());
     }
 
     #[GetMapping(path: '/admin/permission/roles')]

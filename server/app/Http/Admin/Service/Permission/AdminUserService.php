@@ -182,34 +182,23 @@ final class AdminUserService extends IService
         return $this->getInfo()->isSuperAdmin();
     }
 
-    public function filterCurrentUser(): array
+    public function filterCurrentUser(bool $all = false): array
     {
-        $permissions = $this->getInfo()
-            ->getPermissions()
-            ->pluck('name')
-            ->unique();
-        $menuList = $permissions->isEmpty()
-            ? []
-            : $this->menuService
-                ->getList(['status' => Status::Normal, 'name' => $permissions->toArray()])
-                ->toArray();
-        $tree = [];
-        $map = [];
-        foreach ($menuList as &$menu) {
-            $menu['children'] = [];
-            $map[$menu['id']] = &$menu;
+        if ($this->isSuperAdmin() || $all) {
+            $menuList = $this->menuService->getList([])->toArray();
+        } else {
+            $permissions = $this->getInfo()
+                ->getPermissions()
+                ->pluck('name')
+                ->unique();
+            $menuList = $permissions->isEmpty()
+                ? []
+                : $this->menuService
+                    ->getList(['status' => Status::Normal, 'name' => $permissions->toArray()])
+                    ->toArray();
         }
-        unset($menu);
-        foreach ($menuList as &$menu) {
-            $pid = $menu['parent_id'];
-            if ($pid === 0 || !isset($map[$pid])) {
-                $tree[] = &$menu;
-            } else {
-                $map[$pid]['children'][] = &$menu;
-            }
-        }
-        unset($menu);
-        return $tree;
+
+        return MenuService::buildTree($menuList);
     }
 
     public function getToken(): ?\Lcobucci\JWT\UnencryptedToken
