@@ -1,29 +1,24 @@
+import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 预估总资产卡片
-class OverviewAssets extends StatefulWidget {
+class OverviewAssets extends StatelessWidget {
   const OverviewAssets({super.key});
 
   @override
-  State<OverviewAssets> createState() => _OverviewAssetsState();
-}
-
-class _OverviewAssetsState extends State<OverviewAssets> {
-  final WalletStore _store = getIt<WalletStore>();
-  bool _isBalanceVisible = true;
-
-  @override
   Widget build(BuildContext context) {
+    final store = getIt<WalletStore>();
+
     return Observer(
       builder: (_) {
-        final asset = _store.asset;
+        final asset = store.asset;
         final totalAsset = asset?.totalAsset ?? 0.0;
-        final fiatEquivalent = totalAsset * 7.08; // 假设汇率
-        final todayPnL = -0.00000869;
-        final todayPnLPercent = -0.00;
+        final fiatEquivalent = totalAsset * ExchangeRate.getUsdToCnySync();
+        final todayPnL = asset?.balances.fold(0.0, (sum, b) => sum + (b.profit ?? 0.0)) ?? 0.0;
+        final todayPnLPercent = totalAsset > 0 ? (todayPnL / totalAsset * 100) : 0.0;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -64,9 +59,7 @@ class _OverviewAssetsState extends State<OverviewAssets> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    _isBalanceVisible
-                        ? '${totalAsset.toStringAsFixed(8)}'
-                        : '****',
+                    totalAsset.toStringAsFixed(8),
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -98,34 +91,37 @@ class _OverviewAssetsState extends State<OverviewAssets> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        '今日盈亏',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
+              GestureDetector(
+                onTap: () {},
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '今日盈亏',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$todayPnL USDT(${todayPnLPercent >= 0 ? '+' : ''}${todayPnLPercent.toStringAsFixed(2)}%)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: todayPnL >= 0 ? Colors.green : Colors.red,
+                        const SizedBox(width: 8),
+                        Text(
+                          '${todayPnL.toStringAsFixed(2)} USDT(${todayPnL >= 0 ? '+' : ''}${todayPnLPercent.toStringAsFixed(2)}%)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: todayPnL >= 0 ? Colors.green : Colors.red,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey.shade400,
-                  ),
-                ],
+                      ],
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey.shade400,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

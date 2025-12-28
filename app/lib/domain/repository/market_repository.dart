@@ -6,6 +6,7 @@ import '../entity/market/ticker_data.dart';
 import '../entity/market/market_pair.dart';
 import '../entity/market/market_data_config.dart';
 import '../entity/market/currency_detail.dart';
+import '../entity/market/exchange_rate_response.dart';
 
 /// 行情仓库接口
 abstract class MarketRepository {
@@ -51,5 +52,8 @@ abstract class MarketRepository {
   /// 获取币种详情
   /// [symbol] 币种符号（如：'BTC'）
   Future<CurrencyDetail?> getCurrencyDetail({required String symbol});
+
+  /// 获取汇率
+  Future<ExchangeRateResponse?> getExchangeRate();
 }
 

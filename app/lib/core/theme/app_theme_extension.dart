@@ -34,6 +34,20 @@ extension AppThemeExtension on BuildContext {
     final themeConfig = AppTheme.getConfig(themeStore.currentTheme);
     return TextThemeColors.fromConfig(themeConfig.text);
   }
+
+  /// 获取状态颜色配置
+  StatusThemeColors get statusTheme {
+    final themeStore = GetIt.instance<ThemeStore>();
+    final themeConfig = AppTheme.getConfig(themeStore.currentTheme);
+    return StatusThemeColors.fromConfig(themeConfig.status);
+  }
+
+  /// 获取边框颜色配置
+  BorderThemeColors get borderTheme {
+    final themeStore = GetIt.instance<ThemeStore>();
+    final themeConfig = AppTheme.getConfig(themeStore.currentTheme);
+    return BorderThemeColors.fromConfig(themeConfig.border);
+  }
 }
 
 /// 空状态主题颜色
@@ -168,6 +182,69 @@ class TextThemeColors {
       secondary: _hexToColor(config.secondary),
       hint: _hexToColor(config.hint),
       disabled: _hexToColor(config.disabled),
+    );
+  }
+
+  /// 将 hex 颜色字符串转换为 Color
+  static Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+}
+
+/// 状态主题颜色
+class StatusThemeColors {
+  final Color success;
+  final Color error;
+  final Color warning;
+  final Color info;
+
+  const StatusThemeColors({
+    required this.success,
+    required this.error,
+    required this.warning,
+    required this.info,
+  });
+
+  /// 从配置创建
+  factory StatusThemeColors.fromConfig(dynamic config) {
+    return StatusThemeColors(
+      success: _hexToColor(config.success),
+      error: _hexToColor(config.error),
+      warning: _hexToColor(config.warning),
+      info: _hexToColor(config.info),
+    );
+  }
+
+  /// 将 hex 颜色字符串转换为 Color
+  static Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+}
+
+/// 边框主题颜色
+class BorderThemeColors {
+  final Color defaultColor;
+  final Color focused;
+  final Color error;
+
+  const BorderThemeColors({
+    required this.defaultColor,
+    required this.focused,
+    required this.error,
+  });
+
+  /// 从配置创建
+  factory BorderThemeColors.fromConfig(dynamic config) {
+    return BorderThemeColors(
+      defaultColor: _hexToColor(config.defaultColor),
+      focused: _hexToColor(config.focused),
+      error: _hexToColor(config.error),
     );
   }
 

@@ -7,6 +7,7 @@ import '../../../domain/entity/market/ticker_data.dart';
 import '../../../domain/entity/market/market_pair.dart';
 import '../../../domain/entity/market/market_data_config.dart';
 import '../../../domain/entity/market/currency_detail.dart';
+import '../../../domain/entity/market/exchange_rate_response.dart';
 import '../../../domain/repository/market_repository.dart';
 
 /// 行情仓库实现
@@ -69,5 +70,9 @@ class MarketRepositoryImpl implements MarketRepository {
   @override
   Future<CurrencyDetail?> getCurrencyDetail({required String symbol}) =>
       _marketApi.getCurrencyDetail(symbol: symbol);
+
+  @override
+  Future<ExchangeRateResponse?> getExchangeRate() =>
+      _marketApi.getExchangeRate();
 }
 

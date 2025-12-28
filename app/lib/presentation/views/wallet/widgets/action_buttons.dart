@@ -1,4 +1,5 @@
-import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
+import 'package:fastapp/presentation/views/c2c/c2c_screen.dart';
+import 'package:fastapp/utils/wallet_navigator.dart';
 import 'package:flutter/material.dart';
 
 /// 操作按钮组件
@@ -12,8 +13,8 @@ class ActionButtons extends StatelessWidget {
 
   const ActionButtons({
     super.key,
-    this.primaryButtonText = '添加资金',
-    this.secondaryButtonText = '转账',
+    this.primaryButtonText = '转入',
+    this.secondaryButtonText = '转出',
     this.tertiaryButtonText = '划转',
     this.onPrimaryPressed,
     this.onSecondaryPressed,
@@ -28,7 +29,9 @@ class ActionButtons extends StatelessWidget {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: onPrimaryPressed ?? () {},
+              onPressed: onPrimaryPressed ?? () {
+                _showDepositMethodBottomSheet(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey[800],
                 foregroundColor: Colors.white,
@@ -74,14 +77,7 @@ class ActionButtons extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: onTertiaryPressed ??
-                  () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const TransferScreen(),
-                      ),
-                    );
-                  },
+              onPressed: onTertiaryPressed ?? () => WalletNavigator.toTransfer(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey.shade200,
                 foregroundColor: Colors.black87,
@@ -101,6 +97,82 @@ class ActionButtons extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDepositMethodBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 拖拽指示器
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // 标题
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+              child: const Text(
+                '选择充值方式',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            // 选项列表
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _buildWithdrawalOption(
+                    context,
+                    icon: Icons.download,
+                    title: '链上充值',
+                    description: '将其他交易平台/钱包中的加密货币存入账户',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      WalletNavigator.toCurrencyListForDeposit(context);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWithdrawalOption(
+                    context,
+                    icon: Icons.people_outline,
+                    title: 'C2C 交易',
+                    description: '点对点交易,价格从优,支持多种本地支付方式',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const C2CScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            // 底部安全区域
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          ],
+        ),
       ),
     );
   }
@@ -148,11 +220,11 @@ class ActionButtons extends StatelessWidget {
                   _buildWithdrawalOption(
                     context,
                     icon: Icons.person_add_outlined,
-                    title: '转账给币安用户',
-                    description: '币安站内转账,通过邮箱/手机号/ID 发送',
+                    title: '转账给用户',
+                    description: '站内转账,通过邮箱/手机号/ID 发送',
                     onTap: () {
                       Navigator.of(context).pop();
-                      // TODO: 跳转到转账给币安用户页面
+                      WalletNavigator.toTransferToUser(context);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -160,10 +232,10 @@ class ActionButtons extends StatelessWidget {
                     context,
                     icon: Icons.upload_outlined,
                     title: '链上提现',
-                    description: '将加密货币从币安提现到其他交易平台/钱包',
+                    description: '将加密货币提现到其他交易平台/钱包',
                     onTap: () {
                       Navigator.of(context).pop();
-                      // TODO: 跳转到链上提现页面
+                      WalletNavigator.toCurrencySelectForWithdraw(context);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -174,7 +246,11 @@ class ActionButtons extends StatelessWidget {
                     description: '点对点交易,价格从优,支持多种本地支付方式。',
                     onTap: () {
                       Navigator.of(context).pop();
-                      // TODO: 跳转到C2C交易页面
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const C2CScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],

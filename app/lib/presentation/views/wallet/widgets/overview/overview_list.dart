@@ -40,9 +40,18 @@ class AssetListHeader extends StatelessWidget {
 class AccountAssetList extends StatelessWidget {
   const AccountAssetList({super.key});
 
+  static const Map<WalletType, String> _accountLabels = {
+    WalletType.SPOT: '现货',
+    WalletType.FUTURES: '合约',
+    WalletType.FUNDING: '资金',
+    WalletType.MARGIN: '杠杆',
+    WalletType.EARN: '理财',
+    WalletType.OPTIONS: '期权',
+  };
+
   @override
   Widget build(BuildContext context) {
-    final WalletStore store = getIt<WalletStore>();
+    final store = getIt<WalletStore>();
 
     return Observer(
       builder: (_) {
@@ -55,7 +64,7 @@ class AccountAssetList extends StatelessWidget {
         return Column(
           children: accounts.entries.map((entry) {
             return _buildAccountItem(
-              _getAccountLabel(entry.key),
+              _accountLabels[entry.key] ?? '未知',
               entry.value,
               ExchangeRate.getUsdToCnySync(),
               showCny: entry.key != WalletType.FUNDING,
@@ -64,23 +73,6 @@ class AccountAssetList extends StatelessWidget {
         );
       },
     );
-  }
-
-  String _getAccountLabel(WalletType type) {
-    switch (type) {
-      case WalletType.SPOT:
-        return '现货';
-      case WalletType.FUTURES:
-        return '合约';
-      case WalletType.FUNDING:
-        return '资金';
-      case WalletType.MARGIN:
-        return '杠杆';
-      case WalletType.EARN:
-        return '理财';
-      case WalletType.OPTIONS:
-        return '期权';
-    }
   }
 
   Widget _buildAccountItem(String label, double usdtValue, double exchangeRate,

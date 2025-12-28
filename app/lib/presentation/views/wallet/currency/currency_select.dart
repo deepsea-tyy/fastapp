@@ -1,6 +1,15 @@
+import 'package:fastapp/core/theme/app_theme_extension.dart';
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
+import 'package:fastapp/domain/entity/wallet/balance.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
+import 'package:fastapp/utils/image_utils.dart';
+import 'package:fastapp/utils/wallet_navigator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 
-/// 币种列表页面
+/// 币种选择页面（用于提现）
 class CurrencySelect extends StatefulWidget {
   const CurrencySelect({super.key});
 
@@ -9,20 +18,11 @@ class CurrencySelect extends StatefulWidget {
 }
 
 class _CurrencySelectState extends State<CurrencySelect> {
+  final WalletStore _walletStore = getIt<WalletStore>();
+  final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
-
-  final List<Map<String, dynamic>> _currencies = [
-    {
-      'currency': 'USDT',
-      'currencyName': 'TetherUS',
-      'iconColor': Colors.teal,
-      'iconText': 'T',
-      'balance': 0.78221273,
-      'cnyValue': 5.53,
-    },
-  ];
 
   @override
   void dispose() {
@@ -32,200 +32,195 @@ class _CurrencySelectState extends State<CurrencySelect> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = context.textTheme;
+    final backgroundTheme = context.backgroundTheme;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // 返回按钮和标题
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Stack(
-              alignment: Alignment.center,
+      body: SafeArea(
+        child: Observer(
+          builder: (_) {
+            final balances = _walletStore.accountBalance?.getBalancesByType(WalletType.SPOT);
+            final filteredBalances = balances?.where((balance) {
+              if (_searchQuery.isEmpty) return true;
+              final currency = _marketDataStore.getCurrency(balance.symbol);
+              final symbolMatch = balance.symbol.toLowerCase().contains(_searchQuery.toLowerCase());
+              final nameMatch = currency?.name?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false;
+              return symbolMatch || nameMatch;
+            }).toList() ?? [];
+
+            return Column(
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-                const Text(
-                  '选择币种',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 搜索栏和取消按钮
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: false,
-                      decoration: InputDecoration(
-                        hintText: '搜索币种/币对/合约',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                // 返回按钮和标题
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back, color: textTheme.primary),
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                          _isSearching = value.isNotEmpty;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                if (_isSearching) ...[
-                  const SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                        _isSearching = false;
-                      });
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.amber,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: const Text(
-                      '取消',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                      Text(
+                        '选择币种',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: textTheme.primary,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          // 标题和排序
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                const Text(
-                  '币种列表',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    ],
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(
-                    Icons.sort,
-                    color: Colors.grey.shade600,
+                // 搜索栏和取消按钮
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: backgroundTheme.input,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            autofocus: false,
+                            decoration: InputDecoration(
+                              hintText: '搜索币种/币对/合约',
+                              hintStyle: TextStyle(color: textTheme.hint),
+                              prefixIcon: Icon(Icons.search, color: textTheme.hint),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                                _isSearching = value.isNotEmpty;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      if (_isSearching) ...[
+                        const SizedBox(width: 12),
+                        TextButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              _isSearching = false;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          child: const Text('取消'),
+                        ),
+                      ],
+                    ],
                   ),
-                  onPressed: () {
-                    // TODO: 排序功能
-                  },
+                ),
+                // 标题和排序
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '币种列表',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: textTheme.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.sort, color: textTheme.secondary),
+                        onPressed: () {
+                          // TODO: 排序功能
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // 币种列表
+                Expanded(
+                  child: filteredBalances.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchQuery.isEmpty ? '暂无资产' : '未找到匹配的币种',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: textTheme.secondary,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: filteredBalances.length,
+                          itemBuilder: (context, index) {
+                            final balance = filteredBalances[index];
+                            final currency = _marketDataStore.getCurrency(balance.symbol);
+                            return _buildCurrencyItem(balance, currency);
+                          },
+                        ),
                 ),
               ],
-            ),
-          ),
-          // 币种列表
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              itemCount: _currencies.length,
-              itemBuilder: (context, index) {
-                final currency = _currencies[index];
-                if (_searchQuery.isNotEmpty &&
-                    !currency['currency']
-                        .toString()
-                        .toLowerCase()
-                        .contains(_searchQuery.toLowerCase()) &&
-                    !currency['currencyName']
-                        .toString()
-                        .toLowerCase()
-                        .contains(_searchQuery.toLowerCase())) {
-                  return const SizedBox.shrink();
-                }
-                return _buildCurrencyItem(currency);
-              },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildCurrencyItem(Map<String, dynamic> currency) {
+  Widget _buildCurrencyItem(Balance balance, dynamic currency) {
+    final symbol = balance.symbol;
+    final currencyName = currency?.name ?? symbol;
+    final logoUrl = ImageUtils.formatSingleImagePath(currency?.logo);
+    final textTheme = context.textTheme;
+    final borderTheme = context.borderTheme;
+
     return InkWell(
-      onTap: () {
-        Navigator.of(context).pop(currency['currency']);
-      },
+      onTap: () => WalletNavigator.toWithdraw(
+        context,
+        symbol: symbol,
+        name: currencyName,
+      ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.shade100),
-          ),
+          border: Border(bottom: BorderSide(color: borderTheme.defaultColor)),
         ),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: currency['iconColor'] as Color,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  currency['iconText'] as String,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            _buildIcon(symbol, logoUrl),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    currency['currency'] as String,
-                    style: const TextStyle(
+                    symbol,
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: textTheme.primary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    currency['currencyName'] as String,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    currencyName,
+                    style: TextStyle(fontSize: 12, color: textTheme.secondary),
                   ),
                 ],
               ),
@@ -234,24 +229,57 @@ class _CurrencySelectState extends State<CurrencySelect> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  (currency['balance'] as double).toStringAsFixed(8),
-                  style: const TextStyle(
+                  balance.available.toStringAsFixed(8),
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: textTheme.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '≈ ¥${(currency['cnyValue'] as double).toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  '可用',
+                  style: TextStyle(fontSize: 12, color: textTheme.secondary),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIcon(String symbol, String? logoUrl) {
+    final backgroundTheme = context.backgroundTheme;
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: backgroundTheme.input,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: logoUrl != null
+          ? Image.network(
+              logoUrl,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildIconText(symbol),
+            )
+          : _buildIconText(symbol),
+    );
+  }
+
+  Widget _buildIconText(String symbol) {
+    return Center(
+      child: Text(
+        symbol.isNotEmpty ? symbol[0] : 'C',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

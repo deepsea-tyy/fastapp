@@ -2,36 +2,50 @@ import 'dart:async';
 import 'package:fastapp/data/network/apis/market/market_api.dart';
 import 'package:fastapp/domain/entity/market/exchange_rate_response.dart';
 
-import 'dart:async';
-import 'package:fastapp/data/network/apis/market/market_api.dart';
-import 'package:fastapp/domain/entity/market/exchange_rate_response.dart';
-
 /// 汇率服务
 /// 负责从 API 获取汇率并缓存，提供统一的汇率访问接口
 class ExchangeRateService {
   final MarketApi _marketApi;
-  
+
   ExchangeRateResponse? _cachedRate;
   DateTime? _lastUpdateTime;
   bool _isFetching = false;
   Completer<ExchangeRateResponse?>? _fetchCompleter;
 
   static const Duration _cacheValidityDuration = Duration(minutes: 30);
-  static const double _defaultUsdToCny = 7.08;
+  static const double _defaultUsdToCny = 7.0;
+  static const double _defaultUsdToKrw = 1441.55;
+  static const double _defaultUsdToEur = 0.848939;
+  static const double _defaultUsdToJpy = 156.5;
 
   ExchangeRateService(this._marketApi);
 
   /// 获取 USD 到 CNY 的汇率
-  /// 
-  /// 优先使用缓存，如果缓存过期或不存在则从 API 获取
-  /// 如果 API 获取失败，返回默认值 7.08
   Future<double> getUsdToCny() async {
     final rate = await getExchangeRate();
     return rate?.cny ?? _defaultUsdToCny;
   }
 
+  /// 获取 USD 到 KRW 的汇率
+  Future<double> getUsdToKrw() async {
+    final rate = await getExchangeRate();
+    return rate?.krw ?? _defaultUsdToKrw;
+  }
+
+  /// 获取 USD 到 EUR 的汇率
+  Future<double> getUsdToEur() async {
+    final rate = await getExchangeRate();
+    return rate?.eur ?? _defaultUsdToEur;
+  }
+
+  /// 获取 USD 到 JPY 的汇率
+  Future<double> getUsdToJpy() async {
+    final rate = await getExchangeRate();
+    return rate?.jpy ?? _defaultUsdToJpy;
+  }
+
   /// 获取汇率响应
-  /// 
+  ///
   /// 优先使用缓存，如果缓存过期或不存在则从 API 获取
   /// 如果 API 获取失败，返回 null
   Future<ExchangeRateResponse?> getExchangeRate() async {
@@ -79,8 +93,6 @@ class ExchangeRateService {
   }
 
   /// 强制刷新汇率
-  /// 
-  /// 忽略缓存，直接从 API 获取最新汇率
   Future<ExchangeRateResponse?> refreshExchangeRate() async {
     clearCache();
     return getExchangeRate();
@@ -93,8 +105,6 @@ class ExchangeRateService {
   }
 
   /// 获取缓存的汇率（不触发 API 请求）
-  /// 
-  /// 如果缓存不存在或已过期，返回 null
   ExchangeRateResponse? getCachedRate() {
     return _isCacheValid() ? _cachedRate : null;
   }

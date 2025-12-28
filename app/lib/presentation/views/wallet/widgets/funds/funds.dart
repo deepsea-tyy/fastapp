@@ -1,3 +1,4 @@
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/action_buttons.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/funds/funds_assets.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/funds/funds_list.dart';
@@ -5,20 +6,27 @@ import 'package:fastapp/presentation/views/wallet/widgets/funds/funds_list_heade
 import 'package:flutter/material.dart';
 
 /// 资金 Tab
-class FundsTab extends StatelessWidget {
+class FundsTab extends StatefulWidget {
   const FundsTab({super.key});
+
+  @override
+  State<FundsTab> createState() => _FundsTabState();
+}
+
+class _FundsTabState extends State<FundsTab> {
+  final WalletType _walletType = WalletType.FUNDING;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const FundsAssets(),
+          FundsAssets(walletType: _walletType),
           const SizedBox(height: 16),
           const ActionButtons(),
           const SizedBox(height: 16),
           const FundsListHeader(),
-          const FundsList(),
+          FundsList(walletType: _walletType),
         ],
       ),
     );

@@ -12,6 +12,8 @@ import 'package:fastapp/domain/usecase/user/refresh_token_usecase.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
 import 'package:fastapp/presentation/store/app/theme_store.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
+import 'package:fastapp/presentation/store/app/exchange_rate_store.dart';
+import 'package:fastapp/presentation/store/app/currency_store.dart';
 import 'package:fastapp/presentation/store/home/home_store.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
@@ -31,6 +33,7 @@ import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_kline_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/download_market_data_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_exchange_rate_usecase.dart';
 import 'package:fastapp/domain/repository/market_repository.dart';
 import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
@@ -43,6 +46,8 @@ import 'package:fastapp/domain/usecase/setting/get_theme_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_theme_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/get_language_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_language_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/get_currency_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/set_currency_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_positions_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_funding_rate_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_mark_price_usecase.dart';
@@ -86,6 +91,21 @@ class StoreModule {
       LanguageStore(
         getIt<GetLanguageUseCase>(),
         getIt<SetLanguageUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<CurrencyStore>(
+      CurrencyStore(
+        getIt<GetCurrencyUseCase>(),
+        getIt<SetCurrencyUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<ExchangeRateStore>(
+      ExchangeRateStore(
+        getIt<GetExchangeRateUseCase>(),
         getIt<ErrorStore>(),
       ),
     );

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
+import 'package:fastapp/presentation/store/app/currency_store.dart';
+import 'package:fastapp/presentation/store/app/exchange_rate_store.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'widgets.dart';
+import 'widgets/currency_selector_bottom_sheet.dart';
 
 /// 设置页面
 class SettingsScreen extends StatelessWidget {
@@ -10,6 +14,8 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final languageStore = getIt<LanguageStore>();
+    final currencyStore = getIt<CurrencyStore>();
+    final exchangeRateStore = getIt<ExchangeRateStore>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -23,10 +29,26 @@ class SettingsScreen extends StatelessWidget {
                 children: [
           SectionHeader(title: '通用'),
           SettingItem(title: '通知偏好', onTap: () {}),
-          SettingItemWithValue(
-            title: '币种',
-            value: 'CNY',
-            onTap: () {},
+          Observer(
+            builder: (_) => SettingItemWithValue(
+              title: '币种',
+              value: currencyStore.currency,
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => CurrencySelectorBottomSheet(
+                    currentCurrency: currencyStore.currency,
+                    currencies: currencyStore.supportedCurrencies,
+                    exchangeRateStore: exchangeRateStore,
+                    onCurrencySelected: (currency) {
+                      currencyStore.changeCurrency(currency);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
           SettingItemWithValue(
             title: '语言',

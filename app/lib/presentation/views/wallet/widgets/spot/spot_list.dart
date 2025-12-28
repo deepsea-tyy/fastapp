@@ -1,24 +1,70 @@
+import 'dart:async';
+import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
+import 'package:fastapp/presentation/views/wallet/currency/asset_detail_screen.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/empty_state.dart';
+import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-class SpotList extends StatelessWidget {
+class SpotList extends StatefulWidget {
   final WalletType walletType;
 
   const SpotList({super.key, required this.walletType});
 
   @override
-  Widget build(BuildContext context) {
-    final store = getIt<WalletStore>();
-    final marketDataStore = getIt<MarketDataStore>();
+  State<SpotList> createState() => _SpotListState();
+}
 
+class _SpotListState extends State<SpotList> {
+  final WalletStore _walletStore = getIt<WalletStore>();
+  final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
+  final AppWebSocket _webSocket = getIt<AppWebSocket>();
+
+  final Map<String, TickerData> _tickerMap = {};
+  StreamSubscription<WebSocketMessage>? _tickerSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToTickers();
+  }
+
+  @override
+  void dispose() {
+    _tickerSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _subscribeToTickers() {
+    _tickerSubscription = _webSocket.messageStream.listen((message) {
+      if (message.type == WebSocketMessageType.ticker && message.data is TickerData) {
+        if (mounted) {
+          setState(() {
+            _tickerMap[message.symbol] = message.data as TickerData;
+          });
+        }
+      } else if (message.type == WebSocketMessageType.hotTickers && message.data is List) {
+        if (mounted) {
+          setState(() {
+            for (final ticker in message.data as List<TickerData>) {
+              _tickerMap[ticker.symbol] = ticker;
+            }
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Observer(
       builder: (_) {
-        final balances = store.accountBalance?.getBalancesByType(walletType);
+        final balances = _walletStore.accountBalance?.getBalancesByType(widget.walletType);
 
         if (balances == null || balances.isEmpty) {
           return const EmptyState(text: '暂无资产');
@@ -31,11 +77,11 @@ class SpotList extends StatelessWidget {
           itemCount: balances.length,
           itemBuilder: (context, index) {
             final balance = balances[index];
-            final currency = marketDataStore.getCurrency(balance.symbol);
+            final currency = _marketDataStore.getCurrency(balance.symbol);
+            final ticker = _tickerMap['${balance.symbol}_USDT'];
 
             return _buildAssetItem(
               symbol: balance.symbol,
-              name: balance.name ?? balance.symbol,
               available: balance.available,
               frozen: balance.frozen,
               total: balance.total,
@@ -43,6 +89,8 @@ class SpotList extends StatelessWidget {
               profitRate: balance.profitRate,
               avgPrice: balance.avgPrice,
               logoUrl: currency?.logo,
+              chain: currency?.chain,
+              ticker: ticker,
               isLast: index == balances.length - 1,
             );
           },
@@ -53,7 +101,6 @@ class SpotList extends StatelessWidget {
 
   Widget _buildAssetItem({
     required String symbol,
-    required String name,
     required double available,
     required double frozen,
     required double total,
@@ -61,161 +108,138 @@ class SpotList extends StatelessWidget {
     double? profitRate,
     double? avgPrice,
     String? logoUrl,
+    String? chain,
+    TickerData? ticker,
     bool isLast = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade100)),
+    final usdtValue = ticker != null ? total * ticker.lastPrice : 0.0;
+    final formattedLogoUrl = ImageUtils.formatSingleImagePath(logoUrl);
+
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AssetDetailScreen(
+            symbol: symbol,
+            name: chain ?? symbol,
+            iconColor: Colors.grey,
+            iconText: symbol.isNotEmpty ? symbol[0] : 'C',
+          ),
+        ),
       ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: logoUrl == null ? _getIconColor(symbol) : null,
+              color: Colors.grey.shade300,
               shape: BoxShape.circle,
             ),
             clipBehavior: Clip.antiAlias,
             child: logoUrl != null
                 ? Image.network(
-                    logoUrl,
+                    formattedLogoUrl,
                     width: 40,
                     height: 40,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Center(
-                      child: Text(
-                        symbol.isNotEmpty ? symbol[0] : 'C',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    errorBuilder: (_, __, ___) => _buildDefaultIcon(symbol),
                   )
-                : Center(
-                    child: Text(
-                      symbol.isNotEmpty ? symbol[0] : 'C',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                : _buildDefaultIcon(symbol),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        symbol,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        chain ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '今日盈亏',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          symbol,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          name,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                        ),
-                      ],
+                    Text(
+                      total.toStringAsFixed(4),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          total.toStringAsFixed(8),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        if (profit != null && profit != 0) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '${profit > 0 ? '+' : ''}${profit.toStringAsFixed(8)} USDT(${profitRate != null ? '${profitRate > 0 ? '+' : ''}${profitRate.toStringAsFixed(2)}%' : '0.00%'})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: profit > 0 ? Colors.green : profit < 0 ? Colors.red : Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ],
+                    const SizedBox(height: 2),
+                    Text(
+                      '≈ ${usdtValue.toStringAsFixed(2)} USDT',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${profit != null ? (profit > 0 ? '+' : '') : ''}${profit?.toStringAsFixed(2) ?? '0.00'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: profit != null
+                            ? (profit > 0 ? Colors.green : profit < 0 ? Colors.red : Colors.grey.shade600)
+                            : Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // 构建动态信息行
-                ..._buildInfoRows(available, frozen, avgPrice),
               ],
             ),
           ),
         ],
       ),
+      ),
     );
   }
 
-  List<Widget> _buildInfoRows(double available, double frozen, double? avgPrice) {
-    final List<Widget> rows = [];
-
-    // 可用余额 - 始终显示
-    if (available != 0) {
-      rows.add(_buildInfoRow('可用', available.toStringAsFixed(8)));
-    }
-
-    // 冻结 - 仅当大于0时显示
-    if (frozen > 0) {
-      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
-      rows.add(_buildInfoRow('冻结', frozen.toStringAsFixed(8)));
-    }
-
-    // 平均买入价 - 仅当有值且大于0时显示
-    if (avgPrice != null && avgPrice > 0) {
-      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
-      rows.add(_buildInfoRow('平均买入价', '${avgPrice.toStringAsFixed(2)} USDT'));
-    }
-
-    return rows;
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        Text(value, style: const TextStyle(fontSize: 12, color: Colors.black87)),
-      ],
+  Widget _buildDefaultIcon(String symbol) {
+    return Center(
+      child: Text(
+        symbol.isNotEmpty ? symbol[0] : 'C',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
-  }
-
-  Color _getIconColor(String symbol) {
-    switch (symbol.toUpperCase()) {
-      case 'BTC':
-        return Colors.orange;
-      case 'ETH':
-        return Colors.blue;
-      case 'USDT':
-        return Colors.green;
-      case 'BNB':
-        return Colors.amber;
-      case 'SOL':
-        return Colors.purple;
-      case 'ADA':
-        return Colors.indigo;
-      default:
-        return Colors.grey;
-    }
   }
 }

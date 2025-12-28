@@ -61,6 +61,7 @@ class {{$repositoryName}}Repository extends IRepository
 @if($hasCreatedBy)
         // 应用数据权限过滤
         DataScopeTool::applyUserDataScope($params['created_by'], $query);
+        unset($params['created_by']);
 @endif
         return parent::handleSearch($query, $params);
     }

@@ -15,6 +15,42 @@ class SpotTab extends StatefulWidget {
 class _SpotTabState extends State<SpotTab> {
   WalletType _selectedType = WalletType.SPOT;
 
+  final List<({String label, WalletType type})> _tabs = [
+    (label: '现货账户', type: WalletType.SPOT),
+    (label: '杠杆账户', type: WalletType.MARGIN),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: _tabs.map((tab) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildTabItem(tab.label, tab.type),
+            )).toList(),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SpotAssets(walletType: _selectedType),
+                const SizedBox(height: 16),
+                const ActionButtons(),
+                const SizedBox(height: 16),
+                const SpotListHeader(),
+                SpotList(walletType: _selectedType),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTabItem(String text, WalletType type) {
     final isSelected = _selectedType == type;
     return GestureDetector(
@@ -34,40 +70,6 @@ class _SpotTabState extends State<SpotTab> {
           ),
         ),
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: Row(
-            children: [
-              _buildTabItem('现货账户', WalletType.SPOT),
-              const SizedBox(width: 8),
-              _buildTabItem('杠杆账户(全仓)', WalletType.MARGIN),
-              const SizedBox(width: 8),
-              _buildTabItem('杠杆账户(逐仓)', WalletType.MARGIN),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                SpotAssets(walletType: _selectedType),
-                const SizedBox(height: 16),
-                const ActionButtons(),
-                const SizedBox(height: 16),
-                const SpotListHeader(),
-                SpotList(walletType: _selectedType),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

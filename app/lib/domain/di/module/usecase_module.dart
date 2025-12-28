@@ -17,6 +17,7 @@ import 'package:fastapp/domain/usecase/market/get_depth_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_ticker_usecase.dart';
 import 'package:fastapp/domain/usecase/market/download_market_data_usecase.dart';
 import 'package:fastapp/domain/usecase/market/get_currency_detail_usecase.dart';
+import 'package:fastapp/domain/usecase/market/get_exchange_rate_usecase.dart';
 import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
@@ -27,6 +28,8 @@ import 'package:fastapp/domain/usecase/setting/get_theme_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_theme_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/get_language_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_language_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/get_currency_usecase.dart';
+import 'package:fastapp/domain/usecase/setting/set_currency_usecase.dart';
 import 'package:fastapp/domain/repository/setting/setting_repository.dart';
 import 'package:fastapp/domain/usecase/futures/get_positions_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_funding_rate_usecase.dart';
@@ -80,6 +83,9 @@ class UseCaseModule {
     getIt.registerSingleton<GetCurrencyDetailUseCase>(
       GetCurrencyDetailUseCase(getIt<MarketRepository>()),
     );
+    getIt.registerSingleton<GetExchangeRateUseCase>(
+      GetExchangeRateUseCase(getIt<MarketRepository>()),
+    );
 
     // order:-------------------------------------------------------------------
     getIt.registerSingleton<GetOrdersUseCase>(
@@ -123,6 +129,12 @@ class UseCaseModule {
     );
     getIt.registerSingleton<SetLanguageUseCase>(
       SetLanguageUseCase(getIt<SettingRepository>()),
+    );
+    getIt.registerSingleton<GetCurrencyUseCase>(
+      GetCurrencyUseCase(getIt<SettingRepository>()),
+    );
+    getIt.registerSingleton<SetCurrencyUseCase>(
+      SetCurrencyUseCase(getIt<SettingRepository>()),
     );
 
     // futures:-----------------------------------------------------------------

@@ -19,4 +19,11 @@ class SettingRepositoryImpl extends SettingRepository {
 
   @override
   String? get currentLanguage => _sharedPrefsHelper.currentLanguage;
+
+  @override
+  Future<void> changeCurrency(String value) =>
+      _sharedPrefsHelper.changeCurrency(value);
+
+  @override
+  String? get currentCurrency => _sharedPrefsHelper.currentCurrency;
 }

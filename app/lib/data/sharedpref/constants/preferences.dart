@@ -13,6 +13,7 @@ class Preferences {
   // 应用设置
   static const String is_dark_mode = "is_dark_mode";
   static const String current_language = "current_language";
+  static const String current_currency = "current_currency";
 
   // 搜索相关
   static const String search_history = "search_history";
@@ -32,5 +33,6 @@ class Preferences {
   static const List<String> appSettingKeys = [
     is_dark_mode,
     current_language,
+    current_currency,
   ];
 }

@@ -3,93 +3,43 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/domain/entity/wallet/balance.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
-import 'package:fastapp/presentation/views/wallet/currency/account_select.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-/// 划转页面
-class TransferScreen extends StatefulWidget {
-  const TransferScreen({super.key});
+/// 转账给用户页面
+class TransferToUserScreen extends StatefulWidget {
+  const TransferToUserScreen({super.key});
 
   @override
-  State<TransferScreen> createState() => _TransferScreenState();
+  State<TransferToUserScreen> createState() => _TransferToUserScreenState();
 }
 
-class _TransferScreenState extends State<TransferScreen> {
-  static const _accountNames = {
-    WalletType.FUNDING: '资金账户',
-    WalletType.SPOT: '现货账户',
-    WalletType.FUTURES: 'U本位合约账户',
-    WalletType.MARGIN: '杠杆账户',
-    WalletType.OPTIONS: '期权账户',
-    WalletType.EARN: '赚币账户',
-  };
-
+class _TransferToUserScreenState extends State<TransferToUserScreen> {
   final WalletStore _walletStore = getIt<WalletStore>();
-  WalletType _fromAccount = WalletType.FUTURES;
-  WalletType _toAccount = WalletType.SPOT;
-  String? _selectedCurrency;
+  final _recipientController = TextEditingController();
   final _amountController = TextEditingController();
+  final _remarkController = TextEditingController();
+  String? _selectedCurrency;
+  int _selectedInputMethod = 0; // 0: 邮箱, 1: 手机号, 2: ID
 
   @override
   void dispose() {
+    _recipientController.dispose();
     _amountController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
-
-  String _getAccountName(WalletType type) => _accountNames[type]!;
 
   Balance? _getBalance([String? symbol]) {
     final curr = symbol ?? _selectedCurrency;
     if (curr == null) return null;
-    return _walletStore.accountBalance?.getBalance(_fromAccount, curr);
+    return _walletStore.accountBalance?.getBalance(WalletType.FUNDING, curr);
   }
 
   List<String> _getAvailableCurrencies() {
-    final balances = _walletStore.accountBalance?.getBalancesByType(_fromAccount);
+    final balances = _walletStore.accountBalance?.getBalancesByType(WalletType.FUNDING);
     if (balances == null || balances.isEmpty) return [];
     return balances.where((b) => b.available > 0).map((b) => b.symbol).toList();
-  }
-
-  void _validateAndClearCurrency() {
-    if (_selectedCurrency != null) {
-      final balance = _getBalance();
-      if (balance == null || balance.available <= 0) {
-        _selectedCurrency = null;
-        _amountController.clear();
-      }
-    }
-  }
-
-  void _swapAccounts() {
-    setState(() {
-      final temp = _fromAccount;
-      _fromAccount = _toAccount;
-      _toAccount = temp;
-      _validateAndClearCurrency();
-    });
-  }
-
-  Future<void> _selectAccount(bool isFromAccount) async {
-    final result = await Navigator.of(context).push<WalletType>(
-      MaterialPageRoute(
-        builder: (context) => AccountSelect(
-          currentAccount: isFromAccount ? _fromAccount : _toAccount,
-          excludeAccount: isFromAccount ? _toAccount : _fromAccount,
-        ),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        if (isFromAccount) {
-          _fromAccount = result;
-          _validateAndClearCurrency();
-        } else {
-          _toAccount = result;
-        }
-      });
-    }
   }
 
   Future<void> _selectCurrency() async {
@@ -98,9 +48,9 @@ class _TransferScreenState extends State<TransferScreen> {
     if (availableCurrencies.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_getAccountName(_fromAccount)}暂无可划转资产'),
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('资金账户暂无可转账资产'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -131,7 +81,7 @@ class _TransferScreenState extends State<TransferScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('划转'),
+        title: const Text('转账给用户'),
       ),
       body: Observer(
         builder: (_) {
@@ -142,11 +92,15 @@ class _TransferScreenState extends State<TransferScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildAccountSelection(),
+                  _buildInputMethodSelector(),
+                  const SizedBox(height: 16),
+                  _buildRecipientInput(),
                   const SizedBox(height: 16),
                   _buildCurrencySelection(availableBalance),
                   const SizedBox(height: 16),
                   _buildAmountInput(availableBalance),
+                  const SizedBox(height: 16),
+                  _buildRemarkInput(),
                   const SizedBox(height: 32),
                   _buildConfirmButton(availableBalance),
                 ],
@@ -158,58 +112,100 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  Widget _buildAccountSelection() {
+  Widget _buildInputMethodSelector() {
+    final textTheme = context.textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('收款方式', style: TextStyle(fontSize: 14, color: textTheme.primary)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildMethodChip('邮箱', 0),
+            const SizedBox(width: 12),
+            _buildMethodChip('手机号', 1),
+            const SizedBox(width: 12),
+            _buildMethodChip('用户ID', 2),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMethodChip(String label, int index) {
+    final isSelected = _selectedInputMethod == index;
+    final theme = Theme.of(context);
     final backgroundTheme = context.backgroundTheme;
     final textTheme = context.textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundTheme.input,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          _buildAccountSelector(
-            label: '从',
-            account: _getAccountName(_fromAccount),
-            onTap: () => _selectAccount(true),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedInputMethod = index;
+          _recipientController.clear();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colorScheme.primary : backgroundTheme.input,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: isSelected ? Colors.white : textTheme.secondary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _swapAccounts,
-            child: Icon(Icons.swap_vert, size: 24, color: textTheme.secondary),
-          ),
-          const SizedBox(height: 12),
-          _buildAccountSelector(
-            label: '到',
-            account: _getAccountName(_toAccount),
-            onTap: () => _selectAccount(false),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildAccountSelector({
-    required String label,
-    required String account,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildRecipientInput() {
     final textTheme = context.textTheme;
+    String hint;
+    switch (_selectedInputMethod) {
+      case 0:
+        hint = '请输入收款人邮箱';
+        break;
+      case 1:
+        hint = '请输入收款人手机号';
+        break;
+      case 2:
+        hint = '请输入收款人ID';
+        break;
+      default:
+        hint = '';
+    }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Text(label, style: TextStyle(fontSize: 14, color: textTheme.secondary)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(account, style: TextStyle(fontSize: 14, color: textTheme.primary)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('收款人', style: TextStyle(fontSize: 14, color: textTheme.primary)),
+        const SizedBox(height: 8),
+        _buildFieldContainer(
+          child: TextField(
+            controller: _recipientController,
+            keyboardType: _selectedInputMethod == 1
+                ? TextInputType.phone
+                : TextInputType.text,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: textTheme.hint, fontSize: 14),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            style: TextStyle(fontSize: 14, color: textTheme.primary),
+            onChanged: (_) => setState(() {}),
           ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: textTheme.hint),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -242,7 +238,7 @@ class _TransferScreenState extends State<TransferScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              '当前币种无可划转资产，请选择其他币种',
+              '当前币种无可转账资产，请选择其他币种',
               style: TextStyle(fontSize: 12, color: statusTheme.error),
             ),
           ),
@@ -257,7 +253,7 @@ class _TransferScreenState extends State<TransferScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('数量', style: TextStyle(fontSize: 14, color: textTheme.primary)),
+        Text('转账金额', style: TextStyle(fontSize: 14, color: textTheme.primary)),
         const SizedBox(height: 8),
         _buildFieldContainer(
           child: Row(
@@ -267,7 +263,7 @@ class _TransferScreenState extends State<TransferScreen> {
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    hintText: '请输入数量',
+                    hintText: '请输入转账金额',
                     hintStyle: TextStyle(color: textTheme.hint, fontSize: 14),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -284,7 +280,7 @@ class _TransferScreenState extends State<TransferScreen> {
                 const SizedBox(width: 12),
                 GestureDetector(
                   onTap: () => _fillMaxAmount(availableBalance),
-                  child: Text('最大', style: TextStyle(fontSize: 14, color: theme.colorScheme.primary)),
+                  child: Text('全部', style: TextStyle(fontSize: 14, color: theme.colorScheme.primary)),
                 ),
               ],
             ],
@@ -294,6 +290,36 @@ class _TransferScreenState extends State<TransferScreen> {
         Text(
           '可用 ${availableBalance.toStringAsFixed(8)} ${_selectedCurrency ?? ''}',
           style: TextStyle(fontSize: 12, color: textTheme.secondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRemarkInput() {
+    final textTheme = context.textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('备注(可选)', style: TextStyle(fontSize: 14, color: textTheme.primary)),
+        const SizedBox(height: 8),
+        _buildFieldContainer(
+          child: TextField(
+            controller: _remarkController,
+            maxLines: 3,
+            maxLength: 100,
+            decoration: InputDecoration(
+              hintText: '添加转账备注',
+              hintStyle: TextStyle(color: textTheme.hint, fontSize: 14),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              counterText: '',
+            ),
+            style: TextStyle(fontSize: 14, color: textTheme.primary),
+          ),
         ),
       ],
     );
@@ -316,20 +342,47 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Widget _buildConfirmButton(double availableBalance) {
-    final isEnabled = _selectedCurrency != null &&
+    final isEnabled = _recipientController.text.isNotEmpty &&
+        _selectedCurrency != null &&
         _amountController.text.isNotEmpty &&
         availableBalance > 0;
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: isEnabled ? () {
-          // TODO: 执行划转
-        } : null,
+        onPressed: isEnabled ? _handleConfirm : null,
         child: const Text(
-          '确认划转',
+          '确认转账',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
+      ),
+    );
+  }
+
+  void _handleConfirm() {
+    // TODO: 执行转账逻辑
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认转账'),
+        content: Text(
+          '转账给: ${_recipientController.text}\n'
+          '金额: ${_amountController.text} $_selectedCurrency\n'
+          '备注: ${_remarkController.text.isEmpty ? '无' : _remarkController.text}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: 调用转账接口
+            },
+            child: const Text('确认'),
+          ),
+        ],
       ),
     );
   }

@@ -3,4 +3,6 @@ abstract class SettingRepository {
   bool get isDarkMode;
   Future<void> changeLanguage(String value);
   String? get currentLanguage;
+  Future<void> changeCurrency(String value);
+  String? get currentCurrency;
 }
