@@ -2,6 +2,7 @@ import 'package:fastapp/core/theme/app_theme_extension.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/domain/entity/wallet/balance.dart';
+import 'package:fastapp/domain/repository/wallet_repository.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/wallet/currency/account_select.dart';
 import 'package:flutter/material.dart';
@@ -26,10 +27,12 @@ class _TransferScreenState extends State<TransferScreen> {
   };
 
   final WalletStore _walletStore = getIt<WalletStore>();
+  final WalletRepository _walletRepository = getIt<WalletRepository>();
   WalletType _fromAccount = WalletType.FUTURES;
   WalletType _toAccount = WalletType.SPOT;
   String? _selectedCurrency;
   final _amountController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -124,6 +127,61 @@ class _TransferScreenState extends State<TransferScreen> {
     if (availableBalance > 0) {
       _amountController.text = availableBalance.toString();
       setState(() {});
+    }
+  }
+
+  Future<void> _confirmTransfer() async {
+    if (_selectedCurrency == null || _amountController.text.isEmpty) {
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请输入有效的划转数量')),
+        );
+      }
+      return;
+    }
+
+    final availableBalance = _getBalance()?.available ?? 0.0;
+    if (amount > availableBalance) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('划转数量不能超过可用余额')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _walletRepository.transfer(
+        fromWalletType: _fromAccount.name,
+        toWalletType: _toAccount.name,
+        symbol: _selectedCurrency!,
+        amount: _amountController.text,
+      );
+
+      // 刷新余额
+      await _walletStore.loadAsset();
+
+      // 返回上一页
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('划转失败: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -316,20 +374,25 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Widget _buildConfirmButton(double availableBalance) {
-    final isEnabled = _selectedCurrency != null &&
+    final isEnabled = !_isLoading &&
+        _selectedCurrency != null &&
         _amountController.text.isNotEmpty &&
         availableBalance > 0;
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: isEnabled ? () {
-          // TODO: 执行划转
-        } : null,
-        child: const Text(
-          '确认划转',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        onPressed: isEnabled ? _confirmTransfer : null,
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text(
+                '确认划转',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
       ),
     );
   }

@@ -7,6 +7,8 @@ class GetBalanceLogsParams {
   final String? walletType;
   final String? symbol;
   final String? changeType;
+  final int? startTime;
+  final int? endTime;
   final int page;
   final int pageSize;
 
@@ -14,6 +16,8 @@ class GetBalanceLogsParams {
     this.walletType,
     this.symbol,
     this.changeType,
+    this.startTime,
+    this.endTime,
     this.page = 1,
     this.pageSize = 20,
   });
@@ -32,6 +36,8 @@ class GetBalanceLogsUseCase
       walletType: params.walletType,
       symbol: params.symbol,
       changeType: params.changeType,
+      startTime: params.startTime,
+      endTime: params.endTime,
       page: params.page,
       pageSize: params.pageSize,
     );

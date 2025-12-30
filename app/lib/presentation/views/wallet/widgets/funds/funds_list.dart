@@ -82,11 +82,33 @@ class _FundsListState extends State<FundsList> {
           return const EmptyState(text: '暂无资产');
         }
 
-        // 获取汇率
-        final walletExchangeRate = CurrencyFormatter.getWalletExchangeRate(
-          quoteCurrency,
-          _marketStore,
-        );
+        // 直接在 Observer 中访问 tickerList 以确保依赖追踪
+        final tickerList = _marketStore.tickerList;
+
+        // 直接在 Observer 中计算汇率，确保依赖追踪
+        double walletExchangeRate = 1.0;
+        if (quoteCurrency == 'USDT') {
+          walletExchangeRate = 1.0;
+        } else {
+          // 尝试多种格式查找汇率ticker
+          final possibleRateSymbols = [
+            '${quoteCurrency}_USDT',    // BTC_USDT
+            '${quoteCurrency}/USDT',    // BTC/USDT
+            '${quoteCurrency}USDT',     // BTCUSDT
+          ];
+
+          for (final rateSymbol in possibleRateSymbols) {
+            try {
+              final rateTicker = tickerList.firstWhere((t) => t.symbol == rateSymbol);
+              if (rateTicker.lastPrice > 0) {
+                walletExchangeRate = 1.0 / rateTicker.lastPrice;
+                break;
+              }
+            } catch (_) {
+              // 继续尝试下一个格式
+            }
+          }
+        }
 
         return ListView.builder(
           padding: EdgeInsets.zero,
@@ -96,7 +118,33 @@ class _FundsListState extends State<FundsList> {
           itemBuilder: (context, index) {
             final balance = balances[index];
             final currency = _marketDataStore.getCurrency(balance.symbol);
-            final ticker = _tickerMap['${balance.symbol}_USDT'];
+
+            // 优先使用 marketStore 数据（会随币种切换自动更新），fallback 到 WebSocket 实时数据
+            // 尝试多种 ticker symbol 格式
+            TickerData? ticker;
+            final possibleSymbols = [
+              '${balance.symbol}_USDT',    // BTC_USDT
+              '${balance.symbol}/USDT',    // BTC/USDT
+              '${balance.symbol}USDT',     // BTCUSDT
+            ];
+
+            // 先从 marketStore 查找
+            for (final tickerSymbol in possibleSymbols) {
+              try {
+                ticker = tickerList.firstWhere((t) => t.symbol == tickerSymbol);
+                break;
+              } catch (_) {
+                // 继续尝试下一个格式
+              }
+            }
+
+            // 如果 marketStore 中没有，尝试从 WebSocket 数据获取
+            if (ticker == null) {
+              for (final tickerSymbol in possibleSymbols) {
+                ticker = _tickerMap[tickerSymbol];
+                if (ticker != null) break;
+              }
+            }
 
             return _buildAssetItem(
               symbol: balance.symbol,
@@ -104,7 +152,7 @@ class _FundsListState extends State<FundsList> {
               frozen: balance.frozen,
               total: balance.total,
               logoUrl: currency?.logo,
-              chain: currency?.chain,
+              chain: currency?.type == 1 ? null : currency?.chain,
               ticker: ticker,
               quoteCurrency: quoteCurrency,
               walletExchangeRate: walletExchangeRate,

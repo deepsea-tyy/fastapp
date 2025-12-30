@@ -46,6 +46,8 @@ class WalletRepositoryImpl implements WalletRepository {
     String? walletType,
     String? symbol,
     String? changeType,
+    int? startTime,
+    int? endTime,
     int page = 1,
     int pageSize = 20,
   }) =>
@@ -53,8 +55,40 @@ class WalletRepositoryImpl implements WalletRepository {
         walletType: walletType,
         symbol: symbol,
         changeType: changeType,
+        startTime: startTime,
+        endTime: endTime,
         page: page,
         pageSize: pageSize,
+      );
+
+  @override
+  Future<void> transfer({
+    required String fromWalletType,
+    required String toWalletType,
+    required String symbol,
+    required String amount,
+  }) =>
+      _walletApi.transfer(
+        fromWalletType: fromWalletType,
+        toWalletType: toWalletType,
+        symbol: symbol,
+        amount: amount,
+      );
+
+  @override
+  Future<void> transferToUser({
+    required int recipientType,
+    required String recipient,
+    required String symbol,
+    required String amount,
+    String? remark,
+  }) =>
+      _walletApi.transferToUser(
+        recipientType: recipientType,
+        recipient: recipient,
+        symbol: symbol,
+        amount: amount,
+        remark: remark,
       );
 }
 

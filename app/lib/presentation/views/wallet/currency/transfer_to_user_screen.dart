@@ -2,6 +2,7 @@ import 'package:fastapp/core/theme/app_theme_extension.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/domain/entity/wallet/balance.dart';
+import 'package:fastapp/domain/repository/wallet_repository.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -16,11 +17,13 @@ class TransferToUserScreen extends StatefulWidget {
 
 class _TransferToUserScreenState extends State<TransferToUserScreen> {
   final WalletStore _walletStore = getIt<WalletStore>();
+  final WalletRepository _walletRepository = getIt<WalletRepository>();
   final _recipientController = TextEditingController();
   final _amountController = TextEditingController();
   final _remarkController = TextEditingController();
   String? _selectedCurrency;
   int _selectedInputMethod = 0; // 0: 邮箱, 1: 手机号, 2: ID
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -342,7 +345,8 @@ class _TransferToUserScreenState extends State<TransferToUserScreen> {
   }
 
   Widget _buildConfirmButton(double availableBalance) {
-    final isEnabled = _recipientController.text.isNotEmpty &&
+    final isEnabled = !_isLoading &&
+        _recipientController.text.isNotEmpty &&
         _selectedCurrency != null &&
         _amountController.text.isNotEmpty &&
         availableBalance > 0;
@@ -351,17 +355,42 @@ class _TransferToUserScreenState extends State<TransferToUserScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: isEnabled ? _handleConfirm : null,
-        child: const Text(
-          '确认转账',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text(
+                '确认转账',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
       ),
     );
   }
 
-  void _handleConfirm() {
-    // TODO: 执行转账逻辑
-    showDialog(
+  Future<void> _handleConfirm() async {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请输入有效的转账金额')),
+        );
+      }
+      return;
+    }
+
+    final availableBalance = _getBalance()?.available ?? 0.0;
+    if (amount > availableBalance) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('转账金额不能超过可用余额')),
+        );
+      }
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('确认转账'),
@@ -372,19 +401,46 @@ class _TransferToUserScreenState extends State<TransferToUserScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: 调用转账接口
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('确认'),
           ),
         ],
       ),
     );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _walletRepository.transferToUser(
+        recipientType: _selectedInputMethod,
+        recipient: _recipientController.text,
+        symbol: _selectedCurrency!,
+        amount: _amountController.text,
+        remark: _remarkController.text.isEmpty ? null : _remarkController.text,
+      );
+
+      await _walletStore.loadAsset();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('转账失败: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Widget _buildCurrencyPicker(List<String> currencies) {

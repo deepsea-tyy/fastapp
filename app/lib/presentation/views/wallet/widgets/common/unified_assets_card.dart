@@ -101,7 +101,6 @@ class _UnifiedAssetsCardState extends State<UnifiedAssetsCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              const SizedBox(height: 12),
               _buildTotalAsset(
                 context,
                 store,
@@ -111,10 +110,9 @@ class _UnifiedAssetsCardState extends State<UnifiedAssetsCard> {
               ),
               const SizedBox(height: 8),
               _buildFiatValue(assetData),
-              const SizedBox(height: 8),
               _buildProfitLoss(assetData),
               if (widget.bottomWidget != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 widget.bottomWidget!,
               ],
             ],
@@ -211,17 +209,13 @@ class _UnifiedAssetsCardState extends State<UnifiedAssetsCard> {
             color: Colors.black87,
           ),
         ),
-        Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.description_outlined,
-                size: 20,
-                color: Colors.grey.shade600,
-              ),
-              onPressed: () => WalletNavigator.toBalanceLog(context),
-            ),
-          ],
+        IconButton(
+          icon: Icon(
+            Icons.description_outlined,
+            size: 20,
+            color: Colors.grey.shade600,
+          ),
+          onPressed: () => WalletNavigator.toBalanceLog(context),
         ),
       ],
     );
@@ -240,15 +234,12 @@ class _UnifiedAssetsCardState extends State<UnifiedAssetsCard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Flexible(
-            child: Text(
-              totalAsset.toStringAsFixed(2),
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+          Text(
+            totalAsset.toStringAsFixed(2),
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(width: 4),
@@ -288,37 +279,37 @@ class _UnifiedAssetsCardState extends State<UnifiedAssetsCard> {
 
   /// 构建今日盈亏
   Widget _buildProfitLoss(_AssetData assetData) {
-    return GestureDetector(
-      onTap: () {},
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Text(
-                widget.profitLossLabel ?? '今日盈亏',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Text(
+              widget.profitLossLabel ?? '今日盈亏',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${assetData.todayPnL.toStringAsFixed(2)} (${assetData.todayPnL >= 0 ? '+' : ''}${assetData.todayPnLPercent.toStringAsFixed(2)}%)',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: assetData.todayPnL >= 0 ? Colors.green : Colors.red,
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${assetData.todayPnL.toStringAsFixed(2)} (${assetData.todayPnL >= 0 ? '+' : ''}${assetData.todayPnLPercent.toStringAsFixed(2)}%)',
+              style: TextStyle(
+                fontSize: 14,
+                color: assetData.todayPnL >= 0 ? Colors.green : Colors.red,
               ),
-            ],
-          ),
-          Icon(
+            ),
+          ],
+        ),
+        Opacity(
+          opacity: 0.3,
+          child: Icon(
             Icons.arrow_forward_ios,
             size: 16,
             color: Colors.grey.shade400,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

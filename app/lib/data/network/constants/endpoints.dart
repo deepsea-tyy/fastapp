@@ -54,6 +54,7 @@ class Endpoints {
   static const String walletBalance = '/api/ex/wallet/balance';
   static const String walletBalanceLog = '/api/ex/wallet/balance-log';
   static const String walletTransfer = '/api/ex/wallet/transfer';
+  static const String walletTransferToUser = '/api/ex/wallet/transfer-to-user';
   static const String walletTransferHistory = '/api/ex/wallet/transfer-history';
   static const String walletDepositAddress = '/api/ex/wallet/deposit-address';
   static const String walletDepositHistory = '/api/ex/wallet/deposit-history';

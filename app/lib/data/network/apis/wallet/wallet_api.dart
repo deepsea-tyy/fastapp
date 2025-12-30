@@ -77,6 +77,8 @@ class WalletApi {
     String? walletType,
     String? symbol,
     String? changeType,
+    int? startTime,
+    int? endTime,
     int page = 1,
     int pageSize = 20,
   }) async {
@@ -86,6 +88,8 @@ class WalletApi {
         if (walletType != null) 'wallet_type': walletType,
         if (symbol != null) 'symbol': symbol,
         if (changeType != null) 'change_type': changeType,
+        if (startTime != null) 'startTime': startTime,
+        if (endTime != null) 'endTime': endTime,
         'page': page,
         'page_size': pageSize,
       },
@@ -96,6 +100,42 @@ class WalletApi {
             ?.map((item) => BalanceLog.fromJson(item as Map<String, dynamic>))
             .toList() ??
         [];
+  }
+
+  Future<void> transfer({
+    required String fromWalletType,
+    required String toWalletType,
+    required String symbol,
+    required String amount,
+  }) async {
+    await _dioClient.dio.post(
+      Endpoints.walletTransfer,
+      data: {
+        'fromWalletType': fromWalletType,
+        'toWalletType': toWalletType,
+        'symbol': symbol,
+        'amount': amount,
+      },
+    );
+  }
+
+  Future<void> transferToUser({
+    required int recipientType,
+    required String recipient,
+    required String symbol,
+    required String amount,
+    String? remark,
+  }) async {
+    await _dioClient.dio.post(
+      Endpoints.walletTransferToUser,
+      data: {
+        'recipient_type': recipientType,
+        'recipient': recipient,
+        'symbol': symbol,
+        'amount': amount,
+        if (remark != null && remark.isNotEmpty) 'remark': remark,
+      },
+    );
   }
 }
 

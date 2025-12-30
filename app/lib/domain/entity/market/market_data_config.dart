@@ -11,6 +11,9 @@ class MarketDataConfig {
   /// 链列表
   final List<String> chains;
 
+  /// 代币协议（symbol -> token_standard）
+  final Map<String, String> tokenStandard;
+
   /// 币种列表（扁平化：symbol -> currency）
   final Map<String, Currency> currencies;
 
@@ -26,6 +29,7 @@ class MarketDataConfig {
   MarketDataConfig({
     required this.version,
     required this.chains,
+    required this.tokenStandard,
     required this.currencies,
     required this.spotPairs,
     required this.futuresPairs,
@@ -40,6 +44,13 @@ class MarketDataConfig {
     // 解析链列表
     final chainsJson = json['chain'] as List<dynamic>? ?? [];
     final chains = chainsJson.map((e) => e.toString()).toList();
+
+    // 解析代币协议
+    final tokenStandardJson = json['token_standard'] as Map<String, dynamic>? ?? {};
+    final tokenStandard = <String, String>{};
+    tokenStandardJson.forEach((symbol, standard) {
+      tokenStandard[symbol] = standard.toString();
+    });
 
     // 解析币种（扁平化：symbol -> currency）
     final currenciesJson = json['currency'] as Map<String, dynamic>? ?? {};
@@ -72,6 +83,7 @@ class MarketDataConfig {
     return MarketDataConfig(
       version: version,
       chains: chains,
+      tokenStandard: tokenStandard,
       currencies: currencies,
       spotPairs: spotPairs,
       futuresPairs: futuresPairs,
@@ -84,6 +96,7 @@ class MarketDataConfig {
     return {
       'version': version,
       'chain': chains,
+      'token_standard': tokenStandard,
       'currency': currencies.map((symbol, currency) => MapEntry(symbol, currency.toJson())),
       'spot': spotPairs.map((symbol, spot) => MapEntry(symbol, spot.toJson())),
       'futures': futuresPairs.map((symbol, futures) => MapEntry(symbol, futures.toJson())),
@@ -194,6 +207,9 @@ class MarketDataConfig {
   }
 
   // ==================== 工具方法 ====================
+
+  /// 获取代币协议
+  String? getTokenStandard(String symbol) => tokenStandard[symbol];
 
   /// 获取所有链名称列表（从所有数据中提取）
   List<String> get allChains {

@@ -89,30 +89,60 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
           bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _buildFilterButton(
-              label: _store.selectedWalletType ?? '全部账户',
-              onTap: () => _showWalletTypeFilter(textTheme, backgroundTheme),
-              textTheme: textTheme,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterButton(
+                  label: _store.selectedWalletType ?? '全部账户',
+                  onTap: () => _showWalletTypeFilter(textTheme, backgroundTheme),
+                  textTheme: textTheme,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFilterButton(
+                  label: _store.selectedSymbol ?? '全部币种',
+                  onTap: () => _showSymbolFilter(textTheme, backgroundTheme),
+                  textTheme: textTheme,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFilterButton(
+                  label: _getChangeTypeLabel(_store.selectedChangeType),
+                  onTap: () => _showChangeTypeFilter(textTheme, backgroundTheme),
+                  textTheme: textTheme,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterButton(
-              label: _store.selectedSymbol ?? '全部币种',
-              onTap: () => _showSymbolFilter(textTheme, backgroundTheme),
-              textTheme: textTheme,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterButton(
-              label: _getChangeTypeLabel(_store.selectedChangeType),
-              onTap: () => _showChangeTypeFilter(textTheme, backgroundTheme),
-              textTheme: textTheme,
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFilterButton(
+                  label: _getTimeRangeLabel(),
+                  onTap: () => _showTimeRangePicker(textTheme, backgroundTheme),
+                  textTheme: textTheme,
+                ),
+              ),
+              if (_store.startTime != null || _store.endTime != null) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _store.setTimeRange(null, null),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(Icons.clear, size: 18, color: Colors.red),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -209,7 +239,7 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
             children: [
               Expanded(
                 child: Text(
-                  _getChangeTypeLabel(log.changeType),
+                  _getLogTitle(log),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -235,6 +265,12 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
           ),
           const SizedBox(height: 4),
           _buildInfoRow(
+            '变动',
+            '${log.availableBefore.toStringAsFixed(8)} → ${log.availableAfter.toStringAsFixed(8)}',
+            textTheme,
+          ),
+          const SizedBox(height: 4),
+          _buildInfoRow(
             '时间',
             _formatDateTime(log.createdAt),
             textTheme,
@@ -247,30 +283,6 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
               textTheme,
             ),
           ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildBalanceChange(
-                  '可用',
-                  log.availableBefore,
-                  log.availableAfter,
-                  log.symbol,
-                  textTheme,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildBalanceChange(
-                  '冻结',
-                  log.frozenBefore,
-                  log.frozenAfter,
-                  log.symbol,
-                  textTheme,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -296,24 +308,6 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
     );
   }
 
-  Widget _buildBalanceChange(String label, double before, double after,
-      String symbol, TextThemeColors textTheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 11, color: textTheme.hint),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '${before.toStringAsFixed(8)} → ${after.toStringAsFixed(8)}',
-          style: TextStyle(fontSize: 11, color: textTheme.secondary),
-        ),
-      ],
-    );
-  }
-
   String _formatDateTime(String dateTime) {
     try {
       final dt = DateTime.parse(dateTime);
@@ -332,22 +326,57 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
       'EARN': '理财',
       'OPTIONS': '期权',
     };
-    return labels[walletType] ?? walletType ?? '未知';
+    return labels[walletType] ?? walletType ?? '全部';
   }
 
   String _getChangeTypeLabel(String? changeType) {
     const labels = {
-      'deposit': '充值',
-      'withdraw': '提现',
-      'trade_buy': '买入',
-      'trade_sell': '卖出',
-      'transfer_in': '转入',
-      'transfer_out': '转出',
-      'commission': '手续费',
-      'reward': '奖励',
-      'airdrop': '空投',
+      'DEPOSIT': '充值',
+      'WITHDRAW': '提现',
+      'TRANSFER_IN': '划入',
+      'TRANSFER_OUT': '划出',
+      'TRADE_BUY': '买入',
+      'TRADE_SELL': '卖出',
+      'ORDER_FREEZE': '下单冻结',
+      'ORDER_UNFREEZE': '撤单解冻',
+      'FEE': '手续费',
+      'REBATE': '返佣',
+      'INTEREST': '利息收益',
     };
     return labels[changeType] ?? changeType ?? '全部类型';
+  }
+
+  /// 根据 refType 和 changeType 组合获取显示标题
+  String _getLogTitle(dynamic log) {
+    final refType = log.refType;
+    final changeType = log.changeType;
+
+    // 优先使用组合逻辑
+    if (refType == 'TRANSFER') {
+      return changeType == 'IN' ? '划入' : '划出';
+    } else if (refType == 'USER_TRANSFER') {
+      return changeType == 'IN' ? '收到转账' : '转账';
+    } else if (refType == 'DEPOSIT') {
+      return '充值';
+    } else if (refType == 'WITHDRAW') {
+      if (changeType == 'ORDER_FREEZE') {
+        return '提现冻结';
+      }
+      return changeType == 'IN' ? '提现入账' : '提现';
+    } else if (refType == 'ORDER_FREEZE') {
+      return '下单冻结';
+    } else if (refType == 'ORDER_UNFREEZE') {
+      return '撤单解冻';
+    } else if (refType == 'FEE') {
+      return '手续费';
+    } else if (refType == 'REBATE') {
+      return '返佣';
+    } else if (refType == 'INTEREST') {
+      return '利息收益';
+    }
+
+    // 兜底：使用旧的 changeType 映射
+    return _getChangeTypeLabel(changeType);
   }
 
   void _showWalletTypeFilter(
@@ -457,15 +486,17 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
       TextThemeColors textTheme, BackgroundThemeColors backgroundTheme) {
     final types = [
       null,
-      'deposit',
-      'withdraw',
-      'trade_buy',
-      'trade_sell',
-      'transfer_in',
-      'transfer_out',
-      'commission',
-      'reward',
-      'airdrop',
+      'DEPOSIT',
+      'WITHDRAW',
+      'TRANSFER_IN',
+      'TRANSFER_OUT',
+      'TRADE_BUY',
+      'TRADE_SELL',
+      'ORDER_FREEZE',
+      'ORDER_UNFREEZE',
+      'FEE',
+      'REBATE',
+      'INTEREST',
     ];
     showModalBottomSheet(
       context: context,
@@ -501,6 +532,167 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
           ),
         );
       },
+    );
+  }
+
+  String _getTimeRangeLabel() {
+    if (_store.startTime == null && _store.endTime == null) {
+      return '全部时间';
+    }
+    final format = DateFormat('yyyy-MM-dd');
+    if (_store.startTime != null && _store.endTime != null) {
+      return '${format.format(_store.startTime!)} 至 ${format.format(_store.endTime!)}';
+    } else if (_store.startTime != null) {
+      return '从 ${format.format(_store.startTime!)}';
+    } else {
+      return '至 ${format.format(_store.endTime!)}';
+    }
+  }
+
+  Future<void> _showTimeRangePicker(
+      TextThemeColors textTheme, BackgroundThemeColors backgroundTheme) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: backgroundTheme.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        DateTime? tempStartTime = _store.startTime;
+        DateTime? tempEndTime = _store.endTime;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '选择时间范围',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: textTheme.primary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDateTimeSelector(
+                    label: '开始时间',
+                    dateTime: tempStartTime,
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: tempStartTime ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (date != null) {
+                        setState(() => tempStartTime = date);
+                      }
+                    },
+                    onClear: () => setState(() => tempStartTime = null),
+                    textTheme: textTheme,
+                    backgroundTheme: backgroundTheme,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDateTimeSelector(
+                    label: '结束时间',
+                    dateTime: tempEndTime,
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: tempEndTime ?? DateTime.now(),
+                        firstDate: tempStartTime ?? DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (date != null) {
+                        setState(() => tempEndTime = date);
+                      }
+                    },
+                    onClear: () => setState(() => tempEndTime = null),
+                    textTheme: textTheme,
+                    backgroundTheme: backgroundTheme,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _store.setTimeRange(tempStartTime, tempEndTime);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('确定'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDateTimeSelector({
+    required String label,
+    required DateTime? dateTime,
+    required VoidCallback onTap,
+    required VoidCallback onClear,
+    required TextThemeColors textTheme,
+    required BackgroundThemeColors backgroundTheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: textTheme.secondary),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    dateTime != null
+                        ? DateFormat('yyyy-MM-dd').format(dateTime)
+                        : '请选择日期',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: dateTime != null ? textTheme.primary : textTheme.hint,
+                    ),
+                  ),
+                ),
+                if (dateTime != null)
+                  GestureDetector(
+                    onTap: onClear,
+                    child: Icon(Icons.clear, size: 18, color: textTheme.hint),
+                  )
+                else
+                  Icon(Icons.calendar_today, size: 18, color: textTheme.hint),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

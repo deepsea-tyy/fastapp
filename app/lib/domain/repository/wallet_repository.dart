@@ -25,8 +25,25 @@ abstract class WalletRepository {
     String? walletType,
     String? symbol,
     String? changeType,
+    int? startTime,
+    int? endTime,
     int page = 1,
     int pageSize = 20,
+  });
+
+  Future<void> transfer({
+    required String fromWalletType,
+    required String toWalletType,
+    required String symbol,
+    required String amount,
+  });
+
+  Future<void> transferToUser({
+    required int recipientType,
+    required String recipient,
+    required String symbol,
+    required String amount,
+    String? remark,
   });
 }
 

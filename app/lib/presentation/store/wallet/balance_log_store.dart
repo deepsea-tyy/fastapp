@@ -29,6 +29,12 @@ abstract class _BalanceLogStore with Store {
   String? selectedChangeType;
 
   @observable
+  DateTime? startTime;
+
+  @observable
+  DateTime? endTime;
+
+  @observable
   bool isLoading = false;
 
   @observable
@@ -59,6 +65,13 @@ abstract class _BalanceLogStore with Store {
   }
 
   @action
+  void setTimeRange(DateTime? start, DateTime? end) {
+    startTime = start;
+    endTime = end;
+    refresh();
+  }
+
+  @action
   Future<void> loadLogs({bool loadMore = false}) async {
     if (isLoading) return;
     if (loadMore && !hasMore) return;
@@ -79,6 +92,8 @@ abstract class _BalanceLogStore with Store {
           walletType: selectedWalletType,
           symbol: selectedSymbol,
           changeType: selectedChangeType,
+          startTime: startTime?.millisecondsSinceEpoch,
+          endTime: endTime?.millisecondsSinceEpoch,
           page: currentPage,
           pageSize: 20,
         ),
