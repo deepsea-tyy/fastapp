@@ -3,10 +3,15 @@ import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/market/ticker_data.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
+import 'package:fastapp/presentation/store/app/currency_store.dart';
+import 'package:fastapp/presentation/store/app/exchange_rate_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_currency_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/wallet/currency/asset_detail_screen.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/empty_state.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/overview/currency_formatter.dart';
 import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -24,6 +29,10 @@ class FundsList extends StatefulWidget {
 class _FundsListState extends State<FundsList> {
   final WalletStore _walletStore = getIt<WalletStore>();
   final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
+  final MarketStore _marketStore = getIt<MarketStore>();
+  final WalletCurrencyStore _walletCurrencyStore = getIt<WalletCurrencyStore>();
+  final CurrencyStore _currencyStore = getIt<CurrencyStore>();
+  final ExchangeRateStore _exchangeRateStore = getIt<ExchangeRateStore>();
   final AppWebSocket _webSocket = getIt<AppWebSocket>();
 
   final Map<String, TickerData> _tickerMap = {};
@@ -66,10 +75,18 @@ class _FundsListState extends State<FundsList> {
     return Observer(
       builder: (_) {
         final balances = _walletStore.accountBalance?.getBalancesByType(widget.walletType);
+        final quoteCurrency = _walletCurrencyStore.currency;
+        final fiatCurrency = _currencyStore.currency;
 
         if (balances == null || balances.isEmpty) {
           return const EmptyState(text: '暂无资产');
         }
+
+        // 获取汇率
+        final walletExchangeRate = CurrencyFormatter.getWalletExchangeRate(
+          quoteCurrency,
+          _marketStore,
+        );
 
         return ListView.builder(
           padding: EdgeInsets.zero,
@@ -89,6 +106,8 @@ class _FundsListState extends State<FundsList> {
               logoUrl: currency?.logo,
               chain: currency?.chain,
               ticker: ticker,
+              quoteCurrency: quoteCurrency,
+              walletExchangeRate: walletExchangeRate,
               isLast: index == balances.length - 1,
             );
           },
@@ -105,9 +124,21 @@ class _FundsListState extends State<FundsList> {
     String? logoUrl,
     String? chain,
     TickerData? ticker,
+    required String quoteCurrency,
+    required double walletExchangeRate,
     bool isLast = false,
   }) {
-    final usdtValue = ticker != null ? total * ticker.lastPrice : 0.0;
+    // 计算USDT价值
+    final double usdtValue;
+    if (symbol == 'USDT') {
+      usdtValue = total;
+    } else {
+      usdtValue = ticker != null ? total * ticker.lastPrice : 0.0;
+    }
+
+    // 转换为钱包货币
+    final walletValue = usdtValue * walletExchangeRate;
+
     final formattedLogoUrl = ImageUtils.formatSingleImagePath(logoUrl);
 
     return InkWell(
@@ -191,7 +222,7 @@ class _FundsListState extends State<FundsList> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '≈ ${usdtValue.toStringAsFixed(2)} USDT',
+                          '≈ ${CurrencyFormatter.formatFiatCurrencyForApprox(quoteCurrency)}${walletValue.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,

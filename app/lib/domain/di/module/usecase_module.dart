@@ -21,7 +21,10 @@ import 'package:fastapp/domain/usecase/market/get_exchange_rate_usecase.dart';
 import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_balance_logs_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_wallet_currency_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/set_wallet_currency_usecase.dart';
 import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
 import 'package:fastapp/domain/usecase/trade/cancel_order_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/get_theme_usecase.dart';
@@ -110,6 +113,15 @@ class UseCaseModule {
     );
     getIt.registerSingleton<GetTransactionsUseCase>(
       GetTransactionsUseCase(getIt<WalletRepository>()),
+    );
+    getIt.registerSingleton<GetBalanceLogsUseCase>(
+      GetBalanceLogsUseCase(getIt<WalletRepository>()),
+    );
+    getIt.registerSingleton<GetWalletCurrencyUseCase>(
+      GetWalletCurrencyUseCase(getIt<SettingRepository>()),
+    );
+    getIt.registerSingleton<SetWalletCurrencyUseCase>(
+      SetWalletCurrencyUseCase(getIt<SettingRepository>()),
     );
 
     // trade:-------------------------------------------------------------------

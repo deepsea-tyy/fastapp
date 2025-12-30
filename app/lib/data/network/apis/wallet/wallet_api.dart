@@ -3,6 +3,7 @@ import '../../../../core/data/network/dio/dio_client.dart';
 import '../../../../domain/entity/wallet/account_balance.dart';
 import '../../../../domain/entity/wallet/asset.dart';
 import '../../../../domain/entity/wallet/balance.dart';
+import '../../../../domain/entity/wallet/balance_log.dart';
 import '../../../../domain/entity/wallet/transaction.dart';
 import '../../constants/endpoints.dart';
 
@@ -71,5 +72,30 @@ class WalletApi {
 
   Future<Transaction?> getTransactionById(String transactionId) =>
       Future.value(null);
+
+  Future<List<BalanceLog>> getBalanceLogs({
+    String? walletType,
+    String? symbol,
+    String? changeType,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dioClient.dio.get(
+      Endpoints.walletBalanceLog,
+      queryParameters: {
+        if (walletType != null) 'wallet_type': walletType,
+        if (symbol != null) 'symbol': symbol,
+        if (changeType != null) 'change_type': changeType,
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+
+    final list = (response.data as Map<String, dynamic>)['list'] as List?;
+    return list
+            ?.map((item) => BalanceLog.fromJson(item as Map<String, dynamic>))
+            .toList() ??
+        [];
+  }
 }
 

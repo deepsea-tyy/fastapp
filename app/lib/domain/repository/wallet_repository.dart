@@ -1,6 +1,7 @@
 import '../entity/wallet/account_balance.dart';
 import '../entity/wallet/asset.dart';
 import '../entity/wallet/balance.dart';
+import '../entity/wallet/balance_log.dart';
 import '../entity/wallet/transaction.dart';
 
 abstract class WalletRepository {
@@ -19,5 +20,13 @@ abstract class WalletRepository {
   });
 
   Future<Transaction?> getTransactionById(String transactionId);
+
+  Future<List<BalanceLog>> getBalanceLogs({
+    String? walletType,
+    String? symbol,
+    String? changeType,
+    int page = 1,
+    int pageSize = 20,
+  });
 }
 

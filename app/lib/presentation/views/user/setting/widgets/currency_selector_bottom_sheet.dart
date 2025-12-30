@@ -7,14 +7,14 @@ class CurrencySelectorBottomSheet extends StatelessWidget {
   final String currentCurrency;
   final List<Map<String, String>> currencies;
   final Function(String) onCurrencySelected;
-  final ExchangeRateStore exchangeRateStore;
+  final ExchangeRateStore? exchangeRateStore;
 
   const CurrencySelectorBottomSheet({
     super.key,
     required this.currentCurrency,
     required this.currencies,
     required this.onCurrencySelected,
-    required this.exchangeRateStore,
+    this.exchangeRateStore,
   });
 
   @override
@@ -66,7 +66,7 @@ class CurrencySelectorBottomSheet extends StatelessWidget {
     final code = currency['code']!;
     final name = currency['name']!;
     final isSelected = currentCurrency == code;
-    final rate = _getExchangeRate(code);
+    final rate = exchangeRateStore != null ? _getExchangeRate(code) : '';
 
     return InkWell(
       onTap: () {
@@ -110,15 +110,17 @@ class CurrencySelectorBottomSheet extends StatelessWidget {
               ),
             ),
             // 汇率显示
-            Text(
-              rate,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            if (rate.isNotEmpty) ...[
+              Text(
+                rate,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
+            ],
             // 选中标记
             if (isSelected)
               Icon(
@@ -134,19 +136,21 @@ class CurrencySelectorBottomSheet extends StatelessWidget {
 
   /// 获取汇率字符串
   String _getExchangeRate(String code) {
+    if (exchangeRateStore == null) return '';
+
     switch (code) {
       case 'USD':
         return '1.00';
       case 'CNY':
-        return exchangeRateStore.cny.toStringAsFixed(2);
+        return exchangeRateStore!.cny.toStringAsFixed(2);
       case 'EUR':
-        return exchangeRateStore.eur.toStringAsFixed(4);
+        return exchangeRateStore!.eur.toStringAsFixed(4);
       case 'JPY':
-        return exchangeRateStore.jpy.toStringAsFixed(2);
+        return exchangeRateStore!.jpy.toStringAsFixed(2);
       case 'KRW':
-        return exchangeRateStore.krw.toStringAsFixed(2);
+        return exchangeRateStore!.krw.toStringAsFixed(2);
       default:
-        return '1.00';
+        return '';
     }
   }
 }

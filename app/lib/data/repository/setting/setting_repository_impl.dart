@@ -26,4 +26,11 @@ class SettingRepositoryImpl extends SettingRepository {
 
   @override
   String? get currentCurrency => _sharedPrefsHelper.currentCurrency;
+
+  @override
+  Future<void> changeWalletCurrency(String value) =>
+      _sharedPrefsHelper.changeWalletCurrency(value);
+
+  @override
+  String? get walletCurrency => _sharedPrefsHelper.walletCurrency;
 }

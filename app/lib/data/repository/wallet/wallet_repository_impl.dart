@@ -2,6 +2,7 @@ import '../../network/apis/wallet/wallet_api.dart';
 import '../../../domain/entity/wallet/account_balance.dart';
 import '../../../domain/entity/wallet/asset.dart';
 import '../../../domain/entity/wallet/balance.dart';
+import '../../../domain/entity/wallet/balance_log.dart';
 import '../../../domain/entity/wallet/transaction.dart';
 import '../../../domain/repository/wallet_repository.dart';
 
@@ -39,5 +40,21 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Transaction?> getTransactionById(String transactionId) =>
       _walletApi.getTransactionById(transactionId);
+
+  @override
+  Future<List<BalanceLog>> getBalanceLogs({
+    String? walletType,
+    String? symbol,
+    String? changeType,
+    int page = 1,
+    int pageSize = 20,
+  }) =>
+      _walletApi.getBalanceLogs(
+        walletType: walletType,
+        symbol: symbol,
+        changeType: changeType,
+        page: page,
+        pageSize: pageSize,
+      );
 }
 

@@ -14,14 +14,17 @@ import 'package:fastapp/presentation/store/app/theme_store.dart';
 import 'package:fastapp/presentation/store/app/user_store.dart';
 import 'package:fastapp/presentation/store/app/exchange_rate_store.dart';
 import 'package:fastapp/presentation/store/app/currency_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_currency_store.dart';
 import 'package:fastapp/presentation/store/home/home_store.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/store/market/depth_store.dart';
+import 'package:fastapp/presentation/store/market/ticker_cache_store.dart';
 import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
 import 'package:fastapp/presentation/store/futures/futures_trade_store.dart';
+import 'package:fastapp/presentation/store/wallet/balance_log_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/store/orders/order_store.dart';
 import 'package:fastapp/presentation/store/kyc/ex_kyc_store.dart';
@@ -38,6 +41,7 @@ import 'package:fastapp/domain/repository/market_repository.dart';
 import 'package:fastapp/domain/usecase/trade/place_order_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_account_balance_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_balance_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_balance_logs_usecase.dart';
 import 'package:fastapp/domain/usecase/wallet/get_transactions_usecase.dart';
 import 'package:fastapp/domain/usecase/order/get_orders_usecase.dart';
 import 'package:fastapp/domain/usecase/trade/cancel_order_usecase.dart';
@@ -48,6 +52,8 @@ import 'package:fastapp/domain/usecase/setting/get_language_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_language_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/get_currency_usecase.dart';
 import 'package:fastapp/domain/usecase/setting/set_currency_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/get_wallet_currency_usecase.dart';
+import 'package:fastapp/domain/usecase/wallet/set_wallet_currency_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_positions_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_funding_rate_usecase.dart';
 import 'package:fastapp/domain/usecase/futures/get_mark_price_usecase.dart';
@@ -103,6 +109,14 @@ class StoreModule {
       ),
     );
 
+    getIt.registerSingleton<WalletCurrencyStore>(
+      WalletCurrencyStore(
+        getIt<GetWalletCurrencyUseCase>(),
+        getIt<SetWalletCurrencyUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
     getIt.registerSingleton<ExchangeRateStore>(
       ExchangeRateStore(
         getIt<GetExchangeRateUseCase>(),
@@ -129,6 +143,11 @@ class StoreModule {
         getIt<AppWebSocket>(),
         getIt<MarketDataStore>(),
       ),
+    );
+
+    // 注册 TickerCacheStore，用于缓存 ticker 价格（5秒刷新一次）
+    getIt.registerSingleton<TickerCacheStore>(
+      TickerCacheStore(refreshInterval: 5000),
     );
 
     getIt.registerSingleton<KlineStore>(
@@ -176,6 +195,13 @@ class StoreModule {
         getIt<GetAccountBalanceUseCase>(),
         getIt<GetBalanceUseCase>(),
         getIt<GetTransactionsUseCase>(),
+        getIt<ErrorStore>(),
+      ),
+    );
+
+    getIt.registerSingleton<BalanceLogStore>(
+      BalanceLogStore(
+        getIt<GetBalanceLogsUseCase>(),
         getIt<ErrorStore>(),
       ),
     );

@@ -11,7 +11,7 @@ class OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const OverviewAssets(),
+        OverviewAssets(),
         const SizedBox(height: 16),
         const ActionButtons(),
         const SizedBox(height: 16),

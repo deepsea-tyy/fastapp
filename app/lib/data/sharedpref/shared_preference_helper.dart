@@ -106,6 +106,15 @@ class SharedPreferenceHelper {
     return _sharedPreference.setString(Preferences.current_currency, currency);
   }
 
+  // Wallet Currency:---------------------------------------------------
+  String? get walletCurrency {
+    return _sharedPreference.getString(Preferences.wallet_currency);
+  }
+
+  Future<void> changeWalletCurrency(String currency) {
+    return _sharedPreference.setString(Preferences.wallet_currency, currency);
+  }
+
   // Search History:---------------------------------------------------
   List<String> get searchHistory {
     return _sharedPreference.getStringList(Preferences.search_history) ?? [];

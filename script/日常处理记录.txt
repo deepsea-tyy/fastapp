@@ -39,10 +39,6 @@ API 响应处理规则
 - 直接使用 response 作为解包后的数据，无需检查 code 或访问 data 字段
 - 成功请求不展示 message 提示
 
-示例：
-final response = await userApi.updateProfile(username: username);
-final user = User.fromJson(response);
-
 
 cursor
 # 关闭 Cursor 后执行 删除会话历史

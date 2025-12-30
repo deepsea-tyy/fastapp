@@ -5,4 +5,6 @@ abstract class SettingRepository {
   String? get currentLanguage;
   Future<void> changeCurrency(String value);
   String? get currentCurrency;
+  Future<void> changeWalletCurrency(String value);
+  String? get walletCurrency;
 }

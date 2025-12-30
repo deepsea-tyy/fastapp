@@ -1,9 +1,12 @@
-import 'package:fastapp/constants/exchange_rate.dart';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
+import 'package:fastapp/presentation/store/app/currency_store.dart';
+import 'package:fastapp/presentation/store/app/exchange_rate_store.dart';
+import 'package:fastapp/presentation/store/market/market_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_currency_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
-import 'package:fastapp/presentation/views/wallet/currency/currency_list.dart';
 import 'package:fastapp/presentation/views/wallet/widgets/empty_state.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/overview/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
@@ -52,22 +55,38 @@ class AccountAssetList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = getIt<WalletStore>();
+    final marketStore = getIt<MarketStore>();
+    final walletCurrencyStore = getIt<WalletCurrencyStore>();
+    final currencyStore = getIt<CurrencyStore>();
+    final exchangeRateStore = getIt<ExchangeRateStore>();
 
     return Observer(
       builder: (_) {
         final accounts = store.accountTotals;
+        final quoteCurrency = walletCurrencyStore.currency;
+        final fiatCurrency = currencyStore.currency;
 
         if (accounts.isEmpty) {
           return const EmptyState(text: '暂无资产');
         }
 
+        // 获取钱包货币汇率
+        final walletExchangeRate = CurrencyFormatter.getWalletExchangeRate(
+          quoteCurrency,
+          marketStore,
+        );
+
         return Column(
           children: accounts.entries.map((entry) {
             return _buildAccountItem(
+              context,
               _accountLabels[entry.key] ?? '未知',
               entry.value,
-              ExchangeRate.getUsdToCnySync(),
-              showCny: entry.key != WalletType.FUNDING,
+              walletExchangeRate,
+              quoteCurrency,
+              exchangeRateStore,
+              fiatCurrency,
+              showFiat: entry.key != WalletType.FUNDING && quoteCurrency != fiatCurrency,
             );
           }).toList(),
         );
@@ -75,9 +94,24 @@ class AccountAssetList extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountItem(String label, double usdtValue, double exchangeRate,
-      {bool showCny = true}) {
-    final cnyValue = usdtValue * exchangeRate;
+  Widget _buildAccountItem(
+    BuildContext context,
+    String label,
+    double usdtValue,
+    double walletExchangeRate,
+    String quoteCurrency,
+    ExchangeRateStore exchangeRateStore,
+    String fiatCurrency, {
+    bool showFiat = true,
+  }) {
+    final walletValue = usdtValue * walletExchangeRate;
+
+    // 获取法币汇率
+    final fiatExchangeRate = CurrencyFormatter.getFiatExchangeRate(
+      fiatCurrency,
+      exchangeRateStore,
+    );
+    final fiatValue = usdtValue * fiatExchangeRate;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -97,43 +131,30 @@ class AccountAssetList extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '账户',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                    Column(
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          usdtValue.toStringAsFixed(8),
+                          walletValue.toStringAsFixed(8),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(width: 4),
                         Text(
-                          'USDT',
+                          CurrencyFormatter.formatCurrencyDisplay(quoteCurrency),
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -141,20 +162,13 @@ class AccountAssetList extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (showCny && usdtValue > 0) ...[
+                if (showFiat && usdtValue > 0) ...[
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Text(
-                        '人民币等值',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        '≈ ¥${cnyValue < 1 ? cnyValue.toStringAsFixed(8) : cnyValue.toStringAsFixed(2)}',
+                        '≈ ${CurrencyFormatter.formatFiatCurrencyForApprox(fiatCurrency)}${fiatValue < 1 ? fiatValue.toStringAsFixed(8) : fiatValue.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black87,

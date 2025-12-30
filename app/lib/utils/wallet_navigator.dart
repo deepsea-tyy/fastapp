@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fastapp/presentation/views/wallet/balance_log_screen.dart';
 import 'package:fastapp/presentation/views/wallet/currency/deposit_screen.dart';
 import 'package:fastapp/presentation/views/wallet/currency/withdraw_screen.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
@@ -88,6 +89,17 @@ class WalletNavigator {
     return Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const TransferToUserScreen(),
+      ),
+    );
+  }
+
+  /// 跳转到钱包流水页面
+  ///
+  /// [context] - 当前上下文
+  static Future<void> toBalanceLog(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const BalanceLogScreen(),
       ),
     );
   }

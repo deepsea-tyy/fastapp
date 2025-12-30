@@ -14,6 +14,7 @@ class Preferences {
   static const String is_dark_mode = "is_dark_mode";
   static const String current_language = "current_language";
   static const String current_currency = "current_currency";
+  static const String wallet_currency = "wallet_currency";
 
   // 搜索相关
   static const String search_history = "search_history";
