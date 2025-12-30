@@ -207,6 +207,7 @@ class _SpotListState extends State<SpotList> {
             name: chain ?? symbol,
             iconColor: Colors.grey,
             iconText: symbol.isNotEmpty ? symbol[0] : 'C',
+            walletType: widget.walletType,
           ),
         ),
       ),

@@ -3,6 +3,8 @@ import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/presentation/store/wallet/balance_log_store.dart';
 import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
+import 'package:fastapp/presentation/views/wallet/widgets/common/balance_log_detail_item.dart';
+import 'package:fastapp/utils/balance_log_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:intl/intl.dart';
@@ -95,7 +97,7 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
             children: [
               Expanded(
                 child: _buildFilterButton(
-                  label: _store.selectedWalletType ?? '全部账户',
+                  label: BalanceLogUtils.getWalletTypeLabel(_store.selectedWalletType),
                   onTap: () => _showWalletTypeFilter(textTheme, backgroundTheme),
                   textTheme: textTheme,
                 ),
@@ -111,7 +113,7 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildFilterButton(
-                  label: _getChangeTypeLabel(_store.selectedChangeType),
+                  label: BalanceLogUtils.getChangeTypeLabel(_store.selectedChangeType),
                   onTap: () => _showChangeTypeFilter(textTheme, backgroundTheme),
                   textTheme: textTheme,
                 ),
@@ -211,172 +213,10 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
           }
 
           final log = _store.logs[index];
-          return _buildLogItem(log, textTheme, backgroundTheme);
+          return BalanceLogDetailItem(log: log);
         },
       ),
     );
-  }
-
-  Widget _buildLogItem(log, TextThemeColors textTheme,
-      BackgroundThemeColors backgroundTheme) {
-    final isIncrease = log.isIncrease;
-    final amountColor = isIncrease ? Colors.green : Colors.red;
-    final amountPrefix = isIncrease ? '+' : '';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundTheme.card,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _getLogTitle(log),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textTheme.primary,
-                  ),
-                ),
-              ),
-              Text(
-                '$amountPrefix${log.amount.toStringAsFixed(8)} ${log.symbol}',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: amountColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            '账户',
-            _getWalletTypeLabel(log.walletType),
-            textTheme,
-          ),
-          const SizedBox(height: 4),
-          _buildInfoRow(
-            '变动',
-            '${log.availableBefore.toStringAsFixed(8)} → ${log.availableAfter.toStringAsFixed(8)}',
-            textTheme,
-          ),
-          const SizedBox(height: 4),
-          _buildInfoRow(
-            '时间',
-            _formatDateTime(log.createdAt),
-            textTheme,
-          ),
-          if (log.remark != null && log.remark!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _buildInfoRow(
-              '备注',
-              log.remark!,
-              textTheme,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-      String label, String value, TextThemeColors textTheme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: textTheme.hint),
-        ),
-        Flexible(
-          child: Text(
-            value,
-            style: TextStyle(fontSize: 12, color: textTheme.secondary),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatDateTime(String dateTime) {
-    try {
-      final dt = DateTime.parse(dateTime);
-      return DateFormat('yyyy-MM-dd HH:mm:ss').format(dt);
-    } catch (e) {
-      return dateTime;
-    }
-  }
-
-  String _getWalletTypeLabel(String? walletType) {
-    const labels = {
-      'SPOT': '现货',
-      'FUTURES': '合约',
-      'FUNDING': '资金',
-      'MARGIN': '杠杆',
-      'EARN': '理财',
-      'OPTIONS': '期权',
-    };
-    return labels[walletType] ?? walletType ?? '全部';
-  }
-
-  String _getChangeTypeLabel(String? changeType) {
-    const labels = {
-      'DEPOSIT': '充值',
-      'WITHDRAW': '提现',
-      'TRANSFER_IN': '划入',
-      'TRANSFER_OUT': '划出',
-      'TRADE_BUY': '买入',
-      'TRADE_SELL': '卖出',
-      'ORDER_FREEZE': '下单冻结',
-      'ORDER_UNFREEZE': '撤单解冻',
-      'FEE': '手续费',
-      'REBATE': '返佣',
-      'INTEREST': '利息收益',
-    };
-    return labels[changeType] ?? changeType ?? '全部类型';
-  }
-
-  /// 根据 refType 和 changeType 组合获取显示标题
-  String _getLogTitle(dynamic log) {
-    final refType = log.refType;
-    final changeType = log.changeType;
-
-    // 优先使用组合逻辑
-    if (refType == 'TRANSFER') {
-      return changeType == 'IN' ? '划入' : '划出';
-    } else if (refType == 'USER_TRANSFER') {
-      return changeType == 'IN' ? '收到转账' : '转账';
-    } else if (refType == 'DEPOSIT') {
-      return '充值';
-    } else if (refType == 'WITHDRAW') {
-      if (changeType == 'ORDER_FREEZE') {
-        return '提现冻结';
-      }
-      return changeType == 'IN' ? '提现入账' : '提现';
-    } else if (refType == 'ORDER_FREEZE') {
-      return '下单冻结';
-    } else if (refType == 'ORDER_UNFREEZE') {
-      return '撤单解冻';
-    } else if (refType == 'FEE') {
-      return '手续费';
-    } else if (refType == 'REBATE') {
-      return '返佣';
-    } else if (refType == 'INTEREST') {
-      return '利息收益';
-    }
-
-    // 兜底：使用旧的 changeType 映射
-    return _getChangeTypeLabel(changeType);
   }
 
   void _showWalletTypeFilter(
@@ -408,7 +248,7 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
               children: options.map((type) {
                 return ListTile(
                   title: Text(
-                    _getWalletTypeLabel(type),
+                    BalanceLogUtils.getWalletTypeLabel(type),
                     style: TextStyle(color: textTheme.primary),
                   ),
                   trailing: _store.selectedWalletType == type
@@ -516,7 +356,7 @@ class _BalanceLogScreenState extends State<BalanceLogScreen> {
               children: types.map((type) {
                 return ListTile(
                   title: Text(
-                    _getChangeTypeLabel(type),
+                    BalanceLogUtils.getChangeTypeLabel(type),
                     style: TextStyle(color: textTheme.primary),
                   ),
                   trailing: _store.selectedChangeType == type

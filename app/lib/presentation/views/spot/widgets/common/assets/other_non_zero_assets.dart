@@ -1,3 +1,4 @@
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
 import 'package:fastapp/presentation/views/spot/widgets/common/assets/asset_metrics.dart';
 import 'package:fastapp/presentation/views/wallet/currency/asset_detail_screen.dart';
 import 'package:flutter/material.dart';
@@ -96,6 +97,7 @@ class _AssetListItem extends StatelessWidget {
               name: asset.name,
               iconColor: asset.iconColor,
               iconText: asset.iconText,
+              walletType: WalletType.SPOT,
             ),
           ),
         );
