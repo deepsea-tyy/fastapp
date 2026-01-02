@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// 公告子标签栏组件
 ///
-/// 显示：全部、数字货币及交易对上新、币安最新动态
+/// 显示：全部、数字货币及交易对上新、最新动态
 class AnnouncementTabs extends StatefulWidget {
   final Function(int)? onTabChanged;
 
@@ -21,7 +21,7 @@ class _AnnouncementTabsState extends State<AnnouncementTabs> {
   final List<String> _tabs = [
     '全部',
     '数字货币及交易对上新',
-    '币安最新动态',
+    '最新动态',
   ];
 
   @override

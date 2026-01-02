@@ -18,9 +18,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 订单表单组件
 class SpotOrderForm extends StatefulWidget {
-  final VoidCallback? onHeightChanged;
-  
-  const SpotOrderForm({super.key, this.onHeightChanged});
+  const SpotOrderForm({super.key});
 
   @override
   State<SpotOrderForm> createState() => _SpotOrderFormState();
@@ -499,12 +497,7 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
         Row(
           children: [
             InkWell(
-              onTap: () {
-                setState(() => _takeProfitStopLoss = !_takeProfitStopLoss);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onHeightChanged?.call();
-                });
-              },
+              onTap: () => setState(() => _takeProfitStopLoss = !_takeProfitStopLoss),
               child: Icon(
                 _takeProfitStopLoss ? Icons.check_box : Icons.check_box_outline_blank,
                 size: 20,
@@ -549,12 +542,7 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
         Row(
           children: [
             InkWell(
-              onTap: () {
-                setState(() => _icebergOrder = !_icebergOrder);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onHeightChanged?.call();
-                });
-              },
+              onTap: () => setState(() => _icebergOrder = !_icebergOrder),
               child: Icon(
                 _icebergOrder ? Icons.check_box : Icons.check_box_outline_blank,
                 size: 20,

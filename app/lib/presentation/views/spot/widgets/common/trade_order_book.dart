@@ -6,9 +6,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 订单簿组件（通用）
 class TradeOrderBook extends StatefulWidget {
-  final double? formHeight;
-
-  const TradeOrderBook({super.key, this.formHeight});
+  const TradeOrderBook({super.key});
 
   @override
   State<TradeOrderBook> createState() => _TradeOrderBookState();
@@ -29,126 +27,161 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
     }
   }
 
-  // 计算固定元素高度
-  static const double _headerHeight = 40.0;
-  static const double _currentPriceHeight = 80.0;
-  static const double _bottomControlsHeight = 32.0;
-  static const double _padding = 8.0;
-  // 调试边距：horizontal: 4, vertical: 2，所以垂直边距是 2 * 2 = 4
-  static const double _debugPaddingVertical = 4.0; // vertical: 2 * 2，每个 Padding 上下各 2
-  // 固定元素总高度：表头 + 最新价格 + 底部控制 + 表头上下padding + 3个调试Padding的垂直边距
-  static const double _totalFixedHeight =
-      _headerHeight + _currentPriceHeight + _bottomControlsHeight + _padding * 2 + _debugPaddingVertical * 3;
-
-  // 计算买卖盘的可用高度
-  double _calculateSideHeight() {
-    final bookHeight = widget.formHeight;
-    if (bookHeight == null || bookHeight <= 0) {
-      return 200.0 / 2; // 默认高度的一半
-    }
-    final availableHeight = (bookHeight - _totalFixedHeight).clamp(0, double.infinity);
-    return availableHeight > 0 ? availableHeight / 2 : 100.0;
-  }
+  // 固定的买卖盘显示行数
+  static const int _displayItemCount = 7;
 
   @override
   Widget build(BuildContext context) {
     return Observer(
       builder: (_) {
+
         if (_store.isLoadingOrderBook && _store.orderBookData == null) {
-          return const Center(child: CircularProgressIndicator(color: Colors.amber));
+          return Container(
+            height: 400,
+            color: Colors.grey.shade100,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.amber),
+                  SizedBox(height: 16),
+                  Text('加载订单簿...', style: TextStyle(fontSize: 14, color: Colors.black54)),
+                ],
+              ),
+            ),
+          );
         }
 
         if (_store.errorMessage != null && _store.orderBookData == null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, color: Colors.grey.shade400, size: 32),
-                const SizedBox(height: 8),
-                Text('加载失败', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-              ],
+          return Container(
+            height: 400,
+            color: Colors.red.shade50,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+                    const SizedBox(height: 16),
+                    const Text('加载失败', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    Text(
+                      _store.errorMessage ?? '',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        _store.loadOrderBookData();
+                      },
+                      child: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         }
 
         final orderBookData = _store.orderBookData;
         if (orderBookData == null) {
-          return Center(
-            child: Text('暂无数据', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          return Container(
+            height: 400,
+            color: Colors.yellow.shade50,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('暂无数据', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      _store.loadOrderBookData();
+                    },
+                    child: const Text('加载数据'),
+                  ),
+                ],
+              ),
+            ),
           );
         }
+
 
         final parts = _store.selectedSymbol.split('/');
         final baseCurrency = parts.isNotEmpty ? parts[0] : 'TON';
         final quoteCurrency = parts.length > 1 ? parts[1] : 'USDT';
 
-        // 计算买卖盘高度
-        final sideHeight = _calculateSideHeight();
-        
-        // 计算订单簿总高度（如果 formHeight 存在，使用它；否则使用计算出的高度）
-        final totalBookHeight = widget.formHeight != null && widget.formHeight! > 0
-            ? widget.formHeight!
-            : _totalFixedHeight + sideHeight * 2;
+        // 使用 LayoutBuilder 获取可用高度，动态显示订单数量
+        return LayoutBuilder(
+          builder: (context, constraints) {
 
-        return SizedBox(
-          height: totalBookHeight,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              // 表头
-              _buildHeader(quoteCurrency, baseCurrency),
+            // 计算固定元素的高度
+            const headerHeight = 40.0;
+            const priceHeight = 60.0;
+            const controlsHeight = 40.0;
+            const padding = 20.0;
+            const itemHeight = 28.0;
 
-              // 卖盘（asks）- 靠上显示
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
-                child: SizedBox(
-                  height: sideHeight,
-                  child: ClipRect(
-                    clipBehavior: Clip.hardEdge,
-                    child: _buildSide(
+            final fixedHeight = headerHeight + priceHeight + controlsHeight + padding;
+            final availableForOrders = (constraints.maxHeight - fixedHeight).clamp(100.0, double.infinity);
+
+            // 每边可用高度的一半
+            final sideHeight = availableForOrders / 2;
+            final itemsPerSide = (sideHeight / itemHeight).floor().clamp(3, 20);
+
+
+            return Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                // 表头
+                _buildHeader(quoteCurrency, baseCurrency),
+
+                // 卖盘（asks）
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
+                    child: _buildSideScrollable(
                       orderBookData.asks,
                       isBuy: false,
                       store: _store,
-                      availableHeight: sideHeight - 4, // 减去 padding 的垂直边距
+                      maxItems: itemsPerSide,
                     ),
                   ),
                 ),
-              ),
 
-              // 使用 Expanded 让最新价格在买卖盘之间居中，上下留白均匀
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: _buildCurrentPrice(orderBookData.lastPrice),
-                  ),
+                // 最新价格
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: _buildCurrentPrice(orderBookData.lastPrice),
                 ),
-              ),
 
-              // 买盘（bids）- 靠下显示
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
-                child: SizedBox(
-                  height: sideHeight,
-                  child: ClipRect(
-                    clipBehavior: Clip.hardEdge,
-                    child: _buildSide(
+                // 买盘（bids）
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
+                    child: _buildSideScrollable(
                       orderBookData.bids,
                       isBuy: true,
                       store: _store,
-                      availableHeight: sideHeight - 4, // 减去 padding 的垂直边距
+                      maxItems: itemsPerSide,
                     ),
                   ),
                 ),
-              ),
 
-              // 底部控制
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
-                child: _buildBottomControls(),
-              ),
-            ],
-          ),
+                // 底部控制
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 2, 0, 2),
+                  child: _buildBottomControls(),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -177,11 +210,11 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
     );
   }
 
-  Widget _buildSide(
+  Widget _buildSideScrollable(
     List<DepthData> depths, {
     required bool isBuy,
     required SpotTradeStore store,
-    required double availableHeight,
+    required int maxItems,
   }) {
     if (depths.isEmpty) {
       return Center(
@@ -191,18 +224,8 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
 
     const double itemHeight = 28.0;
 
-    // 根据可用高度计算可以显示多少条数据
-    int displayCount;
-    if (availableHeight.isFinite && availableHeight > 0) {
-      final itemCount = (availableHeight / itemHeight).floor();
-      displayCount = itemCount > 0 ? itemCount : 1;
-      displayCount = displayCount > 50 ? 50 : displayCount; // 限制最大显示数量
-    } else {
-      displayCount = 7; // 默认数量
-    }
-
-    // 取需要显示的数据量
-    var displayDepths = depths.take(displayCount).toList();
+    // 取需要显示的数据
+    var displayDepths = depths.take(maxItems).toList();
     if (isBuy) {
       displayDepths = displayDepths.reversed.toList();
     }
@@ -215,64 +238,112 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
 
     final maxQuantity = displayDepths.map((d) => d.quantity).reduce((a, b) => a > b ? a : b);
 
-    // 使用 Column 而不是 ListView，因为我们有固定高度和固定数量的项目
-    // 这样可以避免 ListView 的布局问题
-    // 使用 mainAxisSize.max 确保占满可用空间，减少留白
+    // 使用 ListView.builder 填充 Expanded 空间
+    return ListView.builder(
+      itemCount: displayDepths.length,
+      itemExtent: itemHeight,
+      itemBuilder: (context, index) => _buildDepthItem(
+        displayDepths[index],
+        isBuy,
+        store,
+        maxQuantity,
+        itemHeight,
+      ),
+    );
+  }
+
+  Widget _buildSide(
+    List<DepthData> depths, {
+    required bool isBuy,
+    required SpotTradeStore store,
+  }) {
+    if (depths.isEmpty) {
+      return Center(
+        child: Text('暂无数据', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+      );
+    }
+
+    const double itemHeight = 28.0;
+
+    // 使用固定的显示数量
+    var displayDepths = depths.take(_displayItemCount).toList();
+    if (isBuy) {
+      displayDepths = displayDepths.reversed.toList();
+    }
+
+    if (displayDepths.isEmpty) {
+      return Center(
+        child: Text('暂无数据', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+      );
+    }
+
+    final maxQuantity = displayDepths.map((d) => d.quantity).reduce((a, b) => a > b ? a : b);
+
     return Column(
-      mainAxisSize: MainAxisSize.max,
-      children: displayDepths.map((depth) {
-        final widthPercent = (depth.quantity / maxQuantity) * 100;
-        return SizedBox(
-          height: itemHeight,
-          child: InkWell(
-            onTap: () => store.setPriceFromOrderBook(depth.price),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Stack(
+      mainAxisSize: MainAxisSize.min,
+      children: displayDepths
+          .map((depth) => _buildDepthItem(depth, isBuy, store, maxQuantity, itemHeight))
+          .toList(),
+    );
+  }
+
+  Widget _buildDepthItem(
+    DepthData depth,
+    bool isBuy,
+    SpotTradeStore store,
+    double maxQuantity,
+    double itemHeight,
+  ) {
+    final widthPercent = (depth.quantity / maxQuantity) * 100;
+    return SizedBox(
+      height: itemHeight,
+      child: InkWell(
+        onTap: () => store.setPriceFromOrderBook(depth.price),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Stack(
+            children: [
+              // 背景条（从右侧开始）
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FractionallySizedBox(
+                    widthFactor: widthPercent / 100,
+                    child: Container(
+                      color: isBuy
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.red.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 内容
+              Row(
                 children: [
-                  // 背景条（从右侧开始）
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: FractionallySizedBox(
-                        widthFactor: widthPercent / 100,
-                        child: Container(
-                          color: isBuy
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
-                        ),
+                  Expanded(
+                    child: Text(
+                      depth.price.toStringAsFixed(3),
+                      style: TextStyle(
+                        color: isBuy ? Colors.green : Colors.red,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-
-                  // 内容
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          depth.price.toStringAsFixed(3),
-                          style: TextStyle(
-                            color: isBuy ? Colors.green : Colors.red,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          _formatQuantity(depth.quantity),
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(fontSize: 12, color: Colors.black87),
-                        ),
-                      ),
-                    ],
+                  Expanded(
+                    child: Text(
+                      _formatQuantity(depth.quantity),
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 

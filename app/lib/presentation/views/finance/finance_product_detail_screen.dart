@@ -443,7 +443,7 @@ class _FinanceProductDetailScreenState extends State<FinanceProductDetailScreen>
                     GestureDetector(
                       onTap: () {},
                       child: Text(
-                        '《币安保本赚币服务协议》',
+                        '《ZEX保本赚币服务协议》',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.amber.shade700,
@@ -549,7 +549,7 @@ class _FinanceProductDetailScreenState extends State<FinanceProductDetailScreen>
             _buildTimelineItem('首次奖励发放时间', '2025年12月7日 08:00'),
             const SizedBox(height: 16),
             Text(
-              '针对部分活期产品，币安可能会通过阶梯分级结构不定期提供阶梯年化收益。该收益于申购次日 08:00（当地时间）开始计算，并在开始计算的次日（即申购后的两天）08:00 至 16:00（当地时间）之间开始发放至用户现货账户。年化收益率每天都可能变化。',
+              '针对部分活期产品，ZEX可能会通过阶梯分级结构不定期提供阶梯年化收益。该收益于申购次日 08:00（当地时间）开始计算，并在开始计算的次日（即申购后的两天）08:00 至 16:00（当地时间）之间开始发放至用户现货账户。年化收益率每天都可能变化。',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade700,
@@ -572,7 +572,7 @@ class _FinanceProductDetailScreenState extends State<FinanceProductDetailScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              '您在保本赚币产品中存入的资产可能会借给其他币安用户，如杠杆产品和质押借币产品的用户。',
+              '您在保本赚币产品中存入的资产可能会借给其他ZEX用户，如杠杆产品和质押借币产品的用户。',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade700,

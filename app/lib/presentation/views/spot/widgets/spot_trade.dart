@@ -18,32 +18,6 @@ class SpotTrade extends StatefulWidget {
 
 class _SpotTradeState extends State<SpotTrade> {
   int _selectedBottomTab = 0;
-  final GlobalKey _formKey = GlobalKey();
-  double? _formHeight;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateFormHeight();
-    });
-  }
-
-  void _updateFormHeight() {
-    if (_formKey.currentContext != null) {
-      final RenderBox? renderBox = _formKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        final newHeight = renderBox.size.height;
-        if (_formHeight != newHeight && newHeight > 0) {
-          if (mounted) {
-            setState(() {
-              _formHeight = newHeight;
-            });
-          }
-        }
-      }
-    }
-  }
 
   void _showSymbolSelectorBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -56,61 +30,48 @@ class _SpotTradeState extends State<SpotTrade> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 MediaQuery 获取屏幕宽度
-    final screenWidth = MediaQuery.of(context).size.width;
-    final totalPadding = 8.0 + 8.0; // 左padding + 中间间距（订单簿右边没有边距）
-    final usableWidth = screenWidth - totalPadding;
-    
-    // 按照 3:2 的比例分配宽度
-    final formWidth = usableWidth * 3 / 5;
-    final bookWidth = usableWidth * 2 / 5;
-    
-    // 延迟更新高度，避免在 build 中频繁调用 setState
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateFormHeight();
-      }
-    });
-
     return Column(
       children: [
         TradeSymbolHeader(
           tradeType: TradeType.spot,
           onSymbolTap: () => _showSymbolSelectorBottomSheet(context),
         ),
-        // 订单表单和订单簿 - 完整显示，不裁剪
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 订单表单
-            SizedBox(
-              width: formWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: SpotOrderForm(
-                  key: _formKey,
-                  onHeightChanged: _updateFormHeight,
-                ),
-              ),
-            ),
-            // 订单簿
-            SizedBox(
-              width: bookWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
-                  ),
-                  child: TradeOrderBook(formHeight: _formHeight),
-                ),
-              ),
-            ),
-          ],
-        ),
-        // 可滚动内容区域
+        // 订单表单和订单簿 - 占用大部分空间
         Expanded(
+          flex: 3, // 占 3/4 的高度
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 订单表单 - 占比 3/5，可滚动
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: SingleChildScrollView(
+                      child: SpotOrderForm(),
+                    ),
+                  ),
+                ),
+                // 订单簿 - 占比 2/5，填充所有可用高度
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+                    ),
+                    child: const TradeOrderBook(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // 可滚动内容区域 - 占用较小空间
+        Expanded(
+          flex: 1, // 占 1/4 的高度
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -139,9 +100,9 @@ class _SpotTradeState extends State<SpotTrade> {
       ),
       child: Row(
         children: [
-          _buildTab('当前委托 (0)', 0),
+          _buildTab('当前委托', 0),
           const SizedBox(width: 24),
-          _buildTab('持有资产 (1)', 1),
+          _buildTab('持有资产', 1),
           const Spacer(),
           IconButton(
             icon: Icon(Icons.history, color: Colors.grey.shade600),

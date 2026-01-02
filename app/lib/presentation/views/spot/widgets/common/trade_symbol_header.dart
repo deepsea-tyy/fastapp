@@ -26,35 +26,52 @@ class TradeSymbolHeader extends StatelessWidget {
     final SpotTradeStore store = getIt<SpotTradeStore>();
 
     return Observer(
-      builder: (_) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: onSymbolTap,
-              child: Row(
-                children: [
-                  Text(
-                    store.selectedSymbol,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+      builder: (_) {
+        // TODO: 从 Ticker 数据获取真实的涨跌幅，而不是模拟计算
+        // 临时方案：基于订单簿数据模拟涨跌幅
+        final orderBookData = store.orderBookData;
+        final lastPrice = orderBookData?.lastPrice ?? 0.0;
+
+        // 模拟涨跌幅计算（假设开盘价为当前价的 99%）
+        final simulatedOpenPrice = lastPrice * 0.99;
+        final changePercent = simulatedOpenPrice > 0
+            ? ((lastPrice - simulatedOpenPrice) / simulatedOpenPrice) * 100
+            : 0.0;
+        final isPositive = changePercent >= 0;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: onSymbolTap,
+                child: Row(
+                  children: [
+                    Text(
+                      store.selectedSymbol,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 20),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPositive ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isPositive ? Colors.green.shade700 : Colors.red.shade700,
+                    fontWeight: FontWeight.w500
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 20),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '+0.87%',
-                style: TextStyle(fontSize: 14, color: Colors.green.shade700, fontWeight: FontWeight.w500),
-              ),
-            ),
             const Spacer(),
             IconButton(
               icon: Icon(Icons.candlestick_chart, color: Colors.grey.shade600),
@@ -86,7 +103,8 @@ class TradeSymbolHeader extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      );
+      },
     );
   }
 

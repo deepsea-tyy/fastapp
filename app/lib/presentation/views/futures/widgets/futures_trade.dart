@@ -22,88 +22,49 @@ class FuturesTrade extends StatefulWidget {
 
 class _FuturesTradeState extends State<FuturesTrade> {
   int _selectedBottomTab = 0; // 0: 持有仓位, 1: 当前委托, 2: 合约网格
-  final GlobalKey _formKey = GlobalKey();
-  double? _formHeight;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateFormHeight();
-    });
-  }
-
-  void _updateFormHeight() {
-    if (_formKey.currentContext != null) {
-      final RenderBox? renderBox = _formKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        final newHeight = renderBox.size.height;
-        if (_formHeight != newHeight && newHeight > 0) {
-          if (mounted) {
-            setState(() {
-              _formHeight = newHeight;
-            });
-          }
-        }
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    // 使用 MediaQuery 获取屏幕宽度
-    final screenWidth = MediaQuery.of(context).size.width;
-    final totalPadding = 8.0 + 8.0; // 左padding + 中间间距（订单簿右边没有边距）
-    final usableWidth = screenWidth - totalPadding;
-    
-    // 按照 3:2 的比例分配宽度
-    final formWidth = usableWidth * 3 / 5;
-    final bookWidth = usableWidth * 2 / 5;
-    
-    // 延迟更新高度，避免在 build 中频繁调用 setState
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateFormHeight();
-      }
-    });
-
     return Column(
       children: [
         // 交易对头部
         SymbolHeader(isCoinMargined: widget.isCoinMargined),
-        // 订单表单和订单簿 - 完整显示，不裁剪
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 订单表单
-            SizedBox(
-              width: formWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: FuturesOrderForm(
-                  key: _formKey,
-                  onHeightChanged: _updateFormHeight,
-                ),
-              ),
-            ),
-            // 订单簿
-            SizedBox(
-              width: bookWidth,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+        // 订单表单和订单簿 - 占用大部分空间
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 订单表单 - 占比 3/5，可滚动
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: SingleChildScrollView(
+                      child: FuturesOrderForm(),
+                    ),
                   ),
-                  child: TradeOrderBook(formHeight: _formHeight),
                 ),
-              ),
+                // 订单簿 - 占比 2/5
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
+                    ),
+                    child: const TradeOrderBook(),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         // 可滚动内容区域
         Expanded(
+          flex: 1,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

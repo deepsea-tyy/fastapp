@@ -59,7 +59,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (page == 1) {
       return List.generate(pageSize, (index) {
         return ActivityData(
-          brand: '币安合约',
+          brand: 'ZEX合约',
           title: '交易合约赢奖励 ${index + 1}',
           subtitle: '完成任务,瓜分540,000 XPL + 380,000 NXPC奖励!',
           buttonText: index % 2 == 0 ? '立即参与' : null,

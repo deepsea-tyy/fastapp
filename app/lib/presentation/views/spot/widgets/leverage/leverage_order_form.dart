@@ -20,9 +20,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 杠杆订单表单组件
 class LeverageOrderForm extends StatefulWidget {
-  final VoidCallback? onHeightChanged;
-
-  const LeverageOrderForm({super.key, this.onHeightChanged});
+  const LeverageOrderForm({super.key});
 
   @override
   State<LeverageOrderForm> createState() => _LeverageOrderFormState();
@@ -645,12 +643,7 @@ class _LeverageOrderFormState extends State<LeverageOrderForm> {
         Row(
           children: [
             InkWell(
-              onTap: () {
-                setState(() => _takeProfitStopLoss = !_takeProfitStopLoss);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onHeightChanged?.call();
-                });
-              },
+              onTap: () => setState(() => _takeProfitStopLoss = !_takeProfitStopLoss),
               child: Icon(
                 _takeProfitStopLoss ? Icons.check_box : Icons.check_box_outline_blank,
                 size: 20,
@@ -695,12 +688,7 @@ class _LeverageOrderFormState extends State<LeverageOrderForm> {
         Row(
           children: [
             InkWell(
-              onTap: () {
-                setState(() => _icebergOrder = !_icebergOrder);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  widget.onHeightChanged?.call();
-                });
-              },
+              onTap: () => setState(() => _icebergOrder = !_icebergOrder),
               child: Icon(
                 _icebergOrder ? Icons.check_box : Icons.check_box_outline_blank,
                 size: 20,

@@ -18,9 +18,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 期货订单表单组件
 class FuturesOrderForm extends StatefulWidget {
-  final VoidCallback? onHeightChanged;
-  
-  const FuturesOrderForm({super.key, this.onHeightChanged});
+  const FuturesOrderForm({super.key});
 
   @override
   State<FuturesOrderForm> createState() => _FuturesOrderFormState();
@@ -189,14 +187,7 @@ class _FuturesOrderFormState extends State<FuturesOrderForm> {
       children: [
         Expanded(
           child: InkWell(
-            onTap: () {
-              setState(() {
-                _positionSide = positionSideOpen;
-              });
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                widget.onHeightChanged?.call();
-              });
-            },
+            onTap: () => setState(() => _positionSide = positionSideOpen),
             borderRadius: BorderRadius.circular(8),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -219,14 +210,7 @@ positionSideOpen,
         const SizedBox(width: 8),
         Expanded(
           child: InkWell(
-            onTap: () {
-              setState(() {
-                _positionSide = positionSideClose;
-              });
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                widget.onHeightChanged?.call();
-              });
-            },
+            onTap: () => setState(() => _positionSide = positionSideClose),
             borderRadius: BorderRadius.circular(8),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -581,14 +565,7 @@ positionSideClose,
     return Row(
       children: [
         InkWell(
-          onTap: () {
-            setState(() {
-              _takeProfitStopLoss = !_takeProfitStopLoss;
-            });
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              widget.onHeightChanged?.call();
-            });
-          },
+          onTap: () => setState(() => _takeProfitStopLoss = !_takeProfitStopLoss),
           child: Icon(
             _takeProfitStopLoss ? Icons.check_box : Icons.check_box_outline_blank,
             size: 20,
