@@ -6,16 +6,14 @@ import '../../repository/market_repository.dart';
 class GetKlineParams {
   final String symbol;
   final String interval;
-  final int? startTime;
-  final int? endTime;
-  final int? limit;
+  final int? page;
+  final int? pageSize;
 
   GetKlineParams({
     required this.symbol,
     required this.interval,
-    this.startTime,
-    this.endTime,
-    this.limit,
+    this.page,
+    this.pageSize,
   });
 }
 
@@ -30,9 +28,8 @@ class GetKlineUseCase implements UseCase<List<KlineData>, GetKlineParams> {
     return _marketRepository.getKlineData(
       symbol: params.symbol,
       interval: params.interval,
-      startTime: params.startTime,
-      endTime: params.endTime,
-      limit: params.limit,
+      page: params.page,
+      pageSize: params.pageSize,
     );
   }
 }

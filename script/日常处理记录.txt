@@ -1,6 +1,7 @@
 
 git
 git push --force origin main
+git remote set-url origin git@github.com:xx/yy.git
 
 空目录删除
 find "目录" -type d -empty -delete

@@ -1,4 +1,8 @@
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/presentation/store/market/depth_store.dart';
+import 'package:fastapp/domain/entity/market/depth_data.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 订单簿数据项
 class OrderBookItem {
@@ -28,13 +32,16 @@ class TradeItem {
 
 /// 委托订单/最新成交组件
 class DetailOrderBook extends StatefulWidget {
-  const DetailOrderBook({super.key});
+  final String? symbol; // 交易对符号，如果为 null 则使用 DepthStore 的当前交易对
+
+  const DetailOrderBook({super.key, this.symbol});
 
   @override
   State<DetailOrderBook> createState() => _DetailOrderBookState();
 }
 
 class _DetailOrderBookState extends State<DetailOrderBook> {
+  final DepthStore _depthStore = getIt<DepthStore>();
   int _selectedTab = 0; // 0: 委托订单, 1: 最新成交
   String _selectedPrecision = '0.1';
 
@@ -45,7 +52,58 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
   static const _textStyle12Red = TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500);
   static const _textStyle12White = TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold);
 
-  // 模拟数据
+  @override
+  void initState() {
+    super.initState();
+    // 如果提供了 symbol，设置到 DepthStore 并加载数据
+    if (widget.symbol != null) {
+      _depthStore.setCurrentSymbol(widget.symbol!);
+      _depthStore.loadDepthData(limit: 20);
+    }
+  }
+
+  /// 获取订单薄数据（从 DepthStore，完全依赖 WebSocket 推送）
+  /// WebSocket 推送由 MarketDepthProcess.php 提供
+  List<OrderBookItem> _getBuyOrders() {
+    final depthData = _depthStore.depthData;
+    if (depthData != null && depthData.bids.isNotEmpty) {
+      return depthData.bids.map((bid) => OrderBookItem(
+        quantity: bid.quantity,
+        price: bid.price,
+      )).toList();
+    }
+    // 如果没有数据，返回空列表（等待 WebSocket 推送）
+    return [];
+  }
+
+  List<OrderBookItem> _getSellOrders() {
+    final depthData = _depthStore.depthData;
+    if (depthData != null && depthData.asks.isNotEmpty) {
+      return depthData.asks.map((ask) => OrderBookItem(
+        quantity: ask.quantity,
+        price: ask.price,
+      )).toList();
+    }
+    // 如果没有数据，返回空列表（等待 WebSocket 推送）
+    return [];
+  }
+
+  /// 计算买卖比例
+  double _calculateBuyPercentage() {
+    final buyOrders = _getBuyOrders();
+    final sellOrders = _getSellOrders();
+    
+    if (buyOrders.isEmpty && sellOrders.isEmpty) return 50.0;
+    
+    final buyTotal = buyOrders.fold<double>(0.0, (sum, item) => sum + item.quantity);
+    final sellTotal = sellOrders.fold<double>(0.0, (sum, item) => sum + item.quantity);
+    final total = buyTotal + sellTotal;
+    
+    if (total == 0) return 50.0;
+    return (buyTotal / total) * 100;
+  }
+
+  // 模拟数据（已废弃，保留作为备用）
   final List<OrderBookItem> _buyOrders = [
     const OrderBookItem(quantity: 1782338.1, price: 86714.9),
     const OrderBookItem(quantity: 1647.6, price: 86714.8),
@@ -119,27 +177,31 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200, width: 1),
-        ),
-      ),
-      child: Column(
-        children: [
-          // 标签页
-          _buildTabs(),
-          
-          // 买卖比例进度条（仅委托订单显示）
-          if (_selectedTab == 0) _buildPercentageBar(),
-          
-          // 订单簿内容
-          Expanded(
-            child: _selectedTab == 0 ? _buildOrderBook() : _buildLatestTrades(),
+    return Observer(
+      builder: (_) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
           ),
-        ],
-      ),
+          child: Column(
+            children: [
+              // 标签页
+              _buildTabs(),
+              
+              // 买卖比例进度条（仅委托订单显示）
+              if (_selectedTab == 0) _buildPercentageBar(),
+              
+              // 订单簿内容
+              Expanded(
+                child: _selectedTab == 0 ? _buildOrderBook() : _buildLatestTrades(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -174,6 +236,9 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
   }
 
   Widget _buildPercentageBar() {
+    final buyPercentage = _calculateBuyPercentage();
+    final sellPercentage = 100.0 - buyPercentage;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Stack(
@@ -187,7 +252,7 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
             child: Row(
               children: [
                 Expanded(
-                  flex: (_buyPercentage * 10).round(),
+                  flex: (buyPercentage * 10).round(),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.green,
@@ -199,7 +264,7 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
                   ),
                 ),
                 Expanded(
-                  flex: (_sellPercentage * 10).round(),
+                  flex: (sellPercentage * 10).round(),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.red,
@@ -220,7 +285,7 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Text(
-                    '${_buyPercentage.toStringAsFixed(2)}%',
+                    '${buyPercentage.toStringAsFixed(2)}%',
                     style: _textStyle12White.copyWith(
                       shadows: const [
                         Shadow(offset: Offset(0, 0), blurRadius: 2, color: Colors.black26),
@@ -231,7 +296,7 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Text(
-                    '${_sellPercentage.toStringAsFixed(2)}%',
+                    '${sellPercentage.toStringAsFixed(2)}%',
                     style: _textStyle12White.copyWith(
                       shadows: const [
                         Shadow(offset: Offset(0, 0), blurRadius: 2, color: Colors.black26),
@@ -248,6 +313,9 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
   }
 
   Widget _buildOrderBook() {
+    final buyOrders = _getBuyOrders();
+    final sellOrders = _getSellOrders();
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -288,10 +356,11 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _buyOrders.asMap().entries.map((entry) => _buildOrderRow(
+                      children: buyOrders.asMap().entries.map((entry) => _buildOrderRow(
                         quantity: entry.value.quantity,
                         price: entry.value.price,
                         isBuy: true,
+                        orders: buyOrders,
                         index: entry.key,
                       )).toList(),
                     ),
@@ -300,10 +369,11 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: _sellOrders.asMap().entries.map((entry) => _buildOrderRow(
+                      children: sellOrders.asMap().entries.map((entry) => _buildOrderRow(
                         quantity: entry.value.quantity,
                         price: entry.value.price,
                         isBuy: false,
+                        orders: sellOrders,
                         index: entry.key,
                       )).toList(),
                     ),
@@ -321,10 +391,12 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
     required double quantity,
     required double price,
     required bool isBuy,
+    required List<OrderBookItem> orders,
     required int index,
   }) {
-    final orders = isBuy ? _buyOrders : _sellOrders;
-    final maxQuantity = orders.map((o) => o.quantity).reduce((a, b) => a > b ? a : b);
+    final maxQuantity = orders.isNotEmpty 
+        ? orders.map((o) => o.quantity).reduce((a, b) => a > b ? a : b)
+        : 0.0;
     final depthRatio = maxQuantity > 0 ? quantity / maxQuantity : 0.0;
 
     return Padding(

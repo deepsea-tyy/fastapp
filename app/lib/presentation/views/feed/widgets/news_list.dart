@@ -169,6 +169,8 @@ class _NewsListState extends State<NewsList> {
 
         widgets.add(
           NewsItem(
+            id: news.id,
+            type: news.type ?? 4, // 使用文章类型，默认为4（新闻）
             time: news.getTimeOnly(),
             title: news.title,
             profile: news.profile,

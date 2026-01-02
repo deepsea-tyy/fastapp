@@ -146,16 +146,20 @@ class DepthChartPainter extends CustomPainter {
         mSellData!.isEmpty) {
       return;
     }
-    
-    // 计算最大成交量
-    mMaxVolume = max(mBuyData![0].vol, mSellData!.last.vol) * 1.05;
+
+    // 计算最大成交量（累计数量）
+    // 买单：累计数量递增，最后一个最大
+    // 卖单：累计数量递增，最后一个最大
+    final maxBuyVol = mBuyData!.last.vol;
+    final maxSellVol = mSellData!.last.vol;
+    mMaxVolume = max(maxBuyVol, maxSellVol) * 1.05;
     mMultiple = mMaxVolume! / mLineCount;
 
     // 初始化选择画笔
     selectPaint = Paint()
       ..isAntiAlias = true
       ..color = chartColors.selectFillColor;
-    
+
     selectBorderPaint = Paint()
       ..isAntiAlias = true
       ..color = chartColors.selectBorderColor
@@ -230,37 +234,42 @@ class DepthChartPainter extends CustomPainter {
     final dataLength = mSellData!.length;
     mSellPointWidth = mDrawWidth / (dataLength > 1 ? dataLength - 1 : 1);
     mSellPath!.reset();
-    
+
+    // 从中间线开始绘制卖单（从左到右，即从中间到右侧）
     for (int i = 0; i < dataLength; i++) {
       final x = (mSellPointWidth! * i) + mDrawWidth;
       final y = getY(mSellData![i].vol);
-      
+
       if (i == 0) {
-        mSellPath!.moveTo(mDrawWidth, y);
+        // 第一个点，从中间线底部开始
+        mSellPath!.moveTo(mDrawWidth, mDrawHeight);
+        mSellPath!.lineTo(mDrawWidth, y);
+        mSellPath!.lineTo(x, y);
       } else {
         // 绘制线条
         canvas.drawLine(
-          Offset((mSellPointWidth! * (i - 1)) + mDrawWidth,
-              getY(mSellData![i - 1].vol)),
+          Offset((mSellPointWidth! * (i - 1)) + mDrawWidth, getY(mSellData![i - 1].vol)),
           Offset(x, y),
           mSellLinePaint!,
         );
       }
-      
+
       // 构建路径
       if (i < dataLength - 1) {
+        final nextX = (mSellPointWidth! * (i + 1)) + mDrawWidth;
+        final nextY = getY(mSellData![i + 1].vol);
         mSellPath!.quadraticBezierTo(
           x,
           y,
-          (mSellPointWidth! * (i + 1)) + mDrawWidth,
-          getY(mSellData![i + 1].vol),
+          nextX,
+          nextY,
         );
       } else {
-        // 最后一个点，闭合路径
+        // 最后一个点，闭合路径到右侧底部
         if (dataLength == 1) {
           mSellPath!.lineTo(mWidth, y);
         } else {
-          mSellPath!.quadraticBezierTo(mWidth, y, x, mDrawHeight);
+          mSellPath!.quadraticBezierTo(x, y, mWidth, y);
         }
         mSellPath!.lineTo(mWidth, mDrawHeight);
         mSellPath!.lineTo(mDrawWidth, mDrawHeight);

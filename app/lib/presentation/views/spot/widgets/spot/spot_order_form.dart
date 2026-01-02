@@ -284,32 +284,36 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
   void _showOrderTypeSelectionSheet(BuildContext context) {
     _showBottomSheet(
       context: context,
-      child: Observer(
-        builder: (_) {
-          final orderTypes = [
-            {'label': orderTypeLimit, 'type': OrderType.limit},
-            {'label': orderTypeMarket, 'type': OrderType.market},
-            {'label': orderTypeStopLoss, 'type': OrderType.stopLoss},
-            {'label': orderTypeTakeProfit, 'type': OrderType.takeProfit},
-            {'label': orderTypeTrailing, 'type': null}, // 暂时不支持
-          ];
+      child: Builder(
+        builder: (bottomSheetContext) {
+          return Observer(
+            builder: (_) {
+              final orderTypes = [
+                {'label': orderTypeLimit, 'type': OrderType.limit},
+                {'label': orderTypeMarket, 'type': OrderType.market},
+                {'label': orderTypeStopLoss, 'type': OrderType.stopLoss},
+                {'label': orderTypeTakeProfit, 'type': OrderType.takeProfit},
+                {'label': orderTypeTrailing, 'type': null}, // 暂时不支持
+              ];
 
-          return SelectionBottomSheet<OrderType?>(
-            title: '订单类型',
-            useListTileStyle: true,
-            selectedValue: _store.orderType,
-            onSelected: (type) {
-              if (type != null) {
-                _store.setOrderType(type);
-                Navigator.of(context).pop();
-              }
+              return SelectionBottomSheet<OrderType?>(
+                title: '订单类型',
+                useListTileStyle: true,
+                selectedValue: _store.orderType,
+                onSelected: (type) {
+                  if (type != null) {
+                    _store.setOrderType(type);
+                  }
+                  Navigator.of(bottomSheetContext).pop();
+                },
+                options: orderTypes
+                    .map((item) => SelectionOption<OrderType?>(
+                          title: item['label'] as String,
+                          value: item['type'] as OrderType?,
+                        ))
+                    .toList(),
+              );
             },
-            options: orderTypes
-                .map((item) => SelectionOption<OrderType?>(
-                      title: item['label'] as String,
-                      value: item['type'] as OrderType?,
-                    ))
-                .toList(),
           );
         },
       ),

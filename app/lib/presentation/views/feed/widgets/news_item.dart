@@ -12,6 +12,8 @@ class NewsItem extends StatelessWidget {
   final UserProfile? profile;
   final VoidCallback? onTap;
   final bool isLast;
+  final int id; // 文章ID
+  final int type; // 文章类型：4=新闻
 
   const NewsItem({
     super.key,
@@ -20,6 +22,8 @@ class NewsItem extends StatelessWidget {
     this.profile,
     this.onTap,
     this.isLast = false,
+    required this.id,
+    this.type = 4, // 默认为新闻类型
   });
 
   void _navigateToDetail(BuildContext context) {
@@ -30,7 +34,7 @@ class NewsItem extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
-          postId: 0, // Placeholder for news items
+          postId: id,
           userId: userId,
           username: userName,
           time: time,
@@ -42,6 +46,7 @@ class NewsItem extends StatelessWidget {
           shareCount: 0,
           viewCount: 0,
           avatarAsset: userAvatar,
+          type: type, // 传递类型，用于判断调用哪个接口
         ),
       ),
     );

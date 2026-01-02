@@ -97,9 +97,9 @@ class NetworkModule {
     
     // 注册 MarketApi（使用 HttpClientWrapper）
     getIt.registerSingleton(MarketApi(getIt<HttpClientWrapper>()));
-    getIt.registerSingleton(OrderApi());
+    getIt.registerSingleton(OrderApi(getIt<HttpClientWrapper>()));
     getIt.registerSingleton(WalletApi(dio));
-    getIt.registerSingleton(TradeApi());
+    getIt.registerSingleton(TradeApi(getIt<HttpClientWrapper>()));
     getIt.registerSingleton(FuturesApi(getIt<HttpClientWrapper>()));
     getIt.registerSingleton(UserApi(dio));
     getIt.registerSingleton(PageContentApi(dio));

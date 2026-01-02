@@ -1,60 +1,87 @@
 import 'dart:async';
-import '../../../mock/mock_order_data.dart';
 import '../../../../domain/entity/trade/trade_request.dart';
 import '../../../../domain/entity/trade/trade_response.dart';
 import '../../../../domain/entity/order/order.dart';
 import '../../../../domain/entity/order/order_type.dart';
 import '../../../../domain/entity/order/order_status.dart';
+import '../../constants/endpoints.dart';
+import '../../http_client_wrapper.dart';
 
-/// 交易API实现（使用模拟数据）
+/// 交易API实现
 class TradeApi {
-  static int _orderIdCounter = 3000000;
+  final HttpClientWrapper _httpClient;
 
-  /// 模拟延迟
-  Future<void> _simulateDelay() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
+  TradeApi(this._httpClient);
 
   /// 下单
   Future<TradeResponse> placeOrder(TradeRequest request) async {
-    await _simulateDelay();
-    
-    // 验证请求
-    if (!request.isValid()) {
-      return TradeResponse.failure('Invalid trade request', errorCode: 'INVALID_REQUEST');
+    try {
+      // 验证请求
+      if (!request.isValid()) {
+        return TradeResponse.failure('Invalid trade request', errorCode: 'INVALID_REQUEST');
+      }
+
+      // 转换交易对符号格式：BTC/USDT -> BTCUSDT
+      final normalizedSymbol = request.symbol.replaceAll('/', '').toUpperCase();
+
+      // 准备请求数据
+      final requestData = <String, dynamic>{
+        'symbol': normalizedSymbol,
+        'side': request.side.name,
+        'type': request.type.name,
+        'quantity': request.quantity,
+      };
+
+      if (request.price != null) {
+        requestData['price'] = request.price;
+      }
+
+      if (request.amount != null) {
+        requestData['amount'] = request.amount;
+      }
+
+      if (request.remark != null && request.remark!.isNotEmpty) {
+        requestData['client_order_id'] = request.remark;
+      }
+
+      // 调用后端接口
+      final response = await _httpClient.post(
+        Endpoints.spotOrderPlace,
+        data: requestData,
+      );
+
+      // 解析响应数据
+      // 后端返回格式：{ "code": 200, "message": "下单成功", "data": { ... } }
+      if (response is Map<String, dynamic>) {
+        final code = response['code'] as int?;
+        final message = response['message'] as String?;
+        final data = response['data'] as Map<String, dynamic>?;
+
+        if (code == 200 && data != null) {
+          // 将后端返回的数据转换为 Order 对象
+          final order = Order.fromJson(data);
+          return TradeResponse.success(order);
+        } else {
+          return TradeResponse.failure(
+            message ?? '下单失败',
+            errorCode: code?.toString() ?? 'UNKNOWN_ERROR',
+          );
+        }
+      }
+
+      return TradeResponse.failure('Invalid response format', errorCode: 'INVALID_RESPONSE');
+    } catch (e) {
+      return TradeResponse.failure(e.toString(), errorCode: 'NETWORK_ERROR');
     }
-    
-    // 模拟下单成功
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final order = Order(
-      id: 'ORDER_${_orderIdCounter++}',
-      symbol: request.symbol,
-      type: request.type,
-      side: request.side,
-      status: OrderStatus.pending,
-      price: request.price,
-      quantity: request.quantity,
-      filledQuantity: 0.0,
-      filledAmount: 0.0,
-      avgPrice: null,
-      createdAt: now,
-      updatedAt: now,
-      remark: request.remark,
-    );
-    
-    return TradeResponse.success(order);
   }
 
   /// 批量下单
   Future<List<TradeResponse>> placeOrders(List<TradeRequest> requests) async {
-    await _simulateDelay();
-    
     final List<TradeResponse> responses = [];
     for (final request in requests) {
       final response = await placeOrder(request);
       responses.add(response);
     }
-    
     return responses;
   }
 }

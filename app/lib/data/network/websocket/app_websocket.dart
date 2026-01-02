@@ -200,26 +200,107 @@ class AppWebSocket {
   }
 
   void subscribe(String channel, {String? symbol}) {
-    _subscribedChannels.add(symbol != null ? '$channel:$symbol' : channel);
+    final channelKey = symbol != null ? '$channel:$symbol' : channel;
+    _subscribedChannels.add(channelKey);
+
+    if (!_isConnected) {
+      return;
+    }
+
+    // 根据认证状态选择不同的 action
+    final actionPrefix = _isAuthenticated ? '' : 'visitor.';
+
+    if (channel == 'kline' && symbol != null) {
+      // K线订阅，symbol 格式可能是 "BTC/USDT:1m"，需要解析
+      if (symbol.contains(':')) {
+        final parts = symbol.split(':');
+        if (parts.length == 2) {
+          _sendMessage('${actionPrefix}kline.subscribe', {
+            'symbol': parts[0],
+            'interval': parts[1],
+          });
+        }
+      } else {
+        // 如果没有 interval，使用默认值
+        _sendMessage('${actionPrefix}kline.subscribe', {
+          'symbol': symbol,
+          'interval': '1m',
+        });
+      }
+    } else if (channel == 'depth' && symbol != null) {
+      // 深度数据订阅
+      _sendMessage('${actionPrefix}depth.subscribe', {
+        'symbol': symbol,
+      });
+    } else if (channel == 'market' && symbol != null) {
+      // 单个交易对ticker数据订阅
+      _sendMessage('market.subscribe', {
+        'symbol': symbol,
+      });
+    }
   }
 
   void unsubscribe(String channel, {String? symbol}) {
-    _subscribedChannels.remove(symbol != null ? '$channel:$symbol' : channel);
+    final channelKey = symbol != null ? '$channel:$symbol' : channel;
+    _subscribedChannels.remove(channelKey);
+
+    if (!_isConnected) {
+      return;
+    }
+
+    // 根据认证状态选择不同的 action
+    final actionPrefix = _isAuthenticated ? '' : 'visitor.';
+
+    if (channel == 'kline' && symbol != null) {
+      // K线取消订阅，symbol 格式可能是 "BTC/USDT:1m"，需要解析
+      if (symbol.contains(':')) {
+        final parts = symbol.split(':');
+        if (parts.length == 2) {
+          _sendMessage('${actionPrefix}kline.unsubscribe', {
+            'symbol': parts[0],
+            'interval': parts[1],
+          });
+        }
+      } else {
+        _sendMessage('${actionPrefix}kline.unsubscribe', {
+          'symbol': symbol,
+          'interval': '1m',
+        });
+      }
+    } else if (channel == 'depth' && symbol != null) {
+      // 深度数据取消订阅
+      _sendMessage('${actionPrefix}depth.unsubscribe', {
+        'symbol': symbol,
+      });
+    } else if (channel == 'market' && symbol != null) {
+      // 单个交易对ticker数据取消订阅
+      _sendMessage('market.unsubscribe', {
+        'symbol': symbol,
+      });
+    }
   }
 
   void _sendMessage(String action, Map<String, dynamic> data) {
     if (_channel == null) return;
 
-    _channel!.sink.add(jsonEncode({
+    final message = {
       'action': action,
       'data': data,
       'op_id': 'op_${++_opIdCounter}',
-    }));
+    };
+
+    // 调试日志：打印发送的消息
+    // print('WebSocket 发送消息: ${jsonEncode(message)}');
+
+    _channel!.sink.add(jsonEncode(message));
   }
 
   void _handleMessage(dynamic rawMessage) {
     try {
       final message = jsonDecode(rawMessage as String) as Map<String, dynamic>;
+
+      // 调试日志：打印接收到的消息
+      // print('WebSocket 接收消息: ${rawMessage.toString().substring(0, rawMessage.toString().length > 200 ? 200 : rawMessage.toString().length)}...');
 
       final msgText = message['message'] as String?;
       final success = message['success'] == true;
@@ -271,6 +352,20 @@ class AppWebSocket {
         } else if (event == 'market.ticker') {
           final ticker = TickerData.fromJson(data);
           _emitMessage(WebSocketMessageType.ticker, ticker.symbol, ticker);
+        } else if (event == 'market.kline') {
+          // K线数据推送
+          final symbol = data['symbol'] as String? ?? '';
+          // 移除 event 字段，只保留 K 线数据
+          final klineData = Map<String, dynamic>.from(data);
+          klineData.remove('event');
+          _emitMessage(WebSocketMessageType.kline, symbol, klineData);
+        } else if (event == 'market.depth') {
+          // 深度图数据推送
+          final symbol = data['symbol'] as String? ?? '';
+          // 移除 event 字段，只保留深度数据
+          final depthData = Map<String, dynamic>.from(data);
+          depthData.remove('event');
+          _emitMessage(WebSocketMessageType.depth, symbol, depthData);
         }
       }
     } catch (_) {}

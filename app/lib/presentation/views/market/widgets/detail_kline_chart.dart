@@ -152,10 +152,15 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
     _depthStore.setCurrentSymbol(widget.symbol);
     
     if (widget.mode == ChartMode.kline) {
-      _klineStore.loadKlineData();
-      // 如果是分时实时图，启动实时更新
+      // 分时图（1s）加载少量历史数据（最近1-2分钟）作为初始显示，然后通过 WebSocket 实时更新
+      // 其他周期需要加载历史数据作为背景
       if (widget.isRealtime) {
+        // 分时图：加载少量历史数据，然后启动实时更新
+        _klineStore.loadKlineData();
         _setupRealtimeUpdates();
+      } else {
+        // 其他周期：加载历史数据
+        _klineStore.loadKlineData();
       }
     } else {
       _depthStore.loadDepthData();
@@ -179,15 +184,21 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
     // 监听WebSocket消息
     _websocketSubscription = _marketWebSocket.messageStream.listen((message) {
       // 检查消息类型和交易对是否匹配
-      if (message.type == WebSocketMessageType.kline &&
-          message.symbol == widget.symbol) {
-        // 解析K线数据
-        try {
-          final klineData = KlineData.fromJson(message.data as Map<String, dynamic>);
-          // 更新K线数据
-          _klineStore.updateLatestKline(klineData);
-        } catch (e) {
-          // 忽略解析错误
+      if (message.type == WebSocketMessageType.kline) {
+        // 标准化 symbol 格式进行比较（支持带斜杠和不带斜杠的格式）
+        final messageSymbol = message.symbol.replaceAll('/', '');
+        final widgetSymbol = widget.symbol.replaceAll('/', '');
+        
+        if (messageSymbol == widgetSymbol) {
+          // 解析K线数据
+          try {
+            final klineData = KlineData.fromJson(message.data as Map<String, dynamic>);
+            // 更新K线数据
+            _klineStore.updateLatestKline(klineData);
+          } catch (e) {
+            // 忽略解析错误
+            print('DetailKlineChart: 解析K线数据失败: $e');
+          }
         }
       }
     });
@@ -211,7 +222,7 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
     }
 
     // 处理实时更新订阅
-    if (symbolChanged || realtimeChanged) {
+    if (symbolChanged || intervalChanged || realtimeChanged) {
       // 取消旧的订阅
       if (oldWidget.isRealtime && oldWidget.mode == ChartMode.kline) {
         _websocketSubscription?.cancel();
@@ -226,15 +237,24 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
 
     if (symbolChanged || modeChanged) {
       if (widget.mode == ChartMode.kline) {
-        _klineStore.loadKlineData();
+        // 分时图加载少量历史数据，然后通过实时推送更新
         if (widget.isRealtime) {
+          _klineStore.loadKlineData();
           _setupRealtimeUpdates();
+        } else {
+          _klineStore.loadKlineData();
         }
       } else {
         _depthStore.loadDepthData();
       }
     } else if (intervalChanged && widget.mode == ChartMode.kline) {
-      _klineStore.loadKlineData();
+      // 分时图加载少量历史数据，然后通过实时推送更新
+      if (widget.isRealtime) {
+        _klineStore.loadKlineData();
+        _setupRealtimeUpdates();
+      } else {
+        _klineStore.loadKlineData();
+      }
     }
   }
 
@@ -332,22 +352,41 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
         // ========== 深度图颜色配置 ==========
         final chartColors = ChartColors()
           ..bgColor = Colors.white  // 背景色
-          ..upColor = Colors.red    // 买单颜色（通常为红色/绿色）
-          ..dnColor = Colors.green; // 卖单颜色
+          ..depthBuyColor = Colors.green    // 买单线条颜色
+          ..depthBuyPathColor = Colors.green.withOpacity(0.2)  // 买单填充颜色
+          ..depthSellColor = Colors.red     // 卖单线条颜色
+          ..depthSellPathColor = Colors.red.withOpacity(0.2); // 卖单填充颜色（从中间线向右填充）
 
-        return SizedBox(
-          height: 400,
-          width: double.infinity,
-          // ========== DepthChart 使用说明 ==========
-          // DepthChart 参数：
-          // - bids: List<DepthEntity> - 买单数据（价格从高到低）
-          // - asks: List<DepthEntity> - 卖单数据（价格从低到高）
-          // - chartColors: ChartColors - 图表颜色配置
-          child: DepthChart(
-            bids,
-            asks,
-            chartColors,
-          ),
+        // 使用 LayoutBuilder 检查约束，确保深度图不会超出高度
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // 默认深度图高度
+            const defaultDepthHeight = 400.0;
+            
+            // 如果约束高度有效且小于默认高度，使用约束高度
+            // 否则使用默认高度，但确保不超过约束高度
+            double chartHeight = defaultDepthHeight;
+            if (constraints.maxHeight.isFinite && constraints.maxHeight > 0) {
+              chartHeight = constraints.maxHeight < defaultDepthHeight 
+                  ? constraints.maxHeight 
+                  : defaultDepthHeight;
+            }
+            
+            // ========== DepthChart 使用说明 ==========
+            // DepthChart 参数：
+            // - bids: List<DepthEntity> - 买单数据（价格从高到低）
+            // - asks: List<DepthEntity> - 卖单数据（价格从低到高）
+            // - chartColors: ChartColors - 图表颜色配置
+            return SizedBox(
+              height: chartHeight,
+              width: double.infinity,
+              child: DepthChart(
+                bids,
+                asks,
+                chartColors,
+              ),
+            );
+          },
         );
       },
     );
@@ -358,6 +397,9 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
       builder: (_) {
         // 监听语言变化，确保翻译更新
         final _ = _languageStore.locale;
+
+        // 只在初次加载且无数据时显示加载指示器
+        // 切换周期时保持显示旧数据，避免清空闪烁
         if (_klineStore.isLoading && _klineStore.klineData.isEmpty) {
           return Center(
             child: CircularProgressIndicator(
@@ -399,6 +441,15 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
 
         // 如果数据为空，返回空状态
         if (dataToUse.isEmpty) {
+          // 如果正在加载，显示加载指示器
+          if (_klineStore.isLoading) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }
+          // 加载完成但数据为空，显示空状态
           return const Center(
             child: Text(
               '暂无K线数据',
@@ -407,11 +458,21 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
           );
         }
 
-        // ========== 步骤1: 数据排序 ==========
+        // ========== 步骤1: 数据排序和去重 ==========
         // k_chart_plus要求数据必须按时间升序排列（从旧到新）
         // 这对指标计算非常重要，不排序会导致指标计算错误
-        final sortedData = List<KlineData>.from(dataToUse)
-          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        // 对于分时图，确保数据按时间升序排列，并且移除重复的时间戳（保留最后遇到的数据）
+        final sortedData = <KlineData>[];
+        final Map<int, KlineData> timestampMap = {};
+        
+        // 先按时间戳分组，保留每个时间戳最后遇到的数据（通常是最新的）
+        for (final kline in dataToUse) {
+          timestampMap[kline.timestamp] = kline;
+        }
+        
+        // 转换为列表并按时间戳排序
+        sortedData.addAll(timestampMap.values);
+        sortedData.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         
         // ========== 步骤2: 数据格式转换 ==========
         // 将 KlineData 转换为 k_chart_plus 需要的 KLineEntity 格式
@@ -462,8 +523,8 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
           ..ma5Color = Colors.amber     // MA5颜色
           ..ma10Color = Colors.pink     // MA10颜色
           ..ma30Color = Colors.purple   // MA30颜色
-          ..upColor = Colors.red        // 上涨颜色（K线）
-          ..dnColor = Colors.green;     // 下跌颜色（K线）
+          ..upColor = Colors.green        // 上涨颜色（K线）
+          ..dnColor = Colors.red;     // 下跌颜色（K线）
 
         // ========== 步骤6: 转换指标状态 ==========
         // 将字符串指标名称转换为 k_chart_plus 的 SecondaryState 枚举
@@ -539,36 +600,36 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
           isLine: widget.isRealtime,  // 分时模式显示折线图，否则显示K线图
           mBaseHeight: mBaseHeight,
           verticalTextAlignment: VerticalTextAlignment.right,
-          mainStateLi: _klineStore.mainIndicator.isNotEmpty 
-              ? {_getMainState(_klineStore.mainIndicator)} 
+          mainStateLi: _klineStore.mainIndicator.isNotEmpty
+              ? {_getMainState(_klineStore.mainIndicator)}
               : <MainState>{},  // 主图指标
           secondaryStateLi: secondaryStates,  // 副图指标（MACD、KDJ等）
           volHidden: !hasVolume,  // 是否隐藏成交量
           volInsertPosition: volInsertPosition,  // VOL在副图列表中的插入位置
           chartTranslations: chartTranslations,  // 多语言翻译
           onLoadMore: (bool isReload) async {
-            // 加载更多历史数据
-            if (!isReload && _klineStore.klineData.isNotEmpty) {
-              final oldestTime = _klineStore.klineData.first.timestamp;
-              await _klineStore.loadKlineData(
-                endTime: oldestTime - 1,
-                limit: 100,
-              );
+            // 加载更多历史数据（使用分页）
+            // 注意：1s 分时图不支持分页，不会触发加载更多
+            if (!isReload && _klineStore.klineData.isNotEmpty && _klineStore.currentInterval != '1s') {
+              // TODO: 实现分页加载更多逻辑
+              // 当前暂时不加载更多，等待后续实现分页逻辑
             }
           },
         );
-        
+
         // 使用 LayoutBuilder 检查约束，如果没有外部约束，计算高度并用 SizedBox 包裹
         // 这样可以让 KChartWidget 获得明确的约束高度
         return LayoutBuilder(
           builder: (context, constraints) {
+            Widget chartContent;
+
             // 如果约束高度无限或无效，计算高度并用 SizedBox 包裹
             if (!constraints.maxHeight.isFinite || constraints.maxHeight <= 0) {
               // 计算高度（与 BaseDimension 完全相同的逻辑）
               const labelHeight = 12.0;
               final secondaryCount = secondaryStates.length;
               final mainStateCount = _klineStore.mainIndicator.isNotEmpty ? 1 : 0;
-              
+
               // BaseDimension 的计算逻辑
               double totalSecondaryHeight = 0;
               double volumeHeight = 0;
@@ -578,20 +639,33 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
                 volumeHeight = hasVolume ? mBaseHeight * secondaryRatio : 0.0;
               }
               final totalLabelHeight = labelHeight * mainStateCount;
-              
+
               // mDisplayHeight = mBaseHeight + mVolumeHeight + totalSecondaryHeight + totalLabelHeight
               // 注意：BaseChartPainter 会从 size.height 中减去 padding，所以这里需要加上 padding
               final contentHeight = mBaseHeight + volumeHeight + totalSecondaryHeight + totalLabelHeight;
               final calculatedHeight = contentHeight + chartStyle.topPadding + chartStyle.bottomPadding;
-              
-              return SizedBox(
+
+              chartContent = SizedBox(
                 height: calculatedHeight,
                 width: double.infinity,
                 child: kChartWidget,
               );
+            } else {
+              // 如果约束高度有效，直接使用（KChartWidget 会使用约束高度）
+              chartContent = kChartWidget;
             }
-            // 如果约束高度有效，直接使用（KChartWidget 会使用约束高度）
-            return kChartWidget;
+
+            // 使用 AnimatedSwitcher 实现平滑过渡动画
+            // 使用 symbol + interval 作为 key，确保切换周期时触发过渡动画
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.easeOut,
+              child: Container(
+                key: ValueKey('${widget.symbol}_${widget.interval}'),
+                child: chartContent,
+              ),
+            );
           },
         );
       },

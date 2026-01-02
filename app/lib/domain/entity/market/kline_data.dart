@@ -39,8 +39,8 @@ class KlineData {
       high: (json['high'] as num).toDouble(),
       low: (json['low'] as num).toDouble(),
       close: (json['close'] as num).toDouble(),
-      volume: (json['volume'] as num).toDouble(),
-      amount: (json['amount'] as num).toDouble(),
+      volume: (json['volume'] as num?)?.toDouble() ?? 0.0,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

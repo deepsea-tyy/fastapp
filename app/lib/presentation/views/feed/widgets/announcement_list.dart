@@ -161,6 +161,8 @@ class _AnnouncementListState extends State<AnnouncementList> {
       return Column(
         children: [
           AnnouncementItem(
+            id: announcement.id,
+            type: announcement.type ?? 3, // 使用文章类型，默认为3（公告）
             title: announcement.title,
             timestamp: announcement.getFormattedTime(),
             profile: announcement.profile,

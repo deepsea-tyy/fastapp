@@ -37,17 +37,23 @@ class Endpoints {
   /// 汇率相关
   static const String exchangeRate = '/api/ds/ex/currency/exchangeRate';
 
+
   // ==================== 交易相关 ====================
-  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
+  /// 获取K线数据（现货）
+  static const String marketKline = '/api/market/klineTrade';
+  
+  /// 获取深度图数据（订单簿）
+  static const String marketDepth = '/api/market/depth';
 
-  // static const String tradePlaceOrder = '/api/v1/trade/order';
-  // static const String tradeCancelOrder = '/api/v1/trade/order/cancel';
-
-  // ==================== 订单相关 ====================
-  // 注意：以下接口为预留接口，后端暂未实现，实际使用时需更新
-
-  // static const String orderList = '/api/v1/order/list';
-  // static const String orderDetail = '/api/v1/order/detail';
+  // ==================== 现货交易相关 ====================
+  /// 现货下单
+  static const String spotOrderPlace = '/api/spot/order/place';
+  
+  /// 获取现货订单列表
+  static const String spotOrderList = '/api/spot/order/list';
+  
+  /// 取消现货订单
+  static const String spotOrderCancel = '/api/spot/order/cancel';
 
   // ==================== 钱包相关 ====================
 

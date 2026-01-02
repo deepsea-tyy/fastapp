@@ -103,6 +103,12 @@ class _FeedDetailState extends State<FeedDetail> {
 
   /// 加载帖子详情（包含所有状态）
   Future<void> _loadPostDetail() async {
+    // 如果 postId 为 0，不请求接口
+    if (widget.postId == 0) {
+      setState(() => _isLoadingDetail = false);
+      return;
+    }
+
     try {
       // 根据类型调用不同的接口
       // 1, 2: post/detail (短贴、标题贴)

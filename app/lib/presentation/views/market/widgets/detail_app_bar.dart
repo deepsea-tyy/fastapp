@@ -7,7 +7,6 @@ class DetailAppBar extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onBack;
   final VoidCallback onFavoriteToggle;
-  final VoidCallback onShare;
   final VoidCallback onMore;
   final ValueChanged<String>? onSymbolChanged;
   final bool showPerpetual;
@@ -18,7 +17,6 @@ class DetailAppBar extends StatelessWidget {
     required this.isFavorite,
     required this.onBack,
     required this.onFavoriteToggle,
-    required this.onShare,
     required this.onMore,
     this.onSymbolChanged,
     this.showPerpetual = false,
@@ -82,10 +80,6 @@ class DetailAppBar extends StatelessWidget {
               color: isFavorite ? Colors.amber : Colors.black87,
             ),
             onPressed: onFavoriteToggle,
-          ),
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.black87),
-            onPressed: onShare,
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz, color: Colors.black87),

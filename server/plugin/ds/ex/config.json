@@ -1,0 +1,1 @@
+{"name":"交易所","version":"1.0.0","type":"mixed","description":"ex","author":[{"name":"ds"}],"composer":{"require":[],"psr-4":{"Plugin\\Ds\\Ex\\":"src"},"installScript":"Plugin\\Ds\\Ex\\InstallScript","uninstallScript":"Plugin\\Ds\\Ex\\UninstallScript","config":"Plugin\\Ds\\Ex\\ConfigProvider"},"package":{"dependencies":[]}}

@@ -21,16 +21,14 @@ class MarketRepositoryImpl implements MarketRepository {
   Future<List<KlineData>> getKlineData({
     required String symbol,
     required String interval,
-    int? startTime,
-    int? endTime,
-    int? limit,
+    int? page,
+    int? pageSize,
   }) =>
       _marketApi.getKlineData(
         symbol: symbol,
         interval: interval,
-        startTime: startTime,
-        endTime: endTime,
-        limit: limit,
+        page: page,
+        pageSize: pageSize,
       );
 
   @override

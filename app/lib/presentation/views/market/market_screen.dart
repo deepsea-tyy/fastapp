@@ -1,6 +1,7 @@
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/presentation/store/market/market_store.dart';
 import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/market/depth_store.dart';
 import 'package:fastapp/core/services/app_startup_state.dart';
 import 'package:fastapp/presentation/views/market/market_detail_screen.dart';
 import 'package:fastapp/presentation/views/market/market_search_screen.dart';
@@ -22,6 +23,7 @@ class MarketScreen extends StatefulWidget {
 class _MarketScreenState extends State<MarketScreen> {
   final MarketStore _marketStore = getIt<MarketStore>();
   final MarketDataStore _marketDataStore = getIt<MarketDataStore>();
+  final DepthStore _depthStore = getIt<DepthStore>();
   int _selectedMainTab = 0;
   int _selectedCategoryTab = 0;
   String? _sortField;
@@ -40,9 +42,25 @@ class _MarketScreenState extends State<MarketScreen> {
       // 等待市场数据加载完成后再加载 ticker 数据（需要从市场数据中获取交易对符号）
       if (_marketDataStore.isInitialized) {
         _loadTickersForCurrentTab();
+        // 初始化订单薄数据（加载默认交易对）
+        _initializeDepthData();
         // WebSocket 连接已在 App 启动时完成，这里不需要再次连接
       }
     });
+  }
+
+  /// 初始化订单薄数据
+  /// 加载默认交易对的订单薄数据，如果 API 失败则使用模拟数据
+  Future<void> _initializeDepthData() async {
+    try {
+      // 设置默认交易对并加载订单薄数据
+      _depthStore.setCurrentSymbol('BTC/USDT');
+      await _depthStore.loadDepthData(limit: 20);
+    } catch (e) {
+      // API 失败时，DepthStore 会处理错误，这里不需要额外处理
+      // 如果需要，可以在 DepthStore 中添加模拟数据回退逻辑
+      print('MarketScreen: 初始化订单薄数据失败: $e');
+    }
   }
 
   /// 根据当前一级筛选类型加载对应的 ticker 数据

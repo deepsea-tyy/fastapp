@@ -34,76 +34,145 @@ class MarketApi {
 
   /// 获取K线数据
   ///
-  /// 【注意】后端接口暂未实现，当前返回空列表
-  /// TODO: 后端实现后更新此方法，添加真实接口路径到 Endpoints
+  /// 【HTTP 客户端】
+  /// - 根据 HttpClientConfig 配置自动选择 DioClient 或 RestClient
+  /// - 此接口为高频接口，生产环境可配置使用 RestClient 优化性能
+  ///
+  /// 【数据格式】
+  /// - 后端返回币安格式数组：[[openTime, open, high, low, close, volume, closeTime, quoteVolume, trades, takerBuyBaseVolume, takerBuyQuoteVolume, ignore], ...]
+  /// - 自动转换为 KlineData 对象列表
+  ///
+  /// 【参数说明】
+  /// - symbol: 交易对符号，例如：'BTCUSDT'（注意：需要将 'BTC/USDT' 转换为 'BTCUSDT'）
+  /// - interval: 时间周期，例如：'1s', '1m', '5m', '1h', '1d' 等
+  /// - page: 页数（可选，用于分页）
+  /// - pageSize: 每页数量（可选，1-1000，默认500）
   Future<List<KlineData>> getKlineData({
     required String symbol,
     required String interval,
-    int? startTime,
-    int? endTime,
-    int? limit,
+    int? page,
+    int? pageSize,
   }) async {
-    // 后端接口暂未实现，返回空列表避免报错
-    print('[MarketApi] ⚠️ getKlineData 接口暂未实现，返回空数据');
-    return [];
+    try {
+      // 转换交易对符号格式：BTC/USDT -> BTCUSDT
+      final normalizedSymbol = symbol.replaceAll('/', '').toUpperCase();
 
-    // TODO: 后端实现后启用以下代码
-    // try {
-    //   final queryParams = <String, dynamic>{
-    //     'symbol': symbol,
-    //     'interval': interval,
-    //   };
-    //   if (startTime != null) queryParams['startTime'] = startTime;
-    //   if (endTime != null) queryParams['endTime'] = endTime;
-    //   if (limit != null) queryParams['limit'] = limit;
-    //
-    //   final response = await _httpClient.get(
-    //     Endpoints.marketKline,  // 需要在 Endpoints 中添加此常量
-    //     queryParameters: queryParams,
-    //   );
-    //
-    //   if (response is List) {
-    //     return response
-    //         .map((item) => KlineData.fromJson(item as Map<String, dynamic>))
-    //         .toList();
-    //   }
-    //   return [];
-    // } catch (e) {
-    //   rethrow;
-    // }
+      final queryParams = <String, dynamic>{
+        'symbol': normalizedSymbol,
+        'interval': interval,
+      };
+      if (page != null) queryParams['page'] = page;
+      if (pageSize != null) queryParams['page_size'] = pageSize;
+
+      final response = await _httpClient.get(
+        Endpoints.marketKline,
+        queryParameters: queryParams,
+      );
+
+      // 后端返回的是币安格式数组，需要转换为 KlineData 对象
+      if (response is List) {
+        return response
+            .map((item) => _convertBinanceKlineToKlineData(item))
+            .whereType<KlineData>()
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// 将币安格式K线数据转换为KlineData对象
+  /// 
+  /// 币安格式：[openTime, open, high, low, close, volume, closeTime, quoteVolume, trades, takerBuyBaseVolume, takerBuyQuoteVolume, ignore]
+  /// 
+  /// @param binanceKline 币安格式的K线数组
+  /// @return KlineData 对象，如果数据格式不正确则返回 null
+  KlineData? _convertBinanceKlineToKlineData(dynamic binanceKline) {
+    try {
+      if (binanceKline is! List || binanceKline.length < 7) {
+        return null;
+      }
+
+      // 币安格式数组索引：
+      // [0] openTime (毫秒时间戳)
+      // [1] open (开盘价，字符串)
+      // [2] high (最高价，字符串)
+      // [3] low (最低价，字符串)
+      // [4] close (收盘价，字符串)
+      // [5] volume (成交量，字符串)
+      // [6] closeTime (收盘时间，毫秒时间戳)
+      // [7] quoteVolume (成交额，字符串)
+      // [8] trades (成交笔数，整数)
+      // [9] takerBuyBaseVolume (主动买入成交量，字符串)
+      // [10] takerBuyQuoteVolume (主动买入成交额，字符串)
+      // [11] ignore (忽略字段)
+
+      return KlineData(
+        timestamp: (binanceKline[0] as num).toInt(),
+        open: double.parse(binanceKline[1].toString()),
+        high: double.parse(binanceKline[2].toString()),
+        low: double.parse(binanceKline[3].toString()),
+        close: double.parse(binanceKline[4].toString()),
+        volume: double.parse(binanceKline[5].toString()),
+        amount: binanceKline.length > 7 
+            ? double.parse(binanceKline[7].toString()) 
+            : 0.0, // quoteVolume 作为成交额
+      );
+    } catch (e) {
+      print('[MarketApi] 转换K线数据失败: $e, 数据: $binanceKline');
+      return null;
+    }
   }
 
   /// 获取深度图数据
   ///
-  /// 【注意】后端接口暂未实现，当前返回空数据
-  /// TODO: 后端实现后更新此方法，添加真实接口路径到 Endpoints
+  /// 【HTTP 客户端】
+  /// - 根据 HttpClientConfig 配置自动选择 DioClient 或 RestClient
+  /// - 此接口为高频接口，生产环境可配置使用 RestClient 优化性能
+  ///
+  /// @param symbol 交易对符号，例如：'BTCUSDT'（注意：需要将 'BTC/USDT' 转换为 'BTCUSDT'）
+  /// @param limit 深度数量（可选，5, 10, 20, 50, 100, 500, 1000，默认20）
   Future<DepthChartData> getDepthData({
     required String symbol,
     int? limit,
   }) async {
-    // 后端接口暂未实现，返回空数据避免报错
-    print('[MarketApi] ⚠️ getDepthData 接口暂未实现，返回空数据');
-    return DepthChartData(
-      bids: [],
-      asks: [],
-      lastPrice: 0.0,
-      timestamp: DateTime.now().millisecondsSinceEpoch,
-    );
+    try {
+      // 转换交易对符号格式：BTC/USDT -> BTCUSDT
+      final normalizedSymbol = symbol.replaceAll('/', '').toUpperCase();
 
-    // TODO: 后端实现后启用以下代码
-    // try {
-    //   final response = await _httpClient.get(
-    //     Endpoints.marketDepth,  // 需要在 Endpoints 中添加此常量
-    //     queryParameters: {
-    //       'symbol': symbol,
-    //       if (limit != null) 'limit': limit,
-    //     },
-    //   );
-    //
-    //   return DepthChartData.fromJson(response as Map<String, dynamic>);
-    // } catch (e) {
-    //   rethrow;
-    // }
+      final queryParams = <String, dynamic>{
+        'symbol': normalizedSymbol,
+      };
+      if (limit != null) queryParams['limit'] = limit;
+
+      final response = await _httpClient.get(
+        Endpoints.marketDepth,
+        queryParameters: queryParams,
+      );
+
+      // 后端返回格式：{ bids: [...], asks: [...], lastPrice: ..., timestamp: ... }
+      if (response is Map<String, dynamic>) {
+        return DepthChartData.fromJson(response);
+      }
+
+      // 如果格式不正确，返回空数据
+      return DepthChartData(
+        bids: [],
+        asks: [],
+        lastPrice: 0.0,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+    } catch (e) {
+      // 发生错误时返回空数据，避免崩溃
+      print('[MarketApi] 获取深度数据失败: $e');
+      return DepthChartData(
+        bids: [],
+        asks: [],
+        lastPrice: 0.0,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+    }
   }
 
   /// 获取Ticker数据

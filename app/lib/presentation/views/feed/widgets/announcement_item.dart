@@ -11,6 +11,8 @@ class AnnouncementItem extends StatelessWidget {
   final String timestamp;
   final UserProfile? profile;
   final VoidCallback? onTap;
+  final int id; // 文章ID
+  final int type; // 文章类型：3=公告
 
   const AnnouncementItem({
     super.key,
@@ -18,6 +20,8 @@ class AnnouncementItem extends StatelessWidget {
     required this.timestamp,
     this.profile,
     this.onTap,
+    required this.id,
+    this.type = 3, // 默认为公告类型
   });
 
   void _navigateToDetail(BuildContext context) {
@@ -28,7 +32,7 @@ class AnnouncementItem extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FeedDetail(
-          postId: 0, // 公告的postId为0
+          postId: id,
           userId: userId,
           username: userName,
           time: timestamp,
@@ -40,6 +44,7 @@ class AnnouncementItem extends StatelessWidget {
           shareCount: 0,
           viewCount: 0,
           avatarAsset: userAvatar,
+          type: type, // 传递类型，用于判断调用哪个接口
         ),
       ),
     );

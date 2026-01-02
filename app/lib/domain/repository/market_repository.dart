@@ -12,16 +12,14 @@ import '../entity/market/exchange_rate_response.dart';
 abstract class MarketRepository {
   /// 获取K线数据
   /// [symbol] 交易对符号
-  /// [interval] 时间周期（1m、5m、15m、1h、4h、1d等）
-  /// [startTime] 开始时间戳（可选）
-  /// [endTime] 结束时间戳（可选）
-  /// [limit] 返回数量限制（可选）
+  /// [interval] 时间周期（1s、1m、5m、15m、1h、4h、1d等）
+  /// [page] 页数（可选，用于分页）
+  /// [pageSize] 每页数量（可选，1-1000，默认500）
   Future<List<KlineData>> getKlineData({
     required String symbol,
     required String interval,
-    int? startTime,
-    int? endTime,
-    int? limit,
+    int? page,
+    int? pageSize,
   });
 
   /// 获取深度图数据

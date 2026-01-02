@@ -56,11 +56,12 @@ class _DetailQuoteTabState extends State<DetailQuoteTab> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 市场概览数据
+          // 市场概览数据（传递 klineStore，从 K 线数据获取最新价格，避免与 ticker 数据冗余）
           DetailMarketOverview(
             ticker: widget.ticker,
             isPositive: widget.isPositive,
             cnyPrice: widget.cnyPrice,
+            klineStore: widget.klineStore,
           ),
           
           // 时间周期选择
@@ -104,9 +105,9 @@ class _DetailQuoteTabState extends State<DetailQuoteTab> {
             ),
           
           // 底部订单簿
-          const SizedBox(
+          SizedBox(
             height: 300,
-            child: DetailOrderBook(),
+            child: DetailOrderBook(symbol: widget.ticker.symbol),
           ),
         ],
       ),
