@@ -70,12 +70,20 @@ abstract class _DepthStore with Store {
   // Actions
   @action
   void setCurrentSymbol(String symbol) {
-    // 如果 symbol 相同且已订阅，不需要重新订阅
-    if (currentSymbol == symbol && isSubscribed) return;
+    final symbolChanged = currentSymbol != symbol;
     
+    // 更新当前 symbol
     currentSymbol = symbol;
-    _subscribeDepth(symbol);
-    loadDepthData();
+    
+    // 如果 symbol 改变了，或者未订阅，需要重新订阅
+    if (symbolChanged || !isSubscribed) {
+      _subscribeDepth(symbol);
+      loadDepthData();
+    } 
+    // 如果 symbol 相同且已订阅，但数据为空且不在加载中，需要加载数据
+    else if (depthData == null && !isLoading) {
+      loadDepthData();
+    }
   }
 
   /// 订阅深度图实时数据

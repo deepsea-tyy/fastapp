@@ -55,12 +55,44 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
   @override
   void initState() {
     super.initState();
-    // 如果提供了 symbol，设置到 DepthStore 并加载数据
-    // 即使 symbol 相同，如果订阅状态丢失也会重新订阅
-    if (widget.symbol != null) {
-      _depthStore.setCurrentSymbol(widget.symbol!);
-      // 确保数据已加载（setCurrentSymbol 内部会调用 loadDepthData，但这里再调用一次确保数据刷新）
+    // 组件构建完成后加载数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  /// 加载深度数据（与 TradeOrderBook._loadData 逻辑一致）
+  void _loadData() {
+    if (!mounted) return;
+
+    final symbol = widget.symbol;
+    if (symbol == null) return;
+
+    final currentDepthSymbol = _depthStore.currentSymbol;
+    final hasData = _depthStore.depthData != null;
+    final isLoading = _depthStore.isLoading;
+
+    print('[DetailOrderBook] _loadData: symbol=$symbol, currentDepthSymbol=$currentDepthSymbol, hasData=$hasData, isLoading=$isLoading');
+
+    // 如果 symbol 不匹配，设置新 symbol（会触发订阅和数据加载）
+    if (currentDepthSymbol != symbol) {
+      print('[DetailOrderBook] _loadData: setting new symbol');
+      _depthStore.setCurrentSymbol(symbol);
+    }
+    // 如果 symbol 匹配但没有数据且不在加载中，触发数据加载
+    else if (!hasData && !isLoading) {
+      print('[DetailOrderBook] _loadData: loading data...');
       _depthStore.loadDepthData(limit: 20);
+    }
+  }
+
+  @override
+  void didUpdateWidget(DetailOrderBook oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // symbol 变化时重新加载数据
+    if (oldWidget.symbol != widget.symbol) {
+      print('[DetailOrderBook] didUpdateWidget: symbol changed from ${oldWidget.symbol} to ${widget.symbol}');
+      _loadData();
     }
   }
 
