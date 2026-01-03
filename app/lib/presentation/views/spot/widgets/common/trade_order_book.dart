@@ -8,20 +8,26 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:mobx/mobx.dart';
 
 /// 订单簿组件（通用）
-/// 
-/// 重新设计的订单簿，具有以下特性：
+///
+/// 自管理组件，具有以下特性：
+/// - 自动加载和订阅深度数据
 /// - 清晰的视觉层次
 /// - 累计深度显示
 /// - 优化的颜色方案
 /// - 更好的交互体验
 /// - 现货不显示标记价格，期货/杠杆显示标记价格
-/// - 直接使用 DepthStore 确保实时更新
 class TradeOrderBook extends StatefulWidget {
+  /// 交易对（如 'BTC/USDT'），如果不传则使用 SpotTradeStore 的 selectedSymbol
+  final String? symbol;
   final TradeType tradeType;
+  /// 点击价格时的回调
+  final ValueChanged<double>? onPriceTap;
 
   const TradeOrderBook({
     super.key,
+    this.symbol,
     this.tradeType = TradeType.spot,
+    this.onPriceTap,
   });
 
   @override
@@ -32,8 +38,10 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
   late final SpotTradeStore _spotTradeStore;
   late final DepthStore _depthStore;
   double? _previousPrice;
-  ReactionDisposer? _symbolReaction;
   ReactionDisposer? _priceReaction;
+
+  /// 获取当前使用的 symbol
+  String get _currentSymbol => widget.symbol ?? _spotTradeStore.selectedSymbol;
 
   @override
   void initState() {
@@ -41,19 +49,12 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
     _spotTradeStore = getIt<SpotTradeStore>();
     _depthStore = getIt<DepthStore>();
 
-    final symbol = _spotTradeStore.selectedSymbol;
-    print('[TradeOrderBook] initState: symbol=$symbol, depthStore.currentSymbol=${_depthStore.currentSymbol}, isSubscribed=${_depthStore.isSubscribed}');
+    print('[TradeOrderBook] initState: symbol=$_currentSymbol');
 
-    // 注意：DepthStore 的订阅由 SpotTrade 统一管理，这里不重复设置
-    // 这样避免重复订阅和时序问题
-
-    // 监听交易对变化（仅用于日志）
-    _symbolReaction = reaction(
-      (_) => _spotTradeStore.selectedSymbol,
-      (symbol) {
-        print('[TradeOrderBook] symbol changed: $symbol, depthStore.currentSymbol=${_depthStore.currentSymbol}');
-      },
-    );
+    // 组件构建完成后加载数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
 
     // 监听价格变化
     _priceReaction = reaction(
@@ -68,34 +69,66 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
     );
   }
 
+  @override
+  void didUpdateWidget(TradeOrderBook oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // symbol 变化时重新加载数据
+    if (oldWidget.symbol != widget.symbol) {
+      print('[TradeOrderBook] didUpdateWidget: symbol changed from ${oldWidget.symbol} to ${widget.symbol}');
+      _loadData();
+    }
+  }
+
+  /// 加载深度数据
+  void _loadData() {
+    if (!mounted) return;
+
+    final symbol = _currentSymbol;
+    final currentDepthSymbol = _depthStore.currentSymbol;
+    final hasData = _depthStore.depthData != null;
+    final isLoading = _depthStore.isLoading;
+
+    print('[TradeOrderBook] _loadData: symbol=$symbol, currentDepthSymbol=$currentDepthSymbol, hasData=$hasData, isLoading=$isLoading');
+
+    // 如果 symbol 不匹配，设置新 symbol（会触发订阅和数据加载）
+    if (currentDepthSymbol != symbol) {
+      print('[TradeOrderBook] _loadData: setting new symbol');
+      _depthStore.setCurrentSymbol(symbol);
+    }
+    // 如果 symbol 匹配但没有数据且不在加载中，触发数据加载
+    else if (!hasData && !isLoading) {
+      print('[TradeOrderBook] _loadData: loading data...');
+      _depthStore.loadDepthData();
+    }
+  }
+
+  void _handlePriceTap(double price) {
+    if (widget.onPriceTap != null) {
+      widget.onPriceTap!(price);
+    } else {
+      // 默认行为：设置到 SpotTradeStore
+      _spotTradeStore.setPriceFromOrderBook(price);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Observer(
       builder: (_) {
         final depthData = _depthStore.depthData;
-        final selectedSymbol = _spotTradeStore.selectedSymbol;
-        
-        print('[TradeOrderBook] build: depthData=${depthData != null}, currentSymbol=${_depthStore.currentSymbol}, selectedSymbol=$selectedSymbol, isSubscribed=${_depthStore.isSubscribed}, isLoading=${_depthStore.isLoading}');
 
         if (_depthStore.isLoading && depthData == null) {
-          print('[TradeOrderBook] build: showing loading state');
           return _buildLoadingState();
         }
 
         if (_depthStore.errorMessage != null && depthData == null) {
-          print('[TradeOrderBook] build: showing error state: ${_depthStore.errorMessage}');
           return _buildErrorState();
         }
 
-        // 只检查 depthData 是否为空，symbol 同步由 SpotTrade 管理
-        // 移除 symbol 匹配检查，避免数据加载过程中误判为空状态
         if (depthData == null) {
-          print('[TradeOrderBook] build: showing empty state - depthData is null');
           return _buildEmptyState();
         }
-        
-        print('[TradeOrderBook] build: rendering data - bids=${depthData.bids.length}, asks=${depthData.asks.length}');
 
         final bids = depthData.bids;
         final asks = depthData.asks;
@@ -306,7 +339,7 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _spotTradeStore.setPriceFromOrderBook(depth.price),
+        onTap: () => _handlePriceTap(depth.price),
         child: Container(
           height: 24,
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -442,8 +475,6 @@ class _TradeOrderBookState extends State<TradeOrderBook> {
 
   @override
   void dispose() {
-    // 清理 reactions
-    _symbolReaction?.call();
     _priceReaction?.call();
     super.dispose();
   }
