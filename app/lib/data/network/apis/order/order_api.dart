@@ -16,6 +16,7 @@ class OrderApi {
     OrderStatus? status,
     int? startTime,
     int? endTime,
+    int? page,
     int? limit,
   }) async {
     try {
@@ -47,6 +48,10 @@ class OrderApi {
 
       if (endTime != null) {
         queryParams['end_time'] = (endTime / 1000).round();
+      }
+
+      if (page != null) {
+        queryParams['page'] = page;
       }
 
       if (limit != null) {

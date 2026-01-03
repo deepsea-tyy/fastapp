@@ -22,3 +22,9 @@ const String positionModeUnified = '联合';
 // 开平仓方向（futures 特有）
 const String positionSideOpen = '开仓';
 const String positionSideClose = '平仓';
+
+// 现货交易页面常量
+const String spotTabCurrentOrders = '当前委托';
+const String spotTabHeldAssets = '持有资产';
+const String spotButtonBuySell = '买入/卖出';
+const String spotButtonAddFunds = '添加资金';

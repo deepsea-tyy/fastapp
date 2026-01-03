@@ -4,6 +4,7 @@ import 'package:fastapp/presentation/views/futures/widgets/futures/held_position
 import 'package:fastapp/presentation/views/futures/widgets/futures/futures_order_form.dart';
 import 'package:fastapp/presentation/views/futures/widgets/futures/symbol_header.dart';
 import 'package:fastapp/presentation/views/spot/widgets/common/trade_order_book.dart';
+import 'package:fastapp/presentation/views/spot/widgets/common/trade_type.dart';
 import 'package:fastapp/presentation/views/grid/grid_trading_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -55,7 +56,7 @@ class _FuturesTradeState extends State<FuturesTrade> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
                     ),
-                    child: const TradeOrderBook(),
+                    child: const TradeOrderBook(tradeType: TradeType.leverage),
                   ),
                 ),
               ],

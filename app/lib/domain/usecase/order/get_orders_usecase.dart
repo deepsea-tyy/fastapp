@@ -9,6 +9,7 @@ class GetOrdersParams {
   final OrderStatus? status;
   final int? startTime;
   final int? endTime;
+  final int? page;
   final int? limit;
 
   GetOrdersParams({
@@ -16,6 +17,7 @@ class GetOrdersParams {
     this.status,
     this.startTime,
     this.endTime,
+    this.page,
     this.limit,
   });
 }
@@ -33,6 +35,7 @@ class GetOrdersUseCase implements UseCase<List<Order>, GetOrdersParams> {
       status: params.status,
       startTime: params.startTime,
       endTime: params.endTime,
+      page: params.page,
       limit: params.limit,
     );
   }

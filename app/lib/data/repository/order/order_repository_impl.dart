@@ -16,6 +16,7 @@ class OrderRepositoryImpl implements OrderRepository {
     OrderStatus? status,
     int? startTime,
     int? endTime,
+    int? page,
     int? limit,
   }) async {
     try {
@@ -24,6 +25,7 @@ class OrderRepositoryImpl implements OrderRepository {
         status: status,
         startTime: startTime,
         endTime: endTime,
+        page: page,
         limit: limit,
       );
     } catch (e) {

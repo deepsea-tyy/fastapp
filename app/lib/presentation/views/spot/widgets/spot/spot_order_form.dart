@@ -15,6 +15,7 @@ import 'package:fastapp/presentation/views/common/percentage_slider.dart';
 import 'package:fastapp/presentation/views/wallet/currency/transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:mobx/mobx.dart';
 
 /// 订单表单组件
 class SpotOrderForm extends StatefulWidget {
@@ -302,7 +303,7 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
                   if (type != null) {
                     _store.setOrderType(type);
                   }
-                  Navigator.of(bottomSheetContext).pop();
+                  // SelectionBottomSheet 内部已经处理了关闭逻辑，不需要手动 pop
                 },
                 options: orderTypes
                     .map((item) => SelectionOption<OrderType?>(
@@ -392,7 +393,7 @@ class _SpotOrderFormState extends State<SpotOrderForm> {
           setState(() {
             _takeProfitStopLossType = type;
           });
-          Navigator.of(context).pop();
+          // SelectionBottomSheet 内部已经处理了关闭逻辑，不需要手动 pop
         },
         options: [
           SelectionOption(

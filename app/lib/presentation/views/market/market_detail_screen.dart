@@ -84,11 +84,17 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
       final symbolNoSlash = widget.ticker.symbol.replaceAll('/', '');
       _marketStore.webSocket.subscribe('market', symbol: symbolNoSlash);
 
-      // 先设置交易对和时间周期，这会自动触发订阅
+      // 先设置交易对和时间周期，这会自动触发订阅和数据加载
+      // 即使 symbol 和 interval 相同，如果订阅状态丢失也会重新订阅
       _klineStore.setCurrentSymbol(widget.ticker.symbol);
       _klineStore.setCurrentInterval(_intervalMap[_selectedInterval] ?? '1m');
-      // 加载历史K线数据
-      _klineStore.loadKlineData();
+      // setCurrentSymbol 和 setCurrentInterval 内部都会调用 loadKlineData
+      // 但为了确保首次进入时数据能正确加载，使用 WidgetsBinding 延迟执行
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_klineStore.klineData.isEmpty && !_klineStore.isLoading) {
+          _klineStore.loadKlineData();
+        }
+      });
 
       // 订阅订单簿深度数据
       _depthStore.setCurrentSymbol(widget.ticker.symbol);
@@ -293,8 +299,8 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
       _marketStore.webSocket.unsubscribe('market', symbol: symbolNoSlash);
     }
 
-    // 取消订单簿数据订阅
-    _depthStore.dispose();
+    // 注意：DepthStore 和 KlineStore 是全局单例，不应该在这里 dispose
+    // 它们由依赖注入管理，订阅状态会在页面重新打开时自动恢复
     super.dispose();
   }
 }

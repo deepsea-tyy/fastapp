@@ -52,7 +52,7 @@ class _LeverageTradeState extends State<LeverageTrade> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(AppConfig.defaultBorderRadius),
                     ),
-                    child: const TradeOrderBook(),
+                    child: const TradeOrderBook(tradeType: TradeType.leverage),
                   ),
                 ),
               ],

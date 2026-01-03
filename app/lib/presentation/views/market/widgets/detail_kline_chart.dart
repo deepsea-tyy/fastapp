@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'package:fastapp/di/service_locator.dart';
 import 'package:fastapp/domain/entity/market/kline_data.dart';
 import 'package:fastapp/presentation/store/market/kline_store.dart';
 import 'package:fastapp/presentation/store/market/depth_store.dart';
 import 'package:fastapp/presentation/store/app/language_store.dart';
-import 'package:fastapp/data/network/websocket/app_websocket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
@@ -108,10 +106,7 @@ class DetailKlineChart extends StatefulWidget {
 class _DetailKlineChartState extends State<DetailKlineChart> {
   final KlineStore _klineStore = getIt<KlineStore>();
   final DepthStore _depthStore = getIt<DepthStore>();
-  final AppWebSocket _marketWebSocket = getIt<AppWebSocket>();
   final LanguageStore _languageStore = getIt<LanguageStore>();
-  
-  StreamSubscription? _websocketSubscription;
   
   ChartTranslations _getChartTranslations() {
     final locale = _languageStore.locale;
@@ -147,61 +142,41 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
   @override
   void initState() {
     super.initState();
-    _klineStore.setCurrentSymbol(widget.symbol);
-    _klineStore.setCurrentInterval(widget.interval);
-    _depthStore.setCurrentSymbol(widget.symbol);
-    
-    if (widget.mode == ChartMode.kline) {
-      // 分时图（1s）加载少量历史数据（最近1-2分钟）作为初始显示，然后通过 WebSocket 实时更新
-      // 其他周期需要加载历史数据作为背景
-      if (widget.isRealtime) {
-        // 分时图：加载少量历史数据，然后启动实时更新
-        _klineStore.loadKlineData();
-        _setupRealtimeUpdates();
-      } else {
-        // 其他周期：加载历史数据
-        _klineStore.loadKlineData();
-      }
-    } else {
-      _depthStore.loadDepthData();
-    }
+    _initializeData();
   }
 
-  /// 设置实时数据更新
-  void _setupRealtimeUpdates() {
-    // 先取消旧的订阅，避免重复订阅
-    _websocketSubscription?.cancel();
-    _marketWebSocket.unsubscribe('kline', symbol: '${widget.symbol}:${widget.interval}');
-    
-    // 确保WebSocket已连接
-    if (!_marketWebSocket.isConnected) {
-      _marketWebSocket.connect();
-    }
-    
-    // 订阅K线频道，使用当前配置的interval
-    _marketWebSocket.subscribe('kline', symbol: '${widget.symbol}:${widget.interval}');
-    
-    // 监听WebSocket消息
-    _websocketSubscription = _marketWebSocket.messageStream.listen((message) {
-      // 检查消息类型和交易对是否匹配
-      if (message.type == WebSocketMessageType.kline) {
-        // 标准化 symbol 格式进行比较（支持带斜杠和不带斜杠的格式）
-        final messageSymbol = message.symbol.replaceAll('/', '');
-        final widgetSymbol = widget.symbol.replaceAll('/', '');
-        
-        if (messageSymbol == widgetSymbol) {
-          // 解析K线数据
-          try {
-            final klineData = KlineData.fromJson(message.data as Map<String, dynamic>);
-            // 更新K线数据
-            _klineStore.updateLatestKline(klineData);
-          } catch (e) {
-            // 忽略解析错误
-            print('DetailKlineChart: 解析K线数据失败: $e');
-          }
+  /// 初始化数据：统一管理订阅和数据加载
+  void _initializeData() {
+    if (widget.mode == ChartMode.kline) {
+      // K线图模式：设置 symbol 和 interval，store 会自动订阅和加载数据
+      // 即使 symbol 和 interval 相同，如果订阅状态丢失也会重新订阅
+      print('[DetailKlineChart] _initializeData: symbol=${widget.symbol}, interval=${widget.interval}');
+      print('[DetailKlineChart] _initializeData: currentSymbol=${_klineStore.currentSymbol}, currentInterval=${_klineStore.currentInterval}');
+      print('[DetailKlineChart] _initializeData: isSubscribed=${_klineStore.isSubscribed}, klineData.length=${_klineStore.klineData.length}');
+      
+      _klineStore.setCurrentSymbol(widget.symbol);
+      print('[DetailKlineChart] _initializeData: after setCurrentSymbol, isSubscribed=${_klineStore.isSubscribed}, klineData.length=${_klineStore.klineData.length}');
+      
+      _klineStore.setCurrentInterval(widget.interval);
+      print('[DetailKlineChart] _initializeData: after setCurrentInterval, isSubscribed=${_klineStore.isSubscribed}, klineData.length=${_klineStore.klineData.length}, isLoading=${_klineStore.isLoading}');
+      
+      // 确保数据已加载：即使 symbol 和 interval 相同，如果数据为空也要加载
+      // 使用 WidgetsBinding 延迟执行，确保在组件构建完成后检查数据状态
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print('[DetailKlineChart] addPostFrameCallback: klineData.length=${_klineStore.klineData.length}, isLoading=${_klineStore.isLoading}');
+        // 如果数据为空且不在加载中，强制加载数据
+        if (_klineStore.klineData.isEmpty && !_klineStore.isLoading) {
+          print('[DetailKlineChart] addPostFrameCallback: 强制加载数据');
+          _klineStore.loadKlineData();
         }
-      }
-    });
+      });
+    } else {
+      // 深度图模式：设置 symbol，store 会自动订阅和加载数据
+      // 即使 symbol 相同，如果订阅状态丢失也会重新订阅
+      _depthStore.setCurrentSymbol(widget.symbol);
+      // 确保数据已加载
+      _depthStore.loadDepthData();
+    }
   }
 
   @override
@@ -210,51 +185,19 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
     final symbolChanged = oldWidget.symbol != widget.symbol;
     final intervalChanged = oldWidget.interval != widget.interval;
     final modeChanged = oldWidget.mode != widget.mode;
-    final realtimeChanged = oldWidget.isRealtime != widget.isRealtime;
 
-    if (symbolChanged) {
-      _klineStore.setCurrentSymbol(widget.symbol);
-      _depthStore.setCurrentSymbol(widget.symbol);
-    }
-
-    if (intervalChanged) {
-      _klineStore.setCurrentInterval(widget.interval);
-    }
-
-    // 处理实时更新订阅
-    if (symbolChanged || intervalChanged || realtimeChanged) {
-      // 取消旧的订阅
-      if (oldWidget.isRealtime && oldWidget.mode == ChartMode.kline) {
-        _websocketSubscription?.cancel();
-        _marketWebSocket.unsubscribe('kline', symbol: '${oldWidget.symbol}:${oldWidget.interval}');
-      }
-      
-      // 启动新的订阅
-      if (widget.isRealtime && widget.mode == ChartMode.kline) {
-        _setupRealtimeUpdates();
-      }
-    }
-
+    // 统一处理数据更新：store 会自动管理订阅
     if (symbolChanged || modeChanged) {
       if (widget.mode == ChartMode.kline) {
-        // 分时图加载少量历史数据，然后通过实时推送更新
-        if (widget.isRealtime) {
-          _klineStore.loadKlineData();
-          _setupRealtimeUpdates();
-        } else {
-          _klineStore.loadKlineData();
+        _klineStore.setCurrentSymbol(widget.symbol);
+        if (intervalChanged) {
+          _klineStore.setCurrentInterval(widget.interval);
         }
       } else {
-        _depthStore.loadDepthData();
+        _depthStore.setCurrentSymbol(widget.symbol);
       }
     } else if (intervalChanged && widget.mode == ChartMode.kline) {
-      // 分时图加载少量历史数据，然后通过实时推送更新
-      if (widget.isRealtime) {
-        _klineStore.loadKlineData();
-        _setupRealtimeUpdates();
-      } else {
-        _klineStore.loadKlineData();
-      }
+      _klineStore.setCurrentInterval(widget.interval);
     }
   }
 
@@ -721,12 +664,7 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
 
   @override
   void dispose() {
-    // 取消WebSocket订阅
-    _websocketSubscription?.cancel();
-    if (widget.isRealtime && widget.mode == ChartMode.kline) {
-      _marketWebSocket.unsubscribe('kline', symbol: '${widget.symbol}:${widget.interval}');
-    }
-    // Store由依赖注入管理，不需要手动dispose
+    // Store由依赖注入管理，订阅由 store 统一管理，不需要手动取消
     super.dispose();
   }
 }

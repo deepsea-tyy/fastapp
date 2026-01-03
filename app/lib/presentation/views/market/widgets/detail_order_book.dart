@@ -56,8 +56,10 @@ class _DetailOrderBookState extends State<DetailOrderBook> {
   void initState() {
     super.initState();
     // 如果提供了 symbol，设置到 DepthStore 并加载数据
+    // 即使 symbol 相同，如果订阅状态丢失也会重新订阅
     if (widget.symbol != null) {
       _depthStore.setCurrentSymbol(widget.symbol!);
+      // 确保数据已加载（setCurrentSymbol 内部会调用 loadDepthData，但这里再调用一次确保数据刷新）
       _depthStore.loadDepthData(limit: 20);
     }
   }

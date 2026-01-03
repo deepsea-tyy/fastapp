@@ -48,7 +48,7 @@ class TradeSymbolHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      store.selectedSymbol,
+                      store.selectedSymbol.replaceAll('/', ''),
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(width: 4),

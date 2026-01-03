@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Plugin\Ds\Ex\Http\Api\Service;
 
 use App\Exception\BusinessException;
-use Hyperf\DbConnection\Db;
 use Plugin\Ds\Ex\Model\MarketPair;
 use Plugin\Ds\Ex\Model\SpotOrder;
 use Plugin\Ds\Ex\Model\SpotTradeLimit;
@@ -32,15 +31,15 @@ class SpotOrderService
         $clientOrderId = $params['client_order_id'] ?? null;
 
         if (empty($symbol)) {
-            throw new BusinessException('交易对符号不能为空');
+            throw new BusinessException(message: '交易对符号不能为空');
         }
 
         if (!in_array($side, [SpotOrder::SIDE_BUY, SpotOrder::SIDE_SELL])) {
-            throw new BusinessException('订单方向无效');
+            throw new BusinessException(message: '订单方向无效');
         }
 
         if (!in_array($type, [SpotOrder::TYPE_LIMIT, SpotOrder::TYPE_MARKET])) {
-            throw new BusinessException('订单类型无效');
+            throw new BusinessException(message: '订单类型无效');
         }
 
         // 获取交易对信息
@@ -51,7 +50,7 @@ class SpotOrderService
             ->first();
 
         if (!$pair) {
-            throw new BusinessException('交易对不存在或已禁用');
+            throw new BusinessException(message: '交易对不存在或已禁用');
         }
 
         // 检查用户交易限制
@@ -60,20 +59,20 @@ class SpotOrderService
         // 验证订单参数
         if ($type === SpotOrder::TYPE_LIMIT) {
             if ($price === null || $price <= 0) {
-                throw new BusinessException('限价单必须指定价格');
+                throw new BusinessException(message: '限价单必须指定价格');
             }
             if ($quantity <= 0) {
-                throw new BusinessException('订单数量必须大于0');
+                throw new BusinessException(message: '订单数量必须大于0');
             }
         } else {
             // 市价单
             if ($side === SpotOrder::SIDE_BUY) {
                 if ($amount === null || $amount <= 0) {
-                    throw new BusinessException('市价买入必须指定金额');
+                    throw new BusinessException(message: '市价买入必须指定金额');
                 }
             } else {
                 if ($quantity <= 0) {
-                    throw new BusinessException('订单数量必须大于0');
+                    throw new BusinessException(message: '订单数量必须大于0');
                 }
             }
         }
@@ -82,10 +81,10 @@ class SpotOrderService
         if ($type === SpotOrder::TYPE_LIMIT) {
             $notional = $quantity * $price;
             if ($notional < $pair->min_amount) {
-                throw new BusinessException("交易金额不能小于最小交易金额 {$pair->min_amount}");
+                throw new BusinessException(message: "交易金额不能小于最小交易金额 {$pair->min_amount}");
             }
             if ($quantity < $pair->min_quantity) {
-                throw new BusinessException("交易数量不能小于最小交易数量 {$pair->min_quantity}");
+                throw new BusinessException(message: "交易数量不能小于最小交易数量 {$pair->min_quantity}");
             }
         }
 
@@ -220,12 +219,12 @@ class SpotOrderService
             ->first();
 
         if (!$order) {
-            throw new BusinessException('订单不存在');
+            throw new BusinessException(message: '订单不存在');
         }
 
         // 检查订单状态
         if (!in_array($order->status, [SpotOrder::STATUS_NEW, SpotOrder::STATUS_PARTIALLY_FILLED])) {
-            throw new BusinessException('订单状态不允许取消');
+            throw new BusinessException(message: '订单状态不允许取消');
         }
 
         // TODO: 这里应该实现实际的取消逻辑
@@ -269,19 +268,19 @@ class SpotOrderService
         $limit = $pairLimit ?? $globalLimit;
 
         if ($limit && $limit->is_trading_enabled == 0) {
-            throw new BusinessException('您的账户已被限制交易');
+            throw new BusinessException(message: '您的账户已被限制交易');
         }
 
         if ($limit) {
             // 检查单笔最大数量
             if ($limit->max_order_quantity && $quantity > $limit->max_order_quantity) {
-                throw new BusinessException("单笔最大数量不能超过 {$limit->max_order_quantity}");
+                throw new BusinessException(message: "单笔最大数量不能超过 {$limit->max_order_quantity}");
             }
 
             // 检查单笔最大金额
             $notional = $amount ?? ($quantity * ($price ?? 0));
             if ($limit->max_order_notional && $notional > $limit->max_order_notional) {
-                throw new BusinessException("单笔最大金额不能超过 {$limit->max_order_notional}");
+                throw new BusinessException(message: "单笔最大金额不能超过 {$limit->max_order_notional}");
             }
 
             // TODO: 检查每日限额（需要查询当日已交易量）

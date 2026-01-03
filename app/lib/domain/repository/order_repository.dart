@@ -10,12 +10,14 @@ abstract class OrderRepository {
   /// [status] 订单状态（可选）
   /// [startTime] 开始时间戳（可选）
   /// [endTime] 结束时间戳（可选）
+  /// [page] 页码（可选，默认为1）
   /// [limit] 返回数量限制（可选）
   Future<List<Order>> getOrders({
     String? symbol,
     OrderStatus? status,
     int? startTime,
     int? endTime,
+    int? page,
     int? limit,
   });
 

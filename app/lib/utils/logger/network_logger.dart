@@ -11,7 +11,7 @@ class NetworkLogger {
     if (!kDebugMode) return;
 
     final dataStr = options.data != null ? _formatDataToJson(options.data) : '';
-    debugPrint('📤 [REQUEST] ${options.method} ${options.uri}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
+    // debugPrint('📤 [REQUEST] ${options.method} ${options.uri}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
   /// 打印响应信息
@@ -23,7 +23,7 @@ class NetworkLogger {
     final icon = isSuccess ? '✅' : '⚠️';
 
     final dataStr = response.data != null ? _formatDataToJson(response.data) : '';
-    debugPrint('$icon [RESPONSE] ${response.requestOptions.method} ${response.requestOptions.uri} | Status: $statusCode${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
+    // debugPrint('$icon [RESPONSE] ${response.requestOptions.method} ${response.requestOptions.uri} | Status: $statusCode${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
   /// 打印错误信息
@@ -31,7 +31,7 @@ class NetworkLogger {
     if (!kDebugMode) return;
 
     final dataStr = error.response?.data != null ? _formatDataToJson(error.response!.data) : '';
-    debugPrint('❌ [ERROR] ${error.requestOptions.method} ${error.requestOptions.uri} | Error: ${error.message}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
+    // debugPrint('❌ [ERROR] ${error.requestOptions.method} ${error.requestOptions.uri} | Error: ${error.message}${dataStr.isNotEmpty ? " | Data: $dataStr" : ""}');
   }
 
   /// 格式化数据为紧凑的 JSON 字符串（单行显示）

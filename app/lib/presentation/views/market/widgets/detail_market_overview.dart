@@ -21,12 +21,19 @@ class DetailMarketOverview extends StatelessWidget {
     this.klineStore,
   });
 
-  /// 从 K 线数据获取最新价格，如果没有则使用 ticker 数据
+  /// 从 K 线数据获取最新价格，优先使用1s周期数据，如果没有则使用当前周期数据，最后使用 ticker 数据
   double _getLatestPrice() {
-    if (klineStore != null && klineStore!.klineData.isNotEmpty) {
-      // 从 K 线数据中获取最新价格（最后一条 K 线的收盘价）
-      final latestKline = klineStore!.klineData.last;
-      return latestKline.close;
+    if (klineStore != null) {
+      // 优先使用1s周期数据（用于显示最新价格）
+      if (klineStore!.klineData1s.isNotEmpty) {
+        final latestKline1s = klineStore!.klineData1s.last;
+        return latestKline1s.close;
+      }
+      // 降级到当前周期K线数据
+      if (klineStore!.klineData.isNotEmpty) {
+        final latestKline = klineStore!.klineData.last;
+        return latestKline.close;
+      }
     }
     // 降级到 ticker 数据
     return ticker.lastPrice;
@@ -38,8 +45,13 @@ class DetailMarketOverview extends StatelessWidget {
     final priceWidget = klineStore != null
         ? Observer(
             builder: (_) {
-              final latestPrice = _getLatestPrice();
+              // 使用计算属性获取最新价格，确保Observer能监听到变化
+              final latestPrice1s = klineStore!.latestPrice1s;
+              
+              // 优先使用1s周期数据，如果没有则使用ticker数据
+              final latestPrice = latestPrice1s > 0 ? latestPrice1s : ticker.lastPrice;
               final latestCnyPrice = latestPrice * (cnyPrice / ticker.lastPrice);
+              
               // 计算涨跌幅（基于最新价格和开盘价）
               final changePercent = ticker.openPrice > 0
                   ? ((latestPrice - ticker.openPrice) / ticker.openPrice) * 100

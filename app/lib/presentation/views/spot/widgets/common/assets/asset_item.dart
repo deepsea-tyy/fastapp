@@ -1,3 +1,4 @@
+import 'package:fastapp/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 
 /// 资产项组件
@@ -7,6 +8,7 @@ class AssetItem extends StatelessWidget {
   final Color iconColor;
   final String iconText;
   final String balance;
+  final String? logoUrl;
 
   const AssetItem({
     super.key,
@@ -15,30 +17,14 @@ class AssetItem extends StatelessWidget {
     required this.iconColor,
     required this.iconText,
     required this.balance,
+    this.logoUrl,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: iconColor,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              iconText,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
+        _buildIcon(),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -71,6 +57,48 @@ class AssetItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildIcon() {
+    final formattedLogoUrl = logoUrl != null ? ImageUtils.formatSingleImagePath(logoUrl!) : null;
+    
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: formattedLogoUrl != null && formattedLogoUrl != ImageUtils.defaultImage
+          ? Image.network(
+              formattedLogoUrl,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildDefaultIcon(),
+            )
+          : _buildDefaultIcon(),
+    );
+  }
+
+  Widget _buildDefaultIcon() {
+    return Container(
+      decoration: BoxDecoration(
+        color: iconColor,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          iconText,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }

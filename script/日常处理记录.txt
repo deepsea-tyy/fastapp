@@ -6,6 +6,9 @@ git remote set-url origin git@github.com:xx/yy.git
 空目录删除
 find "目录" -type d -empty -delete
 
+获取本地开发 ip
+ipconfig getifaddr en0
+
 启动模拟器
 flutter emulators --launch Pixel_9_Pro_XL
 

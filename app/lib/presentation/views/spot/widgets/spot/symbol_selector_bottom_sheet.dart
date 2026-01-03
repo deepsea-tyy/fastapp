@@ -70,6 +70,11 @@ class _SymbolSelectorBottomSheetState extends State<SymbolSelectorBottomSheet> {
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 16),
             prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 24),
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           onChanged: (value) {

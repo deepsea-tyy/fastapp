@@ -1,5 +1,12 @@
+import 'package:fastapp/di/service_locator.dart';
+import 'package:fastapp/domain/entity/wallet/account_balance.dart';
+import 'package:fastapp/domain/entity/wallet/balance.dart';
+import 'package:fastapp/presentation/store/market/market_data_store.dart';
+import 'package:fastapp/presentation/store/spot/spot_trade_store.dart';
+import 'package:fastapp/presentation/store/wallet/wallet_store.dart';
 import 'package:fastapp/presentation/views/spot/widgets/common/assets/asset_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 
 /// 当前交易对资产组件
 class CurrentTradingPairAssets extends StatelessWidget {
@@ -7,45 +14,104 @@ class CurrentTradingPairAssets extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final spotTradeStore = getIt<SpotTradeStore>();
+    final walletStore = getIt<WalletStore>();
+    final marketDataStore = getIt<MarketDataStore>();
+
+    return Observer(
+      builder: (_) {
+        // 解析当前交易对符号
+        final symbol = spotTradeStore.selectedSymbol;
+        final parts = symbol.split('/');
+        if (parts.length != 2) {
+          return const SizedBox.shrink();
+        }
+
+        final baseCurrency = parts[0];
+        final quoteCurrency = parts[1];
+
+        // 获取现货账户余额
+        final balances = walletStore.accountBalance?.getBalancesByType(WalletType.SPOT) ?? [];
+        
+        // 查找基础币种和计价币种的余额
+        final baseBalance = balances.firstWhere(
+          (b) => b.symbol == baseCurrency,
+          orElse: () => _createEmptyBalance(baseCurrency),
+        );
+        final quoteBalance = balances.firstWhere(
+          (b) => b.symbol == quoteCurrency,
+          orElse: () => _createEmptyBalance(quoteCurrency),
+        );
+
+        // 获取币种信息
+        final baseCurrencyInfo = marketDataStore.getCurrency(baseCurrency);
+        final quoteCurrencyInfo = marketDataStore.getCurrency(quoteCurrency);
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '当前交易对资产',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '当前交易对资产',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
+                  IconButton(
+                    icon: _FilterIcon(color: Colors.grey.shade600),
+                    onPressed: () {},
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: _FilterIcon(color: Colors.grey.shade600),
-                onPressed: () {},
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              const SizedBox(height: 12),
+              AssetItem(
+                symbol: baseCurrency,
+                name: baseCurrencyInfo?.name ?? baseCurrency,
+                iconColor: _getColorForSymbol(baseCurrency),
+                iconText: baseCurrency.isNotEmpty ? baseCurrency[0] : '?',
+                balance: baseBalance.total.toStringAsFixed(4),
+                logoUrl: baseCurrencyInfo?.logo,
+              ),
+              const Divider(height: 32),
+              AssetItem(
+                symbol: quoteCurrency,
+                name: quoteCurrencyInfo?.name ?? quoteCurrency,
+                iconColor: _getColorForSymbol(quoteCurrency),
+                iconText: quoteCurrency.isNotEmpty ? quoteCurrency[0] : '?',
+                balance: quoteBalance.total.toStringAsFixed(4),
+                logoUrl: quoteCurrencyInfo?.logo,
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          AssetItem(
-            symbol: 'BTC',
-            name: 'Bitcoin',
-            iconColor: Colors.orange,
-            iconText: 'B',
-            balance: '0.00',
-          ),
-          const Divider(height: 32),
-          AssetItem(
-            symbol: 'USDT',
-            name: 'TetherUS',
-            iconColor: Colors.teal,
-            iconText: 'T',
-            balance: '0.00',
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  /// 创建空余额对象
+  Balance _createEmptyBalance(String symbol) {
+    return Balance(
+      symbol: symbol,
+      available: 0.0,
+      frozen: 0.0,
+      total: 0.0,
+    );
+  }
+
+  /// 根据币种符号获取颜色
+  Color _getColorForSymbol(String symbol) {
+    final colors = {
+      'BTC': Colors.orange,
+      'ETH': Colors.blue,
+      'USDT': Colors.teal,
+      'BNB': Colors.yellow.shade700,
+      'USDC': Colors.blue.shade300,
+    };
+    return colors[symbol] ?? Colors.grey;
   }
 }
 

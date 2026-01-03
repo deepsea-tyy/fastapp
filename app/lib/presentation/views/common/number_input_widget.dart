@@ -118,6 +118,11 @@ class NumberInputWidget extends StatelessWidget {
                   ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
                     hintText: hintText,
                     hintStyle: TextStyle(fontSize: fontSize * 0.8, color: Colors.grey.shade400),
                     contentPadding: EdgeInsets.zero,
