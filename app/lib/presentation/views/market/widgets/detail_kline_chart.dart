@@ -195,6 +195,11 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
         }
       } else {
         _depthStore.setCurrentSymbol(widget.symbol);
+        // 确保数据已加载：如果 symbol 相同且已订阅，setCurrentSymbol 会直接返回
+        // 此时需要检查数据是否存在，如果不存在则手动加载
+        if (_depthStore.depthData == null && !_depthStore.isLoading) {
+          _depthStore.loadDepthData();
+        }
       }
     } else if (intervalChanged && widget.mode == ChartMode.kline) {
       _klineStore.setCurrentInterval(widget.interval);
