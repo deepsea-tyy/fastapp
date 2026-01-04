@@ -173,9 +173,16 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
     } else {
       // 深度图模式：设置 symbol，store 会自动订阅和加载数据
       // 即使 symbol 相同，如果订阅状态丢失也会重新订阅
-      _depthStore.setCurrentSymbol(widget.symbol);
-      // 确保数据已加载
-      _depthStore.loadDepthData();
+      print('[DetailKlineChart] _initializeData(Depth): symbol=${widget.symbol}');
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _depthStore.setCurrentSymbol(widget.symbol);
+        // 确保数据已加载
+        if (_depthStore.depthData == null && !_depthStore.isLoading) {
+           print('[DetailKlineChart] _initializeData(Depth): 强制加载数据');
+           _depthStore.loadDepthData();
+        }
+      });
     }
   }
 
@@ -194,7 +201,13 @@ class _DetailKlineChartState extends State<DetailKlineChart> {
           _klineStore.setCurrentInterval(widget.interval);
         }
       } else {
+        print('[DetailKlineChart] didUpdateWidget(Depth): symbol=${widget.symbol}');
         _depthStore.setCurrentSymbol(widget.symbol);
+        // 如果数据为空且不在加载中，强制加载数据
+        if (_depthStore.depthData == null && !_depthStore.isLoading) {
+           print('[DetailKlineChart] didUpdateWidget(Depth): 强制加载数据');
+           _depthStore.loadDepthData();
+        }
       }
     } else if (intervalChanged && widget.mode == ChartMode.kline) {
       _klineStore.setCurrentInterval(widget.interval);
