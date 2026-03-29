@@ -1,0 +1,23 @@
+{
+  "name": "ds/sysConfig",
+  "version": "1.0.6",
+  "type": "mixed",
+  "description": "系统配置插件",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\SysConfig\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\SysConfig\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\SysConfig\\UninstallScript",
+    "config": "Plugin\\Ds\\SysConfig\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

@@ -7,14 +7,12 @@ namespace App\Http\Admin\Controller;
 
 use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
-use App\Common\Middleware\RefreshTokenMiddleware;
 use App\Common\Result;
-use App\Common\ResultCode;
+use App\Common\Service\TwoFactorAuthService;
 use App\Exception\BusinessException;
-use App\Http\Admin\Request\PassportLoginRequest;
+use App\Http\Admin\Request\PassportRequest;
 use App\Http\CurrentUser;
-use App\Http\UserService;
-use Hyperf\Collection\Arr;
+use App\Model\Enums\User\Type;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
 use Hyperf\HttpServer\Annotation\Controller;
@@ -22,35 +20,35 @@ use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\Redis\Redis;
-use PragmaRX\Google2FA\Google2FA;
 
 #[Controller]
 final class PassportController extends AbstractController
 {
 
     public function __construct(
-        private readonly UserService $passportService,
-        private readonly CurrentUser $currentUser
+        private readonly CurrentUser $currentUser,
+        private readonly TwoFactorAuthService $twoFAService,
     )
     {
     }
 
     #[PostMapping(path: '/admin/passport/login')]
-    public function login(PassportLoginRequest $request): Result
+    public function login(PassportRequest $request): Result
     {
         $validated = $request->validated();
         $username = (string)$validated['username'];
         $password = (string)$validated['password'];
 
         // 查找用户
-        $user = $this->passportService->findUsernamePassword($username, $password, 100);
-
+        $user = $this->currentUser->findUser(['username' => $username, 'user_type' => Type::SYSTEM]);
+        if (!$user || !$user->verifyPassword($password)) {
+            throw new BusinessException(message: trans('user.password_error'));
+        }
         // 开发环境无需验证
-        $isDev = config('env') === 'dev';
-        $type = config('captcha');
+        $isProd = \Hyperf\Config\config('env') === 'prod';
 
         // 根据验证码类型进行验证
-        if ($type === 'captcha' && !$isDev) {
+        if ($isProd) {
             // 验证图形验证码
             $code = $validated['code'] ?? '';
             $cacheKey = 'admin:captcha:' . $request->ip();
@@ -58,29 +56,23 @@ final class PassportController extends AbstractController
             $storedCode = $redis->get($cacheKey);
 
             if (!$storedCode || strtolower($storedCode) !== strtolower($code)) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误无效');
+                throw new BusinessException(message: trans('user.vcode_invalid'));
             }
 
             // 验证成功后删除验证码
             $redis->del($cacheKey);
-        } elseif ($type === 'google2fa' && !$isDev) {
-            // 验证Google2FA
-            if (empty($user->google2fa)) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '未绑定Google2FA');
-            }
+        }
+        if (empty($validated['google2fa_code']) && $user->google2fa) {
+            return $this->success(['verify_again' => 'google2fa_code']);
+        }
 
-            $google2faCode = $validated['google2fa'] ?? '';
-            $google2fa = new Google2FA();
-            $valid = $google2fa->verifyKey($user->google2fa, $google2faCode, 2); // 允许2个时间窗口的误差
-
-            if (!$valid) {
-                throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '验证码错误');
-            }
+        if ($user->google2fa) {
+            $this->twoFAService->verifyGoogle2fa($user->google2fa, $validated['google2fa_code']);
         }
 
         $browser = $request->header('User-Agent') ?: 'unknown';
         return $this->success(
-            $this->passportService->formatToken(
+            $this->currentUser->formatToken(
                 $user,
                 $request->ip(),
                 $browser,
@@ -93,7 +85,7 @@ final class PassportController extends AbstractController
     #[Middleware(AccessTokenMiddleware::class)]
     public function logout(): Result
     {
-        $this->passportService->logout(RequestContext::get()->getAttribute('token'));
+        $this->currentUser->logout(RequestContext::get()->getAttribute('token'));
         return $this->success();
     }
 
@@ -101,19 +93,21 @@ final class PassportController extends AbstractController
     #[Middleware(AccessTokenMiddleware::class)]
     public function getInfo(): Result
     {
-        return $this->success(
-            Arr::only(
-                $this->currentUser->adminUser()?->toArray() ?: [],
-                ['username', 'nickname', 'avatar', 'signed', 'backend_setting', 'phone', 'email']
-            )
-        );
+        $user = $this->currentUser->getInfo($this->currentUser->id());
+        $user->is_google2fa = $user->google2fa ? 1 : 0;
+        return $this->success($user);
     }
 
-    #[PostMapping(path: '/admin/passport/refresh')]
-    #[Middleware(RefreshTokenMiddleware::class)]
-    public function refresh(CurrentUser $user): Result
+    #[GetMapping(path: '/admin/passport/refresh')]
+    public function refresh(): Result
     {
-        return $this->success($user->refresh());
+        $token = $this->getRequest()->input('refresh_token');
+        if (empty($token)) {
+            throw new BusinessException(message: trans('jwt.token_required'));
+        }
+        $pasToken = $this->currentUser->setScene('default')->getJwt()->parserRefreshToken($token);
+        $tokenData = $this->currentUser->setScene('default')->refreshToken($pasToken);
+        return $this->success($tokenData);
     }
 
     #[GetMapping(path: '/admin/passport/captcha')]
@@ -134,6 +128,64 @@ final class PassportController extends AbstractController
         return $this->success([
             'image' => 'data:image/png;base64,' . base64_encode($image),
         ]);
+    }
+
+    #[GetMapping(path: '/admin/passport/google2fa/qrcode')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faQrcode(): Result
+    {
+        $user = $this->currentUser->user();
+        if ($user->google2fa) {
+            throw new BusinessException(message: trans('auth.google_code_bind'));
+        }
+
+        $secret = $this->twoFAService->generateSecret();
+        $qrCodeUrl = $this->twoFAService->generateQrCodeUrl($secret, $user->email ?: ($user->username ?: $user->mobile));
+        $qrcodeBase64 = $this->twoFAService->generateQrCodeBase64($qrCodeUrl);
+
+        return $this->success([
+            'google2fa' => $secret,
+            'qrcode' => $qrcodeBase64,
+        ]);
+    }
+
+    #[PostMapping(path: '/admin/passport/google2fa/bind')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faBind(PassportRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->currentUser->user();
+        $secret = $validated['google2fa'];
+        $code = $validated['google2fa_code'];
+
+        if ($user->google2fa) {
+            throw new BusinessException(message: trans('auth.google_code_bind'));
+        }
+
+        $this->twoFAService->verifyGoogle2fa($secret, $code);
+        $user->google2fa = $secret;
+        $user->save();
+
+        return $this->success(message: trans('auth.bind_success'));
+    }
+
+    #[PostMapping(path: '/admin/passport/google2fa/unbind')]
+    #[Middleware(AccessTokenMiddleware::class)]
+    public function google2faUnbind(PassportRequest $request): Result
+    {
+        $validated = $request->validated();
+        $user = $this->currentUser->user();
+        $code = $validated['google2fa_code'];
+
+        if (empty($user->google2fa)) {
+            throw new BusinessException(message: trans('auth.google_code_unbind'));
+        }
+
+        $this->twoFAService->verifyGoogle2fa($user->google2fa, $code);
+        $user->google2fa = '';
+        $user->save();
+
+        return $this->success(message: trans('auth.unbind_success'));
     }
 
     /**
@@ -203,4 +255,5 @@ final class PassportController extends AbstractController
 
         return $imageData;
     }
+
 }

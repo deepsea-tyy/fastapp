@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+
+namespace Plugin\Ds\SysConfig\Http\Controller;
+
+use App\Http\Admin\Permission;
+use App\Common\Middleware\AccessTokenMiddleware;
+use App\Common\Middleware\OperationMiddleware;
+use App\Common\Result;
+use App\Http\Admin\Controller\AbstractController;
+use App\Http\Admin\Middleware\PermissionMiddleware;
+use App\Http\CurrentUser;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\DeleteMapping;
+use Hyperf\HttpServer\Annotation\GetMapping;
+use Hyperf\HttpServer\Annotation\Middleware;
+use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
+use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
+use Plugin\Ds\SysConfig\Http\Request\ConfigRequest as Request;
+use Plugin\Ds\SysConfig\Service\ConfigService as Service;
+
+#[Controller]
+#[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
+#[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
+class ConfigController extends AbstractController
+{
+    public function __construct(
+        private readonly Service $service,
+        private readonly CurrentUser $currentUser
+    ) {}
+
+    #[GetMapping(path: '/system/Config/list')]
+    #[Permission(code: 'ds:sysConfig:list')]
+    public function pageList(): Result
+    {
+        return $this->success(
+            $this->service->page(
+                $this->getRequestData(),
+                $this->getPage(),
+                $this->getPageSize()
+            )
+        );
+    }
+
+    #[GetMapping(path: '/system/Config/Details/{code}')]
+    #[Permission(code: 'ds:sysConfig:details')]
+    public function details(string $code): Result
+    {
+        return $this->success(
+            $this->service->getDetails(['group_code' => $code])
+        );
+    }
+
+    #[PostMapping(path: '/system/Config')]
+    #[Permission(code: 'ds:sysConfig:create')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+    public function create(Request $request): Result
+    {
+        $this->service->create(array_merge($request->all(), [
+            'created_by' => $this->currentUser->id(),
+        ]));
+        CacheConfigHelper::clear();
+        return $this->success();
+    }
+
+    #[PutMapping(path: '/system/Config/{id}')]
+    #[Permission(code: 'ds:sysConfig:update')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+    public function save(int $id, Request $request): Result
+    {
+        $this->service->updateById($id, array_merge($request->validated(), [
+            'updated_by' => $this->currentUser->id(),
+        ]));
+        CacheConfigHelper::clear();
+        return $this->success();
+    }
+
+    #[DeleteMapping(path: '/system/Config')]
+    #[Permission(code: 'ds:sysConfig:delete')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+    public function delete(): Result
+    {
+        $this->service->deleteByKey($this->getRequestData());
+        CacheConfigHelper::clear();
+        return $this->success();
+    }
+
+    #[PostMapping(path: '/system/Config/batchUpdate')]
+    #[Permission(code: 'ds:sysConfig:batchUpdate')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+    public function batchUpdate(): Result
+    {
+        $this->service->upsertData($this->getRequestData());
+        return $this->success();
+    }
+}

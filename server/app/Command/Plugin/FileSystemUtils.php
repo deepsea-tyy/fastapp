@@ -18,12 +18,12 @@ final class FileSystemUtils
      * If it exists, it will be renamed to .back.
      * and then copied again.
      */
-    public static function copy(string $source, string $dist, bool $back = true): void
+    public static function copy(string $source, string $dist): void
     {
         if (! file_exists($source)) {
             throw new \RuntimeException(\sprintf('%s file does not exist', $source));
         }
-        if (file_exists($dist) && $back) {
+        if (file_exists($dist) && \Hyperf\Config\config('env') == 'prod') {
             FileSystem::copy($dist, $dist . self::BACK);
         }
         FileSystem::copy($source, $dist);

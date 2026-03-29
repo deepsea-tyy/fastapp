@@ -21,6 +21,7 @@ use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
 use Hyperf\HttpServer\Contract\RequestInterface;
+
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
@@ -29,16 +30,15 @@ final class MenuController extends AbstractController
     public function __construct(
         private readonly MenuService $service,
         private readonly CurrentUser $user
-    ) {}
+    )
+    {
+    }
 
     #[GetMapping(path: '/admin/menu/list')]
     #[Permission(code: 'permission:menu:index')]
     public function pageList(RequestInterface $request): Result
     {
-        return $this->success(data: $this->service->getRepository()->list([
-            'children' => true,
-            'parent_id' => 0,
-        ]));
+        return $this->success($this->service::buildTree($this->service->getRepository()->list()->toArray()));
     }
 
     #[PostMapping(path: '/admin/menu')]

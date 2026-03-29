@@ -11,7 +11,6 @@ return [
     'scan_cacheable' => !$isDebug,
     'debug' => $isDebug,
     'env' => env('APP_ENV', 'prod'),
-    'captcha' => env('APP_CAPTCHA', 'captcha'),
     StdoutLoggerInterface::class => [
         'log_level' => $isDebug ? [
             LogLevel::INFO,

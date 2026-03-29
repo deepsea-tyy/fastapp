@@ -24,37 +24,14 @@ use function Hyperf\AsyncQueue\dispatch;
 class Tools
 {
     /**
-     * 翻译函数（简化版）
-     *
-     * @param string $t 翻译键名
-     * @param array $re 替换参数数组
-     * @return array|string 翻译后的文本或数组
+     * Logger 实例缓存
+     * @var array<string, \Psr\Log\LoggerInterface>
      */
-    public static function __(string $t, array $re = [], int $userId = 0): array|string
-    {
-        return trans($t, $re, self::lang($userId));
-    }
+    private static array $loggerInstances = [];
 
     public static function getContainer(): ContainerInterface
     {
         return ApplicationContext::getContainer();
-    }
-
-    /**
-     * 获取当前语言代码
-     *
-     * @param bool $format 是否格式化（将下划线替换为横线），默认false
-     * @return string 语言代码，如：zh_CN 或 zh-CN（根据format参数）
-     */
-    public static function lang(int $userId = 0, bool $format = false): string
-    {
-        if ($userId) {
-            $cache = self::getUserCache($userId, ['lang']);
-            return $cache['lang'] ?? 'zh-CN';
-        }
-        $lang = self::getHeader('accept-language');
-        if ($format) $lang = str_replace('_', '-', $lang);
-        return $lang ?: 'zh-CN';
     }
 
     /**
@@ -69,23 +46,59 @@ class Tools
     }
 
     /**
-     * 根据当前语言从多语言数据数组中获取对应文本
+     * 翻译函数（简化版）
      *
-     * @param array $data 多语言数据数组，格式：[['lang' => 'zh_CN', 'text' => '文本'], ...]
-     * @param bool $format 是否格式化语言代码，默认true
-     * @return string 匹配的文本，如果未找到则返回第一条文本
+     * @param string $t
+     * @param array $re 替换参数数组
+     * @param int $userId
+     * @return array|string 翻译后的文本或数组
      */
-    public static function formatLang(array $data, bool $format = true): string
+    public static function __(string $t, array $re = [], int $userId = 0): array|string
     {
-        $lang = Tools::lang(0, $format);
-        foreach ($data as $v) {
-            if ($v['lang'] == $lang) return $v['text'];
-        }
-        return $data[0]['text'];
+        return trans($t, $re, self::lang($userId));
     }
 
     /**
-     * 异步写入日志到指定channel
+     * 获取当前语言代码
+     *
+     * @param bool $format 是否格式化（将下划线替换为横线），默认false
+     * @return string 语言代码，如：zh_CN 或 zh-CN（根据format参数）
+     */
+    public static function lang(int $userId = 0, bool $format = false): string
+    {
+        if ($userId) {
+            $cache = self::getUserCache($userId, ['lang']);
+            return $cache['lang'] ?: 'zh_CN';
+        }
+        $lang = self::getHeader('accept-language');
+        if ($format) $lang = str_replace('_', '-', $lang);
+        return $lang ?: 'zh_CN';
+    }
+
+    /**
+     * 根据当前语言从多语言数据数组中获取对应文本
+     *
+     * @param array $data 多语言数据数组，格式：[['lang' => 'zh_CN', 'text' => '文本'], ...]
+     * @param int|string $userId 用户 id 或语言
+     * @return string 匹配的文本，如果未找到则返回第一条文本
+     */
+    public static function formatLang(array $data, int|string $userId = 0): string
+    {
+        $lang = is_int($userId) ? Tools::lang($userId) : $userId;
+        foreach ($data as $v) {
+            if ($v['lang'] == $lang) return $v['text'];
+        }
+        return $data[0]['text'] ?? '';
+    }
+
+    public static function console(string|array $msg, string $level = 'notice'): void
+    {
+        if (is_array($msg)) {$msg = json_encode($msg, JSON_UNESCAPED_UNICODE);}
+        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($msg);
+    }
+
+    /**
+     * 异步写入日志到指定channel（使用单例模式缓存Logger实例）
      *
      * @param string $message 日志消息
      * @param string $level 日志级别 (debug, info, notice, warning, error, critical, alert, emergency)
@@ -96,8 +109,14 @@ class Tools
     {
         Coroutine::create(static function () use ($message, $level, $name, $group) {
             try {
-                if (\Hyperf\Config\config('debug')) self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($message);
-                $logger = self::getContainer()->get(LoggerFactory::class)->get($name, $group);
+                if (\Hyperf\Config\config('debug')) self::console($message, $level);
+
+                // 使用单例模式获取或创建 Logger 实例
+                $cacheKey = "{$name}:{$group}";
+                if (!isset(self::$loggerInstances[$cacheKey])) {
+                    self::$loggerInstances[$cacheKey] = self::getContainer()->get(LoggerFactory::class)->get($name, $group);
+                }
+                $logger = self::$loggerInstances[$cacheKey];
 
                 // 验证日志级别
                 $validLevels = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
@@ -146,18 +165,22 @@ class Tools
         });
     }
 
+    public static function getRedis(): Redis
+    {
+        return self::getContainer()->get(Redis::class);
+    }
+
     /**
      * 设置用户缓存（Hash结构）
      *
      * @param int $uid 用户ID
      * @param array $param 缓存数据数组，格式：['key1' => 'value1', 'key2' => 'value2']
      * @return bool 操作结果
+     * @throws \RedisException
      */
     public static function setUserCache(int $uid, array $param): bool
     {
-        /* @var redis $redis */
-        $redis = self::getContainer()->get(Redis::class);
-        return $redis->hMSet('u:' . $uid, $param);
+        return self::getRedis()->hMSet('u:' . $uid, $param);
     }
 
     /**
@@ -166,14 +189,11 @@ class Tools
      * @param int $uid 用户ID
      * @param array|string $fields 要获取的字段数组或单个字段名，格式：['key1', 'key2'] 或 'key1'
      * @return array|string 返回字段值数组或单个值，格式：['key1' => 'value1', 'key2' => 'value2'] 或 'value1'
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      * @throws \RedisException
      */
     public static function getUserCache(int $uid, array|string $fields): array|string
     {
-        /* @var redis $redis */
-        $redis = self::getContainer()->get(Redis::class);
+        $redis = self::getRedis();
         if (is_array($fields)) {
             return $redis->hMGet('u:' . $uid, $fields) ?: [];
         }

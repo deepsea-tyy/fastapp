@@ -16,7 +16,7 @@ use Hyperf\Filesystem\Adapter\QiniuAdapterFactory;
 use Hyperf\Filesystem\Contract\AdapterFactoryInterface;
 use Hyperf\Stringable\Str;
 use League\Flysystem\Filesystem;
-use Plugin\Ds\SystemConfig\Helper\CacheConfigHelper;
+use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 use Psr\Http\Message\UploadedFileInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -123,7 +123,7 @@ class UploadFactory
 
     protected function generatorPath(): string
     {
-        return '/' . date('Y-m-d');
+        return '/' . date('Ymd');
     }
 
     protected function generatorId(): string

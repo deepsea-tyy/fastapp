@@ -26,7 +26,6 @@ class MenuInit20251017 extends Seeder
      */
     public function run(): void
     {
-        Menu::truncate();
         if (env('DB_DRIVER') === 'odbc-sql-server') {
             Db::unprepared('SET IDENTITY_INSERT [' . Menu::getModel()->getTable() . '] ON;');
         }
@@ -34,23 +33,19 @@ class MenuInit20251017 extends Seeder
         if (env('DB_DRIVER') === 'odbc-sql-server') {
             Db::unprepared('SET IDENTITY_INSERT [' . Menu::getModel()->getTable() . '] OFF;');
         }
-        User::truncate();
-        Role::truncate();
-        $entity = User::create([
+        $entity = User::query()->firstOrCreate([
             'username' => 'admin',
             'email' => '649909457@qq.com',
             'password' => '123456',
             'user_type' => '100',
             'status' => 1,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
         ]);
-        $role = Role::create([
+        $role = Role::query()->firstOrCreate([
             'name' => '超级管理员',
             'code' => 'SuperAdmin',
         ]);
         $entity->roles()->sync($role);
-        Db::table('rules')->insert([
+        Db::table('rules')->firstOrCreate([
             'v0' => 'admin',
             'v1' => 'superAdmin',
             'ptype' => 'g',
@@ -488,21 +483,157 @@ class MenuInit20251017 extends Seeder
                     ],
                 ],
             ],
+            [
+                'name' => 'search:keyword',
+                'path' => '/search/keyword',
+                'component' => 'search/views/keyword/index',
+                'sort' => 102,
+                'meta' => new Meta([
+                    'title' => '搜索关键词记录',
+                    'i18n' => 'search.Keyword',
+                    'icon' => 'mdi:menu',
+                    'type' => 'M',
+                    'hidden' => 0,
+                    'componentPath' => 'modules/',
+                    'componentSuffix' => '.vue',
+                    'breadcrumbEnable' => 1,
+                    'copyright' => 1,
+                    'cache' => 1,
+                    'affix' => 0,
+                ]),
+                'children' => [
+                    [
+                        'name' => 'search:keyword:list',
+                        'meta' => new Meta([
+                            'title' => 'List',
+                            'type' => 'B',
+                            'i18n' => 'crud.list',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:create',
+                        'meta' => new Meta([
+                            'title' => 'Add',
+                            'type' => 'B',
+                            'i18n' => 'crud.add',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:save',
+                        'meta' => new Meta([
+                            'title' => 'Edit',
+                            'type' => 'B',
+                            'i18n' => 'crud.edit',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:keyword:delete',
+                        'meta' => new Meta([
+                            'title' => 'Delete',
+                            'type' => 'B',
+                            'i18n' => 'crud.delete',
+                        ]),
+                    ],
+                ],
+            ],
+            [
+                'name' => 'search:indexs',
+                'path' => '/search/indexs',
+                'component' => 'search/views/indexs/index',
+                'sort' => 103,
+                'meta' => new Meta([
+                    'title' => '搜索索引',
+                    'i18n' => 'search.Indexs',
+                    'icon' => 'mdi:menu',
+                    'type' => 'M',
+                    'hidden' => 0,
+                    'componentPath' => 'modules/',
+                    'componentSuffix' => '.vue',
+                    'breadcrumbEnable' => 1,
+                    'copyright' => 1,
+                    'cache' => 1,
+                    'affix' => 0,
+                ]),
+                'children' => [
+                    [
+                        'name' => 'search:indexs:list',
+                        'meta' => new Meta([
+                            'title' => 'List',
+                            'type' => 'B',
+                            'i18n' => 'crud.list',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:create',
+                        'meta' => new Meta([
+                            'title' => 'Add',
+                            'type' => 'B',
+                            'i18n' => 'crud.add',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:save',
+                        'meta' => new Meta([
+                            'title' => 'Edit',
+                            'type' => 'B',
+                            'i18n' => 'crud.edit',
+                        ]),
+                    ],
+                    [
+                        'name' => 'search:indexs:delete',
+                        'meta' => new Meta([
+                            'title' => 'Delete',
+                            'type' => 'B',
+                            'i18n' => 'crud.delete',
+                        ]),
+                    ],
+                ],
+            ],
         ];
     }
 
     public function create(array $data, int $parent_id = 0): void
     {
-        foreach ($data as $v) {
-            $_v = $v;
-            if (isset($v['children'])) {
-                unset($_v['children']);
-            }
-            $_v['parent_id'] = $parent_id;
-            $menu = Menu::create(array_merge(self::BASE_DATA, $_v));
-            if (isset($v['children']) && count($v['children'])) {
-                $this->create($v['children'], $menu->id);
+        foreach ($data as $menuItem) {
+            $children = $menuItem['children'] ?? null;
+            unset($menuItem['children']);
+
+            $menuData = array_merge(self::BASE_DATA, $menuItem, ['parent_id' => $parent_id]);
+
+            $menu = $this->findOrCreateMenu($menuData);
+
+            if ($children && count($children) > 0) {
+                $this->create($children, $menu->id);
             }
         }
+    }
+
+    /**
+     * 查找或创建菜单
+     *
+     * @param array $menuData 菜单数据
+     * @return Menu
+     */
+    private function findOrCreateMenu(array $menuData): Menu
+    {
+        $menuName = $menuData['name'] ?? null;
+        $parentId = $menuData['parent_id'] ?? 0;
+
+        if (!$menuName) {
+            return Menu::create($menuData);
+        }
+
+        $menu = Menu::query()
+            ->where('name', $menuName)
+            ->where('parent_id', $parentId)
+            ->first();
+
+        if ($menu) {
+            $updateData = $menuData;
+            $menu->update($updateData);
+            return $menu;
+        }
+
+        return Menu::create($menuData);
     }
 }

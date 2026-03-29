@@ -9,6 +9,29 @@ use Hyperf\Stringable\Str;
 class GenRuleMap
 {
     /**
+     * 表名转单数（与 gen:model 一致，模型名使用单数）
+     * 输入什么表名就生成什么，不自动加复数；表名本身为复数时转为单数作为模型名
+     */
+    public static function singularizeTableName(string $tableName): string
+    {
+        $parts = explode('_', $tableName);
+        if (empty($parts)) {
+            return $tableName;
+        }
+        $last = array_pop($parts);
+        // 常见复数转单数规则
+        if (str_ends_with($last, 'ies') && strlen($last) > 3) {
+            $last = substr($last, 0, -3) . 'y';
+        } elseif (str_ends_with($last, 'es') && !str_ends_with($last, 'ies') && !in_array($last, ['status'], true)) {
+            $last = substr($last, 0, -2);
+        } elseif (str_ends_with($last, 's') && !str_ends_with($last, 'ss') && !str_ends_with($last, 'us') && strlen($last) > 1) {
+            $last = substr($last, 0, -1);
+        }
+        $parts[] = $last;
+        return implode('_', $parts);
+    }
+
+    /**
      * 获取前端目录路径
      */
     public static function getFrontendDirectory(): string
@@ -157,7 +180,8 @@ class GenRuleMap
      */
     public static function getOutputDirMap(string $module, string $tableName, string $plugin = '', string $target = 'admin'): array
     {
-        $camelCaseName = Str::camel($tableName);
+        $singularName = self::singularizeTableName($tableName);
+        $camelCaseName = Str::camel($singularName);
 
         // 插件模式下的路径
         if (!empty($plugin)) {
@@ -242,7 +266,8 @@ class GenRuleMap
 
     public static function formatFileName(string $tableName, string $type): string
     {
-        $tableName = Str::studly($tableName);
+        $singularName = self::singularizeTableName($tableName);
+        $tableName = Str::studly($singularName);
         $camelCaseName = Str::camel($tableName);
         $fileNameMap = [
             'api-ts' => $camelCaseName . '.ts',

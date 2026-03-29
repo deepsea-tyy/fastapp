@@ -1,0 +1,20 @@
+
+git
+git push --force origin main
+git remote set-url origin git@github.com:xx/yy.git
+
+空目录删除
+find "目录" -type d -empty -delete
+
+获取本地开发 ip
+ipconfig getifaddr en0
+
+启动模拟器
+flutter emulators --launch Pixel_9_Pro_XL
+flutter pub run build_runner build --delete-conflicting-outputs
+
+强制关闭服务
+ps -ef | grep -v grep | grep php | awk '{print $2}'|xargs -r kill -9
+
+
+

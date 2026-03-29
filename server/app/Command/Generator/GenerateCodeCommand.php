@@ -104,14 +104,14 @@ class GenerateCodeCommand extends Command
             $codeGenerator['target'] = $target;
 
             // 生成后端代码
-            $this->generateModel($codeGenerator, $force);
-            $this->generateRequest($codeGenerator, $force);
-            $this->generateService($codeGenerator, $force);
             $this->generateController($codeGenerator, $force);
-            $this->generateRepository($codeGenerator, $force);
 
             // 根据target参数决定是否生成前端代码
             if ($target !== 'api') {
+                $this->generateRepository($codeGenerator, $force);
+                $this->generateModel($codeGenerator, $force);
+                $this->generateRequest($codeGenerator, $force);
+                $this->generateService($codeGenerator, $force);
                 // 生成前端模板
                 $this->generateForm($codeGenerator, $force);
                 $this->generateFormItems($codeGenerator, $force);
@@ -220,6 +220,10 @@ class GenerateCodeCommand extends Command
                     $renderPropsObj['multiple'] = false;
                 } elseif (($field['component'] === 'el-select' || $field['component'] === 'el-switch') && !empty($field['component_config'])) {
                     $renderPropsObj = array_merge($renderPropsObj, $field['component_config']);
+                } elseif ($field['component'] === 'el-date-picker') {
+                    $renderPropsObj['valueFormat'] = 'YYYY-MM-DD';
+                    $renderPropsObj['clearable'] = true;
+                    $renderPropsObj['type'] = 'date';
                 }
 
                 $formField['renderProps'] = $renderPropsObj;
@@ -283,7 +287,9 @@ class GenerateCodeCommand extends Command
                 AND table_name = ?
             ', [env('DB_DATABASE'), $fullTableName])->TABLE_COMMENT ?? $tableName;
 
-        $camelCaseName = Str::camel($tableName);
+        // 模型名使用单数（与 gen:model 一致），输入什么表名就生成什么，不自动加复数
+        $singularTableName = GenRuleMap::singularizeTableName($tableName);
+        $camelCaseName = Str::camel($singularTableName);
         // 生成表信息
         return [
             'pid' => (int)$this->input->getOption('pid') ?? 0,
@@ -372,6 +378,11 @@ class GenerateCodeCommand extends Command
                 $renderPropsObj['multiple'] = false;
             } elseif (($componentType === 'el-select' || $componentType === 'el-switch') && !empty($componentConfig)) {
                 $renderPropsObj = array_merge($renderPropsObj, $componentConfig);
+            } elseif ($componentType === 'el-date-picker') {
+                // 表单用单日期，valueFormat 统一为 Y-m-d 避免前端发送 ISO 8601
+                $renderPropsObj['valueFormat'] = 'YYYY-MM-DD';
+                $renderPropsObj['clearable'] = true;
+                $renderPropsObj['type'] = 'date';
             }
 
             // 判断字段是否可以为null

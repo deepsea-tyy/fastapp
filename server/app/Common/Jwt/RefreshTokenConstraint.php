@@ -16,8 +16,8 @@ class RefreshTokenConstraint implements Constraint
 {
     public function assert(Token $token): void
     {
-        if ($token->isRelatedTo('refresh')) {
-            throw ConstraintViolation::error('Token is a refresh token', $this);
+        if (! $token->isRelatedTo('refresh')) {
+            throw ConstraintViolation::error('Token is not a refresh token', $this);
         }
     }
 }

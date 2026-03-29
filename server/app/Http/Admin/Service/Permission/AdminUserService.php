@@ -6,12 +6,15 @@ declare(strict_types=1);
 namespace App\Http\Admin\Service\Permission;
 
 use App\Common\IService;
+use App\Model\Enums\User\Status;
 use App\Model\Permission\Role;
 use App\Model\User;
 use App\Repository\Permission\RoleRepository;
 use App\Repository\Permission\UserRepository;
 use Hyperf\Collection\Collection;
+use Hyperf\Context\RequestContext;
 use Hyperf\DbConnection\Db;
+use Lcobucci\JWT\Token\RegisteredClaims;
 use Psr\SimpleCache\CacheInterface;
 
 /**
@@ -22,14 +25,15 @@ final class AdminUserService extends IService
     public function __construct(
         protected readonly UserRepository $repository,
         protected readonly RoleRepository $roleRepository,
-        protected readonly CacheInterface $cache
+        protected readonly CacheInterface $cache,
+        private readonly MenuService      $menuService
     )
     {
     }
 
-    public function getInfo(int $id): ?User
+    public function getInfo(): ?User
     {
-        return DataScopeTool::getCurrentUser($id);
+        return DataScopeTool::getCurrentUser($this->id());
     }
 
     public function resetPassword(?int $id): bool
@@ -168,7 +172,42 @@ final class AdminUserService extends IService
                 ->orWhere('mobile', 'like', $keyword . '%');
         }
         return $query->get()->map(function ($item) {
-            return ['label' => implode('|', [$item->id, $item->username, $item->email, $item->mobile]), 'value' => $item->id];
+            return ['label' => implode('|', array_filter([$item->id, $item->username, $item->email, $item->mobile])), 'value' => $item->id];
         });
+    }
+
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->getInfo()->isSuperAdmin();
+    }
+
+    public function filterCurrentUser(bool $all = false): array
+    {
+        if ($this->isSuperAdmin() || $all) {
+            $menuList = $this->menuService->getList([])->toArray();
+        } else {
+            $permissions = $this->getInfo()
+                ->getPermissions()
+                ->pluck('name')
+                ->unique();
+            $menuList = $permissions->isEmpty()
+                ? []
+                : $this->menuService
+                    ->getList(['status' => Status::Normal, 'name' => $permissions->toArray()])
+                    ->toArray();
+        }
+
+        return MenuService::buildTree($menuList);
+    }
+
+    public function getToken(): ?\Lcobucci\JWT\UnencryptedToken
+    {
+        return RequestContext::get()->getAttribute('token');
+    }
+
+    public function id(): int
+    {
+        return (int)$this->getToken()->claims()->get(RegisteredClaims::ID);
     }
 }

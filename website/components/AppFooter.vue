@@ -11,16 +11,16 @@
         <div>
           <h4 class="font-semibold mb-4">{{ $t('footer.products') }}</h4>
           <ul class="space-y-2 text-sm text-gray-400">
-            <li><NuxtLink :to="localePath('/products')" class="hover:text-white transition">{{ $t('footer.mobile') }}</NuxtLink></li>
-            <li><NuxtLink :to="localePath('/products')" class="hover:text-white transition">{{ $t('footer.admin') }}</NuxtLink></li>
-            <li><NuxtLink :to="localePath('/products')" class="hover:text-white transition">{{ $t('footer.backend') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/site/products')" class="hover:text-white transition">{{ $t('footer.mobile') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/site/products')" class="hover:text-white transition">{{ $t('footer.admin') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/site/products')" class="hover:text-white transition">{{ $t('footer.backend') }}</NuxtLink></li>
           </ul>
         </div>
         <div>
           <h4 class="font-semibold mb-4">{{ $t('footer.resources') }}</h4>
           <ul class="space-y-2 text-sm text-gray-400">
-            <li><NuxtLink :to="localePath('/blog')" class="hover:text-white transition">{{ $t('footer.blog') }}</NuxtLink></li>
-            <li><NuxtLink :to="localePath('/support')" class="hover:text-white transition">{{ $t('footer.support') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/site/blog')" class="hover:text-white transition">{{ $t('footer.blog') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/site/support')" class="hover:text-white transition">{{ $t('footer.support') }}</NuxtLink></li>
           </ul>
         </div>
         <div>

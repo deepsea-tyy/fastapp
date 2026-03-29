@@ -1,0 +1,24 @@
+{
+  "name": "ds/sysCms",
+  "version": "1.0.6",
+  "type": "mixed",
+  "description": "内容管理插件",
+  "homepage": "",
+  "author": [
+    {
+      "name": "ds"
+    }
+  ],
+  "composer": {
+    "require": {},
+    "psr-4": {
+      "Plugin\\Ds\\SysCms\\": "src"
+    },
+    "installScript": "Plugin\\Ds\\SysCms\\InstallScript",
+    "uninstallScript": "Plugin\\Ds\\SysCms\\UninstallScript",
+    "config": "Plugin\\Ds\\SysCms\\ConfigProvider"
+  },
+  "package": {
+    "dependencies": []
+  }
+}

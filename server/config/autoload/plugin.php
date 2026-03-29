@@ -9,7 +9,7 @@ return [
      *
      * 前端代码所在根目录.
      */
-    'front_directory' => dirname(BASE_PATH) . '/web',
+    'front_directory' => dirname(BASE_PATH) . '/admin',
     'composer' => [
         /*
          * composer executes the program directly from composer by default,

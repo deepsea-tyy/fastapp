@@ -47,6 +47,8 @@ final class User extends Model
      */
     protected array $hidden = ['password', 'google2fa'];
 
+    protected array $appends = ['no'];
+
     /**
      * The attributes that are mass assignable.
      */
@@ -65,6 +67,11 @@ final class User extends Model
         'updated_at' => 'datetime',
         'code' => 'integer',
     ];
+
+    public function getNoAttribute(): int
+    {
+        return (int)('5' . str_pad((string)$this->id, 7, '0', STR_PAD_LEFT));
+    }
 
     public function roles(): BelongsToMany
     {

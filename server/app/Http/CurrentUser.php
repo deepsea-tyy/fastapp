@@ -5,82 +5,173 @@ declare(strict_types=1);
 
 namespace App\Http;
 
-use App\Http\Admin\Service\Permission\MenuService;
-use App\Http\Admin\Service\Permission\AdminUserService;
+use App\Common\Event\UserAdminLoginEvent;
+use App\Common\Event\UserAccountEvent;
+use App\Common\Event\UserRegisterEvent;
+use App\Common\Jwt\JwtFactory;
+use App\Common\Jwt\JwtInterface;
+use App\Common\ResultCode;
+use App\Common\Tools;
+use App\Exception\BusinessException;
+use App\Exception\JwtInBlackException;
 use App\Model\Enums\User\Status;
 use App\Model\User;
+use App\Model\UserProfile;
+use Hyperf\Collection\Arr;
 use Hyperf\Context\RequestContext;
+use Hyperf\DbConnection\Db;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\UnencryptedToken;
 
-final class CurrentUser
+class CurrentUser
 {
+    /**
+     * @var string jwt场景
+     */
+    private string $scene = 'default';
+
     public function __construct(
-        private readonly UserService      $service,
-        private readonly AdminUserService $adminUserService,
-        private readonly MenuService      $menuService
+        protected readonly JwtFactory $jwtFactory,
     )
     {
     }
 
-    public function adminUser(): ?User
+    /**
+     * 格式化 Token
+     *
+     * @param User $user 用户对象
+     * @param string $ip IP地址
+     * @param string $browser 浏览器/User-Agent
+     * @param string $os 操作系统
+     * @param string $deviceId 设备唯一标识（iOS/Android/Web通用，可选）
+     * @return array Token数据
+     */
+    public function formatToken(User $user, string $ip = '', string $browser = '', string $os = '', string $deviceId = ''): array
     {
-        return $this->adminUserService->getInfo($this->id());
+        $jwt = $this->getJwt();
+        if ($user->status == Status::DISABLE) {
+            throw new BusinessException(ResultCode::DISABLED);
+        }
+        if ($ip) {
+            if ($this->scene == 'api') {
+                $profile = Arr::only($user->profile?->toArray() ?? [], ['user_id', 'nickname', 'avatar', 'signed', 'lang', 'trans_password']);
+                Tools::setUserCache($user->id, array_merge([
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'code' => $user->code,
+                    'mobile' => $user->mobile,
+                    'google2fa' => $user->google2fa ?: '',
+                ], $profile, $user->profile?->setting ?? []));
+                Tools::eventDispatcher(new UserAccountEvent($user, $ip, $os, $browser, $deviceId, $user->wasRecentlyCreated ? 2 : 1));
+            } else {
+                Tools::eventDispatcher(new UserAdminLoginEvent($user, $ip, $os, $browser));
+            }
+        }
+        return [
+            'access_token' => $jwt->builderAccessToken((string)$user->id)->toString(),
+            'refresh_token' => $jwt->builderRefreshToken((string)$user->id)->toString(),
+            'expire_at' => (int)$jwt->getConfig('ttl', 0),
+        ];
     }
 
-    public function user(): ?User
+    public function checkJwt(UnencryptedToken $token): void
     {
-        return $this->service->getInfo($this->id());
+        $this->getJwt()->hasBlackList($token) && throw new JwtInBlackException();
     }
 
-    public function refresh(): array
+    public function logout(UnencryptedToken $token): void
     {
-        return $this->service->refreshToken($this->getToken());
+        $this->getJwt()->addBlackList($token);
     }
 
-    public function isSuperAdmin(): bool
+    public function getJwt(): JwtInterface
     {
-        return $this->adminUser()->isSuperAdmin();
+        return $this->jwtFactory->get($this->scene);
     }
 
-    public function getToken(): ?UnencryptedToken
+    public function setScene(string $scene): static
+    {
+        $this->scene = $scene;
+        return $this;
+    }
+
+    public function refreshToken(UnencryptedToken $token): array
+    {
+        return value(static function (JwtInterface $jwt) use ($token) {
+            $jwt->addBlackList($token);
+            return [
+                'access_token' => $jwt->builderAccessToken($token->claims()->get(RegisteredClaims::ID))->toString(),
+                'refresh_token' => $jwt->builderRefreshToken($token->claims()->get(RegisteredClaims::ID))->toString(),
+                'expire_at' => (int)$jwt->getConfig('ttl', 0),
+            ];
+        }, $this->getJwt());
+    }
+
+    public function findUser(array $map): ?User
+    {
+        return User::query()->where($map)->first();
+    }
+
+    public function create(array $data): mixed
+    {
+        return Db::transaction(function () use ($data) {
+            $md = User::create($data);
+            if ($md->wasRecentlyCreated) {
+                if (empty($md->username)) {
+                    $md->username = '@u' . $md->no;
+                    $md->save();
+                }
+                UserProfile::query()->create(['user_id' => $md->id, 'nickname' => 'u' . $md->no]);
+            }
+            Tools::eventDispatcher(new UserRegisterEvent($md, $data['invite_code'] ?? ''));
+            return $md;
+        });
+    }
+
+    public function getInfo(?int $id = null): ?User
+    {
+        return User::query()->with(['profile'])
+            ->select(['id', 'username', 'mobile', 'email', 'code', 'google2fa', 'password'])
+            ->find($id ?: $this->id());
+    }
+
+    public function user(int $id = 0): ?User
+    {
+        return User::query()->find($id ?: $this->id());
+    }
+
+    public function profile(int $id = 0): ?UserProfile
+    {
+        return UserProfile::query()->where(['user_id' => $id ?: $this->id()])->first();
+    }
+
+    public function getToken(): ?\Lcobucci\JWT\UnencryptedToken
     {
         return RequestContext::get()->getAttribute('token');
     }
 
-
     public function id(): int
     {
-        return (int)$this->getToken()->claims()->get(RegisteredClaims::ID);
+        $token = $this->getToken();
+        if (!$token) {
+            $tokenStr = Tools::getHeader('token');
+            if (!$tokenStr) {
+                return 0;
+            }
+            $token = $this->jwtFactory->get($this->scene)->parserAccessToken($tokenStr);
+        }
+        return (int)$token->claims()->get(RegisteredClaims::ID);
     }
 
-    public function filterCurrentUser(): array
+    public static function baseInfo(int $userId): array
     {
-        $permissions = $this->adminUser()
-            ->getPermissions()
-            ->pluck('name')
-            ->unique();
-        $menuList = $permissions->isEmpty()
-            ? []
-            : $this->menuService
-                ->getList(['status' => Status::Normal, 'name' => $permissions->toArray()])
-                ->toArray();
-        $tree = [];
-        $map = [];
-        foreach ($menuList as &$menu) {
-            $menu['children'] = [];
-            $map[$menu['id']] = &$menu;
+        $filed = ['user_id', 'nickname', 'avatar', 'signed', 'lang'];
+        $profile = Tools::getUserCache($userId, $filed);
+        if (!$profile['user_id']) {
+            $profile = UserProfile::query()->where('user_id', $userId)
+                ->first($filed)?->toArray() ?? ['user_id' => $userId, 'nickname' => '', 'avatar' => '', 'signed' => ''];
+            Tools::setUserCache($userId, $profile);
         }
-        unset($menu);
-        foreach ($menuList as &$menu) {
-            $pid = $menu['parent_id'];
-            if ($pid === 0 || !isset($map[$pid])) {
-                $tree[] = &$menu;
-            } else {
-                $map[$pid]['children'][] = &$menu;
-            }
-        }
-        unset($menu);
-        return $tree;
+        return $profile;
     }
 }

@@ -16,7 +16,9 @@ final class MenuService extends IService
 {
     public function __construct(
         protected readonly MenuRepository $repository
-    ) {}
+    )
+    {
+    }
 
     public function getRepository(): MenuRepository
     {
@@ -29,7 +31,7 @@ final class MenuService extends IService
          * @var Menu $model
          */
         $model = parent::create($data);
-        if ($data['meta']['type'] === 'M' && ! empty($data['btnPermission'])) {
+        if ($data['meta']['type'] === 'M' && !empty($data['btnPermission'])) {
             foreach ($data['btnPermission'] as $item) {
                 $this->repository->create([
                     'parent_id' => $model->id,
@@ -57,9 +59,9 @@ final class MenuService extends IService
                 ->pluck('id')
                 ->toArray());
 
-            if (! empty($data['btnPermission'])) {
+            if (!empty($data['btnPermission'])) {
                 foreach ($data['btnPermission'] as $item) {
-                    if (! empty($item['type']) && $item['type'] === 'B') {
+                    if (!empty($item['type']) && $item['type'] === 'B') {
                         $data = [
                             'name' => $item['code'],
                             'meta' => [
@@ -68,7 +70,7 @@ final class MenuService extends IService
                                 'type' => 'B',
                             ],
                         ];
-                        if (! empty($item['id'])) {
+                        if (!empty($item['id'])) {
                             $this->repository->updateById($item['id'], $data);
                             unset($existsBtnPermissions[$item['id']]);
                         } else {
@@ -79,10 +81,42 @@ final class MenuService extends IService
                 }
             }
 
-            if (! empty($existsBtnPermissions)) {
+            if (!empty($existsBtnPermissions)) {
                 $this->deleteById(array_keys($existsBtnPermissions));
             }
         }
         return $model;
+    }
+
+    /**
+     * 构建无限级树形结构（高性能版本）
+     */
+    public static function buildTree(array $items, int $parentId = 0): array
+    {
+        // 将数据按 parent_id 分组
+        $groupedItems = [];
+        foreach ($items as $item) {
+            $pid = (int)($item['parent_id'] ?? 0);
+            $groupedItems[$pid][] = $item;
+        }
+
+        // 递归构建树
+        return self::buildTreeRecursive($groupedItems, $parentId);
+    }
+
+    private static function buildTreeRecursive(array $groupedItems, int $parentId): array
+    {
+        if (!isset($groupedItems[$parentId])) {
+            return [];
+        }
+
+        $tree = [];
+        foreach ($groupedItems[$parentId] as $item) {
+            $item['children'] = self::buildTreeRecursive($groupedItems, (int)$item['id']);
+
+            $tree[] = $item;
+        }
+
+        return $tree;
     }
 }

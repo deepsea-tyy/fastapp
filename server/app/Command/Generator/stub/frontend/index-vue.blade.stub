@@ -18,7 +18,7 @@
         $apiPath = "\$/{$pluginPath}/api/{$camelCaseName}.ts";
         $pluginName = str_replace('/', ':', $pluginPath);
         $defineOptionsName = "{$pluginName}:{$snakeComponentName}";
-        $menuKey = "{$pluginName}.{$componentName}";
+        $menuKey = "admin.{$componentName}";
         $permissionPrefix = $pluginName;
     } else {
         $apiPath = "~/{$packageName}/api/{$camelCaseName}.ts";

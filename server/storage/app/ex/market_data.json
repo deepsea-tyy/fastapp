@@ -1,0 +1,1217 @@
+{
+    "version": 1767843416,
+    "chain": [
+        "BNB",
+        null
+    ],
+    "currency": {
+        "AVAX": {
+            "id": 12,
+            "symbol": "AVAX",
+            "name": {
+                "en": "Avalanche",
+                "zh_CN": "雪崩币"
+            },
+            "logo": "\/uploads\/20240727\/675803106977587200.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "BRL": {
+            "id": 37,
+            "symbol": "BRL",
+            "name": {
+                "en": "BRL",
+                "zh_CN": "巴西雷亚尔"
+            },
+            "logo": "\/uploads\/20240727\/735451423990353920.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "FIL": {
+            "id": 21,
+            "symbol": "FIL",
+            "name": {
+                "en": "Filecoin"
+            },
+            "logo": "\/uploads\/20240727\/723625187555315712.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "DAI": {
+            "id": 20,
+            "symbol": "DAI",
+            "name": {
+                "en": "Dai"
+            },
+            "logo": "\/uploads\/20240727\/675806396050124800.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "LTC": {
+            "id": 19,
+            "symbol": "LTC",
+            "name": {
+                "en": "Litecoin",
+                "zh_CN": "莱特币"
+            },
+            "logo": "\/uploads\/20240727\/675805853797912576.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "LEO": {
+            "id": 18,
+            "symbol": "LEO",
+            "name": {
+                "en": "UNUS SED LEO"
+            },
+            "logo": "\/uploads\/20240727\/675805696373121024.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "NEAR": {
+            "id": 17,
+            "symbol": "NEAR",
+            "name": {
+                "en": "NEAR Protocol"
+            },
+            "logo": "\/uploads\/20240727\/675805583265308672.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "BCH": {
+            "id": 16,
+            "symbol": "BCH",
+            "name": {
+                "en": "Bitcoin Cash",
+                "zh_CN": "比特币现金"
+            },
+            "logo": "\/uploads\/20240727\/675805319913353216.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "LINK": {
+            "id": 15,
+            "symbol": "LINK",
+            "name": {
+                "en": "Chainlink"
+            },
+            "logo": "\/uploads\/20240727\/675804771617148928.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "DOT": {
+            "id": 14,
+            "symbol": "DOT",
+            "name": {
+                "en": "Polkadot",
+                "zh_CN": "波卡币"
+            },
+            "logo": "\/uploads\/20240727\/675803917627494400.gif",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "SHIB": {
+            "id": 13,
+            "symbol": "SHIB",
+            "name": {
+                "en": "Shiba Inu",
+                "zh_CN": "柴犬币"
+            },
+            "logo": "\/uploads\/20240727\/675803586227154944.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "BTC": {
+            "id": 1,
+            "symbol": "BTC",
+            "name": {
+                "en": "Bitcoin"
+            },
+            "logo": "\/uploads\/20240727\/675795195094175744.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 1,
+            "is_recommended": 0,
+            "fees": {
+                "deposit": {
+                    "BNB": {
+                        "ERC20": {
+                            "type": "fixed",
+                            "fee": 0.0001
+                        }
+                    }
+                },
+                "withdraw": {
+                    "BNB": {
+                        "BEP20": {
+                            "type": "fixed",
+                            "fee": 1.0e-5
+                        }
+                    }
+                },
+                "spot_maker": {
+                    "type": "rate",
+                    "fee": 1.0e-5
+                },
+                "spot_taker": {
+                    "type": "rate",
+                    "fee": 1.0e-5
+                },
+                "perpetual_maker": {
+                    "type": "rate",
+                    "fee": 0
+                },
+                "perpetual_taker": {
+                    "type": "rate",
+                    "fee": 0
+                },
+                "delivery_maker": {
+                    "type": "rate",
+                    "fee": 0
+                },
+                "delivery_taker": {
+                    "type": "rate",
+                    "fee": 0
+                },
+                "option_maker": {
+                    "type": "rate",
+                    "fee": 0
+                },
+                "option_taker": {
+                    "type": "rate",
+                    "fee": 0
+                }
+            }
+        },
+        "TRX": {
+            "id": 11,
+            "symbol": "TRX",
+            "name": {
+                "en": "TRON",
+                "zh_CN": "波场币"
+            },
+            "logo": "\/uploads\/20240727\/675802163569577984.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "ADA": {
+            "id": 10,
+            "symbol": "ADA",
+            "name": {
+                "en": "Cardano",
+                "zh_CN": "艾达币"
+            },
+            "logo": "\/uploads\/20240727\/675801906886545408.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "TON": {
+            "id": 9,
+            "symbol": "TON",
+            "name": {
+                "en": "Toncoin"
+            },
+            "logo": "\/uploads\/20240727\/675801339946684416.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "DOGE": {
+            "id": 8,
+            "symbol": "DOGE",
+            "name": {
+                "en": "Dogecoin",
+                "zh_CN": "狗狗币"
+            },
+            "logo": "\/uploads\/20240727\/675801128205627392.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "XRP": {
+            "id": 7,
+            "symbol": "XRP",
+            "name": {
+                "en": "XRP",
+                "zh_CN": "瑞波币"
+            },
+            "logo": "\/uploads\/20240727\/675800931119480832.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 0,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "USDC": {
+            "id": 6,
+            "symbol": "USDC",
+            "name": {
+                "en": "USDC",
+                "zh_CN": "美元币"
+            },
+            "logo": "\/uploads\/20240727\/675800729251819520.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 1,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 1,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "BNB": {
+            "id": 5,
+            "symbol": "BNB",
+            "name": {
+                "en": "BNB",
+                "zh_CN": "币安币"
+            },
+            "logo": "\/uploads\/20240727\/675800412841906176.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "SOL": {
+            "id": 4,
+            "symbol": "SOL",
+            "name": {
+                "en": "Solana"
+            },
+            "logo": "\/uploads\/20240727\/675799889237577728.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "USDT": {
+            "id": 3,
+            "symbol": "USDT",
+            "name": {
+                "en": "USDT"
+            },
+            "logo": "\/uploads\/20240727\/675799000116436992.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 1,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 1,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        },
+        "ETH": {
+            "id": 2,
+            "symbol": "ETH",
+            "name": {
+                "en": "Ethereum"
+            },
+            "logo": "\/uploads\/20240727\/675798170810257408.png",
+            "chain": "BNB",
+            "contract_address": null,
+            "type": 0,
+            "decimals": 18,
+            "is_base_currency": 1,
+            "is_quote_currency": 0,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "fees": {}
+        }
+    },
+    "spot": {
+        "SHIBUSDT": {
+            "symbol": "SHIBUSDT",
+            "base_currency_symbol": "SHIB",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BRLUSDT": {
+            "symbol": "BRLUSDT",
+            "base_currency_symbol": "BRL",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "FILUSDT": {
+            "symbol": "FILUSDT",
+            "base_currency_symbol": "FIL",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DAIUSDT": {
+            "symbol": "DAIUSDT",
+            "base_currency_symbol": "DAI",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LTCUSDT": {
+            "symbol": "LTCUSDT",
+            "base_currency_symbol": "LTC",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LEOUSDT": {
+            "symbol": "LEOUSDT",
+            "base_currency_symbol": "LEO",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "NEARUSDT": {
+            "symbol": "NEARUSDT",
+            "base_currency_symbol": "NEAR",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BCHUSDT": {
+            "symbol": "BCHUSDT",
+            "base_currency_symbol": "BCH",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LINKUSDT": {
+            "symbol": "LINKUSDT",
+            "base_currency_symbol": "LINK",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOTUSDT": {
+            "symbol": "DOTUSDT",
+            "base_currency_symbol": "DOT",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BTCUSDT": {
+            "symbol": "BTCUSDT",
+            "base_currency_symbol": "BTC",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB",
+            "price_precision": 8,
+            "quantity_precision": 8,
+            "min_quantity": "0.000100000000000000",
+            "max_quantity": null,
+            "tick_size": null,
+            "step_size": null,
+            "maker_fee_rate": "0.00001000",
+            "taker_fee_rate": "0.00001000"
+        },
+        "AVAXUSDT": {
+            "symbol": "AVAXUSDT",
+            "base_currency_symbol": "AVAX",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TRXUSDT": {
+            "symbol": "TRXUSDT",
+            "base_currency_symbol": "TRX",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ADAUSDT": {
+            "symbol": "ADAUSDT",
+            "base_currency_symbol": "ADA",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TONUSDT": {
+            "symbol": "TONUSDT",
+            "base_currency_symbol": "TON",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOGEUSDT": {
+            "symbol": "DOGEUSDT",
+            "base_currency_symbol": "DOGE",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "XRPUSDT": {
+            "symbol": "XRPUSDT",
+            "base_currency_symbol": "XRP",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BNBUSDT": {
+            "symbol": "BNBUSDT",
+            "base_currency_symbol": "BNB",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "SOLUSDT": {
+            "symbol": "SOLUSDT",
+            "base_currency_symbol": "SOL",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ETHUSDT": {
+            "symbol": "ETHUSDT",
+            "base_currency_symbol": "ETH",
+            "quote_currency_symbol": "USDT",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        }
+    },
+    "futures": {
+        "SHIBUSDT": {
+            "symbol": "SHIBUSDT",
+            "base_currency_symbol": "SHIB",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BRLUSDT": {
+            "symbol": "BRLUSDT",
+            "base_currency_symbol": "BRL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "FILUSDT": {
+            "symbol": "FILUSDT",
+            "base_currency_symbol": "FIL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DAIUSDT": {
+            "symbol": "DAIUSDT",
+            "base_currency_symbol": "DAI",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LTCUSDT": {
+            "symbol": "LTCUSDT",
+            "base_currency_symbol": "LTC",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LEOUSDT": {
+            "symbol": "LEOUSDT",
+            "base_currency_symbol": "LEO",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "NEARUSDT": {
+            "symbol": "NEARUSDT",
+            "base_currency_symbol": "NEAR",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BCHUSDT": {
+            "symbol": "BCHUSDT",
+            "base_currency_symbol": "BCH",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LINKUSDT": {
+            "symbol": "LINKUSDT",
+            "base_currency_symbol": "LINK",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOTUSDT": {
+            "symbol": "DOTUSDT",
+            "base_currency_symbol": "DOT",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BTCUSDT": {
+            "symbol": "BTCUSDT",
+            "base_currency_symbol": "BTC",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB",
+            "price_precision": null,
+            "quantity_precision": null,
+            "min_quantity": null,
+            "max_quantity": null,
+            "tick_size": null,
+            "step_size": null,
+            "maker_fee_rate": "0.00000000",
+            "taker_fee_rate": "0.00000000"
+        },
+        "AVAXUSDT": {
+            "symbol": "AVAXUSDT",
+            "base_currency_symbol": "AVAX",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TRXUSDT": {
+            "symbol": "TRXUSDT",
+            "base_currency_symbol": "TRX",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ADAUSDT": {
+            "symbol": "ADAUSDT",
+            "base_currency_symbol": "ADA",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TONUSDT": {
+            "symbol": "TONUSDT",
+            "base_currency_symbol": "TON",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOGEUSDT": {
+            "symbol": "DOGEUSDT",
+            "base_currency_symbol": "DOGE",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "XRPUSDT": {
+            "symbol": "XRPUSDT",
+            "base_currency_symbol": "XRP",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BNBUSDT": {
+            "symbol": "BNBUSDT",
+            "base_currency_symbol": "BNB",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "SOLUSDT": {
+            "symbol": "SOLUSDT",
+            "base_currency_symbol": "SOL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ETHUSDT": {
+            "symbol": "ETHUSDT",
+            "base_currency_symbol": "ETH",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": "USDT",
+            "leverage_enabled": 1,
+            "max_leverage": 50,
+            "contract_multiplier": "1.00",
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        }
+    },
+    "delivery": [],
+    "option": {
+        "SHIBUSDT": {
+            "symbol": "SHIBUSDT",
+            "base_currency_symbol": "SHIB",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BRLUSDT": {
+            "symbol": "BRLUSDT",
+            "base_currency_symbol": "BRL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "FILUSDT": {
+            "symbol": "FILUSDT",
+            "base_currency_symbol": "FIL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DAIUSDT": {
+            "symbol": "DAIUSDT",
+            "base_currency_symbol": "DAI",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LTCUSDT": {
+            "symbol": "LTCUSDT",
+            "base_currency_symbol": "LTC",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LEOUSDT": {
+            "symbol": "LEOUSDT",
+            "base_currency_symbol": "LEO",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "NEARUSDT": {
+            "symbol": "NEARUSDT",
+            "base_currency_symbol": "NEAR",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BCHUSDT": {
+            "symbol": "BCHUSDT",
+            "base_currency_symbol": "BCH",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "LINKUSDT": {
+            "symbol": "LINKUSDT",
+            "base_currency_symbol": "LINK",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOTUSDT": {
+            "symbol": "DOTUSDT",
+            "base_currency_symbol": "DOT",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BTCUSDT": {
+            "symbol": "BTCUSDT",
+            "base_currency_symbol": "BTC",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB",
+            "price_precision": null,
+            "quantity_precision": null,
+            "min_quantity": null,
+            "max_quantity": null,
+            "tick_size": null,
+            "step_size": null,
+            "maker_fee_rate": "0.00000000",
+            "taker_fee_rate": "0.00000000"
+        },
+        "AVAXUSDT": {
+            "symbol": "AVAXUSDT",
+            "base_currency_symbol": "AVAX",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TRXUSDT": {
+            "symbol": "TRXUSDT",
+            "base_currency_symbol": "TRX",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ADAUSDT": {
+            "symbol": "ADAUSDT",
+            "base_currency_symbol": "ADA",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "TONUSDT": {
+            "symbol": "TONUSDT",
+            "base_currency_symbol": "TON",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "DOGEUSDT": {
+            "symbol": "DOGEUSDT",
+            "base_currency_symbol": "DOGE",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "XRPUSDT": {
+            "symbol": "XRPUSDT",
+            "base_currency_symbol": "XRP",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "BNBUSDT": {
+            "symbol": "BNBUSDT",
+            "base_currency_symbol": "BNB",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "SOLUSDT": {
+            "symbol": "SOLUSDT",
+            "base_currency_symbol": "SOL",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        },
+        "ETHUSDT": {
+            "symbol": "ETHUSDT",
+            "base_currency_symbol": "ETH",
+            "quote_currency_symbol": "USDT",
+            "settlement_currency_symbol": null,
+            "underlying_asset_symbol": null,
+            "option_type": null,
+            "strike_price": null,
+            "expiry_date": null,
+            "status": 1,
+            "is_hot": 0,
+            "is_recommended": 0,
+            "chain": "BNB"
+        }
+    }
+}

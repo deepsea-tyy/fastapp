@@ -19,22 +19,29 @@ const ALLOWED_EXTENSIONS = ['.md', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.we
 const docSources = [
   { name: 'server', path: join(sourceDocsDir, 'server'), label: '后端服务' },
   { name: 'app', path: join(sourceDocsDir, 'app'), label: '移动端' },
-  { name: 'web', path: join(sourceDocsDir, 'web'), label: '管理后台' },
+  { name: 'admin', path: join(sourceDocsDir, 'admin'), label: '管理后台' },
   { name: 'website', path: join(sourceDocsDir, 'website'), label: '企业官网' }
 ]
 
 // 文档排序配置
 const sortConfig = {
   directories: {
-    server: ['getting-started', 'development', 'features', 'permission'],
-    app: ['开发指南.md', '移动端应用.md', '架构设计.md', '环境配置.md', '问题排查.md'],
-    web: ['开发指南.md', '图标使用指南.md', '图表使用指南.md'],
+    server: ['getting-started', 'features', 'permission'],
+    app: [],
+    admin: ['开发指南.md', '图标使用指南.md'],
     website: ['企业官网.md']
   },
   files: {
-    'server/getting-started': ['开发指南.md', '快速开始.md'],
-    'server/development': ['开发规范.md', '配置说明.md', 'AI辅助开发流程指南.md', 'AI开发提示词模板.md'],
-    'server/features': ['核心功能.md', '代码生成器.md', '插件系统使用指南.md', 'WebSocket开发文档.md', '数据库迁移工具使用指南.md', 'IP地理位置查询服务使用指南.md', 'Hyperf监听器与异步操作指南.md'],
+    'server/getting-started': ['开发指南.md', '快速开始.md', '开发规范.md'],
+    'server/features': [
+      '核心功能.md',
+      '代码生成器.md',
+      '插件使用文档.md',
+      'ws服务.md',
+      '数据库迁移工具.md',
+      'IP位置查询.md',
+      '监听与异步文档.md'
+    ],
     'server/permission': ['权限系统使用文档.md', '用户部门与角色部门配合使用详解.md', 'Casbin权限规则表说明.md']
   }
 }
@@ -43,12 +50,11 @@ const sortConfig = {
 const dirNameMap = {
   'server': {
     'getting-started': '快速开始',
-    'development': '开发指南',
     'features': '核心功能',
     'permission': '权限系统'
   },
   'app': {},
-  'web': {},
+  'admin': {},
   'website': {}
 }
 
@@ -101,7 +107,7 @@ const cleanDocsDir = async () => {
 // 转换文档内链接路径（适配 Docsify）
 const transformDocLinks = (content, relativePath) => {
   const currentDir = relativePath.split('/').slice(0, -1).join('/')
-  const categories = ['server', 'app', 'web', 'website']
+  const categories = ['server', 'app', 'admin', 'website']
   
   return content.replace(/\]\(([^)]+\.md(?:#[^)]+)?)\)/g, (match, linkPath) => {
     if (linkPath.startsWith('/')) return match

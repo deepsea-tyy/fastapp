@@ -1,14 +1,7 @@
 <?php
 
 declare(strict_types=1);
-/**
- * This file is part of MineAdmin.
- *
- * @link     https://www.mineadmin.com
- * @document https://doc.mineadmin.com
- * @contact  root@imoi.cn
- * @license  https://github.com/mineadmin/MineAdmin/blob/master/LICENSE
- */
+
 return [
     'id' => '用戶ID，主鍵',
     'username' => '用戶名',
@@ -20,6 +13,10 @@ return [
     'signed' => '個人簽名',
     'dashboard' => '後台首頁類型',
     'status' => '狀態 (1正常 2停用)',
+    'code' => '手機號區號',
+    'mobile' => '登錄手機號',
+    'invite_code' => '邀請碼',
+    'google2fa' => 'Google2FA密鑰',
     'login_ip' => '最後登錄IP',
     'login_time' => '最後登錄時間',
     'backend_setting' => '後台設置數據',
@@ -39,9 +36,13 @@ return [
             2 => '停用',
         ],
     ],
+    'vcode' => '驗證碼',
+    'vcode_invalid' => '驗證碼錯誤',
     'password' => '密碼',
+    'password_error' => '密碼錯誤',
     'disable' => '賬號已停用',
     'old_password_error' => '舊密碼錯誤',
     'old_password' => '舊密碼',
     'password_confirmation' => '確認密碼',
+    'password_change_success' => '重置密碼成功',
 ];

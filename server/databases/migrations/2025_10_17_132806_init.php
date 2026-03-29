@@ -15,14 +15,14 @@ return new class extends Migration {
         Schema::create('user', static function (Blueprint $table) {
             $table->comment('账户表');
             $table->bigIncrements('id')->comment('ID');
-            $table->string('username', 20)->nullable()->comment('用户名');
+            $table->string('username', 64)->nullable()->comment('用户名');
             $table->string('email', 50)->nullable()->comment('用户邮箱');
             $table->smallInteger('code')->nullable()->comment('手机code');
             $table->string('mobile', 11)->nullable()->comment('手机');
             $table->string('password', 100)->comment('密码');
             $table->string('user_type', 3)->default('100')->comment('用户类型:100=系统用户,200=普通用户,300=通用账户');
             $table->tinyInteger('status')->default(1)->comment('状态:1=正常,2=停用');
-            $table->string('google2fa', 50)->comment('google2fa');
+            $table->string('google2fa', 50)->nullable()->comment('google2fa');
             $table->string('remark', 255)->default('')->comment('备注');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
@@ -38,10 +38,9 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->bigInteger('user_id')->comment('用户ID');
             $table->string('phone')->nullable()->comment('联系电话');
-            $table->json('dept_id')->unsigned()->nullable()->comment('部门ID');
+            $table->json('dept_id')->nullable()->comment('部门ID');
             $table->json('backend_setting')->nullable()->comment('后台设置数据');
             $table->unique('user_id');
-            $table->index('dept_id', 'idx_dept_id');
         });
         Schema::create('user_admin_login_log', static function (Blueprint $table) {
             $table->comment('登录日志表');
@@ -77,16 +76,19 @@ return new class extends Migration {
             $table->string('avatar', 255)->nullable()->comment('用户头像');
             $table->string('signed', 255)->nullable()->comment('个人签名');
             $table->string('lang', 8)->nullable()->comment('言语');
-            $table->string('trans_password', 50)->comment('交易密码');
+            $table->string('trans_password', 50)->nullable()->comment('交易密码');
+            $table->json('setting')->nullable()->comment('用户设置');
             $table->unique('user_id');
             $table->timestamps();
         });
-        Schema::create('user_login_log', static function (Blueprint $table) {
-            $table->comment('用户登录日志');
+        Schema::create('user_account_log', static function (Blueprint $table) {
+            $table->comment('用户账户日志');
             $table->bigIncrements('id');
             $table->bigInteger('user_id')->comment('用户id');
+            $table->tinyInteger('type')->default(1)->comment('类型1:登录,2:注册,3:重置密码,4:绑定手机,5:绑定邮箱,6:解绑手机,7:解绑邮箱,8:禁用账户,9:删除账户,10:绑定2fa,11:解绑2fa');
             $table->ipAddress('ip');
-            $table->string('device')->comment('设备');
+            $table->string('os')->comment('操作系统');
+            $table->string('device_id', 128)->nullable()->comment('设备唯一标识（iOS/Android/Web通用）');
             $table->string('country_code', 64)->nullable()->comment('国家代码');
             $table->string('country', 64)->nullable()->comment('国家');
             $table->string('region', 64)->nullable()->comment('省');
@@ -150,8 +152,7 @@ return new class extends Migration {
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
             $table->timestamps();
-            $table->string('remark')->comment('备注')->default('');
-            $table->index('storage_path');
+            $table->string('remark')->comment('备注')->nullable();
             $table->unique('hash');
         });
         Schema::create('user_belongs_role', static function (Blueprint $table) {
@@ -209,7 +210,7 @@ return new class extends Migration {
         Schema::dropIfExists('user_admin_login_log');
         Schema::dropIfExists('user_admin_operation_log');
         Schema::dropIfExists('user_profile');
-        Schema::dropIfExists('user_login_log');
+        Schema::dropIfExists('user_account_log');
         Schema::dropIfExists('rules');
         Schema::dropIfExists('menu');
         Schema::dropIfExists('role');

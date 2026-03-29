@@ -55,6 +55,10 @@ return [
         Constant::OPTION_PACKAGE_MAX_LENGTH => 16 * 1024 * 1024,// 上传最大为16M
         Constant::OPTION_TASK_WORKER_NUM => env('APP_DEBUG') ? 1 : swoole_cpu_num(),
         Constant::OPTION_TASK_ENABLE_COROUTINE => false,
+        // 禁用 HTTP 压缩,避免 Accept-Encoding 引起的 Content-Length 警告和卡顿
+        // API 响应通常为小数据量的 JSON,不需要压缩
+        Constant::OPTION_HTTP_COMPRESSION => false,
+        Constant::OPTION_HTTP_COMPRESSION_LEVEL => 0,
     ],
     'callbacks' => [
         Event::ON_WORKER_START => [WorkerStartCallback::class, 'onWorkerStart'],

@@ -28,21 +28,21 @@ final class UserRepository extends IRepository
             DataScopeTool::applyUserDataScope($params['created_by'], $query);
             unset($params['created_by']);
         }
-        
+
         if (Arr::has($params, 'phone')) {
             $query->whereHas('adminSetting', static function (Builder $q) use ($params) {
                 $q->where('phone', 'like', Arr::get($params, 'phone') . '%');
             });
             unset($params['phone']);
         }
-        
+
         if (Arr::has($params, 'nickname')) {
             $query->whereHas('profile', static function (Builder $q) use ($params) {
                 $q->where('nickname', 'like', '%' . Arr::get($params, 'nickname') . '%');
             });
             unset($params['nickname']);
         }
-        
+
         $query->with(['profile', 'adminSetting']);
         return parent::handleSearch($query, $params);
     }
@@ -51,12 +51,14 @@ final class UserRepository extends IRepository
     {
         foreach ($items as $item) {
             $item->setHidden(['profile', 'adminSetting', 'password']);
-            $item->phone = $item->adminSetting?->phone;
-            $item->dept_id = $item->adminSetting?->dept_id;
-            $item->backend_setting = $item->adminSetting?->backend_setting;
-            $item->nickname = $item->profile?->nickname;
-            $item->avatar = $item->profile?->avatar;
-            $item->signed = $item->profile?->signed;
+            foreach ($item->adminSetting?->toArray() ?? [] as $k => $v) {
+                if ($k == 'id') continue;
+                $item[$k] = $v;
+            }
+            foreach ($item->profile?->toArray() ?? [] as $k => $v) {
+                if ($k == 'id') continue;
+                $item[$k] = $v;
+            }
         }
         return $items;
     }

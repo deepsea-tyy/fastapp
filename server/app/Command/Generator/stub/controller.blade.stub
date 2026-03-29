@@ -46,7 +46,7 @@
     
     // 权限名称生成
     $permissionName = $isAdminTarget
-        ? ($permissionPrefix ? implode(':', $permissionPrefix) . ':' : '') . Str::snake($controllerName)
+        ? ($permissionPrefix ? implode(':', $permissionPrefix) . ':' : ($modulePath ? $modulePath . ':' : '')) . Str::snake($controllerName)
         : ($pluginNamespace ? implode('', array_map('ucwords', $permissionPrefix)) : '') . ucwords($module) . ucwords($controllerName);
     
     // URL路径生成
@@ -123,7 +123,7 @@
 /**
  * {{$menuName}}控制器
  * 
- * @author 代码生成器
+ * @author FastApp代码生成器
  * @date {{date('Y-m-d H:i:s')}}
  */
 @if($isAdminTarget)
@@ -157,7 +157,7 @@ class {{$controllerName}}Controller extends AbstractController
                 array_merge($this->getRequestData(), [
                     'created_by' => $this->currentUser->id(),
                 ]),
-                $this->getCurrentPage(),
+                $this->getPage(),
                 $this->getPageSize()
             )
         );
