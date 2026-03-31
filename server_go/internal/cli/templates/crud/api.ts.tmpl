@@ -1,0 +1,24 @@
+import type { ResponseStruct } from '#/global'
+
+export interface {{.TSVoName}} {
+{{- range .TSVoFields }}
+  // {{.Comment}}
+  {{.Name}}: {{.TSType}}
+{{- end }}
+}
+
+export function page(params: Partial<{{.TSVoName}}>): Promise<ResponseStruct<{{.TSVoName}}[]>> {
+  return useHttp().get('{{.HTTPPrefix}}/list', { params })
+}
+
+export function create(data: Partial<{{.TSVoName}}>): Promise<ResponseStruct<null>> {
+  return useHttp().post('{{.HTTPPrefix}}/create', data)
+}
+
+export function save(id: number, data: Partial<{{.TSVoName}}>): Promise<ResponseStruct<null>> {
+  return useHttp().put(`{{.HTTPPrefix}}/save/${id}`, data)
+}
+
+export function deleteByIds(ids: number[]): Promise<ResponseStruct<null>> {
+  return useHttp().delete('{{.HTTPPrefix}}/delete', { data: ids })
+}

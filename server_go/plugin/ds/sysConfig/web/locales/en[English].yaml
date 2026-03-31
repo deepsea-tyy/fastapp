@@ -1,0 +1,63 @@
+systemMenu:
+  systemConfig:
+    name: System Settings
+    configInfo: Configuration Info
+    basicInfo: Basic Info
+    addGroup: Add Group
+    editGroup: Edit Group
+    viewDetails: View Details
+    deleteContent: Delete Content
+    addConfig: Add Configuration
+    editConfig: Edit Configuration
+    description: The core functions for configuring and managing the platform, ensuring efficient and stable system operation.
+    actions:
+      index: System Group List
+      update: System Group Update
+      delete: System Group Deletion
+      create: System Group Creation
+      configIndex: System Configuration List
+      configUpdate: System Configuration Update
+      configDelete: System Configuration Deletion
+      configCreate: System Configuration Creation
+      configDetails: System Configuration Details
+      configBatchUpdate: System Configuration BatchUpdate
+    field:
+      groupName: Group Name
+      groupIdentifier: Group Identifier
+      groupIcon: Group Icon
+      itemRemark: Configuration Item Remark
+      belongingGroup: Belonging Group
+      configTitle: Configuration Title
+      configIdentifier: Configuration Identifier
+      configValue: Configuration Value
+      sortOrder: Sort Order
+      component: Please Select Component
+      componentInfo:
+        textBox: Text Box
+        textArea: Text Area
+        dropdown: Dropdown Select Box
+        radio: Radio Button
+        checkbox: Checkbox
+        switch: Switch
+        imageUpload: Image Upload
+        keyValuePair: Key-Value Pair
+        tinyMCE: Rich Text Editor
+      dataSource: Data Source
+      data: Data
+      configDescription: Configuration Description
+  confirmationMessages:
+    deleteDataSource: Are you sure you want to delete this data source?
+    modifyDataSource: Modify data source
+    switchLimit: Switch type data source cannot exceed 2
+    copySuccess: Copy successful
+    copyFail: Copy failed
+    edit: Edit
+    copied: Copied
+    copy: Copy
+    delete: Delete
+  labels:
+    basicInfo: Basic Information
+    appName: Application Name
+    appIdentifier: Application Identifier
+    creationTime: Creation Time
+    configInfo: Configuration Information

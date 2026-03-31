@@ -1,0 +1,63 @@
+systemMenu:
+  systemConfig:
+    name: 系統設定
+    configInfo: 配置信息
+    basicInfo: 基本資訊
+    addGroup: 新增分組
+    editGroup: 編輯分組
+    viewDetails: 查看詳情
+    deleteContent: 刪除內容
+    addConfig: 增加配置
+    editConfig: 編輯配置
+    description: 配置與管理平台的核心功能，確保系統高效穩定運行。
+    actions:
+      index: 系統分組列表
+      update: 系統分組更新
+      delete: 系統分組刪除
+      create: 系統分組創建
+      configIndex: 系統配置列表
+      configUpdate: 系統配置更新
+      configDelete: 系統配置刪除
+      configCreate: 系統配置創建
+      configDetails: 系統配置詳情
+      configBatchUpdate: 系統配置批量更新
+    field:
+      groupName: 配置組名稱
+      groupIdentifier: 配置組標識
+      groupIcon: 配置組圖標
+      itemRemark: 配置項備註
+      belongingGroup: 所屬分組
+      configTitle: 配置標題
+      configIdentifier: 配置標識
+      configValue: 配置值
+      sortOrder: 排序
+      component: 請選擇組件
+      componentInfo:
+        textBox: 文本框
+        textArea: 文本域
+        dropdown: 下拉選擇框
+        radio: 單選框
+        checkbox: 復選框
+        switch: 開關
+        imageUpload: 圖片上傳
+        keyValuePair: 鍵值對
+        tinyMCE: 富文本編輯器
+      dataSource: 數據源
+      data: 數據
+      configDescription: 配置說明
+  confirmationMessages:
+    deleteDataSource: 確認刪除該資料源？
+    modifyDataSource: 修改資料源
+    switchLimit: switch 類型資料源不能超過 2 個
+    copySuccess: 複製成功
+    copyFail: 複製失敗
+    edit: 編輯
+    copied: 已複製
+    copy: 複製
+    delete: 删除
+  labels:
+    basicInfo: 基本資訊
+    appName: 應用名稱
+    appIdentifier: 應用標識
+    creationTime: 創建時間
+    configInfo: 配置信息

@@ -1,0 +1,26 @@
+import type { MaFormItem } from '@/components/ma-form'
+import type { {{.TSVoName}} } from '{{.APIImportPath}}'
+
+export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, model: {{.TSVoName}}): MaFormItem[] {
+  if (formType === 'add') {
+    // TODO: 根据数据库 DEFAULT 设置 model 初始值
+  }
+  return [
+{{- range .FormFields }}
+{{- if and .IsForm (not (skipFormCol .Field)) }}
+    {
+      label: () => t('{{ transKey $.PackageLower $.StructName . }}'),
+      prop: '{{.Field}}',
+      render: () => {{ formRenderComp .Component }},
+{{- if .RenderProps }}
+      renderProps: {
+{{- range $k, $v := .RenderProps }}
+        {{$k}}: {{ renderPropVal $v }},
+{{- end }}
+      },
+{{- end }}
+    },
+{{- end }}
+{{- end }}
+  ]
+}

@@ -1,0 +1,83 @@
+import type { MaProTableColumns, MaProTableExpose } from '@/components/ma-pro-table'
+import type { {{.TSVoName}} } from '{{.APIImportPath}}'
+import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
+
+import { useMessage } from '@/hooks/useMessage.ts'
+import { deleteByIds } from '{{.APIImportPath}}'
+import { ResultCode } from '@/utils/ResultCode.ts'
+import hasAuth from '@/utils/permission/hasAuth.ts'
+import { ElTag } from 'element-plus'
+
+export default function getTableColumns(dialog: UseDrawerExpose, formRef: any, t: any): MaProTableColumns[] {
+  const msg = useMessage()
+
+  const showBtn = (auth: string | string[], _row: {{.TSVoName}}) => hasAuth(auth)
+
+  return [
+    { type: 'selection', showOverflowTooltip: false, label: () => t('crud.selection') },
+    { type: 'index' },
+{{- range .TableFields }}
+    {
+      label: () => t('{{ transKey $.PackageLower $.StructName . }}'),
+      minWidth: 150,
+      prop: '{{.Field}}',
+{{- if .Sortable }}
+      sortable: 'custom',
+{{- end }}
+{{- if eq .Component "el-switch" }}
+      cellRender: ({ row }) => (
+        <ElTag type={row.{{.Field}} == 1 ? 'success' : 'danger'}>
+          {row.{{.Field}}}
+        </ElTag>
+      ),
+{{- else if eq .Component "el-select" }}
+      cellRender: ({ row }) => row.{{.Field}},
+{{- else if eq .Component "ma-upload-image" }}
+      cellRender: ({ row }) => (
+        <div class="flex-center">
+          <el-image class="max-w-32" src={(row.{{.Field}} === '' || !row.{{.Field}}) ? '' : row.{{.Field}}} alt="" />
+        </div>
+      ),
+{{- end }}
+    },
+{{- end }}
+    {
+      type: 'operation',
+      label: () => t('crud.operation'),
+      fixed: 'right',
+      width: '260px',
+      operationConfigure: {
+        type: 'tile',
+        actions: [
+          {
+            name: 'edit',
+            icon: 'i-heroicons:pencil',
+            show: ({ row }) => showBtn('{{$.PermPrefix}}:save', row),
+            text: () => t('crud.edit'),
+            linkProps: { type: 'primary' },
+            onClick: ({ row }) => {
+              dialog.setTitle(t('crud.edit'))
+              dialog.open({ formType: 'edit', data: row })
+            },
+          },
+          {
+            name: 'del',
+            show: ({ row }) => showBtn('{{$.PermPrefix}}:delete', row),
+            icon: 'i-heroicons:trash',
+            text: () => t('crud.delete'),
+            linkProps: { type: 'danger' },
+            onClick: ({ row }, proxy: MaProTableExpose) => {
+              msg.delConfirm(t('crud.delDataMessage')).then(async () => {
+                const response = await deleteByIds([row.{{$.PrimaryKey}}])
+                if (response.code === ResultCode.SUCCESS) {
+                  msg.success(t('crud.delSuccess'))
+                  await proxy.refresh()
+                }
+              })
+            },
+          },
+        ],
+      },
+    },
+  ]
+}

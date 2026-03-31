@@ -1,0 +1,6 @@
+.env
+install.lock
+/bin/
+/gen/
+/storage/app
+/storage/uploads

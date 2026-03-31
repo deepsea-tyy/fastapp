@@ -1,0 +1,20 @@
+-- CRUD 菜单。name 须与 routes.go 中 MenuPerm 一致；插件下 name 须以「插件路径 / 换 :」为前缀（与 plugin uninstall、gen crud PermPrefix 一致），否则卸载时菜单不会随插件删掉。
+SET NAMES utf8mb4;
+
+INSERT INTO `{{.DBPrefix}}menu`
+(`name`, `path`, `component`, `redirect`, `created_by`, `updated_by`, `remark`, `meta`, `parent_id`, `updated_at`, `created_at`)
+VALUES (
+  '{{.PermPrefix}}',
+  '/{{if .IsPlugin}}{{.PluginPath}}/{{.PackageLower}}{{else}}{{.PackageLower}}{{end}}/{{.ResourceSeg}}',
+  '{{if .IsPlugin}}{{.PluginPath}}/views/{{.APITSBase}}/index{{else}}{{.PackageLower}}/views/{{.APITSBase}}/index{{end}}',
+  '', '0', '0', '',
+  '{{.MenuMetaSQL}}',
+  {{.Opts.PID}}, '{{.NowSQL}}', '{{.NowSQL}}');
+
+SET @LastCrudMenuID := LAST_INSERT_ID();
+
+INSERT INTO `{{.DBPrefix}}menu` (`name`, `meta`, `parent_id`, `updated_at`, `created_at`) VALUES
+  ('{{.PermPrefix}}:list', '{"title":"List","type":"B","i18n":"crud.list"}', @LastCrudMenuID, '{{.NowSQL}}', '{{.NowSQL}}'),
+  ('{{.PermPrefix}}:create', '{"title":"Add","type":"B","i18n":"crud.add","hidden":true}', @LastCrudMenuID, '{{.NowSQL}}', '{{.NowSQL}}'),
+  ('{{.PermPrefix}}:save', '{"title":"Edit","type":"B","i18n":"crud.edit","hidden":true}', @LastCrudMenuID, '{{.NowSQL}}', '{{.NowSQL}}'),
+  ('{{.PermPrefix}}:delete', '{"title":"Delete","type":"B","i18n":"crud.delete","hidden":true}', @LastCrudMenuID, '{{.NowSQL}}', '{{.NowSQL}}');

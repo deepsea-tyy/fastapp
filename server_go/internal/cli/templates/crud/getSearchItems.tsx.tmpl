@@ -1,0 +1,22 @@
+import type { MaSearchItem } from '@/components/ma-search'
+
+export default function getSearchItems(t: any): MaSearchItem[] {
+  return [
+{{- range .FormFields }}
+{{- if .IsQuery }}
+    {
+      label: () => t('{{ transKey $.PackageLower $.StructName . }}'),
+      prop: '{{.Field}}',
+      render: () => {{ formRenderComp .Component }},
+{{- if .RenderProps }}
+      renderProps: {
+{{- range $k, $v := .RenderProps }}
+        {{$k}}: {{ renderPropVal $v }},
+{{- end }}
+      },
+{{- end }}
+    },
+{{- end }}
+{{- end }}
+  ]
+}

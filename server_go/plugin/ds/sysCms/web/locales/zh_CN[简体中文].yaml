@@ -1,0 +1,183 @@
+article:
+  Article: 文章列表
+  ArticleManager: 内容管理
+  ArticleFields:
+    title: 标题
+    subtitle: 副标题
+    author: 作者
+    cover: 封面
+    video: 视频
+    release_at: 发布日期
+    brief: 摘要
+    content: 内容
+    view_count: 浏览数
+    like_count: 点赞数
+    comment_count: 评论数
+    share_count: 分享数
+    collect_count: 收藏数
+    code: 调用代码
+    name: 名称
+    icon: icon
+    parent_id: 上级
+  Category: 分类列表
+  CategoryFields:
+    name: 名称
+    icon: icon
+    parent_id: 上级
+    code: 调用代码
+admin:
+  PlacementContent: 投放内容
+  PlacementContentFields:
+    code: 调用代码
+    name: 内容名称
+    object_type: 数据类型
+    object_id: 关联数据ID
+    url: 链接地址
+    target: 链接打开方式
+    title: 标题
+    cover: 封面图片
+    desc: 描述
+    content: 分享内容
+    start_at: 开始时间
+    end_at: 结束时间
+    fixed: 永久有效
+    status: 状态
+    sort: 排序
+    views: 展示次数
+    clicks: 点击次数
+  PlacementPosition: 投放位置
+  PlacementPositionFields:
+    code: 调用代码
+    name: 位置名称
+    status: 状态
+  PlacementContentDict:
+    objectType:
+      link: 链接
+      video: 视频
+      share: 分享
+      article: 文章
+      path: 路径
+    target:
+      current: 当前窗口
+      new: 新窗口
+    status:
+      hide: 隐藏
+      show: 显示
+  AppPageContent: App页面内容
+  AppPageContentFields:
+    code: 内容标识
+    page_code: 页面标识
+    component_code: 组件标识
+    content_type: 内容类型
+    data: 处理
+    platform: 平台
+    start_at: 开始时间
+    end_at: 结束时间
+    fixed: 永久有效
+  AppPageContentDict:
+    contentType:
+      '1': 固定文本
+      '2': 列表数据
+      '3': 富文本
+      '4': 配置项
+    platform:
+      '1': Web
+      '2': App
+      '3': Both
+  AppPageContentSync: App页面内容同步
+  AppPageContentSyncFields:
+    version: 版本号
+    platform: 平台
+    file_path: 文件路径
+    file_size: 文件大小
+    record_count: 记录数量
+    generated_at: 生成时间
+    generate: 生成文件
+  FeedPost: 用户帖子（UGC）
+  FeedPostFields:
+    user_id: 发布用户ID
+    content_type: 内容类型
+    title: 标题
+    content: 内容
+    images: 图片列表
+    videos: 视频列表
+    link_url: 外链地址
+    link_meta: 链接元数据
+    quoted_type: 引用类型
+    quoted_id: 引用的内容ID
+    audit_status: 审核状态
+    audited_at: 审核时间
+    is_top: 是否置顶
+    is_hot: 是否热门
+    status: 状态
+    view_count: 浏览次数
+    like_count: 点赞数
+    comment_count: 评论数
+    share_count: 分享数
+    collect_count: 收藏数
+    quote_count: 引用数
+    ip: 发布IP
+    device_type: 设备类型
+    deleted_at: 软删除
+  FeedTag: 标签
+  FeedTagFields:
+    name: 标签名称
+    icon: 标签图标
+    color: 标签颜色
+    post_count: 内容数量
+    follow_count: 关注数
+    is_hot: 是否热门
+    status: 状态
+  FeedComment: 评论（通用）
+  FeedCommentFields:
+    target_type: 目标类型
+    target_id: 目标ID
+    user_id: 评论用户ID
+    parent_id: 父评论ID
+    root_id: 根评论ID
+    reply_to_user_id: 回复的用户ID
+    content: 评论内容
+    images: 图片列表
+    like_count: 点赞数
+    reply_count: 回复数
+    status: 状态
+    deleted_at: 软删除
+  FeedReport: 举报（通用）
+  FeedReportFields:
+    user_id: 举报用户ID
+    target_type: 目标类型
+    target_id: 目标ID
+    report_type: 举报原因
+    content: 举报说明
+    handle_status: 处理状态
+    handled_at: 处理时间
+  FeedPostDict:
+    contentType:
+      text: 纯文本
+      image: 图文
+      video: 视频
+      link: 链接
+    auditStatus:
+      pending: 待审核
+      approved: 已通过
+      rejected: 已拒绝
+    status:
+      draft: 草稿
+      published: 已发布
+      offline: 已下架
+  FeedDict:
+    targetType:
+      post: 帖子
+      article: 文章
+      comment: 评论
+  FeedReportDict:
+    reportType:
+      spam: 垃圾广告
+      pornography: 色情低俗
+      illegal: 违法违规
+      abuse: 侮辱谩骂
+      other: 其他
+    handleStatus:
+      pending: 待处理
+      handled: 已处理
+      ignored: 已忽略

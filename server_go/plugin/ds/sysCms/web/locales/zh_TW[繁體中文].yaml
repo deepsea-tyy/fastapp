@@ -1,0 +1,183 @@
+article:
+  Article: 文章列表
+  ArticleManager: 内容管理
+  ArticleFields:
+    title: 標題
+    subtitle: 副標題
+    author: 作者
+    cover: 封面
+    video: 視頻
+    release_at: 發佈日期
+    brief: 摘要
+    content: 內容
+    view_count: 瀏覽數
+    like_count: 點贊數
+    comment_count: 評論數
+    share_count: 分享數
+    collect_count: 收藏數
+    code: 調用代碼
+    name: 名稱
+    icon: icon
+    parent_id: 上級
+  Category: 分类列表
+  CategoryFields:
+    name: 名称
+    icon: icon
+    parent_id: 上级
+    code: 调用代码
+admin:
+  PlacementContent: 投放内容
+  PlacementContentFields:
+    code: 調用代碼
+    name: 內容名稱
+    object_type: 數據類型
+    object_id: 關聯數據ID
+    url: 鏈接地址
+    target: 鏈接打開方式
+    title: 標題
+    cover: 封面圖片
+    desc: 描述
+    content: 分享內容
+    start_at: 開始時間
+    end_at: 結束時間
+    fixed: 永久有效
+    status: 狀態
+    sort: 排序
+    views: 展示次數
+    clicks: 點擊次數
+  PlacementPosition: 投放位置
+  PlacementPositionFields:
+    code: 調用代碼
+    name: 位置名稱
+    status: 狀態
+  AppPageContent: App頁面內容
+  AppPageContentFields:
+    code: 內容標識
+    page_code: 頁面標識
+    component_code: 組件標識
+    content_type: 內容類型
+    data: 處理
+    platform: 平台
+    start_at: 開始時間
+    end_at: 結束時間
+    fixed: 永久有效
+  AppPageContentDict:
+    contentType:
+      '1': 固定文本
+      '2': 列表數據
+      '3': 富文本
+      '4': 配置項
+    platform:
+      '1': Web
+      '2': App
+      '3': Both
+  AppPageContentSync: App頁面內容同步
+  AppPageContentSyncFields:
+    version: 版本號
+    platform: 平台
+    file_path: 文件路徑
+    file_size: 文件大小
+    record_count: 記錄數量
+    generated_at: 生成時間
+    generate: 生成文件
+  PlacementContentDict:
+    objectType:
+      link: 鏈接
+      video: 視頻
+      share: 分享
+      article: 文章
+      path: 路徑
+    target:
+      current: 當前窗口
+      new: 新窗口
+    status:
+      hide: 隱藏
+      show: 顯示
+  FeedPost: 用户帖子（UGC）
+  FeedPostFields:
+    user_id: 发布用户ID
+    content_type: 内容类型
+    title: 标题
+    content: 内容
+    images: 图片列表
+    videos: 视频列表
+    link_url: 外链地址
+    link_meta: 链接元数据
+    quoted_type: 引用类型
+    quoted_id: 引用的内容ID
+    audit_status: 审核状态
+    audited_at: 审核时间
+    is_top: 是否置顶
+    is_hot: 是否热门
+    status: 状态
+    view_count: 浏览次数
+    like_count: 点赞数
+    comment_count: 评论数
+    share_count: 分享数
+    collect_count: 收藏数
+    quote_count: 引用数
+    ip: 发布IP
+    device_type: 设备类型
+    deleted_at: 软删除
+  FeedTag: 标签
+  FeedTagFields:
+    name: 标签名称
+    icon: 标签图标
+    color: 标签颜色
+    post_count: 内容数量
+    follow_count: 关注数
+    is_hot: 是否热门
+    status: 状态
+  FeedComment: 评论（通用）
+  FeedCommentFields:
+    target_type: 目标类型
+    target_id: 目标ID
+    user_id: 评论用户ID
+    parent_id: 父评论ID
+    root_id: 根评论ID
+    reply_to_user_id: 回复的用户ID
+    content: 评论内容
+    images: 图片列表
+    like_count: 点赞数
+    reply_count: 回复数
+    status: 状态
+    deleted_at: 软删除
+  FeedReport: 舉報（通用）
+  FeedReportFields:
+    user_id: 舉報用戶ID
+    target_type: 目標類型
+    target_id: 目標ID
+    report_type: 舉報原因
+    content: 舉報說明
+    handle_status: 處理狀態
+    handled_at: 處理時間
+  FeedPostDict:
+    contentType:
+      text: 純文本
+      image: 圖文
+      video: 視頻
+      link: 鏈接
+    auditStatus:
+      pending: 待審核
+      approved: 已通過
+      rejected: 已拒絕
+    status:
+      draft: 草稿
+      published: 已發布
+      offline: 已下架
+  FeedDict:
+    targetType:
+      post: 帖子
+      article: 文章
+      comment: 評論
+  FeedReportDict:
+    reportType:
+      spam: 垃圾廣告
+      pornography: 色情低俗
+      illegal: 違法違規
+      abuse: 侮辱謾罵
+      other: 其他
+    handleStatus:
+      pending: 待處理
+      handled: 已處理
+      ignored: 已忽略
