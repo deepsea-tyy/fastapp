@@ -295,9 +295,10 @@ func UserLogin(d *deps.Deps) gin.HandlerFunc {
 		dev := tools.DeviceIDOrNew(h.C, body.DeviceID)
 
 		var u model.User
+		loginUserTypes := []string{model.UserTypeSystem, model.UserTypeUser}
 		switch typ {
 		case tools.LoginTypeUsernamePassword:
-			q := h.D.DBx(h.C).Where("user_type = ?", model.UserTypeUser)
+			q := h.D.DBx(h.C).Where("user_type IN ?", loginUserTypes)
 			switch {
 			case strings.TrimSpace(body.Username) != "":
 				q = q.Where("username = ?", body.Username)
@@ -336,7 +337,7 @@ func UserLogin(d *deps.Deps) gin.HandlerFunc {
 				return
 			}
 		case tools.LoginTypeMobileCode:
-			if err := h.D.DBx(h.C).Where("user_type = ? AND mobile = ?", model.UserTypeUser, body.Mobile).First(&u).Error; err != nil {
+			if err := h.D.DBx(h.C).Where("user_type IN ? AND mobile = ?", loginUserTypes, body.Mobile).First(&u).Error; err != nil {
 				response.JSON(h.C, 200, response.Fail("auth.user_not_register"))
 				return
 			}
@@ -357,7 +358,7 @@ func UserLogin(d *deps.Deps) gin.HandlerFunc {
 			if emailKey == "" {
 				emailKey = body.Mobile
 			}
-			if err := h.D.DBx(h.C).Where("user_type = ? AND email = ?", model.UserTypeUser, emailKey).First(&u).Error; err != nil {
+			if err := h.D.DBx(h.C).Where("user_type IN ? AND email = ?", loginUserTypes, emailKey).First(&u).Error; err != nil {
 				response.JSON(h.C, 200, response.Fail("auth.user_not_register"))
 				return
 			}

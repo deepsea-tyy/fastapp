@@ -60,7 +60,6 @@ export const kefuModuleConfig: ModuleConfig = {
     maxReconnectAttempts: 5,
     reconnectDelay: 3000,
     heartbeatInterval: 30000,
-    messageTimeout: 5000,
   },
 }
 

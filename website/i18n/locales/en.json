@@ -8,7 +8,7 @@
   "home": {
     "title": "FastApp",
     "subtitle": "Enterprise Full-Stack Application Framework",
-    "description": "Complete solution including mobile, web, admin system, corporate website and backend services",
+    "description": "Complete solution including client app, web, admin system, corporate website and backend services",
     "getStarted": "Get Started",
     "learnMore": "Learn More",
     "features": "Core Features",
@@ -18,7 +18,7 @@
     "permission": "Permission Management",
     "permissionDesc": "Complete RBAC permission system to ensure application security and data access control.",
     "crossPlatform": "Cross Platform",
-    "crossPlatformDesc": "Flutter supports multi-platform deployment, one codebase runs on multiple platforms.",
+    "crossPlatformDesc": "Tauri combines a web frontend with a Rust native shell for lightweight clients and desktop packaging.",
     "modernUI": "Modern UI",
     "modernUIDesc": "Vue3 + Element Plus builds beautiful management interfaces to enhance user experience.",
     "aiAssist": "AI Assistant",
@@ -29,20 +29,20 @@
   "about": {
     "title": "About Us",
     "intro1": "FastApp is an enterprise-level full-stack application framework dedicated to providing complete application development solutions for enterprises.",
-    "intro2": "We provide comprehensive technical support from mobile to web, from admin systems to corporate websites, from frontend to backend.",
+    "intro2": "We provide comprehensive technical support from client apps to web, from admin systems to corporate websites, from frontend to backend.",
     "mission": "Our Mission",
     "missionDesc": "Through advanced technology stack and best practices, help enterprises quickly build high-quality applications, reduce development costs, and improve development efficiency.",
     "techAdvantage": "Technical Advantages",
     "techAdvantage1": "High-performance backend services based on Swoole coroutines",
-    "techAdvantage2": "Flutter cross-platform mobile application development",
+    "techAdvantage2": "Tauri cross-platform client apps (web + Rust)",
     "techAdvantage3": "Vue3 + TypeScript modern frontend technology",
     "techAdvantage4": "Nuxt.js 4.2 server-side rendered website",
     "techAdvantage5": "Complete RBAC permission management system"
   },
   "products": {
     "title": "Products & Services",
-    "mobile": "Mobile Application",
-    "mobileDesc": "Cross-platform mobile application developed based on Flutter, supporting Android, iOS, Web, Windows, macOS, Linux and other platforms.",
+    "mobile": "Client application",
+    "mobileDesc": "Client app built with Tauri (https://github.com/tauri-apps/tauri): system WebView for UI, Rust for native capabilities and packaging.",
     "admin": "Admin System",
     "adminDesc": "Enterprise-level admin system frontend application built with Vue3 + TypeScript + Element Plus.",
     "website": "Corporate Website",
@@ -66,7 +66,7 @@
   "footer": {
     "description": "Enterprise full-stack application framework to help enterprises quickly build modern applications.",
     "products": "Products",
-    "mobile": "Mobile Application",
+    "mobile": "Client application",
     "admin": "Admin System",
     "backend": "Backend Service",
     "resources": "Resources",
@@ -81,11 +81,11 @@
     "sections": {
       "backend": "Backend Service Documentation",
       "admin": "Admin System Documentation",
-      "mobile": "Mobile Application Documentation"
+      "mobile": "Client application documentation"
     },
     "backendDesc": "Detailed documentation for Hyperf 3.1 + Swoole backend service development.",
     "adminDesc": "Vue3 + TypeScript + Element Plus admin system usage guide.",
-    "mobileDesc": "Flutter cross-platform mobile application development documentation."
+    "mobileDesc": "Tauri client development and packaging notes."
   },
   "blog": {
     "comingSoon": "Blog content is coming soon, please stay tuned..."

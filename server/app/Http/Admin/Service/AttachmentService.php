@@ -60,6 +60,21 @@ final class AttachmentService extends IService
         ]));
     }
 
+    public function attachLocal(
+        string $absolutePath,
+        int $userId,
+        ?string $originName = null,
+        ?string $objectName = null,
+    ): Attachment {
+        $upload = $this->upload->attachLocal($absolutePath, $objectName);
+
+        return $this->repository->create(array_merge($upload->toArray(), [
+            'created_by' => $userId,
+            'updated_by' => $userId,
+            'origin_name' => $originName ?: basename($absolutePath),
+        ]));
+    }
+
     public function deleteById(mixed $id, array $where = []): int
     {
         $md = $this->findById($id);

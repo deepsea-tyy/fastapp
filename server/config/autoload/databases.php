@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Hyperf\Database\Commands\Ast\ModelRewriteGetterSetterVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteKeyInfoVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteSoftDeletesVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteTimestampsVisitor;
@@ -48,9 +47,21 @@ return [
                     ModelRewriteKeyInfoVisitor::class,
                     ModelRewriteTimestampsVisitor::class,
                     ModelRewriteSoftDeletesVisitor::class,
-//                    ModelRewriteGetterSetterVisitor::class,
                 ],
             ],
+        ],
+    ],
+    'sqlite' => [
+        'driver' => 'sqlite',
+        'database' => env('SQLITE_DATABASE', BASE_PATH . '/runtime/database.sqlite'),
+        'prefix' => env('SQLITE_PREFIX', ''),
+        'pool' => [
+            'min_connections' => 1,
+            'max_connections' => 10,
+            'connect_timeout' => 10.0,
+            'wait_timeout' => 3.0,
+            'heartbeat' => -1,
+            'max_idle_time' => (float) env('SQLITE_MAX_IDLE_TIME', 60),
         ],
     ],
 ];

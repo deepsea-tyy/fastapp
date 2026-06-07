@@ -23,6 +23,11 @@ final class AttachmentRepository extends IRepository
         return $this->model->newQuery()->where('hash', $hash)->first();
     }
 
+    public function findByObjectName(string $objectName): ?Attachment
+    {
+        return $this->model->newQuery()->where('object_name', $objectName)->first();
+    }
+
     public function handleSearch(Builder $query, array $params): Builder
     {
         return parent::handleSearch($query, $params);

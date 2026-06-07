@@ -7,6 +7,8 @@ vendor/
 *.lock
 storage/swagger
 storage/uploads
+storage/video/*
+!storage/video/.gitkeep
 code-generator.php
 composer.phar
 swoole-cli

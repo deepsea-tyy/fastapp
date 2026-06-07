@@ -21,9 +21,6 @@ trait AttachmentControllerTrait
     {
         $params = $this->getRequest()->all();
         $params['current_user_id'] = $this->currentUser->id();
-        if (!empty($params['suffix'])) {
-            $params['suffix'] = explode(',', $params['suffix']);
-        }
         return $this->success(
             $this->service->page($params, $this->getPage(), $this->getPageSize())
         );

@@ -94,7 +94,7 @@ class Tools
     public static function console(string|array $msg, string $level = 'notice'): void
     {
         if (is_array($msg)) {$msg = json_encode($msg, JSON_UNESCAPED_UNICODE);}
-        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($msg);
+        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}(date('Y-m-d H:i:s') . ' ' . $msg);
     }
 
     /**

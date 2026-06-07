@@ -4,11 +4,11 @@
 
 | 维度 | 说明 |
 |------|------|
-| **JSON 契约** | URL、Query/Body、响应体字段约定统一，便于 admin / App 共用同一套前端。 |
-| **路由模型** | 核心接口在 **`internal/app/router`**（`router.Endpoint` + `router.Endpoints()`）；插件 HTTP 由 **`plugin.HTTPEndpoints(loaded)`** 合并。仅 **已安装**（**`install.lock`** + **`config.go`**）且 **[`plugin/plugin.go`](../plugin/plugin.go)** 的 **`init`** 已为该插件 **`RegisterHTTPEndpoints`** 的会挂载。 |
-| **鉴权分层** | `KindPublic` / `KindAdminJWT` / `KindAPIJWT`；管理端可在 JWT 后叠加 **`MenuPerm`**（与菜单表 `name` 一致）。 |
-| **运行时** | **单进程**：**Gin** 监听 `APP_PORT`；**标准库 `net/http`** + WebSocket 监听 `APP_WS_PORT`（路径 `/ws`）。 |
-| **文档与元数据** | 不内置 Swagger/OpenAPI；路由与横切以 **`router/endpoints.go`**、`middleware`、handler 为唯一来源。 |
+| **JSON** | URL / Query / Body / 响应字段约定统一，**后台管理系统（管理端 `/admin/*`）**与 App 共用同一套契约。 |
+| **路由** | 核心 [`router.Endpoint` + `Endpoints()`](../internal/app/router/endpoints.go)；插件 HTTP 由 **`plugin.HTTPEndpoints(loaded)`** 合并。挂载条件：**`install.lock` + 根 `config.go`** + [`plugin.go`](../plugin/plugin.go) 中 **`RegisterHTTPEndpoints`**。 |
+| **鉴权** | `KindPublic` / `KindAdminJWT` / `KindAPIJWT`；管理端可叠 **`MenuPerm`**（对齐菜单 `name`）。 |
+| **进程** | **单进程**：Gin → `APP_PORT`；**`net/http` + WS** → `APP_WS_PORT`，路径 **`/ws`**。 |
+| **文档** | 无 Swagger；以 **`endpoints.go`**、middleware、handler 为准。 |
 
 ## 进程与依赖
 
@@ -21,30 +21,26 @@ flowchart TB
     ROOT --> PI["plugin.LoadInstalled"]
     ROOT --> DB["store.OpenMySQL"]
     CFG --> RDB["store.OpenRedis 可选"]
-    CFG --> JWT["JWT admin + api"]
+    CFG --> JWT["JWT 管理端 + App"]
     DB --> D["deps.Deps 或 nil"]
     RDB --> D
     JWT --> D
-    PI --> PE["plugin.HTTPEndpoints<br/>(plugin.go _import 已触发 init → reg)"]
-    D --> R["router.New Config<br/>PluginEndpoints"]
+    PI --> PE["plugin.HTTPEndpoints"]
+    D --> R["router.New + PluginEndpoints"]
     PE --> R
   end
-  R --> HTTP["goroutine: http.ListenAndServe → Gin :APP_PORT"]
-  D --> WS["websocket.ListenAndServe :APP_WS_PORT /ws"]
+  R --> HTTP["HTTP :APP_PORT"]
+  D --> WS["WebSocket :APP_WS_PORT /ws"]
 ```
 
-- **MySQL 成功** 时构造 `deps.Deps` 并经由 **`router.New`** 挂载核心 `Endpoints` + 插件 HTTP；失败则 `Deps` 为 nil，仅保留 `/`、`/health` 等静态路由。
-- **Redis** 失败时降级：JWT 黑名单、验证码、WS 用户映射等按代码路径弱化或不可用（见日志 `redis disabled`）。
-- **`JWT_SECRET` / `JWT_API_SECRET`** 缺失时对应场景的 `deps.JWTProvider` 为 nil，核心路由注册会跳过需该场景 JWT 的表项（例如未配置 API JWT 则不放 `/api/*` 需鉴权的路由）。
+- **MySQL**：**未配置 `DB_DATABASE`**（DSN 为空）时 `OpenMySQL` 返回 `nil`，**无 `Deps`**，仅 `/`、`/health`、静态等占位。**已配置但连接失败** → `main` **退出**，不会「无库启动」。
+- **Redis**：失败时记录 `redis disabled`；黑名单、验证码、WS 映射等按路径降级。
+- **JWT**：未配置 `JWT_API_SECRET` 时，`registerCoreRoutes` **跳过**所有 `KindAPIJWT` 路由；**管理端**未配置 `JWT_SECRET` 时 **`KindAdminJWT` 仍会注册**，中间件返回 `jwt not configured`（见 [鉴权](auth-and-permission.md)）。
 
 ## WebSocket
 
-[`internal/websocket/server.go`](../internal/websocket/server.go) 在 **独立端口** 上起 `http.Server`，默认路径 `/ws`；消息按 `action` 分发给 [`registry.go`](../internal/websocket/registry.go) 注册的处理器；`login` 在校验 JWT（先 admin 再 api 场景）后写入 Redis 中的 fd ↔ user 映射（键约定见 [`redis_contract.md`](../internal/websocket/redis_contract.md)）。与 Gin 分端口，便于反向代理分流。
+[`internal/websocket/server.go`](../internal/websocket/server.go) 在独立端口起服务，默认 **`/ws`**；`action` 分发到注册表；`login` 先校验管理端 JWT、再校验 App JWT，通过后写 Redis（键见 [`redis_contract.md`](../internal/websocket/redis_contract.md)）。
 
-## 响应格式
+## 响应
 
-HTTP JSON：`code`、`message`、`data`（无数据时为 `{}`）。占位接口可能在 `data` 中带 `_stub` 等调试字段。
-
-## WebSocket 与 Redis
-
-键约定见 [internal/websocket/redis_contract.md](../internal/websocket/redis_contract.md)。
+HTTP JSON：`code`、`message`、`data`（无数据时常为 `{}`）。占位接口可用 `data._stub` 等调试字段。

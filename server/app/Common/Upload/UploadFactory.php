@@ -131,6 +131,90 @@ class UploadFactory
         return Uuid::uuid4()->toString();
     }
 
+    public function stagingPath(string $basenamePrefix, string $extension): string
+    {
+        $ext = strtolower(ltrim($extension, '.'));
+        $dir = $this->localUploadDirForToday();
+
+        return $dir . '/' . $basenamePrefix . '_' . bin2hex(random_bytes(12)) . '.' . $ext;
+    }
+
+    public function attachLocal(string $absolutePath, ?string $objectName = null): Upload
+    {
+        $realFile = $this->requireReadableRealPath($absolutePath);
+        $path = $this->generatorPath();
+
+        if ($objectName != null && $objectName != '') {
+            $target = $this->localUploadDirForToday() . '/' . $objectName;
+            if ($realFile != $target && ! copy($realFile, $target)) {
+                $target = $realFile;
+            }
+            $filePath = $target;
+            $objectName = basename($filePath);
+            $url = '/uploads/' . ltrim($path, '/') . '/' . $objectName;
+        } else {
+            $objectName = basename($realFile);
+            $filePath = $realFile;
+            $url = null;
+
+            $storageRoot = realpath(rtrim(BASE_PATH, '/') . '/storage');
+            if ($storageRoot) {
+                $normReal = str_replace('\\', '/', $realFile);
+                $normRoot = str_replace('\\', '/', $storageRoot);
+                if ($normReal == $normRoot || str_starts_with($normReal, $normRoot . '/')) {
+                    $rel = substr($normReal, strlen($normRoot));
+                    $url = '/' . ltrim(str_replace('\\', '/', $rel), '/');
+                }
+            }
+
+            if ($url == null || $url == '' || $url == '/') {
+                $ext = strtolower(pathinfo($realFile, PATHINFO_EXTENSION) ?: 'bin');
+                $objectName = $this->generatorId() . '.' . $ext;
+                $target = $this->localUploadDirForToday() . '/' . $objectName;
+                if (! copy($realFile, $target)) {
+                    $target = $realFile;
+                }
+                $filePath = $target;
+                $url = '/uploads/' . ltrim($path, '/') . '/' . $objectName;
+            }
+        }
+
+        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+        $hash = md5_file($filePath) ?: '';
+        $size = (int) (filesize($filePath) ?: 0);
+        $suffix = strtolower(pathinfo($filePath, PATHINFO_EXTENSION) ?: 'bin');
+        $publicUrl = env('APP_URL', 'http://127.0.0.1:9501') . $url;
+
+        return new Upload(
+            'local',
+            $objectName,
+            $mimeType,
+            $path,
+            $hash,
+            $suffix,
+            $size,
+            $publicUrl
+        );
+    }
+
+    private function localUploadDirForToday(): string
+    {
+        $dir = rtrim(BASE_PATH, '/') . '/storage/uploads' . $this->generatorPath();
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        return $dir;
+    }
+
+    private function requireReadableRealPath(string $absolutePath): string
+    {
+        $absolutePath = trim($absolutePath);
+        $realFile = $absolutePath != '' ? realpath($absolutePath) : false;
+
+        return $realFile != false ? $realFile : $absolutePath;
+    }
+
     public function uploadChunk(string $hash, int $chunkIndex, UploadedFileInterface $chunkFile): bool
     {
         try {

@@ -18,7 +18,7 @@ const ALLOWED_EXTENSIONS = ['.md', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.we
 // 文档配置
 const docSources = [
   { name: 'server', path: join(sourceDocsDir, 'server'), label: '后端服务' },
-  { name: 'app', path: join(sourceDocsDir, 'app'), label: '移动端' },
+  { name: 'app', path: join(sourceDocsDir, 'app'), label: '客户端（Tauri）' },
   { name: 'admin', path: join(sourceDocsDir, 'admin'), label: '管理后台' },
   { name: 'website', path: join(sourceDocsDir, 'website'), label: '企业官网' }
 ]

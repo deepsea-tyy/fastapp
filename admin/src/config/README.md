@@ -177,7 +177,6 @@ interface ModuleConfig {
     maxReconnectAttempts?: number // 最大重连次数
     reconnectDelay?: number       // 重连延迟（毫秒）
     heartbeatInterval?: number    // 心跳间隔（毫秒）
-    messageTimeout?: number       // 消息超时（毫秒）
   }
 }
 ```
