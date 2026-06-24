@@ -4,13 +4,14 @@ import type { Ref } from 'vue'
 import type { SystemSettings } from '#/global'
 import useWatermark from '@/hooks/useWatermark'
 import useThemeColor from '@/hooks/useThemeColor.ts'
+import { cloneDeep } from 'lodash-es'
 
 const useSettingStore = defineStore(
   'useSettingStore',
   () => {
     type settingType = SystemSettings.settingType | null
     const title = ref<string>('')
-    const defaultSetting = ref<SystemSettings.all>(useDefaultSetting())
+    const defaultSetting = ref<SystemSettings.all>(cloneDeep(useDefaultSetting()))
     const colorMode: Ref<string> = useColorMode()
     const searchPanelEnable = ref<boolean>(false)
     const menuCollapseState = ref<boolean>(false)
@@ -20,7 +21,7 @@ const useSettingStore = defineStore(
     const userBarState = ref<boolean>(false)
 
     function showMineHeader() {
-      return ['mixed', 'banner'].includes(defaultSetting.value.app?.layout as string)
+      return defaultSetting.value.app?.showHeader && ['mixed', 'banner'].includes(defaultSetting.value.app?.layout as string)
     }
 
     function showMineSubAside() {
@@ -86,6 +87,10 @@ const useSettingStore = defineStore(
       else {
         defaultSetting.value.toolBars.push({ name, show }) // 添加新的工具栏项
       }
+    }
+
+    function syncToolBars(toolbars: MineToolbar[]) {
+      defaultSetting.value.toolBars = toolbars.map(item => ({ name: item.name, show: item.show }))
     }
 
     function getMenuCollapseState() {
@@ -155,7 +160,8 @@ const useSettingStore = defineStore(
       else {
         colorMode.value = defaultSetting.value?.app?.colorMode ?? 'light'
       }
-      useThemeColor().initThemeColor()
+      useThemeColor().setThemeColor(defaultSetting.value.app.primaryColor)
+      setAsideDark(defaultSetting.value.app.asideDark)
     }
 
     async function toggleColorMode(modeText: 'light' | 'dark' | 'autoMode' | null = null) {
@@ -233,7 +239,8 @@ const useSettingStore = defineStore(
       isBannerLayout,
       getFixedAsideState,
       setFixedAsideState,
-        setToolBar,
+      setToolBar,
+      syncToolBars,
       getMenuCollapseState,
       setMenuCollapseState,
       toggleCollapseButton,

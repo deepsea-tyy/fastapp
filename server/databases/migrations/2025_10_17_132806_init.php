@@ -149,6 +149,7 @@ return new class extends Migration {
             $table->bigInteger('size_byte')->comment('字节数')->nullable();
             $table->string('size_info', 50)->comment('文件大小')->nullable();
             $table->string('url', 255)->comment('url地址')->nullable();
+            $table->unsignedTinyInteger('normalized')->default(0)->comment('标准化:0未标准化,1已标准化');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
             $table->timestamps();
@@ -162,8 +163,8 @@ return new class extends Migration {
             $table->bigInteger('role_id')->comment('角色id');
             // 索引优化：联合索引用于查询，单独索引用于反向查询
             $table->unique(['user_id', 'role_id'], 'uk_user_role');
-            $table->index('user_id', 'idx_user_id');
-            $table->index('role_id', 'idx_role_id');
+            $table->index('user_id', 'idx_ubr_user_id');
+            $table->index('role_id', 'idx_ubr_role_id');
         });
         Schema::create('role_belongs_menu', static function (Blueprint $table) {
             $table->comment('角色菜单关联表');
@@ -172,8 +173,8 @@ return new class extends Migration {
             $table->bigInteger('menu_id')->comment('菜单id');
             // 索引优化：联合索引用于查询，单独索引用于反向查询
             $table->unique(['role_id', 'menu_id'], 'uk_role_menu');
-            $table->index('role_id', 'idx_role_id');
-            $table->index('menu_id', 'idx_menu_id');
+            $table->index('role_id', 'idx_rbm_role_id');
+            $table->index('menu_id', 'idx_rbm_menu_id');
         });
         Schema::create('department', static function (Blueprint $table) {
             $table->comment('部门表');
@@ -195,8 +196,8 @@ return new class extends Migration {
             $table->bigInteger('role_id')->comment('角色id');
             $table->bigInteger('dept_id')->comment('部门id');
             $table->timestamps();
-            $table->index('role_id', 'idx_role_id');
-            $table->index('dept_id', 'idx_department_id');
+            $table->index('role_id', 'idx_rbd_role_id');
+            $table->index('dept_id', 'idx_rbd_department_id');
         });
     }
 

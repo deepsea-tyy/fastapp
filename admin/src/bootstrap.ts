@@ -3,7 +3,6 @@
 import type { ProviderService } from '#/global'
 import type { App, Directive } from 'vue'
 import * as directives from '@/directives'
-import useThemeColor from '@/hooks/useThemeColor'
 import useTabStore from '@/store/modules/useTabStore.ts'
 import toolbars from '@/utils/toolbars.ts'
 import messages from '@intlify/unplugin-vue-i18n/messages'
@@ -108,7 +107,7 @@ async function bootstrap(app: App): Promise<void> {
   await createI18nService(app)
   await usePluginStore().registerPlugin(app)
   await router.isReady()
-  useThemeColor().initThemeColor()
+  useSettingStore().initColorMode()
 
   // 初始化 WebSocket Store（确保在 pinia 和 userStore 之后）
   const wsStore = useWebSocketStore()

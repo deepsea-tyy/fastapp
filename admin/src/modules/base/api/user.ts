@@ -14,7 +14,6 @@ export interface UserVo {
   status?: 1 | 2
   login_ip?: string
   login_time?: string
-  backend_setting?: Record<string, any>
   remark?: string
   password?: string
 }

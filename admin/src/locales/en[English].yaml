@@ -43,6 +43,9 @@ base:
       mainMenuTitle: Main menu title
     copyRightSettings: Copyright settings
     enableBreadcrumb: Enable breadcrumbs
+    showHeader: Show header
+    showBars: Show toolbar
+    showLoadingProgress: Show loading progress
     asideDark: Side bar dark mode
     tabbars:
       mode: Tab bar style

@@ -30,7 +30,7 @@ class CreateCommand extends AbstractCommand
             return CommandAlias::FAILURE;
         }
 
-        $pluginPath = Plugin::PLUGIN_PATH . '/' . $path;
+        $pluginPath = Plugin::pluginPath() . '/' . $path;
         if (file_exists($pluginPath)) {
             $this->output->error(\sprintf('Plugin directory %s already exists', $path));
             return CommandAlias::FAILURE;
@@ -60,8 +60,8 @@ class CreateCommand extends AbstractCommand
     public function createNamespace(string $path): string
     {
         // 移除插件根路径前缀，获取相对路径（如：ds/message-notify）
-        $pluginPath = Str::replace(Plugin::PLUGIN_PATH . '/', '', $path);
-        $pluginPath = Str::replace(Plugin::PLUGIN_PATH . '\\', '', $pluginPath);
+        $pluginPath = Str::replace(Plugin::pluginPath() . '/', '', $path);
+        $pluginPath = Str::replace(Plugin::pluginPath() . '\\', '', $pluginPath);
         
         // 分割路径，移除空元素
         $parts = array_filter(explode('/', $pluginPath));
@@ -81,8 +81,8 @@ class CreateCommand extends AbstractCommand
     public function createConfigJson(string $path, string $name, PluginTypeEnum $pluginType): void
     {
         // 移除插件根路径前缀，获取相对路径（如：ds/message-notify）
-        $pluginPath = Str::replace(Plugin::PLUGIN_PATH . '/', '', $path);
-        $pluginPath = Str::replace(Plugin::PLUGIN_PATH . '\\', '', $pluginPath);
+        $pluginPath = Str::replace(Plugin::pluginPath() . '/', '', $path);
+        $pluginPath = Str::replace(Plugin::pluginPath() . '\\', '', $pluginPath);
         // 移除前导斜杠（处理绝对路径情况）
         $pluginPath = ltrim($pluginPath, '/\\');
         

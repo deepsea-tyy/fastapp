@@ -102,7 +102,6 @@ export interface PendingOperation {
   type: 'send' | 'read'
   resolve: (data: any) => void
   reject: (error: any) => void
-  timeout: number
 }
 
 // WebSocket 请求消息

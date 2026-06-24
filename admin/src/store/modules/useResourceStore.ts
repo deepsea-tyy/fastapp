@@ -127,6 +127,36 @@ const resourceDefaultButtons: Resources.Button[] = [
     },
     order: 2,
   },
+  {
+    name: 'local-audio-upload',
+    label: 'audioUpload',
+    icon: 'ri:file-music-line',
+    upload: async (files: FileList, args: Resources.Args & { onProgress?: (progress: number, currentIndex?: number, totalCount?: number) => void }) => {
+      const fileArray = Array.from(files)
+      const totalCount = fileArray.length
+
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i]
+        const options = { file }
+
+        try {
+          await uploadLocal(options)
+          const progress = ((i + 1) / totalCount) * 100
+          args?.onProgress?.(progress, i, totalCount)
+
+          if (i === totalCount - 1) {
+            args?.getResourceList?.()
+          }
+        } catch (e) {
+          throw new Error(e)
+        }
+      }
+    },
+    uploadConfig: {
+      accept: 'audio/*,.mp3,.wav,.ogg,.wma,.aac,.flac,.ape',
+    },
+    order: 3,
+  },
 ]
 
 const useResourceStore = defineStore(

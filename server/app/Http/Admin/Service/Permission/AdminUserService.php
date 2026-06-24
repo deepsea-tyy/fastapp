@@ -150,7 +150,7 @@ final class AdminUserService extends IService
 
     private function extractAdminSettingData(array $data): array
     {
-        $adminFields = ['phone', 'backend_setting', 'dept_id'];
+        $adminFields = ['phone', 'dept_id'];
         return array_intersect_key($data, array_flip($adminFields));
     }
 

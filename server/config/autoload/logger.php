@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Common\Tools;
 use App\Common\UuidRequestIdProcessor;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
@@ -15,7 +16,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => BASE_PATH . '/runtime/logs/app.log',
+                'filename' => Tools::runtime_dir('logs/app.log'),
                 'level' => $defaultLevel,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
@@ -37,7 +38,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => BASE_PATH . '/runtime/logs/error.log',
+                'filename' => Tools::runtime_dir('logs/error.log'),
                 'level' => Level::Error,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
@@ -59,30 +60,8 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => BASE_PATH . '/runtime/logs/sql.log',
+                'filename' => Tools::runtime_dir('logs/sql.log'),
                 'level' => $isDebug ? Level::Info : Level::Emergency,
-                'maxFiles' => $isDebug ? 1 : 10,
-                'dateFormat' => 'Y-m-d',
-            ],
-        ],
-        'formatter' => [
-            'class' => LineFormatter::class,
-            'constructor' => [
-                'format' => null,
-                'dateFormat' => 'Y-m-d H:i:s',
-                'allowInlineLineBreaks' => true,
-            ],
-        ],
-        'processor' => [
-            'class' => UuidRequestIdProcessor::class,
-        ],
-    ],
-    'queue' => [
-        'handler' => [
-            'class' => RotatingFileHandler::class,
-            'constructor' => [
-                'filename' => BASE_PATH . '/runtime/logs/queue.log',
-                'level' => $isDebug ? Level::Debug : Level::Info,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
             ],
@@ -103,7 +82,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => BASE_PATH . '/runtime/logs/websocket.log',
+                'filename' => Tools::runtime_dir('logs/websocket.log'),
                 'level' => $isDebug ? Level::Debug : Level::Info,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',

@@ -15,7 +15,8 @@ const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
     primaryColor: '#2563EB',
     asideDark: false,
     showBreadcrumb: true,
-    loadUserSetting: true,
+    showHeader: true,
+    showBars: true,
     watermarkText: import.meta.env.VITE_APP_TITLE,
   },
   welcomePage: {

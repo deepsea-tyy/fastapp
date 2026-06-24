@@ -9,8 +9,15 @@ import { generateOperationId } from '$/ds/sysKefu/views/chat/helpers'
 import useUserStore from '@/store/modules/useUserStore'
 import { wsRegistry, SYSTEM_WS_ACTIONS } from '@/config/websocket.config'
 
-// 自动导入所有模块配置（确保配置被注册）
-import '@/plugins/ds/sysKefu/config/module.config'
+/**
+ * 扫描并加载 `src/plugins/ds/<插件名>/config/module.config.ts`（存在则加载）。
+ * 各插件应在该文件中调用 wsRegistry.register；无需在本文件再手写 import。
+ */
+export function loadPluginWebSocketModuleConfigs(): Record<string, unknown> {
+  return import.meta.glob('@/plugins/ds/*/config/module.config.ts', { eager: true })
+}
+
+loadPluginWebSocketModuleConfigs()
 
 /**
  * 获取 WebSocket 配置
@@ -20,7 +27,6 @@ function getWsConfig() {
   return {
     MAX_RECONNECT_ATTEMPTS: config.maxReconnectAttempts,
     RECONNECT_DELAY: config.reconnectDelay,
-    WS_MESSAGE_TIMEOUT: config.messageTimeout,
     HEARTBEAT_INTERVAL: config.heartbeatInterval,
     DEFAULT_WS_URL: config.defaultWsUrl,
   }
@@ -145,6 +151,25 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
   }
 
   /**
+   * 拒绝并清空所有待响应的 op_id 请求（断线、重连、主动关闭时调用）
+   */
+  function rejectAllPendingOperations(reason: string) {
+    pendingOperations.value.forEach((operation) => {
+      operation.reject(new Error(reason))
+    })
+    pendingOperations.value.clear()
+  }
+
+  function cancelPendingOperation(opId: string, reason = 'Operation cancelled'): boolean {
+    const operation = pendingOperations.value.get(opId)
+    if (!operation)
+      return false
+    pendingOperations.value.delete(opId)
+    operation.reject(new Error(reason))
+    return true
+  }
+
+  /**
    * 处理 WebSocket 响应消息（带 op_id）
    *
    * @param message - WebSocket 消息
@@ -153,7 +178,6 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
   function handleWebSocketResponse(message: any): boolean {
     if (message.op_id && pendingOperations.value.has(message.op_id)) {
       const operation = pendingOperations.value.get(message.op_id)!
-      clearTimeout(operation.timeout)
       pendingOperations.value.delete(message.op_id)
 
       if (message.success) {
@@ -313,6 +337,8 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
       wsReconnectTimer.value = null
     }
 
+    rejectAllPendingOperations('WebSocket reconnecting')
+
     if (ws.value) {
       ws.value.onclose = null
       ws.value.onerror = null
@@ -362,12 +388,14 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
       ws.value.onerror = () => {
         wsConnected.value = false
         stopHeartbeat()
+        rejectAllPendingOperations('WebSocket connection lost')
         scheduleReconnect()
       }
 
       ws.value.onclose = () => {
         wsConnected.value = false
         stopHeartbeat()
+        rejectAllPendingOperations('WebSocket connection closed')
         scheduleReconnect()
       }
     } catch (error) {
@@ -402,12 +430,7 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
       wsReconnectTimer.value = null
     }
 
-    // 清理所有待处理的操作
-    pendingOperations.value.forEach((operation) => {
-      clearTimeout(operation.timeout)
-      operation.reject(new Error('WebSocket connection closed'))
-    })
-    pendingOperations.value.clear()
+    rejectAllPendingOperations('WebSocket connection closed')
 
     if (ws.value) {
       ws.value.onclose = null
@@ -420,37 +443,47 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
   }
 
   /**
+   * 断线时触发重连（已在连接中则跳过，避免重复建连）
+   */
+  function ensureWebSocketReconnect() {
+    if (ws.value?.readyState === WebSocket.OPEN || ws.value?.readyState === WebSocket.CONNECTING) {
+      return
+    }
+
+    if (wsReconnectTimer.value) {
+      clearTimeout(wsReconnectTimer.value)
+      wsReconnectTimer.value = null
+    }
+
+    reconnectAttempts.value = 0
+    connectWebSocket()
+  }
+
+  /**
    * 发送 WebSocket 消息并等待响应
    *
    * @param action - WebSocket 操作类型
    * @param data - 消息数据
    * @param opId - 操作ID（可选）
-   * @param timeout - 超时时间（毫秒）
-   * @returns Promise<响应数据>
+   * @returns Promise<响应数据>（直至收到带 op_id 的响应，或连接关闭/重连时 reject）
    */
   async function sendWebSocketMessage(
     action: string,
     data: Record<string, any>,
     opId?: string,
-    timeout = WS_CONFIG.WS_MESSAGE_TIMEOUT * 5,
   ): Promise<WebSocketResponse> {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      ensureWebSocketReconnect()
       throw new Error('WebSocket is not connected')
     }
 
     const operationId = opId || generateOperationId('op')
 
     return new Promise<WebSocketResponse>((resolve, reject) => {
-      const timeoutId = window.setTimeout(() => {
-        pendingOperations.value.delete(operationId)
-        reject(new Error('Operation timeout'))
-      }, timeout)
-
       pendingOperations.value.set(operationId, {
         type: 'send',
         resolve,
         reject,
-        timeout: timeoutId,
       })
 
       try {
@@ -461,7 +494,7 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
         }))
       } catch (error) {
         pendingOperations.value.delete(operationId)
-        clearTimeout(timeoutId)
+        ensureWebSocketReconnect()
         reject(error)
       }
     })
@@ -507,6 +540,7 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
     manualReconnect,
     sendWebSocketMessage,
     sendWebSocketLogout,
+    cancelPendingOperation,
     registerMessageHandler,
     unregisterMessageHandler,
     clearMessageHandlers,

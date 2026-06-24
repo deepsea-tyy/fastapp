@@ -96,6 +96,11 @@ abstract class IRepository
 
     protected function applyWhereByType(Builder $query, string $field, mixed $value, ?string $castType, ?string $dbType = null): void
     {
+        $value = $value instanceof \BackedEnum ? $value->value : $value;
+        if (is_array($value)) {
+            $value = array_map(fn ($v) => $v instanceof \BackedEnum ? $v->value : $v, $value);
+        }
+
         $type = $dbType ?? $this->normalizeCastType($castType) ?? 'string';
 
         // 日期时间类型且值为数组时，使用范围查询
@@ -138,6 +143,7 @@ abstract class IRepository
     {
         return match (true) {
             $castType === null => null,
+            enum_exists($castType) => 'integer',
             str_contains($castType, 'int') || str_contains($castType, 'bool') => 'integer',
             str_contains($castType, 'float') || str_contains($castType, 'decimal') => 'float',
             str_contains($castType, 'datetime') || str_contains($castType, 'timestamp') => 'datetime',

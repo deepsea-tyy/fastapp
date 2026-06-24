@@ -13,6 +13,7 @@ export interface Resource {
   size_byte?: number
   size_info?: string
   url?: string
+  normalized?: number
 }
 
 export interface FileType extends MTabsOptionItems<string> {
@@ -21,15 +22,12 @@ export interface FileType extends MTabsOptionItems<string> {
   suffix: string
 }
 
-// 定义 Props 类型
 export interface ResourcePanelProps {
   multiple?: boolean
   limit?: number
   pageSize?: number
   showAction?: boolean
-  dbClickConfirm?: boolean
   defaultFileType?: string
-  fileTypes?: FileType[]
 }
 
 export interface ResourcePanelEmits {
@@ -40,6 +38,5 @@ export interface ResourcePanelEmits {
 export interface ResourcePickerProps extends ResourcePanelProps {
   visible: boolean
 }
-export interface ResourcePickerEmits extends ResourcePanelEmits, DialogEmits {
 
-}
+export type ResourcePickerEmits = ResourcePanelEmits & DialogEmits

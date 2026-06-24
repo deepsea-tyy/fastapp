@@ -72,7 +72,10 @@ export default defineComponent({
           </Transition>
           <div class="mine-main">
             <MineBars />
-            <div class="mine-worker-area">
+            <div class={{
+              'mine-worker-area': true,
+              'mine-worker-area--full': route.meta?.fullPage,
+            }}>
               <RouterView class="router-view">
                 {({ Component }) => (
                   <Transition name={appSetting.pageAnimate} mode="out-in">

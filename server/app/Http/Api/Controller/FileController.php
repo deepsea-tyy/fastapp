@@ -10,6 +10,7 @@ namespace App\Http\Api\Controller;
 
 use App\Common\AbstractController;
 use App\Common\Tools;
+use App\Http\Admin\Service\AttachmentService;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
@@ -22,92 +23,92 @@ use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 class FileController extends AbstractController
 {
     public function __construct(
-        protected readonly HttpResponse $response
+        protected readonly HttpResponse $response,
+        protected readonly AttachmentService $attachmentService,
     ) {}
 
     #[Get(
         path: '/api/file',
         operationId: 'GetStorageFile',
-        summary: '文件访问（测试阶段使用）',
+        summary: '文件访问',
         tags: ['文件管理'],
     )]
     #[QueryParameter(name: 'path', description: '文件路径，相对于storage目录', example: 'uploads/2025-10-29/example.jpg')]
+    #[QueryParameter(name: 'id', description: 'attachment 表主键', example: '123')]
     public function getFile(): ResponseInterface
     {
         $request = Tools::getContainer()->get(RequestInterface::class);
+        $id = (int) $request->query('id', 0);
         $path = $request->query('path', '');
-        $filePath = BASE_PATH . '/storage' . $path;
-        if (!file_exists($filePath)) {
-            return $this->response->withStatus(404)
-                ->withHeader('Content-Type', 'application/json')
-                ->withBody(new SwooleStream(json_encode([
-                    'code' => 404,
-                    'message' => '文件不存在'.$filePath,
-                    'data' => []
-                ],JSON_UNESCAPED_UNICODE)));
-        }
-        // 获取文件MIME类型
-        $mimeType = $this->getMimeType($filePath);
-        
-        // 获取文件名
-        $filename = basename($filePath);
-        
-        // 判断是否是视频文件
-        $isVideo = $this->isVideoFile($filePath);
-        
-        // 检查客户端是否支持压缩
-        $acceptEncoding = $request->getHeaderLine('Accept-Encoding');
-        $hasCompression = !empty($acceptEncoding);
-        
-        // 如果是视频文件，只返回1M数据
-        if ($isVideo) {
-            $fileSize = filesize($filePath);
-            $chunkSize = 1024 * 1024; // 1M
-            $readSize = min($fileSize, $chunkSize);
-            
-            $fileHandle = fopen($filePath, 'rb');
-            $fileContent = fread($fileHandle, $readSize);
-            fclose($fileHandle);
-            
-            $response = $this->response->withHeader('Content-Type', $mimeType)
-                ->withHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
-                ->withBody(new SwooleStream($fileContent));
-            
-            // 如果客户端不支持压缩，设置 Content-Length
-            if (!$hasCompression) {
-                $response = $response->withHeader('Content-Length', (string)$readSize);
+        if ($id) {
+            $attachment = $this->attachmentService->findById($id);
+            if (!$attachment) {
+                return $this->response->withStatus(404);
             }
-            
-            return $response;
+            $path = $attachment->url;
         }
-        
-        // 非视频文件，返回完整内容
-        $fileContent = file_get_contents($filePath);
-        
-        // 对于文本类型文件，检测并转换编码为UTF-8
+        $filePath = Tools::storage_path($path);
+        if (!file_exists($filePath)) {
+            return $this->response->withStatus(404);
+        }
+
+        $mimeType = $this->getMimeType($filePath);
+        $filename = basename($filePath);
+
         if ($this->isTextFile($filePath)) {
-            $fileContent = $this->convertToUtf8($fileContent);
+            $fileContent = $this->convertToUtf8(file_get_contents($filePath));
+            return $this->response->withHeader('Content-Type', $mimeType)
+                ->withHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
+                ->withHeader('Content-Length', (string) strlen($fileContent))
+                ->withBody(new SwooleStream($fileContent));
         }
-        
-        $response = $this->response->withHeader('Content-Type', $mimeType)
-            ->withHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
-            ->withBody(new SwooleStream($fileContent));
-        
-        // 如果客户端不支持压缩，设置 Content-Length
-        if (!$hasCompression) {
-            $response = $response->withHeader('Content-Length', (string)strlen($fileContent));
-        }
-        
-        return $response;
+
+        return $this->streamBinary($filePath, $mimeType, $filename, $request);
     }
-    
-    /**
-     * 获取文件的MIME类型
-     */
+
+    private function streamBinary(string $filePath, string $mimeType, string $filename, RequestInterface $request): ResponseInterface
+    {
+        $fileSize = filesize($filePath);
+        $range = $request->getHeaderLine('Range');
+
+        if ($range && preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
+            $start = (int) $matches[1];
+            $end = $matches[2] !== '' ? (int) $matches[2] : $fileSize - 1;
+            $end = min($end, $fileSize - 1);
+
+            if ($start > $end || $start >= $fileSize) {
+                return $this->response->withStatus(416)
+                    ->withHeader('Content-Range', 'bytes */' . $fileSize);
+            }
+
+            $length = $end - $start + 1;
+            $handle = fopen($filePath, 'rb');
+            fseek($handle, $start);
+            $content = fread($handle, $length);
+            fclose($handle);
+
+            return $this->response->withStatus(206)
+                ->withHeader('Content-Type', $mimeType)
+                ->withHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
+                ->withHeader('Accept-Ranges', 'bytes')
+                ->withHeader('Content-Range', 'bytes ' . $start . '-' . $end . '/' . $fileSize)
+                ->withHeader('Content-Length', (string) $length)
+                ->withBody(new SwooleStream($content));
+        }
+
+        $content = file_get_contents($filePath);
+
+        return $this->response->withHeader('Content-Type', $mimeType)
+            ->withHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
+            ->withHeader('Accept-Ranges', 'bytes')
+            ->withHeader('Content-Length', (string) $fileSize)
+            ->withBody(new SwooleStream($content));
+    }
+
     private function getMimeType(string $filePath): string
     {
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        
+
         $mimeTypes = [
             'jpg' => 'image/jpeg',
             'jpeg' => 'image/jpeg',
@@ -125,8 +126,20 @@ class FileController extends AbstractController
             'zip' => 'application/zip',
             'rar' => 'application/x-rar-compressed',
             'mp4' => 'video/mp4',
+            'avi' => 'video/x-msvideo',
+            'mov' => 'video/quicktime',
+            'wmv' => 'video/x-ms-wmv',
+            'flv' => 'video/x-flv',
+            'mkv' => 'video/x-matroska',
+            'webm' => 'video/webm',
             'mp3' => 'audio/mpeg',
             'wav' => 'audio/wav',
+            'ogg' => 'audio/ogg',
+            'aac' => 'audio/aac',
+            'm4a' => 'audio/mp4',
+            'flac' => 'audio/flac',
+            'wma' => 'audio/x-ms-wma',
+            'ape' => 'audio/ape',
             'json' => 'application/json; charset=utf-8',
             'xml' => 'application/xml; charset=utf-8',
             'txt' => 'text/plain; charset=utf-8',
@@ -134,57 +147,34 @@ class FileController extends AbstractController
             'css' => 'text/css; charset=utf-8',
             'js' => 'application/javascript; charset=utf-8',
         ];
-        
+
         return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
-    
-    /**
-     * 判断是否是视频文件
-     */
-    private function isVideoFile(string $filePath): bool
-    {
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        
-        $videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp', 'ogv'];
-        
-        return in_array($extension, $videoExtensions);
-    }
-    
-    /**
-     * 判断是否是文本文件
-     */
+
     private function isTextFile(string $filePath): bool
     {
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        
+
         $textExtensions = ['txt', 'html', 'htm', 'css', 'js', 'json', 'xml', 'csv', 'md', 'log', 'ini', 'conf', 'config', 'php'];
-        
+
         return in_array($extension, $textExtensions);
     }
-    
-    /**
-     * 将文件内容转换为UTF-8编码
-     */
+
     private function convertToUtf8(string $content): string
     {
-        // 检测当前编码
         $detectedEncoding = mb_detect_encoding($content, ['UTF-8', 'GBK', 'GB2312', 'ISO-8859-1', 'ASCII'], true);
-        
-        // 如果已经是UTF-8或者检测失败，直接返回
+
         if ($detectedEncoding === 'UTF-8' || $detectedEncoding === false) {
-            // 验证是否为有效的UTF-8
             if (mb_check_encoding($content, 'UTF-8')) {
                 return $content;
             }
-            // 如果不是有效的UTF-8，尝试从GBK转换
             $detectedEncoding = 'GBK';
         }
-        
-        // 转换为UTF-8
+
         if ($detectedEncoding && $detectedEncoding !== 'UTF-8') {
             $content = mb_convert_encoding($content, 'UTF-8', $detectedEncoding);
         }
-        
+
         return $content;
     }
 }

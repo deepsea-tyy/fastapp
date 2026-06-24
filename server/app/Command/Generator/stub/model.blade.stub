@@ -41,7 +41,7 @@
     
     // 输出命名空间和use语句
     echo "namespace {$namespace};" . PHP_EOL . PHP_EOL;
-    echo 'use Hyperf\DbConnection\Model\Model;' . PHP_EOL;
+    echo 'use App\Common\FastAppModel as Model;' . PHP_EOL;
 @endphp
 
 /**

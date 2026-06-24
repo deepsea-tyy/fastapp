@@ -60,6 +60,9 @@ final class AttachmentSchema implements \JsonSerializable
     #[Property(property: 'remark', title: '备注', type: 'string')]
     public ?string $remark;
 
+    #[Property(property: 'normalized', title: '标准化:0未标准化,1已标准化', type: 'int')]
+    public ?int $normalized;
+
     public function __construct(Attachment $model)
     {
         $this->id = $model->id;
@@ -78,10 +81,11 @@ final class AttachmentSchema implements \JsonSerializable
         $this->createdAt = $model->created_at;
         $this->updatedAt = $model->updated_at;
         $this->remark = $model->remark;
+        $this->normalized = $model->normalized;
     }
 
     public function jsonSerialize(): mixed
     {
-        return ['id' => $this->id, 'storage_mode' => $this->storageMode, 'origin_name' => $this->originName, 'object_name' => $this->objectName, 'hash' => $this->hash, 'mime_type' => $this->mimeType, 'storage_path' => $this->storagePath, 'suffix' => $this->suffix, 'size_byte' => $this->sizeByte, 'size_info' => $this->sizeInfo, 'url' => $this->url, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt, 'remark' => $this->remark];
+        return ['id' => $this->id, 'storage_mode' => $this->storageMode, 'origin_name' => $this->originName, 'object_name' => $this->objectName, 'hash' => $this->hash, 'mime_type' => $this->mimeType, 'storage_path' => $this->storagePath, 'suffix' => $this->suffix, 'size_byte' => $this->sizeByte, 'size_info' => $this->sizeInfo, 'url' => $this->url, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt, 'remark' => $this->remark, 'normalized' => $this->normalized];
     }
 }

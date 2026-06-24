@@ -8,7 +8,7 @@
   "home": {
     "title": "FastApp",
     "subtitle": "企业级全栈应用框架",
-    "description": "包含移动端、Web端、后台管理系统、企业官网和后端服务的完整解决方案",
+    "description": "包含客户端、Web端、后台管理系统、企业官网和后端服务的完整解决方案",
     "getStarted": "开始使用",
     "learnMore": "了解更多",
     "features": "核心特性",
@@ -18,7 +18,7 @@
     "permission": "权限管理",
     "permissionDesc": "完整的 RBAC 权限系统，保障应用安全性和数据访问控制。",
     "crossPlatform": "跨平台",
-    "crossPlatformDesc": "Flutter 支持多平台部署，一套代码运行在多个平台。",
+    "crossPlatformDesc": "Tauri 以 Web 前端 + Rust 原生壳构建轻量客户端，便于桌面等场景打包与分发。",
     "modernUI": "现代化 UI",
     "modernUIDesc": "Vue3 + Element Plus 构建美观的管理界面，提升用户体验。",
     "aiAssist": "AI 辅助",
@@ -29,20 +29,20 @@
   "about": {
     "title": "关于我们",
     "intro1": "FastApp 是一个企业级全栈应用框架，致力于为企业提供完整的应用开发解决方案。",
-    "intro2": "我们提供从移动端到 Web 端，从后台管理到企业官网，从前端到后端的全方位技术支持。",
+    "intro2": "我们提供从客户端到 Web 端，从后台管理到企业官网，从前端到后端的全方位技术支持。",
     "mission": "我们的使命",
     "missionDesc": "通过先进的技术栈和最佳实践，帮助企业快速构建高质量的应用，降低开发成本，提高开发效率。",
     "techAdvantage": "技术优势",
     "techAdvantage1": "基于 Swoole 协程的高性能后端服务",
-    "techAdvantage2": "Flutter 跨平台移动应用开发",
+    "techAdvantage2": "Tauri 跨平台客户端（Web + Rust）",
     "techAdvantage3": "Vue3 + TypeScript 现代化前端技术",
     "techAdvantage4": "Nuxt.js 4.2 服务端渲染官网",
     "techAdvantage5": "完整的 RBAC 权限管理系统"
   },
   "products": {
     "title": "产品与服务",
-    "mobile": "移动端应用",
-    "mobileDesc": "基于 Flutter 开发的跨平台移动应用，支持 Android、iOS、Web、Windows、macOS、Linux 等多平台。",
+    "mobile": "客户端应用",
+    "mobileDesc": "基于 Tauri（https://github.com/tauri-apps/tauri）的客户端：系统 WebView 渲染界面，Rust 侧负责原生能力与打包。",
     "admin": "后台管理系统",
     "adminDesc": "基于 Vue3 + TypeScript + Element Plus 构建的企业级后台管理系统前端应用。",
     "website": "企业官网",
@@ -66,7 +66,7 @@
   "footer": {
     "description": "企业级全栈应用框架，助力企业快速构建现代化应用。",
     "products": "产品",
-    "mobile": "移动端应用",
+    "mobile": "客户端应用",
     "admin": "后台管理系统",
     "backend": "后端服务",
     "resources": "资源",
@@ -81,11 +81,11 @@
     "sections": {
       "backend": "后端服务文档",
       "admin": "后台管理系统文档",
-      "mobile": "移动端应用文档"
+      "mobile": "客户端应用文档"
     },
     "backendDesc": "详细的 Hyperf 3.1 + Swoole 后端服务开发文档。",
     "adminDesc": "Vue3 + TypeScript + Element Plus 后台管理系统使用指南。",
-    "mobileDesc": "Flutter 跨平台移动应用开发文档。"
+    "mobileDesc": "Tauri 客户端开发与打包相关说明。"
   },
   "blog": {
     "comingSoon": "博客内容即将上线，敬请期待..."

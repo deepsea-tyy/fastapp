@@ -12,8 +12,6 @@ export default function getFormItems(formType: 'add' | 'edit' = 'add', t: any, m
     model.user_type = 100
   }
 
-  model.backend_setting = []
-
   return [
     {
       label: () => t('baseUserManage.avatar'),

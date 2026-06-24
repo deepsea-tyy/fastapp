@@ -7,6 +7,7 @@ namespace App\Command\Plugin;
 
 use App\Command\Plugin\Packer\PackerFactory;
 use App\Command\Plugin\Packer\PackerInterface;
+use App\Common\Tools;
 use Composer\InstalledVersions;
 use Hyperf\Config\ProviderConfig;
 use Hyperf\Contract\ConfigInterface;
@@ -26,10 +27,6 @@ class Plugin
      */
     public const INSTALL_LOCK_FILE = 'install.lock';
 
-    /**
-     * Plugin root directory.
-     */
-    public const PLUGIN_PATH = BASE_PATH . '/' . self::PLUGIN_PREFIX;
 
     public const PLUGIN_PREFIX = 'plugin';
 
@@ -40,6 +37,11 @@ class Plugin
     public static function getPacker(): PackerInterface
     {
         return (new PackerFactory())->get();
+    }
+
+    public static function pluginPath(): string
+    {
+        return Tools::phar_path(self::PLUGIN_PREFIX);
     }
 
     public static function init(): void
@@ -68,13 +70,13 @@ class Plugin
         if (self::$configJsonPaths) {
             return self::$configJsonPaths;
         }
-        
-        if (!is_dir(self::PLUGIN_PATH)) {
+
+        if (!is_dir(self::pluginPath())) {
             return [];
         }
-        
+
         $configs = Finder::create()
-            ->in(self::PLUGIN_PATH)
+            ->in(self::pluginPath())
             ->name('config.json')
             ->sortByChangedTime();
         foreach ($configs as $jsonFile) {
@@ -148,7 +150,7 @@ class Plugin
         $splFile = self::getSplFile($path);
 
         self::loadPlugin($info, $splFile);
-        $pluginPath = self::PLUGIN_PATH . '/' . $path;
+        $pluginPath = self::pluginPath() . '/' . $path;
         if ($info['status']) {
             throw new \RuntimeException(
                 'The given directory detects an installation and terminates the installation operation'
@@ -247,7 +249,7 @@ class Plugin
                 }
             }
         }
-        
+
         // If the plugin exists in the web directory, perform the migration of the front-end files
         if (is_dir($pluginPath . '/web')) {
             self::copyPluginWebToFront($pluginPath, $path);
@@ -281,7 +283,7 @@ class Plugin
     public static function syncAdminWeb(string $path): int
     {
         self::read($path);
-        $pluginPath = self::PLUGIN_PATH . '/' . $path;
+        $pluginPath = self::pluginPath() . '/' . $path;
         if (! is_dir($pluginPath . '/web')) {
             throw new \RuntimeException(\sprintf('Plugin "%s" has no web directory to sync', $path));
         }
@@ -303,7 +305,7 @@ class Plugin
             if (! $info['status']) {
                 continue;
             }
-            $pluginPath = self::PLUGIN_PATH . '/' . $rel;
+            $pluginPath = self::pluginPath() . '/' . $rel;
             if (! is_dir($pluginPath . '/web')) {
                 continue;
             }
@@ -338,7 +340,7 @@ class Plugin
     public static function uninstall(string $path): void
     {
         $info = self::read($path);
-        $pluginPath = self::PLUGIN_PATH . '/' . $path;
+        $pluginPath = self::pluginPath() . '/' . $path;
         if (!$info['status']) {
             throw new \RuntimeException(
                 'No installation behavior was detected for this plugin, and uninstallation could not be performed'
@@ -402,7 +404,7 @@ class Plugin
                 }
             }
         }
-        
+
         // If the plugin exists in the web directory, perform the migration of the front-end files
         $frontDirectory = self::getConfig('front_directory', dirname(BASE_PATH) . '/admin');
         if (file_exists($pluginPath . '/web')) {
@@ -534,13 +536,13 @@ class Plugin
     {
         // Load standard provider configs first
         $configs = ProviderConfig::load();
-        
+
         // Load plugin configs and merge
         $pluginConfigs = self::loadPluginConfigs();
         if (!empty($pluginConfigs)) {
             $configs = self::mergePluginConfigs($configs, $pluginConfigs);
         }
-        
+
         return $configs;
     }
 
@@ -550,16 +552,16 @@ class Plugin
     private static function mergePluginConfigs(array $existing, array $pluginConfigs): array
     {
         $result = $existing;
-        
+
         foreach ($pluginConfigs as $pluginConfig) {
             $result = array_merge_recursive($result, $pluginConfig);
         }
-        
+
         // Handle dependencies specially (similar to ProviderConfig::merge)
         if (isset($result['dependencies'])) {
             $mergedDependencies = [];
             $allConfigs = array_merge([$existing], $pluginConfigs);
-            
+
             foreach ($allConfigs as $config) {
                 foreach ($config['dependencies'] ?? [] as $key => $value) {
                     $depend = $mergedDependencies[$key] ?? null;
@@ -573,10 +575,10 @@ class Plugin
                     }
                 }
             }
-            
+
             $result['dependencies'] = $mergedDependencies;
         }
-        
+
         return $result;
     }
 

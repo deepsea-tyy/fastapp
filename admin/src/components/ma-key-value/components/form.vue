@@ -5,7 +5,6 @@ import 'ace-builds/src-noconflict/mode-json'
 import 'ace-builds/src-noconflict/theme-dawn'
 import 'ace-builds/src-noconflict/theme-github_dark'
 import { useColorMode } from '@vueuse/core'
-import formatJson from '../utils/formatJson.ts'
 
 defineOptions({ name: 'system:group:form' })
 
@@ -25,6 +24,17 @@ watch(content, (newValue) => {
 });
 
 const theme = computed(() => color.value === 'dark' ? 'github_dark' : 'dawn')
+
+function formatJson(json: Record<string, any>): string {
+  try {
+    return JSON.stringify(json, null, 2)
+  }
+  catch (error) {
+    // 如果解析失败，返回原始字符串并附带错误信息
+    console.error('Invalid JSON string:', error)
+    return `/* Invalid JSON: ${json} */`
+  }
+}
 
 // ok事件
 function add(): Promise<any> {

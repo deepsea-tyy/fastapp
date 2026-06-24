@@ -1,5 +1,5 @@
 import { h, createApp, ref } from 'vue'
-import { ElDialog } from 'element-plus'
+import ElementPlus, { ElDialog } from 'element-plus'
 
 type Options = {
   title?: string
@@ -10,11 +10,11 @@ type Options = {
 export function useVideoViewer(videoUrl: string, options?: Options) {
   const videoViewerDom = document.createElement('div')
   document.body.appendChild(videoViewerDom)
-  
+
   const defaultOptions: Options = {
     title: '视频预览',
     width: '80%',
-    zIndex: 2500,
+    zIndex: 3000,
     ...options,
   }
 
@@ -89,6 +89,6 @@ export function useVideoViewer(videoUrl: string, options?: Options) {
   }
 
   app = createApp(VideoViewerComponent)
+  app.use(ElementPlus, {})
   app.mount(videoViewerDom)
 }
-

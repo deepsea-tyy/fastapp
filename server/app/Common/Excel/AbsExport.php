@@ -19,7 +19,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 /**
  * 通用Excel导出抽象类
  * $export = new UserExport();
-        $export->setSavePath(BASE_PATH . '/storage')
+        $export->setSavePath($path)
             ->setHeaders(['一','二','xx','bb'])
             ->setData([[1,2,3,4]]);
        $file = $export->setChunkSize(1000) // 设置分片大小

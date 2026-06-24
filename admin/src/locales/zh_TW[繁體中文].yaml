@@ -43,6 +43,9 @@ base:
       mainMenuTitle: 主功能表標題
     copyRightSettings: 版權設置
     enableBreadcrumb: 啟用麵包屑
+    showHeader: 顯示頂欄
+    showBars: 顯示工具欄
+    showLoadingProgress: 顯示載入進度
     asideDark: 側邊欄黑暗模式
     tabbars:
       mode: 標籤欄風格

@@ -43,6 +43,8 @@ export interface ChildFormItem {
   min?: number;
   max?: number;
   step?: number;
+  // 字段悬浮提示
+  tip?: string;
   // 其他可能的属性
   [key: string]: any;
 }

@@ -14,9 +14,9 @@ use Hyperf\Context\ApplicationContext;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Logger\LoggerFactory;
 use Hyperf\Redis\Redis;
-use Psr\Container\ContainerExceptionInterface;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Psr\SimpleCache\CacheInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Swoole\Coroutine;
 use function Hyperf\AsyncQueue\dispatch;
@@ -93,8 +93,10 @@ class Tools
 
     public static function console(string|array $msg, string $level = 'notice'): void
     {
-        if (is_array($msg)) {$msg = json_encode($msg, JSON_UNESCAPED_UNICODE);}
-        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}($msg);
+        if (is_array($msg)) {
+            $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
+        }
+        self::getContainer()->get(StdoutLoggerInterface::class)->{$level}(date('Y-m-d H:i:s') . ' ' . $msg);
     }
 
     /**
@@ -165,39 +167,48 @@ class Tools
         });
     }
 
+    public static function getCache(): CacheInterface
+    {
+        return self::getContainer()->get(CacheInterface::class);
+    }
+
     public static function getRedis(): Redis
     {
         return self::getContainer()->get(Redis::class);
     }
 
     /**
-     * 设置用户缓存（Hash结构）
+     * 设置用户缓存
      *
      * @param int $uid 用户ID
      * @param array $param 缓存数据数组，格式：['key1' => 'value1', 'key2' => 'value2']
      * @return bool 操作结果
-     * @throws \RedisException
      */
     public static function setUserCache(int $uid, array $param): bool
     {
-        return self::getRedis()->hMSet('u:' . $uid, $param);
+        $key = 'u:' . $uid;
+        $existing = self::getCache()->get($key) ?: [];
+        return self::getCache()->set($key, array_merge($existing, $param));
     }
 
     /**
-     * 获取用户缓存（Hash结构）
+     * 获取用户缓存
      *
      * @param int $uid 用户ID
      * @param array|string $fields 要获取的字段数组或单个字段名，格式：['key1', 'key2'] 或 'key1'
      * @return array|string 返回字段值数组或单个值，格式：['key1' => 'value1', 'key2' => 'value2'] 或 'value1'
-     * @throws \RedisException
      */
     public static function getUserCache(int $uid, array|string $fields): array|string
     {
-        $redis = self::getRedis();
+        $data = self::getCache()->get('u:' . $uid) ?: [];
         if (is_array($fields)) {
-            return $redis->hMGet('u:' . $uid, $fields) ?: [];
+            $result = [];
+            foreach ($fields as $field) {
+                $result[$field] = $data[$field] ?? false;
+            }
+            return $result ?: [];
         }
-        return $redis->hGet('u:' . $uid, $fields) ?: '';
+        return $data[$fields] ?? '';
     }
 
     /**
@@ -211,7 +222,7 @@ class Tools
      */
     public static function generateNumber(string $type = 'default', int $length = 8, string $prefix = '', ?string $dateFormat = 'Ymd'): string
     {
-        $redis = self::getContainer()->get(Redis::class);
+        $redis = self::getRedis();
 
         // 构建Redis键名
         $dateStr = $dateFormat ? date($dateFormat) : '';
@@ -234,5 +245,41 @@ class Tools
 
         // 组合编号：前缀 + 日期 + 序号
         return $prefix . $dateStr . $formattedSequence;
+    }
+
+    public static function runtime_dir(string $path = ''): string
+    {
+        return self::phar_path('/runtime/' . ltrim($path, '/'));
+    }
+
+    public static function storage_path(string $path = ''): string
+    {
+        return self::phar_path('/storage/' . ltrim($path, '/'));
+    }
+
+    public static function phar_path(string $path = ''): string
+    {
+        if ($phar = \Phar::running(false)) {
+            return dirname($phar) . '/' . ltrim($path, '/');
+        }
+
+        return BASE_PATH . '/' . ltrim($path, '/');
+    }
+
+    public static function getJwtKey(?string $secret): InMemory
+    {
+        if (empty($secret)) {
+            throw new \RuntimeException('JWT_SECRET or JWT_API_SECRET environment variable is required');
+        }
+
+        // Try to decode as base64, if successful and round-trip matches, use base64Encoded
+        $decoded = @base64_decode($secret, true);
+        if ($decoded !== false && $decoded !== '' && base64_encode($decoded) === $secret) {
+            // Valid base64 string
+            return InMemory::base64Encoded($secret);
+        }
+
+        // Plain text, use as is
+        return InMemory::plainText($secret);
     }
 }

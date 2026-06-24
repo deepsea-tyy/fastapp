@@ -21,6 +21,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property string $componentPath 视图文件类型
  * @property string $componentSuffix 视图前缀路径
  * @property string $breadcrumbEnable 是否显示面包屑
+ * @property bool $fullPage 内容区是否占满可用高度
  * @property string $activeName 激活高亮的菜单标识
  * @property string $auth 前端权限判断，允许访问的权限码
  * @property string $role 前端权限判断，允许访问的角色码
@@ -38,7 +39,7 @@ final class Meta extends Model
     protected array $fillable = [
         'title', 'i18n', 'badge', 'icon', 'affix', 'hidden', 'type', 'cache',
         'copyright', 'breadcrumbEnable', 'componentPath', 'componentSuffix', 'link',
-        'activeName', 'auth', 'role', 'user',
+        'activeName', 'auth', 'role', 'user', 'fullPage',
     ];
 
     protected array $casts = [
@@ -47,6 +48,7 @@ final class Meta extends Model
         'cache' => 'boolean',
         'copyright' => 'boolean',
         'breadcrumbEnable' => 'boolean',
+        'fullPage' => 'boolean',
         'title' => 'string',
         'componentPath' => 'string',
         'componentSuffix' => 'string',

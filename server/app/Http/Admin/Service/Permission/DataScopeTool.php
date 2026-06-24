@@ -88,7 +88,6 @@ final class DataScopeTool
         $adminSetting = AdminSetting::query()->where('user_id', $userId)->first();
         $userProfile = UserProfile::query()->where('user_id', $userId)->first();
         $user->phone = $adminSetting?->phone;
-        $user->backend_setting = $adminSetting?->backend_setting;
         $user->dept_id = $adminSetting?->dept_id;
         $user->nickname = $userProfile?->nickname;
         $user->avatar = $userProfile?->avatar;

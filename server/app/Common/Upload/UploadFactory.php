@@ -37,7 +37,7 @@ class UploadFactory
         $options = [
             'local' => [
                 'driver' => LocalAdapterFactory::class,
-                'root' => BASE_PATH . '/storage/uploads',
+                'root' => Tools::storage_path('uploads'),
                 'public_url' => env('APP_URL', 'http://127.0.0.1:9501') . '/uploads',
             ],
             'oss' => [
@@ -163,7 +163,7 @@ class UploadFactory
             fclose($tempFile);
             $url = $this->filesystem->publicUrl($filePath);
             $this->cleanupChunks($hash, $totalChunks);
-            $realPath = BASE_PATH . '/storage' . parse_url($url, PHP_URL_PATH);
+            $realPath = Tools::storage_path(parse_url($url, PHP_URL_PATH));
 
             $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
             $fileHash = md5_file($realPath);

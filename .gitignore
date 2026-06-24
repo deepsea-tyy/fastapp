@@ -1,11 +1,28 @@
-.playwright-mcp/*
-*chrome*
+tools/.env
 test*
 
+# setuptools 等遗留；tools 已 tool.uv.package = false，勿提交
+*.egg-info/
+
+# tools：运行日志与 Python 虚拟环境
+tools/logs/
+tools/.venv/
+
 # Cursor 自动保存的临时文件（仅根目录）
-/assets/*
 /.claude
-/docs/产品文档/、
+/.cursor
 /server/plugin/ds/ex
-/tools/
 /server/plugin/ds/quant/
+/server/chromedriver
+# tools/models：忽略常见权重文件，保留目录结构与 .gitkeep
+tools/models
+/tools/uv.lock
+/tools/.chrome-fetch-profile
+*LivePortrait/
+/server/storage
+/tools/runtime/outputs
+/pkg/
+*vendor*
+/server/pkg/
+composer.phar
+runtime

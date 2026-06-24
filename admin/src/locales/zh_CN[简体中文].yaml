@@ -43,6 +43,9 @@ base:
       mainMenuTitle: 主菜单标题
     copyRightSettings: 版权设置
     enableBreadcrumb: 启用面包屑
+    showHeader: 显示顶栏
+    showBars: 显示工具栏
+    showLoadingProgress: 显示加载进度
     asideDark: 侧边栏黑暗模式
     tabbars:
       mode: 标签栏风格

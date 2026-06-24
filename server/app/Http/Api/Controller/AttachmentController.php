@@ -19,6 +19,7 @@ use Hyperf\Swagger\Annotation\Delete;
 use Hyperf\Swagger\Annotation\Get;
 use Hyperf\Swagger\Annotation\HyperfServer;
 use Hyperf\Swagger\Annotation\Post;
+use Hyperf\Swagger\Annotation\Put;
 
 #[HyperfServer(name: 'http')]
 #[Middleware(middleware: TokenMiddleware::class)]
@@ -68,6 +69,19 @@ class AttachmentController extends AbstractController
     public function delete(int $id): Result
     {
         return $this->handleDelete($id);
+    }
+
+    #[Put(
+        path: '/api/attachment/{id}',
+        operationId: 'ApiUpdateAttachment',
+        summary: '更新附件',
+        security: [['Bearer' => [], 'ApiKey' => []]],
+        tags: ['文件管理'],
+    )]
+    #[ResultResponse(instance: new Result())]
+    public function update(int $id): Result
+    {
+        return $this->handleUpdate($id);
     }
 
     #[Post(

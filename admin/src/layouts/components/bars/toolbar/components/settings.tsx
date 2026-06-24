@@ -2,8 +2,6 @@
 import type { MineToolbar, SystemSettings } from '#/global'
 import useThemeColor from '@/hooks/useThemeColor.ts'
 import { useSortable } from '@vueuse/integrations/useSortable'
-import { useI18n } from 'vue-i18n'
-import Message from 'vue-m-message'
 
 export default defineComponent({
   name: 'settings',
@@ -17,7 +15,6 @@ export default defineComponent({
     })
 
     const el = ref<HTMLElement | null>(null)
-    const { t } = useI18n()
 
     const toolbarList = computed(() => {
       const toolbarSettings = settingStore.getSettings('toolBars') || []
@@ -256,12 +253,15 @@ export default defineComponent({
                 onClick={async () => {
                   display.value = true
                   await nextTick()
-                  useSortable(el, toolbarHook.toolbars, { animation: 300 })
+                  useSortable(el, toolbarHook.toolbars, {
+                    animation: 300,
+                    onUpdate: () => settingStore.syncToolBars(toolbarHook.toolbars.value),
+                  })
                 }}
               />
             ),
             default: () => (
-              <div class="pb-10">
+              <div>
                 {divider(useTrans('base.settings.colorMode') as string)}
                 <div class="mx-auto mt-3 w-[70%]">
                   {colorModeSettings()}
@@ -302,6 +302,9 @@ export default defineComponent({
                 {
                   settingsRender('app', [
                     { label: useTrans('base.settings.enableBreadcrumb') as string, value: 'showBreadcrumb' },
+                    { label: useTrans('base.settings.showHeader') as string, value: 'showHeader' },
+                    { label: useTrans('base.settings.showBars') as string, value: 'showBars' },
+                    { label: useTrans('base.settings.showLoadingProgress') as string, value: 'showLoadingProgress' },
                     { label: useTrans('base.settings.enableWatermark') as string, value: 'enableWatermark' },
                   ])
                 }
@@ -320,17 +323,6 @@ export default defineComponent({
                   </div>
                 </div>
               </div>
-            ),
-            footer: () => (
-              <m-button
-                class="block w-full !py-2"
-                onClick={() => {
-                  useUserStore().saveSettingToSever()
-                  Message.success(t('base.common.saveSuccess'), { zIndex: 9999 })
-                }}
-              >
-                {useTrans('base.settings.save')}
-              </m-button>
             ),
           }}
         />

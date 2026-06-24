@@ -12,8 +12,6 @@ declare(strict_types=1);
 namespace App\Common\Service;
 
 use App\Common\Tools;
-use Hyperf\Context\ApplicationContext;
-use Hyperf\Redis\Redis;
 use Overtrue\EasySms\EasySms;
 use Overtrue\EasySms\PhoneNumber;
 use Overtrue\EasySms\Strategies\OrderStrategy;
@@ -113,16 +111,14 @@ class VerifyCodeService
             ];
         }
 
-        // 生成缓存键
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = self::getRedis();
+        $cache = Tools::getCache();
+        $cached = $cache->get($cacheKey);
 
-        // 检查发送间隔（只有验证码存在且未过期时才检查）
-        $ttlRemaining = (int)$redis->ttl($cacheKey);
-        if ($ttlRemaining > 0) {
-            $elapsed = $ttl - $ttlRemaining; // 已过去的时间
-            if ($elapsed < $interval) {
-                $waitTime = $interval - $elapsed;
+        if ($cached) {
+            $sentAt = $cached['sent_at'] ?? 0;
+            if ($sentAt + $interval > time()) {
+                $waitTime = $sentAt + $interval - time();
                 return [
                     'success' => false,
                     'message' => "发送过于频繁，请 {$waitTime} 秒后再试",
@@ -131,11 +127,9 @@ class VerifyCodeService
             }
         }
 
-        // 生成验证码
         $code = self::generateCode($codeLength);
 
-        // 保存验证码到Redis
-        $redis->setex($cacheKey, $ttl, $code);
+        $cache->set($cacheKey, ['code' => $code, 'sent_at' => time(), 'ttl' => $ttl], $ttl);
 
         // 发送验证码
         $sendResult = false;
@@ -146,8 +140,7 @@ class VerifyCodeService
         }
 
         if (!$sendResult) {
-            // 发送失败，删除已保存的验证码
-            $redis->del($cacheKey);
+            $cache->delete($cacheKey);
             return [
                 'success' => false,
                 'message' => '验证码发送失败，请稍后重试',
@@ -172,7 +165,6 @@ class VerifyCodeService
      * @param bool $clean 验证成功后是否删除验证码，默认true
      * @param int $countryCode 国家代码（仅手机短信需要），默认86
      * @return bool 验证是否成功
-     * @throws \RedisException
      */
     public static function verify(
         string $type,
@@ -192,12 +184,12 @@ class VerifyCodeService
         }
 
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        $redis = self::getRedis();
-        $storedCode = $redis->get($cacheKey);
+        $cache = Tools::getCache();
+        $cached = $cache->get($cacheKey);
 
-        if ($storedCode && $storedCode == $vcode) {
+        if ($cached && ($cached['code'] ?? '') == $vcode) {
             if ($clean) {
-                $redis->del($cacheKey);
+                $cache->delete($cacheKey);
             }
             return true;
         }
@@ -219,7 +211,7 @@ class VerifyCodeService
             $config = CacheConfigHelper::getConfigByGroupKey('sms')->pluck('value', 'key');
             $gateways = [
                 'errorlog' => [
-                    'file' => BASE_PATH . '/runtime/sms.log',
+                    'file' => Tools::runtime_dir('sms.log'),
                 ],
             ];
 
@@ -401,16 +393,6 @@ class VerifyCodeService
     }
 
     /**
-     * 获取Redis实例
-     *
-     * @return Redis
-     */
-    protected static function getRedis(): Redis
-    {
-        return ApplicationContext::getContainer()->get(Redis::class);
-    }
-
-    /**
      * 验证目标地址格式
      *
      * @param string $type 验证码类型
@@ -490,7 +472,7 @@ class VerifyCodeService
     public static function exists(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): bool
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        return self::getRedis()->exists($cacheKey) > 0;
+        return Tools::getCache()->get($cacheKey) != null;
     }
 
     /**
@@ -500,12 +482,16 @@ class VerifyCodeService
      * @param string $target 目标地址
      * @param string $scene 使用场景
      * @param int $countryCode 国家代码
-     * @return int 剩余时间（秒），-1表示不存在，-2表示永久有效
+     * @return int 剩余时间（秒），-1表示不存在
      */
     public static function getRemainingTime(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): int
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        return (int)self::getRedis()->ttl($cacheKey);
+        $cached = Tools::getCache()->get($cacheKey);
+        if ($cached == null) {
+            return -1;
+        }
+        return max(0, ($cached['sent_at'] ?? 0) + ($cached['ttl'] ?? self::DEFAULT_TTL) - time());
     }
 
     /**
@@ -520,7 +506,7 @@ class VerifyCodeService
     public static function delete(string $type, string $target, string $scene = self::SCENE_DEFAULT, int $countryCode = 86): bool
     {
         $cacheKey = self::getCacheKey($type, $target, $scene, $countryCode);
-        return self::getRedis()->del($cacheKey) > 0;
+        return Tools::getCache()->delete($cacheKey);
     }
 }
 

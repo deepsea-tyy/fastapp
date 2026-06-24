@@ -3,7 +3,7 @@
 en:
   searchPlaceholder: Search for icons under this category
   tips: Are you sure you want to delete this data?
-  cancelMessage: Deletion operation has been canceled
+  batchDeleteTips: Are you sure you want to delete {count} items?
   errorMessage: An error occurred during the deletion process
   all: All
   image: Image
@@ -11,31 +11,33 @@ en:
   audio: Audio
   document: Document
   maxSelect: You can select up to {limit} items.
-  select: Select current type
-  deselect: Deselect
   view: View
-  delete: Delete current item
+  play: Play
+  delete: Delete
+  selectAll: Select all
+  clearSelection: Clear selection
+  selectedCount: '{count} selected'
   cancel: Cancel
   confirm: Confirm
+  confirmTitle: System prompts
   uploading: Uploading
   uploadSuccess: Upload successful
   uploadFailed: Upload failed
-  uploadError: Upload error
   uploadNotConfigured: Upload function not configured
-  uploadProcessingError: Upload processing error, please try again later
+  fileLimit: You can select up to {limit} files
   imageUpload: Image Upload
   fileUpload: File Upload
   videoUpload: Video Upload
-  operationGuide: Operation Guide
-  clickDescription: 'Click: Select/deselect resource'
-  doubleClickDescription: 'Double-click: Quickly select and confirm'
-  rightClickDescription: 'Right-click: Show operation menu (select current type, deselect, view, delete)'
-  selectCurrentTypeDescription: 'Select current type: Select all resources of the same type'
-  deselectDescription: 'Deselect: Cancel selection of current resource'
+  audioUpload: Audio Upload
+  dropToUpload: Release to upload
+  noUrl: Resource URL does not exist
+  playFailed: Playback failed
+  videoPreview: Video preview
+  textPreview: Text preview
 zh_CN:
   searchPlaceholder: 搜索此分类下的资源
   tips: 你确定要删除这条数据吗？
-  cancelMessage: 删除操作已取消
+  batchDeleteTips: 确定要删除选中的 {count} 项吗？
   errorMessage: 删除过程中发生了错误
   all: 所有
   image: 图片
@@ -43,32 +45,33 @@ zh_CN:
   audio: 音频
   document: 文档
   maxSelect: 最多选择{limit}个
-  select: 选中当前类型
-  deselect: 取消选中
   view: 查看
-  delete: 删除当前项
+  play: 播放
+  delete: 删除
+  selectAll: 全选
+  clearSelection: 清空
+  selectedCount: 已选 {count} 项
   cancel: 取消
   confirm: 确认
+  confirmTitle: 系统提示
   uploading: 正在上传
   uploadSuccess: 上传成功
   uploadFailed: 上传失败
-  uploadError: 上传错误
   uploadNotConfigured: 上传功能未配置
-  uploadProcessingError: 上传处理出错，请稍后重试
+  fileLimit: 最多只能选择 {limit} 个文件
   imageUpload: 图片上传
   fileUpload: 文件上传
   videoUpload: 视频上传
-  operationGuide: 操作说明
-  clickDescription: '单击：选择/取消选择资源'
-  doubleClickDescription: '双击：快速选择并确认'
-  rightClickDescription: '右键：显示操作菜单（选中当前类型、取消选中、查看、删除）'
-  selectCurrentTypeDescription: '选中当前类型：选择所有相同类型的资源'
-  deselectDescription: '取消选中：取消选择当前资源'
-
+  audioUpload: 音频上传
+  dropToUpload: 松开以上传
+  noUrl: 资源地址不存在
+  playFailed: 播放失败
+  videoPreview: 视频预览
+  textPreview: 文本预览
 zh_TW:
   searchPlaceholder: 搜索此分類下的資源
   tips: 你確定要刪除這條資料嗎？
-  cancelMessage: 刪除操作已取消
+  batchDeleteTips: 確定要刪除選中的 {count} 項嗎？
   errorMessage: 刪除過程中發生了錯誤
   all: 所有
   image: 圖片
@@ -76,27 +79,29 @@ zh_TW:
   audio: 音頻
   document: 文件
   maxSelect: 最多選擇{limit}個
-  select: 選中當前類型
-  deselect: 取消選中
   view: 查看
-  delete: 刪除當前項
+  play: 播放
+  delete: 刪除
+  selectAll: 全選
+  clearSelection: 清空
+  selectedCount: 已選 {count} 項
   cancel: 取消
   confirm: 確認
+  confirmTitle: 系統提示
   uploading: 正在上傳
   uploadSuccess: 上傳成功
   uploadFailed: 上傳失敗
-  uploadError: 上傳錯誤
   uploadNotConfigured: 上傳功能未配置
-  uploadProcessingError: 上傳處理出錯，請稍後重試
+  fileLimit: 最多只能選擇 {limit} 個文件
   imageUpload: 圖片上傳
   fileUpload: 文件上傳
   videoUpload: 視頻上傳
-  operationGuide: 操作說明
-  clickDescription: '單擊：選擇/取消選擇資源'
-  doubleClickDescription: '雙擊：快速選擇並確認'
-  rightClickDescription: '右鍵：顯示操作菜單（選中當前類型、取消選中、查看、刪除）'
-  selectCurrentTypeDescription: '選中當前類型：選擇所有相同類型的資源'
-  deselectDescription: '取消選中：取消選擇當前資源'
+  audioUpload: 音頻上傳
+  dropToUpload: 鬆開以上傳
+  noUrl: 資源地址不存在
+  playFailed: 播放失敗
+  videoPreview: 視頻預覽
+  textPreview: 文本預覽
 </i18n>
 
 <script setup lang="ts">
@@ -110,8 +115,7 @@ const props = withDefaults(defineProps<ResourcePanelProps>(), {
   multiple: false,
   limit: undefined,
   showAction: true,
-  pageSize: 30,
-  dbClickConfirm: false,
+  pageSize: 40,
 })
 const emit = defineEmits<{
   (e: 'cancel'): void
@@ -120,7 +124,6 @@ const emit = defineEmits<{
 
 const modelValue = defineModel<string | string[] | undefined>()
 
-// 使用 composable
 const {
   loading,
   resources,
@@ -133,43 +136,53 @@ const {
   isUploading,
   uploadProgress,
   uploadFileName,
+  isDragging,
+  playingAudio,
+  audioPaused,
+  hasSelection,
+  canPreviewSelection,
   resourceStore,
   getResourceList,
   onfileTypesChange,
   getCover,
   getResourceIcon,
   isSelected,
+  isAudio,
+  isVideo,
+  isPlayingAudio,
+  canPreview,
   handleClick,
   handleDbClick,
-  executeContextmenu,
   handleFile,
+  handleDragEnter,
+  handleDragOver,
+  handleDragLeave,
+  handleDrop,
+  selectAllPage,
+  clearSelected,
+  previewResource,
+  previewSelected,
+  batchDeleteSelected,
+  onDel,
+  toggleAudio,
+  stopAudio,
   cancel,
   confirm,
   t,
 } = useResourcePanel(props, emit, modelValue)
+
+const scrollOptions = { scrollbars: { autoHide: 'leave', autoHideDelay: 100 } }
+
+function onPageChange(p: number) {
+  queryParams.page = p
+  getResourceList(queryParams)
+}
 </script>
 
 <template>
-  <div class="ma-resource-panel h-full flex flex-col">
-    <!-- 操作说明 -->
-    <div class="operation-guide mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-      <div class="flex items-start gap-2">
-        <ma-svg-icon name="i-material-symbols:info-outline" :size="20" class="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-        <div class="text-sm text-blue-800 dark:text-blue-200">
-          <div class="font-medium mb-1">{{ t('operationGuide') }}：</div>
-          <ul class="space-y-1 text-xs">
-            <li>• {{ t('clickDescription') }}</li>
-            <li>• {{ t('doubleClickDescription') }}</li>
-            <li>• {{ t('rightClickDescription') }}</li>
-            <li>• {{ t('selectCurrentTypeDescription') }}</li>
-            <li>• {{ t('deselectDescription') }}</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    
-    <div class="flex flex-col justify-between gap-y-1 md:flex-row">
-      <div>
+  <div class="ma-resource-panel">
+    <header class="ma-resource-panel__head">
+      <div class="ma-resource-panel__filters">
         <el-segmented
           v-model="fileTypeSelected"
           :options="fileTypes as any" size="default"
@@ -186,62 +199,127 @@ const {
             </div>
           </template>
         </el-segmented>
-      </div>
-
-      <div class="flex justify-end">
         <el-input
-          v-model="queryParams.origin_name" :placeholder="t('searchPlaceholder')" clearable class="w-full md:w-[180px]" @input="() => {
-            getResourceList(queryParams)
-          }"
+          v-model="queryParams.origin_name"
+          :placeholder="t('searchPlaceholder')"
+          clearable
+          @input="getResourceList(queryParams)"
         >
           <template #suffix>
             <ma-svg-icon name="i-material-symbols:search-rounded" :size="20" />
           </template>
         </el-input>
       </div>
-    </div>
-    <div class="mt-2 min-h-0 flex-1">
+
+      <div class="resource-toolbar">
+        <div class="resource-toolbar__actions">
+          <el-button size="small" @click="selectAllPage">
+            {{ t('selectAll') }}
+          </el-button>
+          <el-button size="small" :disabled="!hasSelection" @click="clearSelected">
+            {{ t('clearSelection') }}
+          </el-button>
+          <el-button size="small" :disabled="!canPreviewSelection" @click="previewSelected">
+            {{ t('view') }}
+          </el-button>
+          <el-button size="small" type="danger" :disabled="!hasSelection" @click="batchDeleteSelected">
+            {{ t('delete') }}<template v-if="hasSelection"> ({{ selectedKeys.length }})</template>
+          </el-button>
+        </div>
+        <span v-if="hasSelection" class="resource-toolbar__count">
+          {{ t('selectedCount', { count: selectedKeys.length }) }}
+        </span>
+      </div>
+    </header>
+
+    <main
+      class="ma-resource-panel__body"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <div v-if="isDragging" class="resource-drop-overlay">
+        <ma-svg-icon name="solar:upload-square-broken" :size="40" class="mb-2" />
+        <span>{{ t('dropToUpload') }}</span>
+      </div>
+
       <OverlayScrollbarsComponent
-        v-if="loading || resources.length" class="max-h-full"
-        :options="{ scrollbars: { autoHide: 'leave', autoHideDelay: 100 } }"
+        v-if="loading || resources.length" class="h-full"
+        :options="scrollOptions"
       >
         <div class="flex flex-wrap px-[2px] pt-[2px]">
           <el-space fill wrap :fill-ratio="9">
             <template v-for="resource in resources" :key="resource.id">
               <div
-                class="resource-item" :class="{ active: isSelected(resource) }" @click="(e: MouseEvent) => handleClick(resource, e)"
-                @dblclick="handleDbClick(resource)" @contextmenu.prevent.stop="(e: MouseEvent) => executeContextmenu(e, resource)"
+                class="resource-item"
+                :class="{
+                  active: isSelected(resource),
+                  playing: isPlayingAudio(resource),
+                }"
+                @click="handleClick(resource)"
+                @dblclick="handleDbClick(resource)"
               >
                 <div class="resource-item__cover">
-                  <template v-if="getCover(resource)">
-                    <el-image :src="getCover(resource)" fit="cover" class="h-full w-full" lazy>
-                      <template #error>
-                        <div
-                          class="relative m-[8px] h-[calc(100%-16px)] w-[calc(100%-16px)] flex items-center justify-center overflow-hidden"
-                        >
-                          <div class="cursor-default overflow-hidden text-ellipsis whitespace-pre-wrap">
-                            {{ resource.origin_name }}
-                          </div>
-                        </div>
-                      </template>
-                    </el-image>
-                  </template>
-                  <template v-else>
-                    <div
-                      class="relative m-[8px] h-[calc(100%-16px)] w-[calc(100%-16px)] flex flex-col items-center justify-center overflow-hidden"
-                    >
-                      <ma-svg-icon
-                        v-if="getResourceIcon(resource)" :name="getResourceIcon(resource)!" :size="48"
-                        class="mb-2 text-gray-500 dark:text-gray-400"
-                      />
-                      <div class="cursor-default overflow-hidden text-ellipsis whitespace-pre-wrap text-center text-xs">
+                  <el-image
+                    v-if="getCover(resource)"
+                    :src="getCover(resource)"
+                    fit="cover"
+                    class="resource-item__cover-image"
+                    lazy
+                  >
+                    <template #error>
+                      <div class="resource-item__fallback">
                         {{ resource.origin_name }}
                       </div>
-                    </div>
-                  </template>
+                    </template>
+                  </el-image>
+                  <div v-else class="resource-item__fallback resource-item__fallback--icon">
+                    <ma-svg-icon
+                      v-if="getResourceIcon(resource)" :name="getResourceIcon(resource)!" :size="48"
+                    />
+                    <span>{{ resource.origin_name }}</span>
+                  </div>
                 </div>
                 <div v-if="getCover(resource)" class="resource-item__name cursor-default">
                   {{ resource.origin_name }}
+                </div>
+                <div class="resource-item__actions" @click.stop>
+                  <button
+                    v-if="isAudio(resource)"
+                    class="resource-item__action-btn"
+                    :title="t('play')"
+                    @click="toggleAudio(resource)"
+                  >
+                    <ma-svg-icon
+                      :name="isPlayingAudio(resource) ? 'ri:pause-fill' : 'ri:play-fill'"
+                      :size="14"
+                    />
+                  </button>
+                  <button
+                    v-if="isVideo(resource)"
+                    class="resource-item__action-btn"
+                    :title="t('play')"
+                    @click="previewResource(resource)"
+                  >
+                    <ma-svg-icon name="ri:play-fill" :size="14" />
+                  </button>
+                  <button
+                    v-if="canPreview(resource) && !isAudio(resource) && !isVideo(resource)"
+                    class="resource-item__action-btn"
+                    :title="t('view')"
+                    @click="previewResource(resource)"
+                  >
+                    <ma-svg-icon name="i-ri:search-eye-line" :size="14" />
+                  </button>
+                  <button
+                    v-if="resource.id != undefined"
+                    class="resource-item__action-btn resource-item__action-btn--danger"
+                    :title="t('delete')"
+                    @click="onDel(resource.id!)"
+                  >
+                    <ma-svg-icon name="i-material-symbols:delete-outline" :size="14" />
+                  </button>
                 </div>
                 <div class="resource-item__selected">
                   <ma-svg-icon class="resource-item__selected-icon" name="gravity-ui:circle-check-fill" :size="18" />
@@ -259,69 +337,72 @@ const {
           </el-space>
         </div>
       </OverlayScrollbarsComponent>
-      <div v-else class="h-full w-full flex flex-1 items-center justify-center">
+      <div v-else class="ma-resource-panel__empty">
         <el-empty />
       </div>
-    </div>
-    <div class="ma-resource-panel__footer flex justify-between pt-2">
-      <div class="flex items-center">
-        <el-tag
-          v-if="props.multiple && props.limit" size="large" class="mr-2"
-          :class="{ 'color-[var(--el-color-danger)]': props.limit && selectedKeys.length >= props.limit }"
-        >
-          {{ selectedKeys.length }}
-          <template v-if="props.multiple && props.limit">
-            /{{ props.limit }}
-          </template>
-        </el-tag>
-        <el-pagination
-          v-model:current-page="queryParams.page" :disabled="loading" :total="total"
-          :page-size="queryParams.page_size" background layout="prev, pager, next" :pager-count="5"
-          @change="(p: number) => {
-            queryParams.page = p
-            getResourceList(queryParams)
-          }"
-        />
-      </div>
-      <div v-if="props.showAction">
-        <slot name="actions">
-          <el-button @click="cancel">
-            {{ t('cancel') }}
-          </el-button>
-          <el-button type="primary" @click="confirm">
-            {{ t('confirm') }}
-          </el-button>
-        </slot>
-      </div>
+    </main>
+
+    <div v-if="playingAudio" class="audio-mini-bar">
+      <button class="audio-mini-bar__btn" @click="playingAudio && toggleAudio(playingAudio)">
+        <ma-svg-icon :name="audioPaused ? 'ri:play-fill' : 'ri:pause-fill'" :size="18" />
+      </button>
+      <span class="audio-mini-bar__name">{{ playingAudio.origin_name }}</span>
+      <button class="audio-mini-bar__close" @click="stopAudio">
+        <ma-svg-icon name="ri:close-line" :size="16" />
+      </button>
     </div>
 
-    <div class="ma-resource-dock">
-      <template v-for="btn in resourceStore.getAllButton()">
-        <div class="res-app-container">
-          <div class="res-app" :class="{ 'uploading': isUploading && uploadFileName }">
-            <m-tooltip :text="t(btn.label)">
+    <footer class="ma-resource-panel__foot">
+      <div class="ma-resource-panel__foot-bar">
+        <div class="ma-resource-panel__foot-pagination">
+          <el-tag
+            v-if="multiple && limit" size="large"
+            :class="{ 'color-[var(--el-color-danger)]': limit && selectedKeys.length >= limit }"
+          >
+            {{ selectedKeys.length }}/{{ limit }}
+          </el-tag>
+          <el-pagination
+            v-model:current-page="queryParams.page" :disabled="loading" :total="total"
+            :page-size="queryParams.page_size" background layout="prev, pager, next" :pager-count="5"
+            @change="onPageChange"
+          />
+        </div>
+
+        <div class="ma-resource-dock">
+          <div v-for="btn in resourceStore.getAllButton()" :key="btn.name" class="res-app-container">
+            <label class="res-app" :class="{ uploading: isUploading && uploadFileName }">
               <input
                 type="file"
-                :name="btn.name"
                 class="hidden"
                 :multiple="!(btn?.uploadConfig?.multiple === false || btn?.uploadConfig?.limit === 1)"
                 :accept="btn?.uploadConfig?.accept"
-                @change="(e: Event) => handleFile(e, btn)"
-                @click.stop="() => {}"
                 :disabled="isUploading"
+                @change="(e: Event) => handleFile(e, btn)"
               >
-              <ma-svg-icon :name="btn.icon" class="res-app-icon" />
-            </m-tooltip>
+              <m-tooltip :text="t(btn.label)">
+                <ma-svg-icon :name="btn.icon" class="res-app-icon" />
+              </m-tooltip>
+            </label>
           </div>
         </div>
-      </template>
-    </div>
-    
-    <!-- 上传进度显示 -->
+
+        <div v-if="showAction" class="ma-resource-panel__foot-buttons">
+          <slot name="actions">
+            <el-button @click="cancel">
+              {{ t('cancel') }}
+            </el-button>
+            <el-button type="primary" @click="confirm">
+              {{ t('confirm') }}
+            </el-button>
+          </slot>
+        </div>
+      </div>
+    </footer>
+
     <div v-if="isUploading" class="upload-progress-overlay">
       <div class="upload-progress-content">
         <div class="upload-progress-header">
-          <ma-svg-icon name="solar:video-camera-broken" :size="20" class="mr-2" />
+          <ma-svg-icon name="solar:upload-square-broken" :size="20" class="mr-2" />
           <span class="font-medium">{{ t('uploading') }}</span>
         </div>
         <div class="upload-progress-filename">{{ uploadFileName }}</div>

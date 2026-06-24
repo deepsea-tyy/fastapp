@@ -53,7 +53,7 @@ class AppPageContentController extends AbstractController
         }
 
         $mimeType = 'application/json; charset=utf-8';
-        $fileContent = Tools::getRedis()->get('app:init' . $platform);
+        $fileContent = Tools::getCache()->get('app:init' . $platform);
         return $this->response->withHeader('Content-Type', $mimeType)
             ->withHeader('Content-Disposition', 'attachment; filename="' . basename($filePath) . '"')
             ->withHeader('Content-Length', (string)strlen($fileContent))

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Hyperf\Database\Commands\Ast\ModelRewriteGetterSetterVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteKeyInfoVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteSoftDeletesVisitor;
 use Hyperf\Database\Commands\Ast\ModelRewriteTimestampsVisitor;
@@ -15,7 +14,7 @@ return [
         'port' => env('DB_PORT', 3306),
         'odbc' => env('ODBC_ENABLE', false),
         'odbc_datasource_name' => env('ODBC_DSN'),
-        'database' => env('DB_DATABASE', 'hyperf'),
+        'database' => env('DB_DRIVER') == 'sqlite' ? \App\Common\Tools::storage_path('/fastapp.sqlite') : env('DB_DATABASE'),
         'username' => env('DB_USERNAME', 'root'),
         'password' => env('DB_PASSWORD'),
         'charset' => env('DB_CHARSET', 'utf8mb4'),
@@ -29,7 +28,7 @@ return [
             'heartbeat' => -1,
             'max_idle_time' => (float)env('DB_MAX_IDLE_TIME', 60),
         ],
-        'cache' => [
+        /*'cache' => [
             'handler' => RedisHandler::class,
             'cache_key' => 'fastapp:%s:m:%s:%s:%s',
             'prefix' => 'model-cache',
@@ -37,7 +36,7 @@ return [
             'empty_model_ttl' => 60,
             'load_script' => true,
             'use_default_value' => false,
-        ],
+        ],*/
         'commands' => [
             'gen:model' => [
                 'path' => 'app/Model',
@@ -48,7 +47,6 @@ return [
                     ModelRewriteKeyInfoVisitor::class,
                     ModelRewriteTimestampsVisitor::class,
                     ModelRewriteSoftDeletesVisitor::class,
-//                    ModelRewriteGetterSetterVisitor::class,
                 ],
             ],
         ],

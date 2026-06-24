@@ -8,19 +8,17 @@ namespace App\Http\Admin\Controller;
 use App\Common\AbstractController;
 use App\Common\Middleware\AccessTokenMiddleware;
 use App\Common\Result;
+use App\Common\Tools;
 use App\Common\Service\TwoFactorAuthService;
 use App\Exception\BusinessException;
 use App\Http\Admin\Request\PassportRequest;
 use App\Http\CurrentUser;
 use App\Model\Enums\User\Type;
-use Hyperf\Context\ApplicationContext;
 use Hyperf\Context\RequestContext;
 use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
-use Hyperf\Redis\Redis;
-
 #[Controller]
 final class PassportController extends AbstractController
 {
@@ -52,15 +50,14 @@ final class PassportController extends AbstractController
             // 验证图形验证码
             $code = $validated['code'] ?? '';
             $cacheKey = 'admin:captcha:' . $request->ip();
-            $redis = ApplicationContext::getContainer()->get(Redis::class);
-            $storedCode = $redis->get($cacheKey);
+            $cache = Tools::getCache();
+            $storedCode = $cache->get($cacheKey);
 
             if (!$storedCode || strtolower($storedCode) !== strtolower($code)) {
                 throw new BusinessException(message: trans('user.vcode_invalid'));
             }
 
-            // 验证成功后删除验证码
-            $redis->del($cacheKey);
+            $cache->delete($cacheKey);
         }
         if (empty($validated['google2fa_code']) && $user->google2fa) {
             return $this->success(['verify_again' => 'google2fa_code']);
@@ -117,13 +114,11 @@ final class PassportController extends AbstractController
         $code = $this->generateCaptchaCode();
         $image = $this->generateCaptchaImage($code);
 
-        // 保存验证码到Redis（5分钟有效期）
         $request = RequestContext::get();
         $serverParams = $request->getServerParams();
         $ip = $serverParams['remote_addr'] ?? '0.0.0.0';
         $cacheKey = 'admin:captcha:' . $ip;
-        $redis = ApplicationContext::getContainer()->get(Redis::class);
-        $redis->setex($cacheKey, 300, $code);
+        Tools::getCache()->set($cacheKey, $code, 300);
 
         return $this->success([
             'image' => 'data:image/png;base64,' . base64_encode($image),

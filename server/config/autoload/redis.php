@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'default' => [
+   /* 'default' => [
         'host' => env('REDIS_HOST', 'localhost'),
         'auth' => env('REDIS_AUTH', null),
         'port' => (int) env('REDIS_PORT', 6379),
@@ -16,5 +16,5 @@ return [
             'heartbeat' => -1,
             'max_idle_time' => (float) env('REDIS_MAX_IDLE_TIME', 60),
         ],
-    ],
+    ],*/
 ];

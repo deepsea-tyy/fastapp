@@ -19,6 +19,7 @@ use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
+use Hyperf\HttpServer\Annotation\PutMapping;
 
 #[Controller]
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
@@ -53,6 +54,14 @@ class AttachmentController extends AbstractController
     public function delete(int $id): Result
     {
         return $this->handleDelete($id);
+    }
+
+    #[PutMapping(path: '/attachment/{id}')]
+    #[Permission(code: 'dataCenter:attachment:upload')]
+    #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
+    public function update(int $id): Result
+    {
+        return $this->handleUpdate($id);
     }
 
     #[PostMapping(path: '/attachment/chunk-upload')]

@@ -68,16 +68,55 @@ function isFullUrl(url: string): boolean {
 }
 
 /**
- * 格式化单个图片路径
+ * 将 storage 路径转为 /api/file 访问地址
  */
-function formatSingleImagePath(path: string | null | undefined, baseUrl: string): string {
-  if (!path || (typeof path === 'string' && !path.trim()) || path === DEFAULT_IMAGE) {
-    return DEFAULT_IMAGE
+export function formatFileUrl(url: string): string {
+  const trimmed = (url ?? '').trim()
+  if (!trimmed) return ''
+
+  const fileBase = (import.meta.env.VITE_APP_FILE_BASEURL ?? '').trim()
+  const apiBase = (import.meta.env.VITE_APP_API_BASEURL ?? '').trim()
+
+  let path = trimmed
+  if (isFullUrl(trimmed)) {
+    try {
+      path = new URL(trimmed).pathname
+    }
+    catch {
+      return trimmed
+    }
   }
+
+  if (!path.startsWith('/')) {
+    path = `/${path}`
+  }
+
+  if (fileBase.includes('/api/file')) {
+    return fileBase + encodeURIComponent(path)
+  }
+
+  if (apiBase) {
+    return `${apiBase}/api/file?path=${encodeURIComponent(path)}`
+  }
+
+  return path
+}
+
+function resolveStoragePath(path: string | null | undefined): string {
+  if (!path || !path.trim() || path === DEFAULT_IMAGE) return ''
   if (isFullUrl(path)) {
-    return path
+    try {
+      const pathname = new URL(path).pathname
+      if (pathname.startsWith('/uploads/')) {
+        return formatFileUrl(pathname)
+      }
+      return path
+    }
+    catch {
+      return path
+    }
   }
-  return baseUrl + path
+  return formatFileUrl(path)
 }
 
 /**
@@ -86,24 +125,27 @@ function formatSingleImagePath(path: string | null | undefined, baseUrl: string)
  * @returns 格式化后的图片路径或路径数组，如果为空则返回 404.png
  */
 export function formatImagePath(obj: string | string[] | { text?: string } | null | undefined): string | string[] {
-  const baseUrl = import.meta.env.VITE_APP_FILE_BASEURL || ''
-
   if (!obj) {
     return DEFAULT_IMAGE
   }
 
   if (typeof obj === 'string') {
-    return isFullUrl(obj) ? obj : formatSingleImagePath(obj, baseUrl)
+    const resolved = resolveStoragePath(obj)
+    return resolved || DEFAULT_IMAGE
   }
 
   if (Array.isArray(obj)) {
     return obj.length === 0
       ? [DEFAULT_IMAGE]
-      : obj.map(item => isFullUrl(item) ? item : formatSingleImagePath(item, baseUrl))
+      : obj.map((item) => {
+          const resolved = resolveStoragePath(item)
+          return resolved || DEFAULT_IMAGE
+        })
   }
 
   if (typeof obj === 'object' && obj !== null) {
-    return obj.text && isFullUrl(obj.text) ? obj.text : formatSingleImagePath(obj.text, baseUrl)
+    const resolved = resolveStoragePath(obj.text)
+    return resolved || DEFAULT_IMAGE
   }
 
   return DEFAULT_IMAGE

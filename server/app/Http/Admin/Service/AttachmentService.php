@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace App\Http\Admin\Service;
 
 use App\Common\IService;
+use App\Common\Tools;
 use App\Common\Upload\UploadFactory;
 use App\Model\Attachment;
 use App\Repository\AttachmentRepository;
@@ -64,7 +65,7 @@ final class AttachmentService extends IService
     {
         $md = $this->findById($id);
         if ($s = parent::deleteById($id)) {
-            @unlink(BASE_PATH . '/storage' . $md->url);
+            @unlink(Tools::storage_path($md->url));
         }
         return $s;
     }

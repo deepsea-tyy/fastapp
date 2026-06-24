@@ -19,13 +19,6 @@ use Hyperf\Coroutine\Coroutine;
 
 class KefuMessageService
 {
-    private KefuAutoReplyService $autoReplyService;
-
-    public function __construct()
-    {
-        $this->autoReplyService = ApplicationContext::getContainer()->get(KefuAutoReplyService::class);
-    }
-
     /**
      * 获取会话分配
      *
@@ -144,7 +137,7 @@ class KefuMessageService
         // 使用协程异步处理自动回复，不阻塞消息发送
         Coroutine::create(function () use ($conversationId, $userId, $userMessage) {
             try {
-                $this->autoReplyService->handleUserMessage($conversationId, $userId, $userMessage);
+                ApplicationContext::getContainer()->get(KefuAutoReplyService::class)->handleUserMessage($conversationId, $userId, $userMessage);
             } catch (\Throwable $e) {
                 Tools::logAsync($e->getMessage());
             }

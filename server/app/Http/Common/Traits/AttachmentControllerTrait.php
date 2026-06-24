@@ -21,9 +21,6 @@ trait AttachmentControllerTrait
     {
         $params = $this->getRequest()->all();
         $params['current_user_id'] = $this->currentUser->id();
-        if (!empty($params['suffix'])) {
-            $params['suffix'] = explode(',', $params['suffix']);
-        }
         return $this->success(
             $this->service->page($params, $this->getPage(), $this->getPageSize())
         );
@@ -56,6 +53,28 @@ trait AttachmentControllerTrait
         }
 
         $this->service->deleteById($id);
+        return $this->success();
+    }
+
+    /**
+     * 更新附件
+     */
+    public function handleUpdate(int $id): Result
+    {
+        if (!$this->service->getRepository()->existsById($id)) {
+            return $this->error(trans('attachment.attachment_not_exist'));
+        }
+
+        $attachment = $this->service->getRepository()->findById($id);
+        if ($attachment && $attachment->created_by !== $this->currentUser->id()) {
+            return $this->error('无权限修改此附件');
+        }
+
+        $originName = $this->getRequest()->input('origin_name');
+        $this->service->updateById($id, [
+            'origin_name' => $originName,
+            'updated_by' => $this->currentUser->id(),
+        ]);
         return $this->success();
     }
 

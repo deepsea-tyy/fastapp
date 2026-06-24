@@ -52,7 +52,30 @@ export default function toolbars() {
     },
   ])
 
-  toolbars.value = defaultToolbars.value
+  function applyToolbarSettings() {
+    const toolbarSettings = settingStore.getSettings('toolBars') || []
+    if (!toolbarSettings.length) {
+      toolbars.value = defaultToolbars.value
+      return
+    }
+    const ordered: MineToolbar[] = []
+    const used = new Set<string>()
+    for (const saved of toolbarSettings) {
+      const item = defaultToolbars.value.find(t => t.name === saved.name)
+      if (item) {
+        ordered.push({ ...item, show: saved.show ?? item.show })
+        used.add(item.name)
+      }
+    }
+    for (const item of defaultToolbars.value) {
+      if (!used.has(item.name)) {
+        ordered.push(item)
+      }
+    }
+    toolbars.value = ordered
+  }
+
+  applyToolbarSettings()
 
   const getShowToolbar = () => {
     const toolbarSettings = settingStore.getSettings('toolBars') || []

@@ -19,7 +19,6 @@ export interface ModuleConfig {
     maxReconnectAttempts?: number
     reconnectDelay?: number
     heartbeatInterval?: number
-    messageTimeout?: number
   }
 }
 
@@ -31,7 +30,6 @@ class WebSocketConfigRegistry {
   private globalConfig = {
     maxReconnectAttempts: 5,
     reconnectDelay: 3000,
-    messageTimeout: 5000,
     heartbeatInterval: 30000,
     defaultWsUrl: 'ws://127.0.0.1:9502/ws',
   }
@@ -99,7 +97,6 @@ class WebSocketConfigRegistry {
         Object.assign(config, {
           maxReconnectAttempts: module.wsConfig.maxReconnectAttempts ?? config.maxReconnectAttempts,
           reconnectDelay: module.wsConfig.reconnectDelay ?? config.reconnectDelay,
-          messageTimeout: module.wsConfig.messageTimeout ?? config.messageTimeout,
           heartbeatInterval: module.wsConfig.heartbeatInterval ?? config.heartbeatInterval,
           defaultWsUrl: module.wsConfig.url ?? config.defaultWsUrl,
         })

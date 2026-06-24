@@ -41,9 +41,6 @@ final class UserSchema implements \JsonSerializable
     #[Property(property: 'status', title: '状态 (1正常 2停用)', type: 'int')]
     public ?Status $status;
 
-    #[Property(property: 'backend_setting', title: '后台设置数据', type: 'array')]
-    public ?array $backendSetting;
-
     #[Property(property: 'created_by', title: '创建者', type: 'int')]
     public ?int $createdBy;
 
@@ -70,7 +67,6 @@ final class UserSchema implements \JsonSerializable
         $this->avatar = $model->profile?->avatar;
         $this->signed = $model->profile?->signed;
         $this->status = $model->status;
-        $this->backendSetting = $model->adminSetting?->backend_setting;
         $this->createdBy = $model->created_by;
         $this->updatedBy = $model->updated_by;
         $this->createdAt = $model->created_at;
@@ -80,6 +76,6 @@ final class UserSchema implements \JsonSerializable
 
     public function jsonSerialize(): mixed
     {
-        return ['id' => $this->id, 'username' => $this->username, 'user_type' => $this->userType, 'nickname' => $this->nickname, 'phone' => $this->phone, 'email' => $this->email, 'avatar' => $this->avatar, 'signed' => $this->signed, 'status' => $this->status, 'backend_setting' => $this->backendSetting, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt, 'remark' => $this->remark];
+        return ['id' => $this->id, 'username' => $this->username, 'user_type' => $this->userType, 'nickname' => $this->nickname, 'phone' => $this->phone, 'email' => $this->email, 'avatar' => $this->avatar, 'signed' => $this->signed, 'status' => $this->status, 'created_by' => $this->createdBy, 'updated_by' => $this->updatedBy, 'created_at' => $this->createdAt, 'updated_at' => $this->updatedAt, 'remark' => $this->remark];
     }
 }

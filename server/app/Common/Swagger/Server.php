@@ -7,7 +7,7 @@ namespace App\Common\Swagger;
 
 use Hyperf\Swagger\Annotation as OA;
 
-#[OA\OpenApi(
+/*#[OA\OpenApi(
     openapi: '3.0.0',
     info: new OA\Info(
         version: '3.0.0',
@@ -35,5 +35,5 @@ use Hyperf\Swagger\Annotation as OA;
     type: 'apiKey',
     name: 'token',
     in: 'header'
-)]
+)]*/
 final class Server {}

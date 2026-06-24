@@ -81,7 +81,7 @@
         <h2 class="text-3xl font-bold text-center mb-12">{{ $t('home.techStack') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div class="p-6 bg-gray-50 rounded-lg">
-            <div class="text-2xl font-semibold mb-2">Flutter</div>
+            <div class="text-2xl font-semibold mb-2">Tauri</div>
             <div class="text-gray-600">{{ $t('footer.mobile') }}</div>
           </div>
           <div class="p-6 bg-gray-50 rounded-lg">

@@ -6,7 +6,6 @@ namespace Plugin\Ds\SysKefu\Service;
 
 use App\Common\Tools;
 use Hyperf\DbConnection\Db;
-use Hyperf\Redis\Redis;
 use Plugin\Ds\SysConfig\Helper\CacheConfigHelper;
 use Plugin\Ds\SysKefu\Event\MessageSendEvent;
 use Plugin\Ds\SysKefu\Model\KefuAutoReply;
@@ -34,6 +33,8 @@ class KefuAutoReplyService
      * 节流缓存 Key
      */
     private const THROTTLE_CACHE_KEY = self::CACHE_PREFIX . 'throttle:';
+
+    private const RULE_LANGS = ['zh_CN', 'en'];
 
     /**
      * 检查是否启用自动回复
@@ -145,16 +146,14 @@ class KefuAutoReplyService
      */
     public static function getEnabledRules(string $lang = 'zh_CN'): array
     {
-        $redis = Tools::getContainer()->get(Redis::class);
+        $cache = Tools::getCache();
         $cacheKey = self::RULES_CACHE_KEY . $lang;
 
-        // 尝试从缓存获取
-        $cached = $redis->get($cacheKey);
+        $cached = $cache->get($cacheKey);
         if ($cached) {
             return json_decode($cached, true);
         }
 
-        // 从数据库查询
         $rules = KefuAutoReply::query()
             ->where('status', KefuAutoReply::STATUS_ENABLED)
             ->where('lang', $lang)
@@ -163,8 +162,7 @@ class KefuAutoReplyService
             ->get()
             ->toArray();
 
-        // 缓存规则（5分钟）
-        $redis->setex($cacheKey, 300, json_encode($rules));
+        $cache->set($cacheKey, json_encode($rules), 300);
 
         return $rules;
     }
@@ -176,15 +174,13 @@ class KefuAutoReplyService
      */
     public function clearRulesCache(?string $lang = null): void
     {
-        $redis = Tools::getContainer()->get(Redis::class);
+        $cache = Tools::getCache();
 
         if ($lang) {
-            $redis->del(self::RULES_CACHE_KEY . $lang);
+            $cache->delete(self::RULES_CACHE_KEY . $lang);
         } else {
-            // 清除所有语言的缓存
-            $keys = $redis->keys(self::RULES_CACHE_KEY . '*');
-            if ($keys) {
-                $redis->del(...$keys);
+            foreach (self::RULE_LANGS as $item) {
+                $cache->delete(self::RULES_CACHE_KEY . $item);
             }
         }
     }
@@ -243,17 +239,15 @@ class KefuAutoReplyService
      */
     private function checkThrottle(int $conversationId, int $ruleId): bool
     {
-        $redis = Tools::getContainer()->get(Redis::class);
+        $cache = Tools::getCache();
         $throttleKey = self::THROTTLE_CACHE_KEY . "{$conversationId}:{$ruleId}";
 
-        // 检查是否存在
-        if ($redis->exists($throttleKey)) {
+        if ($cache->get($throttleKey) != null) {
             return false;
         }
 
-        // 设置节流标记
         $throttleTime = (int)$this->getConfig()['auto_reply_throttle'];
-        $redis->setex($throttleKey, $throttleTime, 1);
+        $cache->set($throttleKey, 1, $throttleTime);
 
         return true;
     }

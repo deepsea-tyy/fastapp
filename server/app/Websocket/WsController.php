@@ -12,11 +12,10 @@ use App\Common\Jwt\JwtFactory;
 use App\Common\Tools;
 use App\Websocket\Event\WsCloseEvent;
 use App\Websocket\Event\WsLoginEvent;
-use Hyperf\Context\ApplicationContext;
+use App\Websocket\Store\WsStateStoreFactory;
 use Hyperf\Contract\OnCloseInterface;
 use Hyperf\Contract\OnMessageInterface;
 use Hyperf\Contract\OnOpenInterface;
-use Hyperf\Redis\Redis;
 use Hyperf\WebSocketServer\Sender;
 use Lcobucci\JWT\Token\RegisteredClaims;
 use RecursiveDirectoryIterator;
@@ -30,7 +29,7 @@ use Swoole\Coroutine;
  * 架构说明：
  * - Worker 进程共享处理 HTTP 和 WebSocket 请求
  * - fd（文件描述符）由 Master 进程的 Reactor 线程维护
- * - fd 业务映射存储在 Redis，所有 Worker 进程共享访问
+ * - fd 业务映射通过 WsStateStore 存储（redis/cache 可切换）
  * - 每个消息请求在独立协程中处理，非阻塞
  */
 class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterface
@@ -53,30 +52,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
      */
     private static array $lockValues = [];
 
-    /**
-     * Redis key: ws:fd:user:{fd}
-     * 存储格式: String
-     * 值: user_id (字符串)
-     * 说明: fd 到用户ID的映射
-     */
-    private const REDIS_KEY_FD_USER = 'ws:fd:user:';
-
-    /**
-     * Redis key: ws:user:fds:{user_id}
-     * 存储格式: Set
-     * 值: [fd1, fd2, ...] (字符串集合)
-     * 说明: 用户ID到Fd列表的映射，支持多设备登录
-     */
-    private const REDIS_KEY_USER_FDS = 'ws:user:fds:';
-
-    /**
-     * Redis key: ws:lock:fd:{fd}
-     * 存储格式: String
-     * 值: lock_value (唯一标识符)
-     * 说明: 分布式锁，用于保护fd的并发操作，过期时间5秒
-     */
-    private const REDIS_KEY_LOCK = 'ws:lock:fd:';
-
     public function __construct(
         protected Sender     $sender,
         protected JwtFactory $jwtFactory,
@@ -85,27 +60,16 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
         $this->registerPluginHandlers();
     }
 
-    private static function getRedis(): Redis
-    {
-        return ApplicationContext::getContainer()->get(Redis::class);
-    }
-
-    /**
-     * 获取分布式锁（基于 Redis SETNX）
-     * @param int $fd 文件描述符
-     * @return bool 是否获取到锁
-     */
     private function acquireLock(int $fd): bool
     {
-        $redis = self::getRedis();
-        $lockKey = self::REDIS_KEY_LOCK . $fd;
-        $lockValue = uniqid(gethostname() . '_', true);
+        $store = WsStateStoreFactory::get();
         $endTime = time() + 5;
         $retryCount = 0;
         $maxRetries = 5;
 
         while (time() < $endTime && $retryCount < $maxRetries) {
-            if ($redis->set($lockKey, $lockValue, ['nx', 'ex' => 5])) {
+            $lockValue = uniqid(gethostname() . '_', true);
+            if ($store->acquireFdLock($fd, $lockValue, 5)) {
                 self::$lockValues[$fd] = $lockValue;
                 return true;
             }
@@ -116,43 +80,21 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
         return false;
     }
 
-    /**
-     * 安全释放分布式锁（使用 Lua 脚本保证原子性，避免误删其他进程的锁）
-     */
     private function releaseLock(int $fd): void
     {
         if (!isset(self::$lockValues[$fd])) {
             return;
         }
 
-        $redis = self::getRedis();
-        $lockKey = self::REDIS_KEY_LOCK . $fd;
-        $lockValue = self::$lockValues[$fd];
-
-        // 使用 Lua 脚本原子性地验证并删除锁
-        // 只有当锁的值匹配时才删除，避免误删其他进程的锁
-        $luaScript = <<<LUA
-if redis.call("get", KEYS[1]) == ARGV[1] then
-    return redis.call("del", KEYS[1])
-else
-    return 0
-end
-LUA;
-
         try {
-            $redis->eval($luaScript, [$lockKey, $lockValue], 1);
+            WsStateStoreFactory::get()->releaseFdLock($fd, self::$lockValues[$fd]);
         } catch (\Throwable $e) {
-            // 如果 Lua 脚本执行失败，尝试直接删除（降级处理）
-            try {
-                $redis->del($lockKey);
-            } catch (\Throwable $delException) {
-                Tools::logAsync(
-                    "Failed to delete lock key for fd {$fd}: " . $delException->getMessage(),
-                    'error',
-                    'error',
-                    'websocket'
-                );
-            }
+            Tools::logAsync(
+                "Failed to release lock for fd {$fd}: " . $e->getMessage(),
+                'error',
+                'error',
+                'websocket'
+            );
         } finally {
             unset(self::$lockValues[$fd]);
         }
@@ -256,15 +198,10 @@ LUA;
         // 离开所有房间
         WsRoomManager::leaveAllRooms($fd, $userId);
 
-        // 主动清理 Redis 中的锁和内存中的锁值记录
         if (isset(self::$lockValues[$fd])) {
             try {
-                $redis = self::getRedis();
-                $lockKey = self::REDIS_KEY_LOCK . $fd;
-                // 使用 DEL 命令快速删除锁，不验证值（因为连接已关闭）
-                $redis->del($lockKey);
+                WsStateStoreFactory::get()->deleteFdLock($fd);
             } catch (\Throwable $e) {
-                // 记录日志但不阻塞关闭流程
                 Tools::logAsync(
                     "Failed to delete lock for fd {$fd} on close: " . $e->getMessage(),
                     'warning',
@@ -538,10 +475,7 @@ LUA;
         }
 
         try {
-            $redis = self::getRedis();
             $now = time();
-
-            // 准备连接信息
             $connectionInfo = json_encode([
                 'user_id' => $userId,
                 'connect_time' => $now,
@@ -551,84 +485,8 @@ LUA;
                 'last_ping_time' => $now,
             ], JSON_UNESCAPED_UNICODE);
 
-            // 使用 Lua 脚本原子性地更新所有 Redis key
-            // 返回值：[is_new_connection(0/1), old_user_id_if_need_event(string or false)]
-            $luaScript = <<<'LUA'
--- KEYS[1]: ws:fd:user:{fd}
--- KEYS[2]: ws:user:fds:{new_user_id}
--- KEYS[3]: ws:connections:info
--- KEYS[4]: ws:stats:total
--- ARGV[1]: new_user_id (string)
--- ARGV[2]: fd (string)
--- ARGV[3]: connection_info (json string)
+            $result = WsStateStoreFactory::get()->addConnection($fd, $userId, $connectionInfo);
 
-local fd_key = KEYS[1]
-local new_user_fds_key = KEYS[2]
-local connections_info_key = KEYS[3]
-local stats_total_key = KEYS[4]
-local new_user_id = ARGV[1]
-local fd = ARGV[2]
-local connection_info = ARGV[3]
-
--- 获取旧的用户ID
-local old_user_id = redis.call("GET", fd_key)
-local old_user_id_for_event = false
-local is_new_connection = 0
-
--- 如果映射已存在且相同，更新连接信息后返回（支持重复登录刷新连接信息）
-if old_user_id and old_user_id == new_user_id then
-    redis.call("HSET", connections_info_key, fd, connection_info)
-    return {0, false}
-end
-
--- 如果有旧映射，清理旧用户的映射
-if old_user_id then
-    local old_user_fds_key = "ws:user:fds:" .. old_user_id
-    redis.call("SREM", old_user_fds_key, fd)
-    local old_user_fds_count = redis.call("SCARD", old_user_fds_key)
-
-    -- 如果旧用户已无连接，删除其 fds 集合并返回需要触发事件
-    if old_user_fds_count == 0 then
-        redis.call("DEL", old_user_fds_key)
-        old_user_id_for_event = old_user_id
-    end
-end
-
--- 检查是否为新连接（之前不存在连接信息）
-if not redis.call("HEXISTS", connections_info_key, fd) then
-    is_new_connection = 1
-end
-
--- 设置新映射
-redis.call("SET", fd_key, new_user_id)
-redis.call("SADD", new_user_fds_key, fd)
-
--- 记录连接信息
-redis.call("HSET", connections_info_key, fd, connection_info)
-
--- 只有新连接才增加计数
-if is_new_connection == 1 then
-    redis.call("INCR", stats_total_key)
-end
-
-return {is_new_connection, old_user_id_for_event}
-LUA;
-
-            $result = $redis->eval(
-                $luaScript,
-                [
-                    self::REDIS_KEY_FD_USER . $fd,                    // KEYS[1]
-                    self::REDIS_KEY_USER_FDS . $userId,               // KEYS[2]
-                    WsConnectionManager::REDIS_KEY_CONNECTIONS_INFO,  // KEYS[3]
-                    WsConnectionManager::REDIS_KEY_STATS_TOTAL,       // KEYS[4]
-                    (string)$userId,                                  // ARGV[1]
-                    (string)$fd,                                      // ARGV[2]
-                    $connectionInfo,                                  // ARGV[3]
-                ],
-                4 // 前4个参数是 keys
-            );
-
-            // 如果需要触发 WsCloseEvent（旧用户已无连接）
             if ($result[1] !== false) {
                 Tools::eventDispatcher(new WsCloseEvent($result[1]));
             }
@@ -663,64 +521,8 @@ LUA;
         }
 
         try {
-            $redis = self::getRedis();
+            $result = WsStateStoreFactory::get()->removeConnection($fd);
 
-            // 使用 Lua 脚本原子性地删除所有相关 Redis key
-            // 返回值：user_id_if_need_event (string or false)
-            $luaScript = <<<'LUA'
--- KEYS[1]: ws:fd:user:{fd}
--- KEYS[2]: ws:connections:info
--- KEYS[3]: ws:stats:total
--- ARGV[1]: fd (string)
-
-local fd_key = KEYS[1]
-local connections_info_key = KEYS[2]
-local stats_total_key = KEYS[3]
-local fd = ARGV[1]
-
--- 获取用户ID
-local user_id = redis.call("GET", fd_key)
-if not user_id then
-    return false
-end
-
-local user_fds_key = "ws:user:fds:" .. user_id
-local user_id_for_event = false
-
--- 从用户的 fds 集合中移除
-redis.call("SREM", user_fds_key, fd)
-local fds_count = redis.call("SCARD", user_fds_key)
-
--- 如果用户已无连接，删除其 fds 集合并返回需要触发事件
-if fds_count == 0 then
-    redis.call("DEL", user_fds_key)
-    user_id_for_event = user_id
-end
-
--- 删除 fd->user 映射
-redis.call("DEL", fd_key)
-
--- 删除连接信息并更新统计
-local deleted = redis.call("HDEL", connections_info_key, fd)
-if deleted > 0 then
-    redis.call("DECR", stats_total_key)
-end
-
-return user_id_for_event
-LUA;
-
-            $result = $redis->eval(
-                $luaScript,
-                [
-                    self::REDIS_KEY_FD_USER . $fd,                    // KEYS[1]
-                    WsConnectionManager::REDIS_KEY_CONNECTIONS_INFO,  // KEYS[2]
-                    WsConnectionManager::REDIS_KEY_STATS_TOTAL,       // KEYS[3]
-                    (string)$fd,                                      // ARGV[1]
-                ],
-                3 // 前3个参数是 keys
-            );
-
-            // 如果需要触发 WsCloseEvent（用户已无连接）
             if ($result !== false) {
                 Tools::eventDispatcher(new WsCloseEvent($result));
             }
@@ -741,42 +543,24 @@ LUA;
      */
     public static function getUserFds(int|string $userId): array
     {
-        $redis = self::getRedis();
-        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
-        $fds = $redis->sMembers($userFdsKey);
-        return $fds ? array_map('intval', $fds) : [];
+        return WsStateStoreFactory::get()->getUserFds($userId);
     }
 
-    /**
-     * 检查用户是否在线
-     */
     public static function isUserOnline(int $userId): bool
     {
-        $redis = self::getRedis();
-        $userFdsKey = self::REDIS_KEY_USER_FDS . $userId;
-        return $redis->sCard($userFdsKey) > 0;
+        return WsStateStoreFactory::get()->isUserOnline($userId);
     }
 
-    /**
-     * 根据 fd 获取用户ID（仅限已登录用户，返回 int）
-     */
     private function getUserIdByFd(int $fd): ?int
     {
-        $redis = self::getRedis();
-        $fdKey = self::REDIS_KEY_FD_USER . $fd;
-        $userId = $redis->get($fdKey);
-        return $userId !== false ? (int)$userId : null;
+        $userId = WsStateStoreFactory::get()->getFdUser($fd);
+
+        return $userId ? (int) $userId : null;
     }
 
-    /**
-     * 根据 fd 获取 bind_key（包括游客和已登录用户，返回 string）
-     */
     private function getBindKeyByFd(int $fd): string
     {
-        $redis = self::getRedis();
-        $fdKey = self::REDIS_KEY_FD_USER . $fd;
-        $bindKey = $redis->get($fdKey);
-        return $bindKey !== false ? (string)$bindKey : '';
+        return WsStateStoreFactory::get()->getFdUser($fd) ?? '';
     }
 
 }

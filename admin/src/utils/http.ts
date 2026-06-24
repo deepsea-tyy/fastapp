@@ -9,6 +9,12 @@ import { ResultCode } from './ResultCode.ts'
 
 const { isLoading } = useNProgress()
 const cache = useCache()
+
+function setLoadingProgress(loading: boolean) {
+  if (useSettingStore().getSettings('app')?.showLoadingProgress !== false) {
+    isLoading.value = loading
+  }
+}
 const requestList = ref<any[]>([])
 const isRefreshToken = ref<boolean>(false)
 
@@ -27,7 +33,7 @@ const http: AxiosInstance = createHttp()
 http.interceptors.request.use(
 
   async (config) => {
-    isLoading.value = true
+    setLoadingProgress(true)
     const userStore = useUserStore()
     /**
      * 全局拦截请求发送前提交的参数
@@ -48,7 +54,7 @@ let isLogout = false
 
 http.interceptors.response.use(
   async (response: AxiosResponse): Promise<any> => {
-    isLoading.value = false
+    setLoadingProgress(false)
     const userStore = useUserStore()
     await usePluginStore().callHooks('networkResponse', response)
     const config = response.config
@@ -169,7 +175,7 @@ http.interceptors.response.use(
     }
   },
   async (error: any) => {
-    isLoading.value = false
+    setLoadingProgress(false)
     const serverError = useDebounceFn(async () => {
       if (error && error.response && error.response.status === 500) {
         Message.error(error.message ?? '服务器错误', { zIndex: 9999 })

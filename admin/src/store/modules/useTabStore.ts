@@ -92,7 +92,9 @@ const useTabStore = defineStore(
       if (tab === null) {
         tab = getCurrentTab() as MineTabbar
       }
-      isLoading.value = true
+      if (settingStore.getSettings('app')?.showLoadingProgress !== false) {
+        isLoading.value = true
+      }
       keepAliveStore.hidden()
       await new Promise(resolve => resolve(setTimeout(() => {
       }, 200)))
@@ -105,7 +107,9 @@ const useTabStore = defineStore(
         keepAliveStore.add(tab.name)
         keepAliveStore.display()
         await go(tab)
-        isLoading.value = false
+        if (settingStore.getSettings('app')?.showLoadingProgress !== false) {
+          isLoading.value = false
+        }
       })
     }
 

@@ -19,7 +19,9 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const settingStore = useSettingStore()
   const userStore = useUserStore()
-  isLoading.value = true
+  if (settingStore.getSettings('app')?.showLoadingProgress !== false) {
+    isLoading.value = true
+  }
   if (userStore.isLogin) {
     if (to.name === 'login') {
       next({
@@ -43,7 +45,9 @@ router.beforeEach(async (to, from, next) => {
 })
 
 router.afterEach(async (to) => {
-  isLoading.value = false
+  if (useSettingStore().getSettings('app')?.showLoadingProgress !== false) {
+    isLoading.value = false
+  }
   const keepAliveStore = useKeepAliveStore()
   const iframeKeepAliveStore = useIframeKeepAliveStore()
 

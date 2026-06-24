@@ -2,7 +2,7 @@
   @apply h-full relative overflow-hidden;
 
   & .mine-main {
-    @apply w-full relative h-full overflow-y-auto overflow-x-hidden
+    @apply w-full relative h-full overflow-y-auto overflow-x-hidden flex flex-col
       bg-gray-1 text-gray-8 dark-bg-dark-9 dark-text-gray-2
     ;
 
@@ -17,6 +17,22 @@
     @apply relative z-10;
 
     transition: all 0.3s;
+  }
+
+  & .mine-worker-area--full {
+    @apply flex-1 min-h-0 p-0 m-0;
+
+    & > .router-view {
+      @apply flex flex-col flex-1 min-h-0 h-full;
+    }
+
+    .mine-layout {
+      @apply pt-0 m-0 p-0 h-full;
+    }
+
+    .mine-card {
+      @apply m-0 p-0 rounded-none h-full;
+    }
   }
 
   & .mine-aside {

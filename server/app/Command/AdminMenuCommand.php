@@ -77,18 +77,30 @@ class AdminMenuCommand extends Command
             BASE_PATH . '/databases/seeders',
         ];
 
-        // 扫描插件目录下的所有 Database/Seeders 目录
+        // 扫描插件目录下 database/Seeders（大小写不敏感，兼容 Database/Seeders 与 database/Seeders）
         $pluginPath = BASE_PATH . '/plugin';
         if (is_dir($pluginPath)) {
             $finder = Finder::create()
                 ->directories()
-                ->name('Seeders')
-                ->path('Database/Seeders')
                 ->in($pluginPath)
-                ->depth('>=2');
+                ->depth('>=2')
+                ->filter(static function (\SplFileInfo $dir): bool {
+                    $real = $dir->getRealPath();
+                    if ($real === false || $real === '') {
+                        return false;
+                    }
+                    if (strcasecmp(basename($real), 'Seeders') !== 0) {
+                        return false;
+                    }
+
+                    return strcasecmp(basename(dirname($real)), 'database') === 0;
+                });
 
             foreach ($finder as $seedersDir) {
-                $scanPaths[] = $seedersDir->getRealPath();
+                $p = $seedersDir->getRealPath();
+                if ($p !== false) {
+                    $scanPaths[] = $p;
+                }
             }
         }
 

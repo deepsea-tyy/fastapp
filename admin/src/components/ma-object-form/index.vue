@@ -2,11 +2,12 @@
  * MaObjectForm - 将formList处理为对象的表单组件
 -->
 <script setup lang="ts">
-import { ref, watch, computed, defineComponent, PropType, h } from 'vue'
-import { ElInput, ElSelect, ElOption, ElDatePicker } from 'element-plus'
+import { ref, watch, computed, defineComponent, nextTick, type Component, type PropType, h } from 'vue'
+import { ElInput, ElInputNumber, ElSelect, ElOption, ElDatePicker, ElTooltip } from 'element-plus'
 import MaEditor from '@/components/ma-editor/index.vue'
 import MaRemoteSelect from '@/components/ma-remote-select/index.vue'
 import MaDictSelect from '@/components/ma-dict-picker/ma-dict-select.vue'
+import MaSvgIcon from '@/components/ma-svg-icon/index.vue'
 import type { ChildFormItem } from '@/components/ma-children-form/index.vue'
 
 defineOptions({ name: 'MaObjectForm' })
@@ -48,6 +49,8 @@ const emit = defineEmits(['update:modelValue', 'change'])
 
 // 内部数据对象
 const itemData = ref<Record<string, any>>({ ...props.defaultItemValue, ...props.modelValue })
+const syncingFromInside = ref(false)
+const configComponentCache = new Map<string, Component>()
 
 // 初始化默认值
 const initDefaultValue = () => {
@@ -70,8 +73,12 @@ const initDefaultValue = () => {
  * 触发update:modelValue事件，将当前itemData传递给父组件
  */
 const updateValue = () => {
+  syncingFromInside.value = true
   emit('update:modelValue', itemData.value)
   emit('change', itemData.value)
+  nextTick(() => {
+    syncingFromInside.value = false
+  })
 }
 
 // 初始化 - 参考 MaChildrenForm 的逻辑，只在真正需要时才初始化
@@ -90,6 +97,8 @@ if (Object.keys(itemData.value).length === 0) {
  * 参考 MaChildrenForm 的逻辑：只有当值真正变化时才更新
  */
 watch(() => props.modelValue, (newVal) => {
+  if (syncingFromInside.value)
+    return
   if (newVal && typeof newVal === 'object' && JSON.stringify(newVal) !== JSON.stringify(itemData.value)) {
     itemData.value = { ...initDefaultValue(), ...newVal }
   } else if (!newVal || (typeof newVal === 'object' && Object.keys(newVal).length === 0)) {
@@ -128,7 +137,7 @@ const getComponentByFormType = (formType: string) => {
     'date': 'el-date-picker',
     'datetime': 'el-date-picker',
     'textarea': 'el-input',
-    'number': 'el-input',
+    'number': 'el-input-number',
     'editor': 'ma-editor',
     'remote-select': 'ma-remote-select'
   }
@@ -207,7 +216,7 @@ const getComponentProps = (item: ChildFormItem) => {
 
   // 添加其他自定义属性
   Object.keys(item).forEach(key => {
-    if (!['title', 'dataIndex', 'formType', 'dict', 'dictName', 'commonRules', 'addDefaultValue', 'labelWidth', 'width'].includes(key)) {
+    if (!['title', 'dataIndex', 'formType', 'dict', 'dictName', 'commonRules', 'addDefaultValue', 'labelWidth', 'width', 'tip'].includes(key)) {
       props[key] = item[key]
     }
   })
@@ -318,10 +327,16 @@ const renderConfigItem = (item: ChildFormItem) => {
             autosize: componentProps.autosize
           })
         } else if (component === 'el-input-number') {
-          content = h(ElInput, {
-            ...controlProps,
-            type: 'number',
-            autosize: componentProps.autosize
+          content = h(ElInputNumber, {
+            modelValue: modelValue.value,
+            'onUpdate:modelValue': (val: any) => {
+              modelValue.value = val
+            },
+            placeholder: componentProps.placeholder,
+            min: componentProps.min,
+            max: componentProps.max,
+            step: componentProps.step,
+            controlsPosition: componentProps.controlsPosition ?? 'right',
           })
         } else if (component === 'el-date-picker') {
           content = h(ElDatePicker, {
@@ -344,6 +359,24 @@ const renderConfigItem = (item: ChildFormItem) => {
             autosize: componentProps.autosize
           })
         }
+
+        const fieldContent = item.tip
+          ? [
+              content,
+              h(ElTooltip, {
+                content: item.tip,
+                placement: 'top',
+                popperClass: 'ma-object-form-field-tip',
+                teleported: true,
+              }, {
+                default: () => h(MaSvgIcon, {
+                  name: 'material-symbols:info-outline-rounded',
+                  size: 16,
+                  class: 'ma-object-form-field-tip-trigger',
+                }),
+              }),
+            ]
+          : [content]
 
         // 返回完整的字段
         return h('div', {
@@ -370,17 +403,26 @@ const renderConfigItem = (item: ChildFormItem) => {
             }
           }, item.title),
           h('div', {
-            class: 'ma-object-form-field-content',
+            class: item.tip
+              ? 'ma-object-form-field-content ma-object-form-field-content--with-tip'
+              : 'ma-object-form-field-content',
             style: {
-              width: componentWidth,
+              width: item.tip ? 'auto' : componentWidth,
               boxSizing: 'border-box' as const,
-              maxWidth: '100%'
+              maxWidth: '100%',
             }
-          }, [content])
+          }, fieldContent)
         ])
       }
     }
   })
+}
+
+const resolveConfigComponent = (item: ChildFormItem): Component => {
+  const key = item.dataIndex
+  if (!configComponentCache.has(key))
+    configComponentCache.set(key, renderConfigItem(item))
+  return configComponentCache.get(key)!
 }
 
 // 暴露组件方法
@@ -394,9 +436,9 @@ defineExpose({
   <div class="ma-object-form" :style="{ backgroundColor: settingStore.colorMode === 'dark' ? '#141414' : '#ffffff' }">
     <div class="ma-object-form-content">
       <component
-        v-for="(item, index) in fieldList"
-        :key="index"
-        :is="renderConfigItem(item)"
+        v-for="item in fieldList"
+        :key="item.dataIndex"
+        :is="resolveConfigComponent(item)"
       />
     </div>
   </div>
@@ -427,6 +469,32 @@ defineExpose({
 .ma-object-form-field-content :deep(.el-date-picker),
 .ma-object-form-field-content :deep(.el-input-number) {
   width: 100% !important;
+}
+
+.ma-object-form-field-content--with-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ma-object-form-field-content--with-tip :deep(.el-input),
+.ma-object-form-field-content--with-tip :deep(.el-select),
+.ma-object-form-field-content--with-tip :deep(.el-date-picker),
+.ma-object-form-field-content--with-tip :deep(.el-input-number) {
+  width: auto !important;
+}
+
+.ma-object-form-field-tip-trigger {
+  flex-shrink: 0;
+  cursor: help;
+}
+</style>
+
+<style>
+.ma-object-form-field-tip {
+  max-width: 360px;
+  white-space: pre-line;
+  line-height: 1.5;
 }
 </style>
 

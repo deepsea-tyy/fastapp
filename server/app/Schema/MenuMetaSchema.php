@@ -26,6 +26,7 @@ use Hyperf\Swagger\Annotation\Schema;
  * @property string[] $auth 前端权限判断，允许访问的权限码
  * @property string[] $role 前端权限判断，允许访问的角色码
  * @property string[] $user 前端权限判断，允许访问的用户名
+ * @property bool $fullPage 内容区是否占满可用高度
  */
 #[Schema(title: 'MenuMetaSchema')]
 final class MenuMetaSchema
@@ -81,6 +82,9 @@ final class MenuMetaSchema
     #[Property(property: 'user', title: '用户名', type: 'array')]
     public array $user;
 
+    #[Property(property: 'fullPage', title: '内容区占满', type: 'bool')]
+    public bool $fullPage;
+
     public function __construct(
         string $title = '',
         string $i18n = '',
@@ -98,7 +102,8 @@ final class MenuMetaSchema
         string $activeName = '',
         array $auth = [],
         array $role = [],
-        array $user = []
+        array $user = [],
+        bool $fullPage = false
     ) {
         $this->title = $title;
         $this->i18n = $i18n;
@@ -117,5 +122,6 @@ final class MenuMetaSchema
         $this->auth = $auth;
         $this->role = $role;
         $this->user = $user;
+        $this->fullPage = $fullPage;
     }
 }

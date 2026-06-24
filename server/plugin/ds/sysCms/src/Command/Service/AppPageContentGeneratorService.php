@@ -71,7 +71,7 @@ class AppPageContentGeneratorService
         }
         $json = json_encode($data, $jsonFlags);
         file_put_contents($filePath, $json);
-        Tools::getRedis()->set('app:init' . $platform, $json);
+        Tools::getCache()->set('app:init' . $platform, $json);
         // 保存记录并返回结果
         $fileSize = filesize($filePath);
         $relativePath = str_replace(BASE_PATH . '/', '', $filePath);
@@ -98,7 +98,7 @@ class AppPageContentGeneratorService
      */
     private function getFilePath(string $suffix): string
     {
-        $storageDir = BASE_PATH . self::STORAGE_DIR;
+        $storageDir = Tools::storage_path(self::STORAGE_DIR);
         if (!is_dir($storageDir)) {
             mkdir($storageDir, 0755, true);
         }

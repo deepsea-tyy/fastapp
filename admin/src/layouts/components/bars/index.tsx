@@ -7,10 +7,12 @@ export default defineComponent({
   setup() {
     const settingStore = useSettingStore()
     return () => (
-      <div class="mine-bars">
-        <MineToolbar />
-        {settingStore.getSettings('tabbar').enable && <MineTabbar />}
-      </div>
+      settingStore.getSettings('app').showBars && (
+        <div class="mine-bars">
+          <MineToolbar />
+          {settingStore.getSettings('tabbar').enable && <MineTabbar />}
+        </div>
+      )
     )
   },
 })

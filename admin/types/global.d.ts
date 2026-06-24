@@ -159,15 +159,25 @@ declare namespace SystemSettings {
      */
     showBreadcrumb?: boolean
     /**
+     * 是否显示顶栏
+     * @默认值 `true`
+     */
+    showHeader?: boolean
+    /**
+     * 是否显示工具栏区域
+     * @默认值 `true`
+     */
+    showBars?: boolean
+    /**
+     * 是否显示全局加载进度（NProgress）
+     * @默认值 `true`
+     */
+    showLoadingProgress?: boolean
+    /**
      * 是否开启水印
      * @默认值 `false`
      */
     enableWatermark?: boolean
-    /**
-     *  是否加载用户设置
-     *  @默认值 `true`
-     */
-    loadUserSetting?: boolean
     /**
      * 水印文字
      * @默认值 `'fasapp'`
@@ -375,6 +385,8 @@ declare namespace MineRoute {
     breadcrumbEnable?: boolean
     activeName?: string
     cache?: boolean
+    /** 内容区占满可用高度，去掉 mine-card / mine-layout 等默认边距 */
+    fullPage?: boolean
     type?: 'M' | 'B' | 'I' | 'L' | string
     // 权限验证配置
     auth?: string[]

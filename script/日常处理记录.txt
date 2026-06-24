@@ -16,5 +16,19 @@ flutter pub run build_runner build --delete-conflicting-outputs
 强制关闭服务
 ps -ef | grep -v grep | grep php | awk '{print $2}'|xargs -r kill -9
 
+lsof -ti:端口号 | xargs kill -9
 
 
+cursor 清理
+pgrep -lf Cursor || echo "Cursor not running"
+rm -f ~/Library/Application\ Support/Cursor/User/globalStorage/state.vscdb \
+      ~/Library/Application\ Support/Cursor/User/globalStorage/state.vscdb.backup \
+      ~/Library/Application\ Support/Cursor/User/globalStorage/state.vscdb-wal \
+      ~/Library/Application\ Support/Cursor/User/globalStorage/state.vscdb-shm
+
+rm -rf ~/Library/Application\ Support/Cursor/logs \
+       ~/Library/Application\ Support/Cursor/CachedData \
+       ~/Library/Application\ Support/Cursor/Cache \
+       ~/Library/Application\ Support/Cursor/GPUCache \
+       ~/Library/Application\ Support/Cursor/DawnWebGPUCache \
+       ~/Library/Application\ Support/Cursor/DawnGraphiteCache

@@ -1,6 +1,5 @@
 import useCache from '@/hooks/useCache.ts'
 import type { ResponseStruct } from '#/global'
-import useThemeColor from '@/hooks/useThemeColor.ts'
 import useHttp from '@/hooks/auto-imports/useHttp.ts'
 import * as PermissionApi from '~/base/api/permission.ts'
 import type { MenuVo, RoleVo } from '~/base/api/permission.ts'
@@ -26,7 +25,6 @@ export interface UserInfo {
   email: string
   signed: string
   dashboard: string
-  backend_setting: any[]
 }
 
 function getInfo(): Promise<ResponseStruct<UserInfo>> {
@@ -50,7 +48,6 @@ const useUserStore = defineStore(
   () => {
     const cache = useCache()
     const router = useRouter()
-    const setting = useSettingStore()
     const token = ref<string | null>(cache.get('token', null))
     const locales = ref<any[]>([])
     const language = ref(cache.get('language', 'zh_CN'))
@@ -120,11 +117,6 @@ const useUserStore = defineStore(
         const routeStore = useRouteStore()
         const { data } = await getInfo()
         setUserInfo(data)
-        if ((setting.getSettings('app')?.loadUserSetting ?? true) && data.backend_setting) {
-          const raw = data?.backend_setting
-          const normalized = raw && !Array.isArray(raw) ? raw : null
-          await setUserSetting(normalized)
-        }
         await refreshMenu()
         await refreshRole()
         await routeStore.initRoutes(router, getMenu())
@@ -209,25 +201,6 @@ const useUserStore = defineStore(
       return true
     }
 
-    async function setUserSetting(settings: any) {
-      settings && setting.setSettings(settings)
-      setting.initColorMode()
-
-      await nextTick()
-      useThemeColor().initThemeColor()
-      const locale = settings?.app?.useLocale ?? (language.value?.trim() || 'zh_CN')
-      setLanguage(locale)
-    }
-
-    function saveSettingToSever() {
-      const backend_setting = setting.getSettings()
-      useHttp().post('/admin/permission/update', { backend_setting }).then(() => {
-        cache.set('sys_settings', backend_setting)
-      }).catch((error) => {
-        console.log(error)
-      })
-    }
-
     async function clearCache() {
       await useHttp().get('/admin/user/clearCache')
     }
@@ -262,7 +235,6 @@ const useUserStore = defineStore(
       getRoles,
       getLocales,
       setLocales,
-      saveSettingToSever,
       getMenu,
     }
   },

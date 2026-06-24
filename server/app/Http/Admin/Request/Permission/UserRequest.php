@@ -22,7 +22,6 @@ use App\Common\Swagger\FormRequest as FormRequestAnnotation;
         'avatar',
         'signed',
         'status',
-        'backend_setting',
         'remark',
     ],
     only: [
@@ -34,7 +33,6 @@ use App\Common\Swagger\FormRequest as FormRequestAnnotation;
         'avatar',
         'signed',
         'status',
-        'backend_setting',
         'remark',
     ]
 )]
@@ -53,7 +51,6 @@ class UserRequest extends FormRequest
             'avatar' => 'nullable|sometimes|string|max:255',
             'signed' => 'nullable|sometimes|string|max:255',
             'status' => 'nullable|sometimes|integer',
-            'backend_setting' => 'nullable|sometimes|array|max:255',
             'remark' => 'nullable|sometimes|string|max:255',
             'password' => 'nullable|sometimes|string|min:6|max:20',
         ];
@@ -70,7 +67,6 @@ class UserRequest extends FormRequest
             'avatar' => trans('user.avatar'),
             'signed' => trans('user.signed'),
             'status' => trans('user.status'),
-            'backend_setting' => trans('user.backend_setting'),
             'created_by' => trans('user.created_by'),
             'remark' => trans('user.remark'),
             'password' => trans('user.password'),
