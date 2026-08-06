@@ -14,26 +14,8 @@ use App\Common\Request\Traits\ClientIpRequestTrait;
 use App\Common\Request\Traits\ClientOsTrait;
 use App\Common\Request\Traits\NoAuthorizeTrait;
 use Hyperf\Collection\Arr;
-use Hyperf\Swagger\Annotation\Property;
-use Hyperf\Swagger\Annotation\Schema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[Schema(title: '登录注册请求', description: '登录请求参数', properties: [
-    new Property('username', description: 'username', type: 'string'),
-    new Property('mobile', description: 'mobile', type: 'string'),
-    new Property('code', description: 'mobile code', type: 'numeric'),
-    new Property('mobile', description: 'mobile', type: 'string'),
-    new Property('password', description: 'password', type: 'string'),
-    new Property('password_confirmation', description: '确认密码', type: 'string'),
-    new Property('vcode', description: '验证码', type: 'numeric'),
-    new Property('openid', description: 'openid', type: 'string'),
-    new Property('type', description: '类型 1账号密码,2手机验证码,3邮箱证码,11小程序,12公众号', type: 'numeric'),
-    new Property('scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', type: 'string'),
-    new Property('google2fa', description: 'Google2FA密钥', type: 'string'),
-    new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
-    new Property('invite_code', description: '邀请码', type: 'string'),
-    new Property('device_id', description: '设备唯一标识（iOS/Android/Web通用）', type: 'string'),
-])]
 class UserRequest extends FormRequest
 {
     use ActionRulesTrait;

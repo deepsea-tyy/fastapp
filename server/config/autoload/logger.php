@@ -16,7 +16,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => Tools::runtime_dir('logs/app.log'),
+                'filename' => Tools::runtime_path('logs/app.log'),
                 'level' => $defaultLevel,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
@@ -38,7 +38,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => Tools::runtime_dir('logs/error.log'),
+                'filename' => Tools::runtime_path('logs/error.log'),
                 'level' => Level::Error,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
@@ -60,7 +60,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => Tools::runtime_dir('logs/sql.log'),
+                'filename' => Tools::runtime_path('logs/sql.log'),
                 'level' => $isDebug ? Level::Info : Level::Emergency,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',
@@ -82,7 +82,7 @@ return [
         'handler' => [
             'class' => RotatingFileHandler::class,
             'constructor' => [
-                'filename' => Tools::runtime_dir('logs/websocket.log'),
+                'filename' => Tools::runtime_path('logs/websocket.log'),
                 'level' => $isDebug ? Level::Debug : Level::Info,
                 'maxFiles' => $isDebug ? 1 : 10,
                 'dateFormat' => 'Y-m-d',

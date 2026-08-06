@@ -54,11 +54,12 @@ final class MenuService extends IService
         $model = parent::updateById($id, $data);
         if ($model && $data['meta']['type'] === 'M' && isset($data['btnPermission'])) {
             $existsBtnPermissions = array_flip($this->repository->getQuery()
+                ->select(['id', 'meta'])
                 ->where('parent_id', $id)
-                ->whereJsonContains('meta->type', 'B')
-                ->pluck('id')
-                ->toArray());
-
+                ->get()->map(function ($item) {
+                    if ($item->meta['type'] == 'B') return $item->id;
+                    return 0;
+                })->toArray());
             if (!empty($data['btnPermission'])) {
                 foreach ($data['btnPermission'] as $item) {
                     if (!empty($item['type']) && $item['type'] === 'B') {
@@ -80,7 +81,6 @@ final class MenuService extends IService
                     }
                 }
             }
-
             if (!empty($existsBtnPermissions)) {
                 $this->deleteById(array_keys($existsBtnPermissions));
             }

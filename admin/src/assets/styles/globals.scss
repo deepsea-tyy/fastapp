@@ -3,7 +3,7 @@
   /* 头部高度 */
   --mine-g-header-height: 55px;
   /* 脚部高度 */
-  --mine-g-footer-height: 50px;
+  --mine-g-footer-height: 30px;
   /* 侧边栏主菜单宽度 */
   --mine-g-main-aside-width: 80px;
   /* 侧边栏子菜单展开宽度 */
@@ -110,8 +110,7 @@ body {
     ;
   }
 
-  .mine-aside,
-  .mine-bars {
+  .mine-aside {
     @apply opacity-0 hidden;
   }
 }

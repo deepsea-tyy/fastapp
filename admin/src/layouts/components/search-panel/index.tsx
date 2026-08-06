@@ -16,7 +16,7 @@ export default defineComponent({
         return !['notFound', 'MineRootLayoutRoute', 'login'].includes(item.name as string)
           && !item.meta?.hidden
           && (item.components || item.meta?.type === 'L')
-          && !(/^\/uc/.test(item.path))
+
           && (
             item.path?.includes(routeKey.value)
             || (item.name as string)?.indexOf(routeKey.value) > -1

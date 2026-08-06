@@ -25,6 +25,11 @@ require BASE_PATH . '/vendor/autoload.php';
 (function () {
     Plugin::init();
     ClassLoader::init();
+
+    if (\Phar::running(false)) {
+        Plugin::scanAnnotations();
+    }
+
     /** @var ContainerInterface $container */
     $container = require BASE_PATH . '/config/container.php';
 

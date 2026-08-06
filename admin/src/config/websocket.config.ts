@@ -28,8 +28,8 @@ export interface ModuleConfig {
 class WebSocketConfigRegistry {
   private modules: Map<string, ModuleConfig> = new Map()
   private globalConfig = {
-    maxReconnectAttempts: 5,
-    reconnectDelay: 3000,
+    maxReconnectAttempts: 10,
+    reconnectDelay: 6000,
     heartbeatInterval: 30000,
     defaultWsUrl: 'ws://127.0.0.1:9502/ws',
   }

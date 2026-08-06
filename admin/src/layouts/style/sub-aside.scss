@@ -16,7 +16,7 @@
   transition: width 0.3s, transform 0.3s, box-shadow 0.3s, top 0.3s;
 
   & .mine-sub-aside-list {
-    @apply h-full overflow-y-auto pb-2;
+    @apply flex-1 min-h-0 overflow-y-auto pb-2;
 
     overscroll-behavior: contain;
 
@@ -41,14 +41,44 @@
     }
   }
 
-  & .mine-sub-aside-close-button,
-  & .mine-sub-aside-collapse-button,
-  & .mine-sub-aside-fixed-button {
+  & .mine-sub-aside-close-button {
     @apply flex-center cursor-pointer rounded bg-stone-1 p-2 transition
       bg-gray-2 hover-bg-gray-3 text-dark-5
       dark-bg-dark-3 hover-dark-bg-dark-1 dark-text-gray-1
     ;
   }
+}
+
+// 菜单栏底部工具栏：垂直排版
+.mine-sub-aside-bars {
+  .mine-toolbar {
+    flex-direction: column;
+    height: auto;
+    padding: 8px 0;
+    gap: 10px;
+    justify-content: flex-end;
+    border-bottom: 0;
+    border-top: 1px solid #e8e9ec;
+  }
+
+  .right-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  // 收起态下隐藏用户名，仅保留头像
+  .mine-user-bar .username {
+    display: none;
+  }
+
+  // 子侧栏内无需移动端菜单开关按钮
+  .mine-toolbar > .flex.lg\:hidden {
+    display: none !important;
+  }
+}
+
+html.dark .mine-sub-aside-bars .mine-toolbar {
+  border-top-color: var(--mine-g-dark-5, #2d2d2d);
 }
 
 .mine-sub-aside-container-enter-active,

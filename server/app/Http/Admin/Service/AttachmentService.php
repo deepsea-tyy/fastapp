@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-
 namespace App\Http\Admin\Service;
 
 use App\Common\IService;
 use App\Common\Tools;
-use App\Common\Upload\UploadFactory;
+use App\Common\Upload\FileStorage;
+use App\Common\Upload\StoredFile;
 use App\Model\Attachment;
 use App\Repository\AttachmentRepository;
 use Psr\Http\Message\UploadedFileInterface;
@@ -19,10 +19,8 @@ final class AttachmentService extends IService
 {
     public function __construct(
         protected readonly AttachmentRepository $repository,
-        protected readonly UploadFactory        $upload
-    )
-    {
-    }
+        protected readonly FileStorage $storage,
+    ) {}
 
     public function upload(UploadedFileInterface $uploadedFile, int $userId): Attachment
     {
@@ -30,11 +28,11 @@ final class AttachmentService extends IService
         if ($attachment = $this->repository->findByHash($fileHash)) {
             return $attachment;
         }
-        $upload = $this->upload->upload($uploadedFile);
-        return $this->repository->create(array_merge($upload->toArray(), [
-            'created_by' => $userId,
-            'origin_name' => $uploadedFile->getClientFilename(),
-        ]));
+        return $this->createFromStoredFile(
+            $this->storage->putUploaded($uploadedFile, $fileHash),
+            $userId,
+            (string) $uploadedFile->getClientFilename(),
+        );
     }
 
     public function getRepository(): AttachmentRepository
@@ -44,7 +42,8 @@ final class AttachmentService extends IService
 
     public function uploadChunk(string $hash, int $chunkIndex, UploadedFileInterface $chunkFile): bool
     {
-        return $this->upload->uploadChunk($hash, $chunkIndex, $chunkFile);
+        $this->storage->putChunk($hash, $chunkIndex, $chunkFile);
+        return true;
     }
 
     public function checkFileExists(string $hash): ?Attachment
@@ -54,11 +53,14 @@ final class AttachmentService extends IService
 
     public function mergeChunks(string $hash, string $filename, int $totalChunks, int $userId): Attachment
     {
-        $upload = $this->upload->mergeChunks($hash, $filename, $totalChunks);
-        return $this->repository->create(array_merge($upload->toArray(), [
-            'created_by' => $userId,
-            'origin_name' => $filename,
-        ]));
+        if ($attachment = $this->repository->findByHash($hash)) {
+            return $attachment;
+        }
+        return $this->createFromStoredFile(
+            $this->storage->mergeChunks($hash, $filename, $totalChunks),
+            $userId,
+            $filename,
+        );
     }
 
     public function deleteById(mixed $id, array $where = []): int
@@ -68,5 +70,14 @@ final class AttachmentService extends IService
             @unlink(Tools::storage_path($md->url));
         }
         return $s;
+    }
+
+    private function createFromStoredFile(StoredFile $file, int $userId, string $originName): Attachment
+    {
+        return $this->repository->create(array_merge($file->toArray(), [
+            'created_by' => $userId,
+            'origin_name' => $originName,
+            'source' => 1,
+        ]));
     }
 }

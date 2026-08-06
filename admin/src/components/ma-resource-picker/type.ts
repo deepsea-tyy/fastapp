@@ -14,6 +14,7 @@ export interface Resource {
   size_info?: string
   url?: string
   normalized?: number
+  asset_type?: string
 }
 
 export interface FileType extends MTabsOptionItems<string> {

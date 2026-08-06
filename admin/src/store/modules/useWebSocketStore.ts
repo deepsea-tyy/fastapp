@@ -4,8 +4,8 @@
  * 支持多模块注册和统一管理
  */
 
-import type { WebSocketMessage, WebSocketResponse, PendingOperation } from '$/ds/sysKefu/views/chat/types'
-import { generateOperationId } from '$/ds/sysKefu/views/chat/helpers'
+import type { WebSocketMessage, WebSocketResponse, PendingOperation } from '@/provider/ws/ws.d.ts'
+import { generateOperationId } from '@/utils/common.ts'
 import useUserStore from '@/store/modules/useUserStore'
 import { wsRegistry, SYSTEM_WS_ACTIONS } from '@/config/websocket.config'
 
@@ -460,21 +460,77 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
   }
 
   /**
-   * 发送 WebSocket 消息并等待响应
+   * 等待 WebSocket 连接成功（带超时）
+   *
+   * @param timeoutMs - 超时时间（毫秒），默认15000ms
+   * @returns Promise<boolean> - 连接成功返回true，超时返回false
+   */
+  async function waitForConnection(timeoutMs: number = 15000): Promise<boolean> {
+    if (ws.value?.readyState === WebSocket.OPEN) {
+      return true
+    }
+
+    ensureWebSocketReconnect()
+
+    return new Promise((resolve) => {
+      let timeoutId: number | null = null
+      let connectedHandler: (() => void) | null = null
+
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        if (connectedHandler) {
+          messageHandlers.delete('__ws_connect_wait')
+          connectedHandler = null
+        }
+      }
+
+      timeoutId = window.setTimeout(() => {
+        cleanup()
+        resolve(false)
+      }, timeoutMs)
+
+      connectedHandler = () => {
+        if (ws.value?.readyState === WebSocket.OPEN) {
+          cleanup()
+          resolve(true)
+        }
+      }
+
+      watch(
+        () => wsConnected.value,
+        (connected) => {
+          if (connected) {
+            connectedHandler?.()
+          }
+        },
+        { immediate: false },
+      )
+    })
+  }
+
+  /**
+   * 发送 WebSocket 消息并等待响应（断开时自动重连）
    *
    * @param action - WebSocket 操作类型
    * @param data - 消息数据
    * @param opId - 操作ID（可选）
+   * @param waitTimeoutMs - 等待连接超时时间（毫秒），默认15000ms
    * @returns Promise<响应数据>（直至收到带 op_id 的响应，或连接关闭/重连时 reject）
    */
   async function sendWebSocketMessage(
     action: string,
     data: Record<string, any>,
     opId?: string,
+    waitTimeoutMs: number = 15000,
   ): Promise<WebSocketResponse> {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      ensureWebSocketReconnect()
-      throw new Error('WebSocket is not connected')
+      const connected = await waitForConnection(waitTimeoutMs)
+      if (!connected) {
+        throw new Error('WebSocket connection timeout')
+      }
     }
 
     const operationId = opId || generateOperationId('op')
@@ -545,6 +601,7 @@ const useWebSocketStore = defineStore('useWebSocketStore', () => {
     unregisterMessageHandler,
     clearMessageHandlers,
     setupTokenWatch, // 导出以便手动调用
+    waitForConnection, // 导出以便手动调用，用于等待连接成功
   }
 })
 

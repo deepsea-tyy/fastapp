@@ -79,7 +79,6 @@
     "hyperf/pool": "3.1.*",
     "hyperf/process": "3.1.*",
     "hyperf/server": "3.1.*",
-    "hyperf/swagger": "^3.1",
     "hyperf/task": "^3.1",
     "hyperf/utils": "3.1.*",
     "hyperf/validation": "~3.1",
@@ -97,8 +96,7 @@
     "yansongda/pay": "^3.7"
   },
   "require-dev": {
-    "doctrine/dbal": "^3.6",
-    "zircote/swagger-php": "^4.11"
+    "doctrine/dbal": "^3.6"
   },
   "suggest": {
     "ext-openssl": "Required to use HTTPS.",

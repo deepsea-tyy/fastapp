@@ -8,7 +8,6 @@ const include = [
   'echarts',
   'floating-vue',
   'lodash-es',
-  'nprogress',
   'overlayscrollbars',
   'overlayscrollbars-vue',
   'path-browserify',

@@ -45,4 +45,12 @@ final class FileSystemUtils
     {
         return (bool) preg_match('/^\/(?:[^\/\0]+\/)*[^\/\0]+$/', $name);
     }
+
+    /**
+     * Removes a file or directory.
+     */
+    public static function remove(string $path): void
+    {
+        FileSystem::delete($path);
+    }
 }

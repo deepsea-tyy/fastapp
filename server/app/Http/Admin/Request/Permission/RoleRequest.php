@@ -7,15 +7,8 @@ namespace App\Http\Admin\Request\Permission;
 
 use App\Common\Request\Traits\HttpMethodTrait;
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use App\Schema\RoleSchema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[\App\Common\Swagger\FormRequest(
-    schema: RoleSchema::class,
-    only: [
-        'name', 'code', 'data_scope', 'status', 'sort', 'remark', 'dept_id',
-    ]
-)]
 class RoleRequest extends FormRequest
 {
     use HttpMethodTrait;

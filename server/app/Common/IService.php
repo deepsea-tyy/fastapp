@@ -69,9 +69,4 @@ abstract class IService
     {
         return $this->repository->findById($id);
     }
-
-    public function existsById(mixed $id): bool
-    {
-        return $this->repository->existsById($id);
-    }
 }

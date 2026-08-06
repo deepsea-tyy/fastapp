@@ -11,15 +11,14 @@ namespace App\Http\Api\Controller;
 use App\Common\AbstractController;
 use App\Common\Tools;
 use App\Http\Admin\Service\AttachmentService;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Contract\RequestInterface;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\QueryParameter;
 use Psr\Http\Message\ResponseInterface;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 
-#[HyperfServer(name: 'http')]
+#[Controller]
 class FileController extends AbstractController
 {
     public function __construct(
@@ -27,14 +26,7 @@ class FileController extends AbstractController
         protected readonly AttachmentService $attachmentService,
     ) {}
 
-    #[Get(
-        path: '/api/file',
-        operationId: 'GetStorageFile',
-        summary: '文件访问',
-        tags: ['文件管理'],
-    )]
-    #[QueryParameter(name: 'path', description: '文件路径，相对于storage目录', example: 'uploads/2025-10-29/example.jpg')]
-    #[QueryParameter(name: 'id', description: 'attachment 表主键', example: '123')]
+    #[GetMapping(path: '/api/file')]
     public function getFile(): ResponseInterface
     {
         $request = Tools::getContainer()->get(RequestInterface::class);

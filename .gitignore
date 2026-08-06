@@ -18,11 +18,9 @@ tools/.venv/
 tools/models
 /tools/uv.lock
 /tools/.chrome-fetch-profile
-*LivePortrait/
 /server/storage
-/tools/runtime/outputs
+/tools/runtime/*
 /pkg/
-*vendor*
-/server/pkg/
-composer.phar
-runtime
+__pycache__
+cmd
+/tools/smplx/

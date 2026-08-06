@@ -17,7 +17,12 @@ export default defineComponent({
       {
         label: 'base.userBar.uc',
         icon: 'material-symbols:account-circle-outline',
-        handle: () => router.push({ path: '/uc' }),
+        handle: () => router.push({ path: '/uc/index' }),
+      },
+      {
+        label: 'base.userBar.google2fa',
+        icon: 'heroicons:shield-check',
+        handle: () => router.push({ path: '/uc/google2fa' }),
       },
       {
         label: 'base.userBar.clearCache',

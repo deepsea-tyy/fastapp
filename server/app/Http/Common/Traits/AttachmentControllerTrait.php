@@ -43,12 +43,12 @@ trait AttachmentControllerTrait
      */
     public function handleDelete(int $id): Result
     {
-        if (!$this->service->getRepository()->existsById($id)) {
-            return $this->error(trans('attachment.attachment_not_exist'));
+        $attachment = $this->service->getRepository()->findById($id);
+        if (!$attachment) {
+            return $this->success();
         }
 
-        $attachment = $this->service->getRepository()->findById($id);
-        if ($attachment && $attachment->created_by !== $this->currentUser->id()) {
+        if ($attachment->created_by !== $this->currentUser->id()) {
             return $this->error('无权限删除此附件');
         }
 
@@ -61,12 +61,12 @@ trait AttachmentControllerTrait
      */
     public function handleUpdate(int $id): Result
     {
-        if (!$this->service->getRepository()->existsById($id)) {
+        $attachment = $this->service->getRepository()->findById($id);
+        if (!$attachment) {
             return $this->error(trans('attachment.attachment_not_exist'));
         }
 
-        $attachment = $this->service->getRepository()->findById($id);
-        if ($attachment && $attachment->created_by !== $this->currentUser->id()) {
+        if ($attachment->created_by !== $this->currentUser->id()) {
             return $this->error('无权限修改此附件');
         }
 

@@ -1,11 +1,8 @@
 
 import { KeepAlive, Transition } from 'vue'
 import { RouterView } from 'vue-router'
-import MineHeader from './components/header'
 import MineSearchPanel from './components/search-panel'
-import MineMainAside from './components/main-aside'
 import MineSubAside from './components/sub-aside'
-import MineBars from './components/bars'
 import MineFooter from './components/footer'
 import MineBackTop from './components/back-top'
 import MineIframe from './components/iframe'
@@ -18,10 +15,6 @@ export default defineComponent({
   setup() {
     const {
       getSettings,
-      showMineHeader,
-      isMixedLayout,
-      isClassicLayout,
-      isBannerLayout,
       openGlobalWatermark,
       clearGlobalWatermark,
       getSearchPanelEnable,
@@ -40,38 +33,24 @@ export default defineComponent({
     }, { immediate: true })
 
     onMounted(() => {
-      if (menuStore.subMenu.length > 0 && appSetting?.layout === 'columns') {
-        menuStore.setSubAsideWidthByDefault()
-      }
-      else if (menuStore.subMenu.length === 0 && appSetting?.layout === 'mixed') {
-        menuStore.setSubAsideWidthByZero()
-      }
-      else if (appSetting?.layout === 'columns') {
-        menuStore.setSubAsideWidthByZero()
-      }
-      else {
-        menuStore.setSubAsideWidthByDefault()
-      }
+      menuStore.setSubAsideWidthByDefault()
       handleResize(subAsideEl)
     })
 
     return () => (
       <div class="app-container">
-        <MineHeader />
         <div class={{
           'mine-wrapper': true,
-          'mine-wrapper-full': !showMineHeader() || getMobileState(),
-          'mine-wrapper-not-full': showMineHeader() && !getMobileState(),
+          'mine-wrapper-full': getMobileState(),
+          'mine-wrapper-not-full': !getMobileState(),
         }}
         >
           <Transition name="mine-aside-animate">
-            <div class={{ 'group mine-aside': true, 'w-0': getMobileState() }} v-show={!isBannerLayout()}>
-              {(!isClassicLayout() && !isMixedLayout()) && <MineMainAside />}
+            <div class={{ 'group mine-aside': true, 'w-0': getMobileState() }}>
               <MineSubAside ref={subAsideEl} />
             </div>
           </Transition>
           <div class="mine-main">
-            <MineBars />
             <div class={{
               'mine-worker-area': true,
               'mine-worker-area--full': route.meta?.fullPage,

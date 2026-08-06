@@ -221,7 +221,7 @@ class FileStorage
         $absolutePath = trim($absolutePath);
         $realFile = $absolutePath != '' ? realpath($absolutePath) : false;
 
-        return $realFile != false ? $realFile : $absolutePath;
+        return $realFile ?: $absolutePath;
     }
 
     private function placeLocalFile(string $realFile, string $target, bool $move): string
@@ -243,7 +243,7 @@ class FileStorage
 
     protected function generatorChunkPath(string $hash, int $chunkIndex): string
     {
-        return '/tmp/' . $hash . '/' . $chunkIndex . '.tmp';
+        return Tools::storage_path('/tmp/' . $hash . '/' . $chunkIndex . '.tmp');
     }
 
     protected function cleanupChunks(string $hash, int $totalChunks): void

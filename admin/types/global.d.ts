@@ -124,15 +124,11 @@ declare namespace SystemSettings {
      * 颜色模式，light 白天 dark 黑夜，默认为 `'light'`
      * @默认值 `'light'`
      */
-    colorMode?: 'light' | 'dark' | 'autoMode'
+    colorMode?: 'light' | 'dark'
     /**
      * 主要颜色
      */
     primaryColor?: string
-    /**
-     * 侧边栏是否黑夜模式
-     */
-    asideDark?: boolean
     /**
      * 使用的语言包
      * @默认值 `'zh_CN'`
@@ -144,35 +140,15 @@ declare namespace SystemSettings {
      */
     whiteRoute?: string[]
     /**
-     * 页面布局方式
-     * @默认值 `'columns'`
-     */
-    layout?: 'columns' | 'classic' | 'mixed' | 'banner'
-    /**
      * 页面过场动画
      * @默认值 `'ma-fade'`
      */
     pageAnimate?: 'ma-fade' | 'ma-slide-right' | 'ma-slide-left' | 'ma-slide-down' | 'ma-slide-up'
     /**
-     * 是否显示面包屑
-     * @默认值 `true`
-     */
-    showBreadcrumb?: boolean
-    /**
-     * 是否显示顶栏
-     * @默认值 `true`
-     */
-    showHeader?: boolean
-    /**
      * 是否显示工具栏区域
      * @默认值 `true`
      */
     showBars?: boolean
-    /**
-     * 是否显示全局加载进度（NProgress）
-     * @默认值 `true`
-     */
-    showLoadingProgress?: boolean
     /**
      * 是否开启水印
      * @默认值 `false`

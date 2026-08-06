@@ -4,11 +4,9 @@ export default defineComponent({
   setup() {
     const settingStore = useSettingStore()
     const icon = computed(() => {
-      return (settingStore.colorMode === 'autoMode')
-        ? 'lets-icons:color-mode-light'
-        : settingStore.colorMode === 'dark'
-          ? 'material-symbols:dark-mode-outline'
-          : 'material-symbols:sunny-outline-rounded'
+      return settingStore.colorMode === 'dark'
+        ? 'material-symbols:dark-mode-outline'
+        : 'material-symbols:sunny-outline-rounded'
     })
     return () => (
       <div class="hidden items-center lg:flex">

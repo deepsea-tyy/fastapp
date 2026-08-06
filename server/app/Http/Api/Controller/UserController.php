@@ -14,7 +14,6 @@ use App\Common\Middleware\TokenMiddleware;
 use App\Common\Result;
 use App\Common\Service\TwoFactorAuthService;
 use App\Common\Service\VerifyCodeService;
-use App\Common\Swagger\ResultResponse;
 use App\Common\Tools;
 use App\Exception\BusinessException;
 use App\Http\Api\Request\UserRequest;
@@ -25,16 +24,13 @@ use App\Model\Enums\User\Type;
 use App\Model\User;
 use App\Model\UserAccountLog;
 use Hyperf\Collection\Arr;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\Middleware;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\HyperfServer;
-use Hyperf\Swagger\Annotation\JsonContent;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\QueryParameter;
-use Hyperf\Swagger\Annotation\RequestBody;
+use Hyperf\HttpServer\Annotation\PostMapping;
 use Ramsey\Uuid\Uuid;
 
-#[HyperfServer(name: 'http')]
+#[Controller]
 class UserController extends AbstractController
 {
     public function __construct(
@@ -44,20 +40,7 @@ class UserController extends AbstractController
     {
     }
 
-    #[Post(
-        path: '/api/user/register',
-        operationId: 'ApiUserRegister',
-        summary: '注册',
-        security: [['token' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '注册请求参数',
-        required: ['register_type'],
-        example: '{ "username": "deepsea", "password": "123456", "password_confirmation": "123456", "mobile": "18111111111", "code": "86","vcode": "1234", "openid": "oFvZO197qeVdsnFyKh7gDrqUpsf0", "type": 1, "invite_code": "ABC12345" }'
-    ))]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAiO","expire_at":300}}')]
+    #[PostMapping(path: '/api/user/register')]
     public function register(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -107,35 +90,13 @@ class UserController extends AbstractController
         return $this->success($tokenData);
     }
 
-    #[Get(
-        path: '/api/user/isRegister',
-        operationId: 'ApiUserIsRegister',
-        summary: '是否注册',
-        security: [['token' => []]],
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result())]
-    #[QueryParameter(name: 'code', description: 'code')]
-    #[QueryParameter(name: 'mobile', description: 'mobile')]
-    #[QueryParameter(name: 'username', description: 'username')]
-    #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {"status": 0}}')]
+    #[GetMapping(path: '/api/user/isRegister')]
     public function isRegister(): Result
     {
         return $this->success(['status' => $this->currentUser->findUser($this->getRequestData()) ? 1 : 0]);
     }
 
-    #[Get(
-        path: '/api/sms',
-        operationId: 'ApiUserSms',
-        summary: '获取验证码',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[QueryParameter(name: 'type', description: '验证码类型：sms(手机短信)或email(邮箱)', required: true, example: 'sms')]
-    #[QueryParameter(name: 'to', description: '接收地址：手机号或邮箱地址', required: true, example: '1311111111')]
-    #[QueryParameter(name: 'code', description: '国家代码（仅手机短信需要），默认86', required: false, example: '86')]
-    #[QueryParameter(name: 'scene', description: '验证码场景：login(登录)、register(注册)、reset_password(找回密码)、bind(绑定)、change(修改)、default(默认)', required: false, example: 'login')]
-    #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {}}')]
+    #[GetMapping(path: '/api/sms')]
     public function sms(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -153,19 +114,7 @@ class UserController extends AbstractController
         return $result['success'] ? $this->success(message: $result['message']) : $this->error($result['message']);
     }
 
-    #[Post(
-        path: '/api/user/smsCheck',
-        operationId: 'ApiUserSmsCheck',
-        summary: '登录',
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result())]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '验证码验证',
-        required: ['type'],
-        example: '{ "type": "smm", to": "", "code": "",  "vcode": "", "scene": "" }'
-    ))]
+    #[PostMapping(path: '/api/user/smsCheck')]
     public function smsCheck(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -181,19 +130,7 @@ class UserController extends AbstractController
         ) ? $this->success() : $this->error(trans('auth.mobile_code_invalid'));
     }
 
-    #[Post(
-        path: '/api/user/login',
-        operationId: 'ApiUserLogin',
-        summary: '登录',
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAi","refresh_token":"eyxxx", "expire_at":300}}')]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '登录请求参数',
-        required: ['type'],
-        example: '{ "username": "deepsea", "password": "123456", "mobile": "", "code": "86", "vcode": "86", "google2fa_code": "1111", "type": "1" }'
-    ))]
+    #[PostMapping(path: '/api/user/login')]
     public function login(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -217,7 +154,6 @@ class UserController extends AbstractController
         if (!$user) throw new BusinessException(message: trans('auth.user_not_register'));
         if ($user->status == Status::DISABLE->value) throw new BusinessException(message: trans('result.disabled'));
 
-        // 密码登录
         if ($validated['type'] == LoginType::USERNAME_PASSWORD->value && !$user->verifyPassword($validated['password'])) {
             throw new BusinessException(message: trans('user.password_error'));
         }
@@ -227,14 +163,12 @@ class UserController extends AbstractController
             $deviceId = Uuid::uuid4()->toString();
         }
 
-        // 检测是否需要二次验证
         $verifyInfo = $this->twoFAService->detectVerifyMethod($user);
         if ($this->twoFAService->needsVerification($verifyInfo, $validated)) {
             $verifyInfo['device_id'] = $deviceId;
             return $this->success($verifyInfo);
         }
 
-        // 验证码登录需要验证验证码
         if ($validated['type'] == LoginType::EMAIL_CODE->value) {
             $scene = $validated['scene'] ?? VerifyCodeService::SCENE_LOGIN;
             if (!VerifyCodeService::verify(
@@ -258,7 +192,6 @@ class UserController extends AbstractController
             }
         }
 
-        // 验证二次认证
         $this->twoFAService->verify($user, $validated, VerifyCodeService::SCENE_LOGIN);
 
         $tokenData = $this->currentUser->setScene('api')->formatToken(
@@ -272,14 +205,7 @@ class UserController extends AbstractController
         return $this->success($tokenData);
     }
 
-    #[Post(
-        path: '/api/user/logout',
-        operationId: 'ApiUserLogout',
-        summary: '登出',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{}}')]
+    #[PostMapping(path: '/api/user/logout')]
     #[Middleware(TokenMiddleware::class)]
     public function logout(): Result
     {
@@ -287,20 +213,7 @@ class UserController extends AbstractController
         return $this->success();
     }
 
-    #[Post(
-        path: '/api/user/refreshToken',
-        operationId: 'ApiUserRefreshToken',
-        summary: '刷新token',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '刷新token请求参数',
-        required: ['refresh_token'],
-        example: '{ "refresh_token": "exxxx" }'
-    ))]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"access_token":"eyJ0eXAi","refresh_token":"eyxxx", "expire_at":300}}')]
+    #[PostMapping(path: '/api/user/refreshToken')]
     public function refreshToken(): Result
     {
         $token = $this->getRequest()->input('refresh_token');
@@ -312,14 +225,7 @@ class UserController extends AbstractController
         return $this->success($tokenData);
     }
 
-    #[Get(
-        path: '/api/user/info',
-        operationId: 'ApiUserGetInfo',
-        summary: '用户信息',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result())]
+    #[GetMapping(path: '/api/user/info')]
     #[Middleware(TokenMiddleware::class)]
     public function info(): Result
     {
@@ -329,26 +235,12 @@ class UserController extends AbstractController
         $info->is_password = $info->getOriginal('password') ? 1 : 0;
         if (class_exists(\Plugin\Ds\Ex\Model\ExKyc::class)) {
             $kyc = \Plugin\Ds\Ex\Model\ExKyc::query()->where(['user_id' => $info->id])->first(['kyc_level', 'status']);
-            //0未认证
             $info->is_kyc = $kyc?->isKyc() ?? 0;
         }
         return $this->success($info);
     }
 
-    #[Post(
-        path: '/api/user/password/change',
-        operationId: 'ApiUserPasswordChange',
-        summary: '修改密码',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '修改密码请求参数',
-        required: ['password', 'password_confirmation'],
-        example: '{ "old_password": "123456", "password": "newpassword", "password_confirmation": "newpassword", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/password/change')]
     #[Middleware(TokenMiddleware::class)]
     public function changePassword(UserRequest $request): Result
     {
@@ -377,19 +269,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('user.password_change_success'));
     }
 
-    #[Post(
-        path: '/api/user/account/disable',
-        operationId: 'ApiUserAccountDisable',
-        summary: '禁用账户',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '禁用账户请求参数',
-        example: '{ "password": "123456", "google2fa_code": "123456", "vcode": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/account/disable')]
     #[Middleware(TokenMiddleware::class)]
     public function disableAccount(UserRequest $request): Result
     {
@@ -406,19 +286,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.account_disable_success'));
     }
 
-    #[Post(
-        path: '/api/user/account/delete',
-        operationId: 'ApiUserAccountDelete',
-        summary: '删除账户',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '删除账户请求参数',
-        example: '{ "password": "123456", "google2fa_code": "123456", "vcode": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/account/delete')]
     #[Middleware(TokenMiddleware::class)]
     public function deleteAccount(UserRequest $request): Result
     {
@@ -441,19 +309,11 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.account_delete_success'));
     }
 
-    #[Get(
-        path: '/api/user/google2fa/qrcode',
-        operationId: 'ApiUserGoogle2faQrcode',
-        summary: '获取Google2FA二维码',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"google2fa":"JBSWY3DPEHPK3PXP","qrcode":"data:image/svg+xml;base64,..."}}')]
+    #[GetMapping(path: '/api/user/google2fa/qrcode')]
     #[Middleware(TokenMiddleware::class)]
     public function google2faQrcode(): Result
     {
         $user = $this->currentUser->user();
-
 
         if (!empty($user->google2fa)) {
             throw new BusinessException(message: trans('auth.google_code_bind'));
@@ -468,20 +328,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    #[Post(
-        path: '/api/user/google2fa/bind',
-        operationId: 'ApiUserGoogle2faBind',
-        summary: '绑定Google2FA',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '绑定Google2FA请求参数',
-        required: ['google2fa', 'code'],
-        example: '{ "google2fa": "JBSWY3DPEHPK3PXP", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/google2fa/bind')]
     #[Middleware(TokenMiddleware::class)]
     public function google2faBind(UserRequest $request): Result
     {
@@ -502,20 +349,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.bind_success'));
     }
 
-    #[Post(
-        path: '/api/user/google2fa/unbind',
-        operationId: 'ApiUserGoogle2faUnbind',
-        summary: '解绑Google2FA',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '解绑Google2FA请求参数',
-        required: ['google2fa_code'],
-        example: '{ "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/google2fa/unbind')]
     #[Middleware(TokenMiddleware::class)]
     public function google2faUnbind(UserRequest $request): Result
     {
@@ -534,20 +368,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.unbind_success'));
     }
 
-    #[Post(
-        path: '/api/user/email/bind',
-        operationId: 'ApiUserEmailBind',
-        summary: '绑定邮箱',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '绑定邮箱请求参数',
-        required: ['email', 'vcode'],
-        example: '{ "email": "user@example.com", "vcode": "123456", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/email/bind')]
     #[Middleware(TokenMiddleware::class)]
     public function emailBind(UserRequest $request): Result
     {
@@ -588,20 +409,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.bind_success'));
     }
 
-    #[Post(
-        path: '/api/user/email/unbind',
-        operationId: 'ApiUserEmailUnbind',
-        summary: '解绑邮箱',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '解绑邮箱请求参数',
-        required: ['vcode'],
-        example: '{ "vcode": "123456", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/email/unbind')]
     #[Middleware(TokenMiddleware::class)]
     public function emailUnbind(UserRequest $request): Result
     {
@@ -636,20 +444,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.unbind_success'));
     }
 
-    #[Post(
-        path: '/api/user/mobile/bind',
-        operationId: 'ApiUserMobileBind',
-        summary: '绑定手机号',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '绑定手机号请求参数',
-        required: ['mobile', 'vcode', 'code'],
-        example: '{ "mobile": "18111111111", "code": "86", "vcode": "123456", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/mobile/bind')]
     #[Middleware(TokenMiddleware::class)]
     public function mobileBind(UserRequest $request): Result
     {
@@ -692,20 +487,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.bind_success'));
     }
 
-    #[Post(
-        path: '/api/user/mobile/unbind',
-        operationId: 'ApiUserMobileUnbind',
-        summary: '解绑手机号',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '解绑手机号请求参数',
-        required: ['vcode'],
-        example: '{ "code": "86", "vcode": "123456", "google2fa_code": "123456" }'
-    ))]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/api/user/mobile/unbind')]
     #[Middleware(TokenMiddleware::class)]
     public function mobileUnbind(UserRequest $request): Result
     {
@@ -742,17 +524,7 @@ class UserController extends AbstractController
         return $this->success(message: trans('auth.unbind_success'));
     }
 
-    #[Get(
-        path: '/api/user/accountLogs',
-        operationId: 'ApiUserAccountLogs',
-        summary: '获取账户日志',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[QueryParameter(name: 'page', description: '页码', required: false, example: '1')]
-    #[QueryParameter(name: 'page_size', description: '每页数量', required: false, example: '20')]
-    #[QueryParameter(name: 'type', description: '日志类型：1:登录,2:注册,3:重置密码,4:绑定手机,5:绑定邮箱,6:解绑手机,7:解绑邮箱,8:禁用账户,9:删除账户,10:绑定2fa,11:解绑2fa', required: false, example: '1')]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{"list":[{"id":1,"type":1,"ip":"192.168.1.1","os":"Android","device_id":"xxx","country":"中国","region":"北京","city":"北京","created_at":"2025-11-29 21:13:44"}],"total":10}}')]
+    #[GetMapping(path: '/api/user/accountLogs')]
     #[Middleware(TokenMiddleware::class)]
     public function accountLogs(UserRequest $request): Result
     {
@@ -770,19 +542,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    #[Post(
-        path: '/api/user/profile/update',
-        operationId: 'ApiUserProfileUpdate',
-        summary: '更新用户资料',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '更新用户资料请求参数',
-        example: '{ "nickname": "新昵称" }'
-    ))]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"message":"成功","data":{}}')]
+    #[PostMapping(path: '/api/user/profile/update')]
     #[Middleware(TokenMiddleware::class)]
     public function profileUpdate(UserRequest $request): Result
     {
@@ -808,18 +568,7 @@ class UserController extends AbstractController
         return $this->success($profile);
     }
 
-    #[Post(
-        path: '/api/user/resetPassword',
-        operationId: 'ApiUserResetPassword',
-        summary: '重置密码',
-        security: [['ApiKey' => []]],
-        tags: ['用户接口'],
-    )]
-    #[RequestBody(content: new JsonContent(
-        ref: UserRequest::class,
-        title: '重置密码请求参数',
-    ))]
-    #[ResultResponse(instance: new Result(), example: '{"code":200,"vcode":200,"message":"成功","data":{}}')]
+    #[PostMapping(path: '/api/user/resetPassword')]
     public function resetPassword(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -871,13 +620,6 @@ class UserController extends AbstractController
         return $this->success();
     }
 
-    /**
-     * 分发用户登录事件
-     *
-     * @param User $user 用户对象
-     * @param UserRequest $request 请求对象
-     * @param int $type 事件类型
-     */
     private function dispatchUserLoginEvent(User $user, UserRequest $request, int $type): void
     {
         Tools::eventDispatcher(new UserAccountEvent(
@@ -889,15 +631,7 @@ class UserController extends AbstractController
         ));
     }
 
-
-    #[Get(
-        path: '/api/user/baseInfo',
-        operationId: 'ApiUserbaseInfo',
-        summary: '用户基础信息',
-        tags: ['用户接口'],
-    )]
-    #[QueryParameter(name: 'user_id', description: '用户 id')]
-    #[ResultResponse(instance: new Result(), example: '{"code":200, "data": {}}')]
+    #[GetMapping(path: '/api/user/baseInfo')]
     public function baseInfo(): Result
     {
         return $this->success($this->currentUser::baseInfo((int)$this->getRequest()->input('user_id')));

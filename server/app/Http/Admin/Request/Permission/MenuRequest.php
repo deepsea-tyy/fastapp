@@ -6,16 +6,8 @@ declare(strict_types=1);
 namespace App\Http\Admin\Request\Permission;
 
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use App\Schema\MenuSchema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[\App\Common\Swagger\FormRequest(
-    schema: MenuSchema::class,
-    only: [
-        'parent_id', 'name', 'code', 'icon', 'route', 'component', 'redirect',
-        'is_hidden', 'type', 'status', 'sort', 'remark',
-    ]
-)]
 class MenuRequest extends FormRequest
 {
     use NoAuthorizeTrait;

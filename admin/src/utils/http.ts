@@ -3,18 +3,11 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import axios from 'axios'
 import Message from 'vue-m-message'
 import { useDebounceFn } from '@vueuse/core'
-import { useNProgress } from '@vueuse/integrations/useNProgress'
 import useCache from '@/hooks/useCache.ts'
 import { ResultCode } from './ResultCode.ts'
 
-const { isLoading } = useNProgress()
 const cache = useCache()
 
-function setLoadingProgress(loading: boolean) {
-  if (useSettingStore().getSettings('app')?.showLoadingProgress !== false) {
-    isLoading.value = loading
-  }
-}
 const requestList = ref<any[]>([])
 const isRefreshToken = ref<boolean>(false)
 
@@ -33,7 +26,6 @@ const http: AxiosInstance = createHttp()
 http.interceptors.request.use(
 
   async (config) => {
-    setLoadingProgress(true)
     const userStore = useUserStore()
     /**
      * 全局拦截请求发送前提交的参数
@@ -54,7 +46,6 @@ let isLogout = false
 
 http.interceptors.response.use(
   async (response: AxiosResponse): Promise<any> => {
-    setLoadingProgress(false)
     const userStore = useUserStore()
     await usePluginStore().callHooks('networkResponse', response)
     const config = response.config
@@ -175,7 +166,6 @@ http.interceptors.response.use(
     }
   },
   async (error: any) => {
-    setLoadingProgress(false)
     const serverError = useDebounceFn(async () => {
       if (error && error.response && error.response.status === 500) {
         Message.error(error.message ?? '服务器错误', { zIndex: 9999 })

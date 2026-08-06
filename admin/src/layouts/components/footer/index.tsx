@@ -1,26 +1,30 @@
 
 import '@/layouts/style/footer.scss'
+import useFooterStore from '@/store/modules/useFooterStore'
 
 export default defineComponent({
   name: 'Footer',
   setup() {
-    const settingStore = useSettingStore()
-    const footerSetting = settingStore.getSettings('copyright')
-    const route = useRoute()
+    const footerStore = useFooterStore()
     return () => (
-      <footer v-show={route.meta?.type !== 'I'}>
-        {
-          ((footerSetting.enable && route.meta?.copyright === true) && route.meta?.type !== 'I')
-          && (
-            <div class="mine-footer">
-              <span>Copyright</span>
-              <ma-svg-icon name="lucide:copyright" />
-              <span>{footerSetting.dates}</span>
-              <span><a href={footerSetting.website} target="_blank">{footerSetting.company}</a></span>
-              <span><a href="https://beian.miit.gov.cn/" target="_blank">{footerSetting.putOnRecord}</a></span>
-            </div>
-          )
-        }
+      <footer>
+        <div class="mine-footer">
+          {footerStore.segments.length > 0 && (
+            <nav class="mine-footer__breadcrumb" aria-label="当前位置">
+              {footerStore.segments.map((seg, i) => (
+                <span key={i} class="mine-footer__breadcrumb-group">
+                  {i > 0 && <span class="mine-footer__sep"> > </span>}
+                  <span
+                    class="mine-footer__crumb"
+                    class:mine-footer__crumb--current={!!seg.current}
+                  >
+                    {seg.label}
+                  </span>
+                </span>
+              ))}
+            </nav>
+          )}
+        </div>
       </footer>
     )
   },

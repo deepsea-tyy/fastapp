@@ -110,7 +110,7 @@ final class RoleController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function batchGrantPermissionsForRole(int $id, BatchGrantPermissionsForRoleRequest $request): Result
     {
-        if (! $this->service->existsById($id)) {
+        if (! $this->service->findById($id)) {
             throw new BusinessException(code: ResultCode::NOT_FOUND);
         }
         $permissionsCode = Arr::get($request->validated(), 'permissions', []);

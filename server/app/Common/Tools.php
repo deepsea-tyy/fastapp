@@ -9,17 +9,14 @@
 namespace App\Common;
 
 use App\Common\Request\Request;
-use Hyperf\AsyncQueue\JobInterface;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Logger\LoggerFactory;
-use Hyperf\Redis\Redis;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Psr\Container\ContainerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Swoole\Coroutine;
-use function Hyperf\AsyncQueue\dispatch;
 
 class Tools
 {
@@ -152,29 +149,9 @@ class Tools
         });
     }
 
-    /**
-     * 异步分发Redis队列任务
-     *
-     * @param JobInterface $job 任务对象
-     * @param int|null $delay 延迟执行时间（秒），null表示立即执行
-     * @param int|null $maxAttempts 最大重试次数，null使用默认值
-     * @param string|null $pool Redis连接池名称，null使用默认连接池
-     */
-    public static function redisDispatcher(JobInterface $job, ?int $delay = null, ?int $maxAttempts = null, ?string $pool = null): void
-    {
-        Coroutine::create(static function () use ($job, $delay, $maxAttempts, $pool) {
-            dispatch($job, $delay, $maxAttempts, $pool);
-        });
-    }
-
     public static function getCache(): CacheInterface
     {
         return self::getContainer()->get(CacheInterface::class);
-    }
-
-    public static function getRedis(): Redis
-    {
-        return self::getContainer()->get(Redis::class);
     }
 
     /**
@@ -222,32 +199,29 @@ class Tools
      */
     public static function generateNumber(string $type = 'default', int $length = 8, string $prefix = '', ?string $dateFormat = 'Ymd'): string
     {
-        $redis = self::getRedis();
+        $cache = self::getCache();
 
-        // 构建Redis键名
         $dateStr = $dateFormat ? date($dateFormat) : '';
         $key = "number:{$type}:" . ($dateStr ?: 'global');
 
-        // 使用Redis原子操作获取自增序号
-        $sequence = $redis->incr($key);
+        $sequence = (int)($cache->get($key) ?: 0);
+        $sequence++;
+        $cache->set($key, $sequence);
 
-        // 如果是当天的第一个编号，设置过期时间为第二天0点（避免Redis键无限增长）
         if ($sequence === 1 && $dateStr) {
             $tomorrow = strtotime('tomorrow');
             $expireTime = $tomorrow - time();
             if ($expireTime > 0) {
-                $redis->expire($key, $expireTime);
+                $cache->set($key, $sequence, $expireTime);
             }
         }
 
-        // 格式化序号（补零到指定长度）
         $formattedSequence = str_pad((string)$sequence, $length, '0', STR_PAD_LEFT);
 
-        // 组合编号：前缀 + 日期 + 序号
         return $prefix . $dateStr . $formattedSequence;
     }
 
-    public static function runtime_dir(string $path = ''): string
+    public static function runtime_path(string $path = ''): string
     {
         return self::phar_path('/runtime/' . ltrim($path, '/'));
     }
@@ -255,6 +229,11 @@ class Tools
     public static function storage_path(string $path = ''): string
     {
         return self::phar_path('/storage/' . ltrim($path, '/'));
+    }
+
+    public static function plugin_path(string $path = ''): string
+    {
+        return self::phar_path('/plugin/') . ltrim($path, '/');
     }
 
     public static function phar_path(string $path = ''): string

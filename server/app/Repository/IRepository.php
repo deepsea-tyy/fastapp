@@ -300,11 +300,6 @@ abstract class IRepository
         return $this->model->newQuery();
     }
 
-    public function existsById(mixed $id): bool
-    {
-        return $this->getQuery()->whereKey($id)->exists();
-    }
-
     public function getModel()
     {
         return $this->model;

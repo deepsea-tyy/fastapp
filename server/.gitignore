@@ -17,3 +17,6 @@ keyandcontent.json
 .phpstorm*
 phpstan*
 databases/data/*.sqlite
+/runtime/*
+/server/pkg
+fastapp.phar

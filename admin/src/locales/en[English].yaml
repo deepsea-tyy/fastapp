@@ -24,29 +24,15 @@ base:
     tabBarSettings: Tab bar settings
     save: Save settings
     colorMode: Color mode
-    layoutSetting: Layout settings
     title: Backend settings
-    layouts:
-      classic: Classic layout
-      columns: Column layout
-      mixed: Mixed layouts
     watermarkText: Watermark text
     colorModes:
-      system: System
       light: Light
       dark: Dark
-    mainAsideSetting: Main sidebar setting
     enableWatermark: Enable watermarks
     otherSettings: Other settings
-    mainAsides:
-      autoToFirstMenu: Auto to first menu
-      mainMenuTitle: Main menu title
     copyRightSettings: Copyright settings
-    enableBreadcrumb: Enable breadcrumbs
-    showHeader: Show header
     showBars: Show toolbar
-    showLoadingProgress: Show loading progress
-    asideDark: Side bar dark mode
     tabbars:
       mode: Tab bar style
       modeCard: Card
@@ -96,6 +82,7 @@ base:
     shortcuts: Introduction to shortcuts
     clearCache: Clear cache
     uc: User center
+    google2fa: Google 2FA Settings
   common:
     saveSuccess: The save was successful
     clearCache: The cache has been emptied
@@ -104,27 +91,22 @@ base:
     enabled: Enable
   tab:
     cannotUnfixed: This label cannot be unfixed
-    favorites: Tab page favorites
-    addFavorite: Add to favorites
     fullscreen: Fullscreen tab
     closeLeft: Close left tab
     closeOther: Close other tab
     closeRight: Close right tab
     refresh: Refresh tab
     fixed: Fixed tab
-    has: This tab has already been bookmarked
-    noFavorite: haven't collected any tab yet
     close: Close tab
   toolbars:
     notification: Notification
-    settings: Settings
     search: Search
     fullscreen: Full screen
-    sorts: Toolbar sorting
     switchMode: Toggle the color mode
     translate: International
 menu:
-  uc:index: Home
+  index: Home
+  uc:index: Personal Center
   uc:google2fa: Google 2FA Settings
   dashboard:analysis: Analysis Page
   pageError: The page error

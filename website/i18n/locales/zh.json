@@ -42,7 +42,7 @@
   "products": {
     "title": "产品与服务",
     "mobile": "客户端应用",
-    "mobileDesc": "基于 Tauri（https://github.com/tauri-apps/tauri）的客户端：系统 WebView 渲染界面，Rust 侧负责原生能力与打包。",
+    "mobileDesc": "基于 Tauri 2 的桌面瘦壳（仓库 desktop/）：CDN 下载业务组件，单一操作台界面，GPU 优先留给 AI 推理。",
     "admin": "后台管理系统",
     "adminDesc": "基于 Vue3 + TypeScript + Element Plus 构建的企业级后台管理系统前端应用。",
     "website": "企业官网",

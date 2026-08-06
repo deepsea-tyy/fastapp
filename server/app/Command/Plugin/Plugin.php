@@ -14,8 +14,10 @@ use Hyperf\Contract\ConfigInterface;
 use Hyperf\Context\ApplicationContext;
 use Hyperf\Database\Migrations\Migrator;
 use Hyperf\Database\Seeders\Seed;
+use Hyperf\Di\Annotation\AnnotationInterface;
 use Hyperf\Di\Definition\PriorityDefinition;
 use Hyperf\Support\Composer;
+use ReflectionClass;
 use Swoole\Coroutine\System;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -41,7 +43,7 @@ class Plugin
 
     public static function pluginPath(): string
     {
-        return Tools::phar_path(self::PLUGIN_PREFIX);
+        return rtrim(Tools::plugin_path(), '/');
     }
 
     public static function init(): void
@@ -51,6 +53,9 @@ class Plugin
         foreach ($configJsons as $config) {
             $info = self::read($config->getRelativePath());
             $installLockFile = $config->getPath() . '/' . self::INSTALL_LOCK_FILE;
+            if (\Phar::running(false) && !file_exists($installLockFile)) {
+                $installLockFile = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $config->getRelativePath() . '/' . self::INSTALL_LOCK_FILE);
+            }
 
             if (file_exists($installLockFile)) {
                 self::loadPlugin($info, $config);
@@ -95,12 +100,20 @@ class Plugin
         $jsonPaths = self::getPluginJsonPaths();
         foreach ($jsonPaths as $jsonPath) {
             if ($jsonPath->getRelativePath() === $path) {
-                $jsonContent = @file_get_contents($jsonPath->getRealPath());
+                $jsonFilePath = $jsonPath->getRealPath();
+                if (\Phar::running(false) && !file_exists($jsonFilePath)) {
+                    $jsonFilePath = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $path . '/config.json');
+                }
+                $jsonContent = @file_get_contents($jsonFilePath);
                 if ($jsonContent === false) {
-                    throw new \RuntimeException(\sprintf('Failed to read plugin config file: %s', $jsonPath->getRealPath()));
+                    throw new \RuntimeException(\sprintf('Failed to read plugin config file: %s', $jsonFilePath));
                 }
                 $info = self::getPacker()->unpack($jsonContent);
-                $info['status'] = is_file($jsonPath->getPath() . '/' . self::INSTALL_LOCK_FILE);
+                $installLockPath = $jsonPath->getPath() . '/' . self::INSTALL_LOCK_FILE;
+                if (\Phar::running(false) && !file_exists($installLockPath)) {
+                    $installLockPath = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $path . '/' . self::INSTALL_LOCK_FILE);
+                }
+                $info['status'] = is_file($installLockPath);
                 return $info;
             }
         }
@@ -284,7 +297,7 @@ class Plugin
     {
         self::read($path);
         $pluginPath = self::pluginPath() . '/' . $path;
-        if (! is_dir($pluginPath . '/web')) {
+        if (!is_dir($pluginPath . '/web')) {
             throw new \RuntimeException(\sprintf('Plugin "%s" has no web directory to sync', $path));
         }
 
@@ -302,11 +315,11 @@ class Plugin
         foreach (self::getPluginJsonPaths() as $jsonFile) {
             $rel = $jsonFile->getRelativePath();
             $info = self::read($rel);
-            if (! $info['status']) {
+            if (!$info['status']) {
                 continue;
             }
             $pluginPath = self::pluginPath() . '/' . $rel;
-            if (! is_dir($pluginPath . '/web')) {
+            if (!is_dir($pluginPath . '/web')) {
                 continue;
             }
             $results[$rel] = self::copyPluginWebToFront($pluginPath, $rel);
@@ -318,6 +331,12 @@ class Plugin
     private static function copyPluginWebToFront(string $pluginPath, string $relativePluginPath): int
     {
         $frontDirectory = self::getConfig('front_directory', dirname(BASE_PATH) . '/admin');
+        $targetPath = $frontDirectory . '/src/plugins/' . $relativePluginPath;
+
+        if (is_dir($targetPath)) {
+            FileSystemUtils::remove($targetPath);
+        }
+
         $count = 0;
         $finder = Finder::create()
             ->files()
@@ -329,7 +348,7 @@ class Plugin
             $relativeFilePath = $file->getRelativePathname();
             FileSystemUtils::copy(
                 $pluginPath . '/web/' . $relativeFilePath,
-                $frontDirectory . '/src/plugins/' . $relativePluginPath . \DIRECTORY_SEPARATOR . $relativeFilePath
+                $targetPath . \DIRECTORY_SEPARATOR . $relativeFilePath
             );
             ++$count;
         }
@@ -394,7 +413,7 @@ class Plugin
 
                         if (method_exists($instance, 'down')) {
                             $instance->down();
-                            $repository->delete((object) ['migration' => $name, 'batch' => $batch]);
+                            $repository->delete((object)['migration' => $name, 'batch' => $batch]);
                         }
                     } catch (\Throwable $e) {
                         throw new \RuntimeException(
@@ -437,10 +456,18 @@ class Plugin
     private static function loadPlugin(array $info, SplFileInfo $config): void
     {
         $loader = Composer::getLoader();
+        $pluginDir = $config->getPath();
+        if (\Phar::running(false)) {
+            $pluginDir = self::pluginPath() . '/' . $config->getRelativePath();
+        }
+
         // psr-4
         if (!empty($info['composer']['psr-4'])) {
             foreach ($info['composer']['psr-4'] as $namespace => $src) {
-                $srcPath = realpath($config->getPath() . '/' . $src);
+                $srcPath = $pluginDir . '/' . $src;
+                if (!\Phar::running(false)) {
+                    $srcPath = realpath($srcPath);
+                }
                 if ($srcPath === false || !is_dir($srcPath)) {
                     throw new \RuntimeException(\sprintf('Invalid PSR-4 path for namespace %s: %s', $namespace, $src));
                 }
@@ -451,7 +478,7 @@ class Plugin
         // files
         if (!empty($info['composer']['files'])) {
             foreach ($info['composer']['files'] as $file) {
-                $filePath = $config->getPath() . '/' . $file;
+                $filePath = $pluginDir . '/' . $file;
                 if (!file_exists($filePath)) {
                     throw new \RuntimeException(\sprintf('Plugin file not found: %s', $filePath));
                 }
@@ -494,6 +521,157 @@ class Plugin
         $property = $reflection->getProperty('providerConfigs');
         $property->setAccessible(true);
         $property->setValue(null, $mergedConfigs);
+    }
+
+    /**
+     * Manually scan plugin annotations in phar mode.
+     * In phar mode, scan.cache is baked in at build time and doesn't include plugin annotations,
+     * so we need to manually scan and collect them into AnnotationCollector.
+     * This method must be called after ClassLoader::init() to prevent cache deserialization from overwriting.
+     */
+    public static function scanAnnotations(): void
+    {
+        $pluginConfigs = self::loadPluginConfigs();
+        foreach ($pluginConfigs as $config) {
+            $scanPaths = $config['annotations']['scan']['paths'] ?? [];
+            if (empty($scanPaths)) {
+                continue;
+            }
+
+            foreach ($scanPaths as $scanPath) {
+                if (!is_dir($scanPath)) {
+                    continue;
+                }
+                self::scanDirectoryAnnotations($scanPath);
+            }
+        }
+    }
+
+    /**
+     * Scan all PHP files in a directory and collect annotations.
+     */
+    private static function scanDirectoryAnnotations(string $dir): void
+    {
+        $finder = Finder::create()
+            ->files()
+            ->name('*.php')
+            ->in($dir);
+
+        foreach ($finder as $file) {
+            $filePath = $file->getRealPath();
+            $className = self::getClassNameFromFile($filePath);
+            if (!$className || !class_exists($className)) {
+                continue;
+            }
+
+            try {
+                $reflection = new ReflectionClass($className);
+                if ($reflection->isAbstract() || $reflection->isInterface() || $reflection->isTrait()) {
+                    continue;
+                }
+                self::collectClassAnnotations($reflection);
+            } catch (\Throwable $e) {
+                // Silently ignore errors during annotation scanning
+            }
+        }
+    }
+
+    /**
+     * Extract class name from a PHP file using PSR-4 autoloading.
+     */
+    private static function getClassNameFromFile(string $filePath): ?string
+    {
+        $contents = file_get_contents($filePath);
+        if ($contents === false) {
+            return null;
+        }
+
+        $namespace = '';
+        $class = '';
+
+        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
+            $namespace = trim($matches[1]);
+        }
+
+        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
+            $class = $matches[1];
+        }
+
+        if (!$class) {
+            return null;
+        }
+
+        return $namespace ? $namespace . '\\' . $class : $class;
+    }
+
+    /**
+     * Collect class and method annotations into AnnotationCollector.
+     */
+    private static function collectClassAnnotations(ReflectionClass $reflection): void
+    {
+        $className = $reflection->getName();
+
+        $classAttributes = $reflection->getAttributes();
+        foreach ($classAttributes as $attribute) {
+            $annotationClass = $attribute->getName();
+            if (!class_exists($annotationClass)) {
+                continue;
+            }
+            try {
+                $annotation = $attribute->newInstance();
+                if ($annotation instanceof AnnotationInterface) {
+                    $annotation->collectClass($className);
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore
+            }
+        }
+
+        $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
+        foreach ($methods as $method) {
+            if ($method->getDeclaringClass()->getName() !== $className) {
+                continue;
+            }
+            $methodName = $method->getName();
+            $methodAttributes = $method->getAttributes();
+            foreach ($methodAttributes as $attribute) {
+                $annotationClass = $attribute->getName();
+                if (!class_exists($annotationClass)) {
+                    continue;
+                }
+                try {
+                    $annotation = $attribute->newInstance();
+                    if ($annotation instanceof AnnotationInterface) {
+                        $annotation->collectMethod($className, $methodName);
+                    }
+                } catch (\Throwable $e) {
+                    // Silently ignore
+                }
+            }
+        }
+
+        $properties = $reflection->getProperties();
+        foreach ($properties as $property) {
+            if ($property->getDeclaringClass()->getName() !== $className) {
+                continue;
+            }
+            $propertyName = $property->getName();
+            $propertyAttributes = $property->getAttributes();
+            foreach ($propertyAttributes as $attribute) {
+                $annotationClass = $attribute->getName();
+                if (!class_exists($annotationClass)) {
+                    continue;
+                }
+                try {
+                    $annotation = $attribute->newInstance();
+                    if ($annotation instanceof AnnotationInterface) {
+                        $annotation->collectProperty($className, $propertyName);
+                    }
+                } catch (\Throwable $e) {
+                    // Silently ignore
+                }
+            }
+        }
     }
 
     /**
@@ -565,7 +743,7 @@ class Plugin
             foreach ($allConfigs as $config) {
                 foreach ($config['dependencies'] ?? [] as $key => $value) {
                     $depend = $mergedDependencies[$key] ?? null;
-                    if (! $depend instanceof PriorityDefinition) {
+                    if (!$depend instanceof PriorityDefinition) {
                         $mergedDependencies[$key] = $value;
                         continue;
                     }

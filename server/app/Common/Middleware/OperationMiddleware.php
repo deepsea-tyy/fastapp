@@ -10,20 +10,12 @@ use App\Common\Request\Request;
 use App\Common\Tools;
 use App\Http\CurrentUser;
 use Hyperf\Collection\Arr;
-use Hyperf\Di\Annotation\AnnotationCollector;
-use Hyperf\Di\Annotation\MultipleAnnotation;
 use Hyperf\HttpServer\Router\Dispatched;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
 use Hyperf\HttpServer\Annotation\PatchMapping;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
-use Hyperf\Swagger\Annotation\Delete;
-use Hyperf\Swagger\Annotation\Get;
-use Hyperf\Swagger\Annotation\Patch;
-use Hyperf\Swagger\Annotation\Post;
-use Hyperf\Swagger\Annotation\Put;
-use OpenApi\Annotations\Operation;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -52,14 +44,6 @@ class OperationMiddleware implements MiddlewareInterface
         return \count($parts) === 2 ? $parts : null;
     }
 
-    private const SWAGGER_ATTRIBUTES = [
-        Post::class,
-        Get::class,
-        Delete::class,
-        Patch::class,
-        Put::class,
-    ];
-
     private const HTTP_SERVER_ATTRIBUTES = [
         PostMapping::class,
         GetMapping::class,
@@ -77,7 +61,6 @@ class OperationMiddleware implements MiddlewareInterface
     {
         $response = $handler->handle($request);
 
-        // 只有请求成功时才记录操作日志
         if ($this->isSuccessResponse($response)) {
             $this->logOperationIfNeeded($request);
         }
@@ -87,36 +70,9 @@ class OperationMiddleware implements MiddlewareInterface
 
     private function getOperationSummary(string $controller, string $method, string $path, string $httpMethod): ?string
     {
-        $annotations = AnnotationCollector::getClassMethodAnnotation($controller, $method);
-
-        // 优先查找 Swagger 注解的 summary
-        foreach (self::SWAGGER_ATTRIBUTES as $attribute) {
-            $annotation = $this->getAnnotation($annotations, $attribute);
-            if ($annotation instanceof Operation && !empty($annotation->summary)) {
-                return $annotation->summary;
-            }
-        }
-
-        // 查找 HTTP Server 注解，使用路径生成描述
-        foreach (self::HTTP_SERVER_ATTRIBUTES as $attribute) {
-            if (!empty($annotations[$attribute])) {
-                $pathParts = explode('/', trim($path, '/'));
-                $resource = end($pathParts) ?: '';
-                return $httpMethod . ' ' . $resource;
-            }
-        }
-
-        return null;
-    }
-
-    private function getAnnotation(array $annotations, string $attribute): ?Operation
-    {
-        $annotation = $annotations[$attribute] ?? null;
-        if (!$annotation instanceof MultipleAnnotation) {
-            return null;
-        }
-
-        return Arr::first($annotation->toAnnotations());
+        $pathParts = explode('/', trim($path, '/'));
+        $resource = end($pathParts) ?: '';
+        return $httpMethod . ' ' . $resource;
     }
 
     private function getRequestParams(ServerRequestInterface $request): array

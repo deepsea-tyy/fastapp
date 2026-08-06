@@ -14,18 +14,14 @@ const useSettingStore = defineStore(
     const defaultSetting = ref<SystemSettings.all>(cloneDeep(useDefaultSetting()))
     const colorMode: Ref<string> = useColorMode()
     const searchPanelEnable = ref<boolean>(false)
-    const menuCollapseState = ref<boolean>(false)
+    const menuCollapseState = ref<boolean>(true)
     const { setWatermark, clear } = useWatermark()
     const isMobile = ref<boolean>(false)
     const mobileMenuState = ref<boolean>(false)
     const userBarState = ref<boolean>(false)
 
-    function showMineHeader() {
-      return defaultSetting.value.app?.showHeader && ['mixed', 'banner'].includes(defaultSetting.value.app?.layout as string)
-    }
-
     function showMineSubAside() {
-      return ['classic', 'mixed'].includes(defaultSetting.value.app?.layout as string)
+      return true
     }
 
     function setUserBarState(state: boolean) {
@@ -50,22 +46,6 @@ const useSettingStore = defineStore(
 
     function getMobileSubmenuState() {
       return mobileMenuState.value
-    }
-
-    function isColumnsLayout() {
-      return defaultSetting.value.app?.layout === 'columns'
-    }
-
-    function isClassicLayout() {
-      return defaultSetting.value.app?.layout === 'classic'
-    }
-
-    function isMixedLayout() {
-      return defaultSetting.value.app?.layout === 'mixed'
-    }
-
-    function isBannerLayout() {
-      return defaultSetting.value.app?.layout === 'banner'
     }
 
     function getFixedAsideState() {
@@ -100,29 +80,6 @@ const useSettingStore = defineStore(
       return menuCollapseState.value = state
     }
 
-    function toggleCollapseButton() {
-      menuCollapseState.value = !menuCollapseState.value
-      setSubAsideWidth(menuCollapseState.value ? 'var(--mine-g-sub-aside-collapse-width)' : 'var(--mine-g-sub-aside-width)')
-    }
-
-    function toggleFixedSubAsideButton() {
-      defaultSetting.value.subAside.fixedAsideState = !defaultSetting.value.subAside.fixedAsideState
-    }
-
-    function setHeaderHeight(height: string) {
-      const mineHeaderDom: HTMLElement | null = document.querySelector('.mine-header-main')
-      if (mineHeaderDom) {
-        mineHeaderDom.style.height = height
-      }
-    }
-
-    function setMainAsideWidth(width: string) {
-      const mineMainAsideDom: HTMLElement | null = document.querySelector('.mine-main-aside-content')
-      if (mineMainAsideDom) {
-        mineMainAsideDom.style.width = width
-      }
-    }
-
     function setSubAsideWidth(width: string) {
       const mineSubAsideDom: HTMLElement | null = document.querySelector('.mine-sub-aside')
       if (mineSubAsideDom) {
@@ -149,39 +106,19 @@ const useSettingStore = defineStore(
     }
 
     function initColorMode() {
-      if (defaultSetting.value?.app?.colorMode === 'autoMode') {
-        if (Number(useDayjs().format('HH')) > 8 && Number(useDayjs().format('HH')) < 18) {
-          colorMode.value = 'autoMode'
-        }
-        else {
-          colorMode.value = 'dark'
-        }
-      }
-      else {
-        colorMode.value = defaultSetting.value?.app?.colorMode ?? 'light'
-      }
+      colorMode.value = defaultSetting.value?.app?.colorMode ?? 'light'
       useThemeColor().setThemeColor(defaultSetting.value.app.primaryColor)
-      setAsideDark(defaultSetting.value.app.asideDark)
     }
 
-    async function toggleColorMode(modeText: 'light' | 'dark' | 'autoMode' | null = null) {
+    async function toggleColorMode(modeText: 'light' | 'dark' | null = null) {
       if (modeText === null) {
-        if (colorMode.value === 'light') {
-          colorMode.value = 'dark'
-        }
-        else if (colorMode.value === 'dark') {
-          colorMode.value = 'autoMode'
-        }
-        else if (colorMode.value === 'autoMode') {
-          colorMode.value = 'light'
-        }
+        colorMode.value = colorMode.value === 'light' ? 'dark' : 'light'
       }
       else {
         colorMode.value = modeText
       }
 
-      // await useTabStore().refreshTab()
-      defaultSetting.value.app.colorMode = colorMode.value as 'light' | 'dark' | 'autoMode'
+      defaultSetting.value.app.colorMode = colorMode.value as 'light' | 'dark'
       await nextTick(() => {
         useThemeColor().initThemeColor()
         defaultSetting.value.app.enableWatermark && openGlobalWatermark()
@@ -204,15 +141,6 @@ const useSettingStore = defineStore(
       return searchPanelEnable.value
     }
 
-    function getAsideDark() {
-      return defaultSetting.value.app.asideDark
-    }
-
-    function setAsideDark(state: boolean): boolean {
-      state ? document.body.classList.add('mine-aside-dark') : document.body.classList.remove('mine-aside-dark')
-      return defaultSetting.value.app.asideDark = state
-    }
-
     // 设置网页标题
     function setTitle(routeTitle: string) {
       title.value = `${import.meta.env.VITE_APP_TITLE} - ${routeTitle}`
@@ -231,29 +159,18 @@ const useSettingStore = defineStore(
       getMobileSubmenuState,
       setSearchPanelEnable,
       getSearchPanelEnable,
-      showMineHeader,
       showMineSubAside,
-      isColumnsLayout,
-      isClassicLayout,
-      isMixedLayout,
-      isBannerLayout,
       getFixedAsideState,
       setFixedAsideState,
       setToolBar,
       syncToolBars,
       getMenuCollapseState,
       setMenuCollapseState,
-      toggleCollapseButton,
-      toggleFixedSubAsideButton,
       setTitle,
       setSubAsideWidth,
-      setMainAsideWidth,
-      setHeaderHeight,
       toggleColorMode,
       getSettings,
       setSettings,
-      getAsideDark,
-      setAsideDark,
       openGlobalWatermark,
       clearGlobalWatermark,
     }

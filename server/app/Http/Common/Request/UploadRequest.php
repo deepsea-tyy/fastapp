@@ -7,34 +7,8 @@ namespace App\Http\Common\Request;
 
 use App\Common\Request\Traits\ActionRulesTrait;
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use Hyperf\Swagger\Annotation\Property;
-use Hyperf\Swagger\Annotation\Schema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[Schema(
-    title: '上传附件',
-    properties: [
-        new Property(property: 'file', description: '文件', type: 'file'),
-    ]
-)]
-#[Schema(
-    title: '分片上传附件',
-    properties: [
-        new Property(property: 'file', description: '分片文件', type: 'file'),
-        new Property(property: 'file_md5', description: '文件MD5值', type: 'string'),
-        new Property(property: 'chunk_index', description: '分片索引', type: 'integer'),
-        new Property(property: 'total_chunks', description: '总分片数', type: 'integer'),
-        new Property(property: 'filename', description: '文件名', type: 'string'),
-    ]
-)]
-#[Schema(
-    title: '分片合并',
-    properties: [
-        new Property(property: 'file_md5', description: '文件MD5值', type: 'string'),
-        new Property(property: 'total_chunks', description: '总分片数', type: 'integer'),
-        new Property(property: 'filename', description: '文件名', type: 'string'),
-    ]
-)]
 class UploadRequest extends FormRequest
 {
     use ActionRulesTrait;

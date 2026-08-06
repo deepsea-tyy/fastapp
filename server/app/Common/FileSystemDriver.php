@@ -14,7 +14,7 @@ class FileSystemDriver extends \Hyperf\Cache\Driver\FileSystemDriver
 
     public function __construct(ContainerInterface $container, array $config)
     {
-        $this->storePath = Tools::runtime_dir('caches');
+        $this->storePath = Tools::runtime_path('caches');
 
         parent::__construct($container, $config);
     }

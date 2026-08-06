@@ -42,7 +42,7 @@
   "products": {
     "title": "Products & Services",
     "mobile": "Client application",
-    "mobileDesc": "Client app built with Tauri (https://github.com/tauri-apps/tauri): system WebView for UI, Rust for native capabilities and packaging.",
+    "mobileDesc": "Tauri 2 desktop shell (desktop/): CDN-delivered components, single console UI, GPU reserved for AI inference.",
     "admin": "Admin System",
     "adminDesc": "Enterprise-level admin system frontend application built with Vue3 + TypeScript + Element Plus.",
     "website": "Corporate Website",

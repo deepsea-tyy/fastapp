@@ -7,15 +7,8 @@ namespace App\Http\Admin\Request\Permission;
 
 use App\Common\Request\Traits\HttpMethodTrait;
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use App\Schema\DepartmentSchema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[\App\Common\Swagger\FormRequest(
-    schema: DepartmentSchema::class,
-    only: [
-        'name', 'code', 'parent_id', 'sort', 'status', 'remark',
-    ]
-)]
 class DepartmentRequest extends FormRequest
 {
     use HttpMethodTrait;

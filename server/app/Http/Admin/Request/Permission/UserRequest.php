@@ -6,36 +6,8 @@ declare(strict_types=1);
 namespace App\Http\Admin\Request\Permission;
 
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use App\Schema\UserSchema;
 use Hyperf\Validation\Request\FormRequest;
-use App\Common\Swagger\FormRequest as FormRequestAnnotation;
 
-#[FormRequestAnnotation(
-    schema: UserSchema::class,
-    title: '创建用户',
-    required: [
-        'username',
-        'user_type',
-        'nickname',
-        'phone',
-        'email',
-        'avatar',
-        'signed',
-        'status',
-        'remark',
-    ],
-    only: [
-        'username',
-        'user_type',
-        'nickname',
-        'phone',
-        'email',
-        'avatar',
-        'signed',
-        'status',
-        'remark',
-    ]
-)]
 class UserRequest extends FormRequest
 {
     use NoAuthorizeTrait;

@@ -15,15 +15,11 @@ const useMenuStore = defineStore(
     const subMenu = ref<MineRoute.routeRecord[]>([])
     const watchRoute = ref<MineRoute.routeRecord>()
     const allMenu = ref(computed((): MineRoute.routeRecord[] => {
-      return (['classic', 'banner'].includes(settingStore.getSettings('app')?.layout as string) || settingStore.getMobileState())
-        ? topMenu.value
-        : subMenu.value
+      return topMenu.value
     }))
 
     function setSubAsideWidthByZero() {
-      if (settingStore.isColumnsLayout() || settingStore.isMixedLayout()) {
-        settingStore.setSubAsideWidth('0px')
-      }
+      settingStore.setSubAsideWidth('0px')
     }
 
     function setSubAsideWidthByDefault() {
@@ -62,41 +58,8 @@ const useMenuStore = defineStore(
         await usePluginStore().callHooks('routerRedirect', { oldRoute, newRoute }, router)
       }, { deep: true })
 
-      watch((): any => activeTopMenu.value, (newActiveTopMenu: MineRoute.routeRecord) => {
-        if (newActiveTopMenu && newActiveTopMenu.children && newActiveTopMenu.children?.length > 0) {
-          subMenu.value = newActiveTopMenu.children
-          setSubAsideWidthByDefault()
-        }
-        else {
-          setSubAsideWidthByZero()
-          subMenu.value = []
-        }
-      }, { immediate: true, deep: true })
-
-      watch((): string => settingStore.getSettings('app')?.layout as string, () => {
-        if (settingStore.isClassicLayout() || settingStore.isMixedLayout()) {
-          settingStore.setMenuCollapseState(false)
-          settingStore.setFixedAsideState(false)
-          if (settingStore.isMixedLayout()) {
-            subMenu.value.length > 0 ? setSubAsideWidthByDefault() : setSubAsideWidthByZero()
-          }
-          else {
-            settingStore.setSubAsideWidth('var(--mine-g-sub-aside-width)')
-          }
-        }
-        else if (settingStore.isBannerLayout()) {
-          setSubAsideWidthByZero()
-          settingStore.setMainAsideWidth('0px')
-        }
-        else if (settingStore.isColumnsLayout()) {
-          settingStore.setMainAsideWidth('var(--mine-g-main-aside-width)')
-          subMenu.value.length > 0 ? setSubAsideWidthByDefault() : setSubAsideWidthByZero()
-          settingStore.setHeaderHeight('0px')
-        }
-        else {
-          setSubAsideWidthByZero()
-        }
-      })
+      settingStore.setFixedAsideState(false)
+      settingStore.setSubAsideWidth('var(--mine-g-sub-aside-collapse-width)')
     }
 
     return {

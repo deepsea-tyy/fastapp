@@ -43,13 +43,6 @@ export default function toolbars() {
       show: true,
       component: () => import(('@/layouts/components/bars/toolbar/components/switch-mode.tsx')),
     },
-    {
-      name: 'settings',
-      icon: 'heroicons:cog-solid',
-      title: 'base.toolbars.settings',
-      show: true,
-      component: () => import(('@/layouts/components/bars/toolbar/components/settings.tsx')),
-    },
   ])
 
   function applyToolbarSettings() {

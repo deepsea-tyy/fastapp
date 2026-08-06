@@ -6,15 +6,8 @@ declare(strict_types=1);
 namespace App\Http\Admin\Request\Permission;
 
 use App\Common\Request\Traits\NoAuthorizeTrait;
-use App\Schema\UserSchema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[\App\Common\Swagger\FormRequest(
-    schema: UserSchema::class,
-    only: [
-        'nickname', 'password', 'avatar', 'signed',
-    ]
-)]
 class PermissionRequest extends FormRequest
 {
     use NoAuthorizeTrait;

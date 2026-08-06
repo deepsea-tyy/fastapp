@@ -6,16 +6,12 @@ import { defaultsDeep } from 'lodash-es'
 
 const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
   app: {
-    colorMode: 'autoMode',
+    colorMode: 'light',
     useLocale: 'zh_CN',
     whiteRoute: ['login'],
-    layout: 'classic',
     pageAnimate: 'ma-slide-down',
     enableWatermark: false,
     primaryColor: '#2563EB',
-    asideDark: false,
-    showBreadcrumb: true,
-    showHeader: true,
     showBars: true,
     watermarkText: import.meta.env.VITE_APP_TITLE,
   },
@@ -24,11 +20,6 @@ const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
     path: '/welcome',
     title: '欢迎页',
     icon: 'icon-park-outline:jewelry',
-  },
-  mainAside: {
-    showIcon: true,
-    showTitle: true,
-    enableOpenFirstRoute: false,
   },
   subAside: {
     showIcon: true,
@@ -40,6 +31,13 @@ const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
     enable: true,
     mode: 'rectangle',
   },
+  toolBars: [
+    { name: 'search', show: false },
+    { name: 'notification', show: false },
+    { name: 'translate', show: true },
+    { name: 'fullscreen', show: true },
+    { name: 'switchMode', show: true },
+  ],
   copyright: {
     enable: true,
     dates: useDayjs().format('YYYY'),

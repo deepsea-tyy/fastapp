@@ -24,29 +24,15 @@ base:
     tabBarSettings: 标签栏设置
     save: 保存配置
     colorMode: 颜色模式
-    layoutSetting: 布局设置
     title: 后台设置
-    layouts:
-      classic: 经典布局
-      columns: 分栏布局
-      mixed: 混合布局
     watermarkText: 水印文字
     colorModes:
-      system: 系统
       light: 明亮
       dark: 黑暗
-    mainAsideSetting: 主侧栏设置
     enableWatermark: 启用水印
     otherSettings: 其他设置
-    mainAsides:
-      autoToFirstMenu: 自动进入第一个菜单
-      mainMenuTitle: 主菜单标题
     copyRightSettings: 版权设置
-    enableBreadcrumb: 启用面包屑
-    showHeader: 显示顶栏
     showBars: 显示工具栏
-    showLoadingProgress: 显示加载进度
-    asideDark: 侧边栏黑暗模式
     tabbars:
       mode: 标签栏风格
       modeCard: 卡片
@@ -96,6 +82,7 @@ base:
     shortcuts: 快捷键介绍
     clearCache: 清除缓存
     uc: 用户中心
+    google2fa: Google 2FA 设置
   common:
     saveSuccess: 保存成功
     clearCache: 缓存已清空
@@ -104,27 +91,22 @@ base:
     enabled: 已启用
   tab:
     cannotUnfixed: 此标签不能取消固定
-    favorites: 标签页收藏夹
-    addFavorite: 加入到收藏夹
     fullscreen: 全屏标签页
     closeLeft: 关闭左侧标签页
     closeOther: 关闭其他标签页
     closeRight: 关闭右侧标签页
     refresh: 刷新标签页
     fixed: 固定标签页
-    has: 此标签页已收藏过
-    noFavorite: 还没有收藏任何标签页
     close: 关闭标签页
   toolbars:
     notification: 通知
-    settings: 设置
     search: 搜索
     fullscreen: 全屏
-    sorts: 工具栏排序
     switchMode: 切换颜色模式
     translate: 国际化
 menu:
-  uc:index: 首页
+  index: 首页
+  uc:index: 个人中心
   uc:google2fa: Google 2FA 设置
   dashboard:analysis: 分析页
   pageError: 页面出错了

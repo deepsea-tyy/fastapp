@@ -93,26 +93,20 @@
             'App\\Http\\Admin\\Middleware\\PermissionMiddleware',
             'App\\Common\\Middleware\\AccessTokenMiddleware',
             'App\\Common\\Middleware\\OperationMiddleware',
+        ]);
+    } else {
+        $useStatements = array_merge($useStatements, [
+            'App\\Common\\Middleware\\TokenMiddleware',
+        ]);
+    }
+        $useStatements = array_merge($useStatements, [
             'Hyperf\\HttpServer\\Annotation\\Controller',
             'Hyperf\\HttpServer\\Annotation\\GetMapping',
             'Hyperf\\HttpServer\\Annotation\\PostMapping',
             'Hyperf\\HttpServer\\Annotation\\PutMapping',
             'Hyperf\\HttpServer\\Annotation\\DeleteMapping',
         ]);
-    } else {
-        $useStatements = array_merge($useStatements, [
-            'App\\Common\\Middleware\\TokenMiddleware',
-            'Hyperf\\Swagger\\Annotation as OA',
-            'Hyperf\\Swagger\\Annotation\\Delete',
-            'Hyperf\\Swagger\\Annotation\\Get',
-            'Hyperf\\Swagger\\Annotation\\Post',
-            'Hyperf\\Swagger\\Annotation\\Put',
-            'Hyperf\\Swagger\\Annotation\\RequestBody',
-            'Hyperf\\Swagger\\Annotation\\JsonContent',
-            'App\\Common\\Swagger\\ResultResponse',
-        ]);
-    }
-    
+
     // 输出use语句
     foreach ($useStatements as $use) {
         echo "use {$use};" . PHP_EOL;
@@ -131,8 +125,7 @@
 #[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 @else
-#[OA\Tag('{{$menuName}}')]
-#[OA\HyperfServer('http')]
+#[Controller]
 #[Middleware(middleware: TokenMiddleware::class)]
 @endif
 class {{$controllerName}}Controller extends AbstractController
@@ -146,8 +139,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[GetMapping(path: '/{{$urlPathPrefix}}/list')]
     #[Permission(code: '{{$permissionName}}:list')]
 @else
-    #[Get(path: '/{{$urlPathPrefix}}/list', operationId: '{{$permissionName}}:list', summary: '{{$menuName}}列表', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
-    #[ResultResponse(instance: new Result())]
+    #[GetMapping(path: '/{{$urlPathPrefix}}/list')]
 @endif
     public function pageList(): Result
     {
@@ -171,8 +163,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[Permission(code: '{{$permissionName}}:create')]
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
-    #[Post(path: '/{{$urlPathPrefix}}/create', operationId: '{{$permissionName}}:create', summary: '{{$menuName}}新增', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
-    #[ResultResponse(instance: new Result())]
+    #[PostMapping(path: '/{{$urlPathPrefix}}/create')]
 @endif
     public function create(Request $request): Result
     {
@@ -189,8 +180,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[Permission(code: '{{$permissionName}}:save')]
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
-    #[Put(path: '/{{$urlPathPrefix}}/save/{id}', operationId: '{{$permissionName}}:save', summary: '{{$menuName}}保存', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
-    #[ResultResponse(instance: new Result())]
+    #[PutMapping(path: '/{{$urlPathPrefix}}/save/{id}')]
 @endif
     public function save(int $id, Request $request): Result
     {
@@ -207,9 +197,7 @@ class {{$controllerName}}Controller extends AbstractController
     #[Permission(code: '{{$permissionName}}:delete')]
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
 @else
-    #[Delete(path: '/{{$urlPathPrefix}}/delete', operationId: '{{$permissionName}}:delete', summary: '{{$menuName}}删除', security: [['Bearer' => [], 'ApiKey' => []]], tags: ['{{$menuName}}'])]
-    #[RequestBody(content: new JsonContent(type: 'array', items: new OA\Items(type: 'integer'), example: '[1, 2, 3]'))]
-    #[ResultResponse(instance: new Result())]
+    #[DeleteMapping(path: '/{{$urlPathPrefix}}/delete')]
 @endif
     public function delete(): Result
     {

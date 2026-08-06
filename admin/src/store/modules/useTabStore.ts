@@ -1,5 +1,4 @@
 
-import { useNProgress } from '@vueuse/integrations/useNProgress'
 import { useSorted } from '@vueuse/core'
 import type { MineRoute, MineTabbar, SystemSettings } from '#/global'
 import useCache from '@/hooks/useCache.ts'
@@ -15,7 +14,6 @@ const useTabStore = defineStore(
     const iframeKeepLiveStore = useIframeKeepAliveStore()
     const welcomePage = settingStore.getSettings('welcomePage') as SystemSettings.welcomePage
     const tabList = ref<MineTabbar[]>([])
-    const { isLoading } = useNProgress()
     const defaultTab = ref<MineTabbar>({
       name: welcomePage.name,
       path: welcomePage.path,
@@ -92,9 +90,6 @@ const useTabStore = defineStore(
       if (tab === null) {
         tab = getCurrentTab() as MineTabbar
       }
-      if (settingStore.getSettings('app')?.showLoadingProgress !== false) {
-        isLoading.value = true
-      }
       keepAliveStore.hidden()
       await new Promise(resolve => resolve(setTimeout(() => {
       }, 200)))
@@ -107,9 +102,6 @@ const useTabStore = defineStore(
         keepAliveStore.add(tab.name)
         keepAliveStore.display()
         await go(tab)
-        if (settingStore.getSettings('app')?.showLoadingProgress !== false) {
-          isLoading.value = false
-        }
       })
     }
 

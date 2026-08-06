@@ -211,7 +211,7 @@ class VerifyCodeService
             $config = CacheConfigHelper::getConfigByGroupKey('sms')->pluck('value', 'key');
             $gateways = [
                 'errorlog' => [
-                    'file' => Tools::runtime_dir('sms.log'),
+                    'file' => Tools::runtime_path('sms.log'),
                 ],
             ];
 

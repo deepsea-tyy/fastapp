@@ -12,8 +12,6 @@ final class WsStateStoreFactory
     {
         $container = ApplicationContext::getContainer();
 
-        return config('websocket.store') == 'cache'
-            ? $container->get(CacheWsStateStore::class)
-            : $container->get(RedisWsStateStore::class);
+        return $container->get(CacheWsStateStore::class);
     }
 }

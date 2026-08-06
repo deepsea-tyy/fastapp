@@ -149,12 +149,16 @@ return new class extends Migration {
             $table->bigInteger('size_byte')->comment('字节数')->nullable();
             $table->string('size_info', 50)->comment('文件大小')->nullable();
             $table->string('url', 255)->comment('url地址')->nullable();
+            $table->string('asset_type', 32)->nullable()->comment('资源类型:character=人物,prop=道具,scene=场景,costume=服装,creature=生物,vehicle=载具,bgm=背景音乐,chinese_song=中文歌,english_song=英文歌,japanese_song=日文歌,voice=语音,animation=动画,shot_preview=镜头预览');
+            $table->bigInteger('parent_id')->unsigned()->nullable()->comment('来源附件ID')->after('asset_type');
             $table->unsignedTinyInteger('normalized')->default(0)->comment('标准化:0未标准化,1已标准化');
+            $table->unsignedTinyInteger('source')->default(0)->comment('来源:0=系统SDXL生成,1=用户上传');
             $table->bigInteger('created_by')->unsigned()->nullable()->comment('创建者');
             $table->bigInteger('updated_by')->unsigned()->nullable()->comment('更新者');
             $table->timestamps();
             $table->string('remark')->comment('备注')->nullable();
             $table->unique('hash');
+            $table->index('parent_id');
         });
         Schema::create('user_belongs_role', static function (Blueprint $table) {
             $table->comment('用户角色关联表');

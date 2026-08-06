@@ -10,18 +10,8 @@ use App\Common\Request\Traits\ClientIpRequestTrait;
 use App\Common\Request\Traits\ClientOsTrait;
 use App\Common\Request\Traits\NoAuthorizeTrait;
 use Hyperf\Collection\Arr;
-use Hyperf\Swagger\Annotation\Property;
-use Hyperf\Swagger\Annotation\Schema;
 use Hyperf\Validation\Request\FormRequest;
 
-#[Schema(title: '登录请求', description: '登录请求参数', properties: [
-    new Property('username', description: '用户名', type: 'string'),
-    new Property('password', description: '密码', type: 'string'),
-    new Property('type', description: '验证码类型：captcha(图形验证码) 或 google2fa_code(Google2FA)', type: 'string'),
-    new Property('code', description: '图形验证码', type: 'string'),
-    new Property('google2fa_code', description: 'Google2FA验证码', type: 'string'),
-    new Property('google2fa', description: 'Google2FA密钥', type: 'string'),
-])]
 class PassportRequest extends FormRequest
 {
     use ActionRulesTrait;

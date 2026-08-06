@@ -13,3 +13,4 @@ types/components.d.ts
 src/plugins/*
 /mineadmin/*
 .claude
+/public/icons/

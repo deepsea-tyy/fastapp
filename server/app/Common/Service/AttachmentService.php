@@ -66,12 +66,28 @@ final class AttachmentService extends IService
         ?string $originName = null,
         ?string $objectName = null,
         bool $move = false,
+        string $assetType = null,
+        ?int $parentId = null,
+        ?int $source = null,
     ): Attachment {
         $path = realpath($absolutePath) ?: $absolutePath;
         $hash = md5_file($path) ?: '';
+        $parent = $parentId ? $this->findById($parentId) : null;
+        $source = $source ?? ($parent ? (int) ($parent->source ?? 0) : 0);
         $existing = $this->findExistingByHash($hash);
         if ($existing) {
             $this->unlinkStagingIfDifferent($path, $existing);
+            $patch = [];
+            if ($assetType && !$existing->asset_type) {
+                $patch['asset_type'] = $assetType;
+            }
+            if ($parentId && !$existing->parent_id) {
+                $patch['parent_id'] = $parentId;
+            }
+            if ($patch) {
+                $this->repository->updateById($existing->id, $patch);
+                return $this->findById($existing->id);
+            }
 
             return $existing;
         }
@@ -84,6 +100,9 @@ final class AttachmentService extends IService
                 'updated_by' => $userId,
                 'origin_name' => $originName ?: basename($path),
                 'normalized' => 1,
+                'source' => $source,
+                'asset_type' => $assetType,
+                'parent_id' => $parentId,
             ]));
         } catch (\Throwable $e) {
             $existing = $this->findExistingByHash($hash);
@@ -122,19 +141,20 @@ final class AttachmentService extends IService
         return $this->repository->create(array_merge($file->toArray(), [
             'created_by' => $userId,
             'origin_name' => $originName,
+            'source' => 1,
         ]));
     }
 
-    public function replaceInPlace(Attachment $att, string $absolutePath, int $userId, bool $move = false): Attachment
+    public function replaceInPlace(Attachment $att, string $absolutePath, int $userId, bool $move = false, string $assetType = null, ?int $source = null): Attachment
     {
-        $source = realpath($absolutePath) ?: $absolutePath;
+        $srcPath = realpath($absolutePath) ?: $absolutePath;
         $target = $att->absoluteStoragePath();
         $targetDir = dirname($target);
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
-        if ($source != $target) {
-            $ok = $move ? rename($source, $target) : copy($source, $target);
+        if ($srcPath != $target) {
+            $ok = $move ? rename($srcPath, $target) : copy($srcPath, $target);
             if (! $ok) {
                 throw new \RuntimeException('ATTACHMENT_REPLACE_FAILED');
             }
@@ -142,7 +162,7 @@ final class AttachmentService extends IService
         $sizeByte = filesize($target) ?: 0;
         $suffix = pathinfo($target, PATHINFO_EXTENSION) ?: $att->suffix;
         $mimeType = mime_content_type($target) ?: $att->mime_type;
-        $this->repository->updateById($att->id, [
+        $update = [
             'hash' => md5_file($target) ?: $att->hash,
             'size_byte' => $sizeByte,
             'size_info' => StoredFile::formatSizeByte($sizeByte),
@@ -150,7 +170,14 @@ final class AttachmentService extends IService
             'mime_type' => $mimeType,
             'normalized' => 1,
             'updated_by' => $userId,
-        ]);
+        ];
+        if ($assetType && !$att->asset_type) {
+            $update['asset_type'] = $assetType;
+        }
+        if ($source !== null) {
+            $update['source'] = $source;
+        }
+        $this->repository->updateById($att->id, $update);
 
         return $this->findById($att->id);
     }
