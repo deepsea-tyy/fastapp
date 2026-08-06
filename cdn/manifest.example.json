@@ -1,0 +1,13 @@
+{
+  "app_version": "1.0.0",
+  "channel": "stable",
+  "models_catalog_url": "https://cdn.example.com/fastapp/models/catalog.json",
+  "components": {
+    "server": {
+      "url": "https://cdn.example.com/fastapp/server-1.0.0.zip",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 0,
+      "version": "1.0.0"
+    }
+  }
+}

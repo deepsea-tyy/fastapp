@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FastApp</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1117;
+      color: #e8eaed;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wrap { text-align: center; padding: 2rem; max-width: 480px; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { color: #9aa0a6; font-size: 0.875rem; line-height: 1.5; }
+    .hw {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: #1a1d26;
+      border: 1px solid #2d3140;
+      text-align: left;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+    .hw strong { color: #c4c7c5; }
+    .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #5b8def;
+      margin: 1rem 3px 0;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .err { color: #ea4335; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>FastApp</h1>
+    <p id="status">正在启动…</p>
+    <div id="hw" class="hw" hidden></div>
+    <div id="dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+    <p id="error" class="err" hidden></p>
+  </div>
+  <script>
+    const statusEl = document.getElementById('status');
+    const errorEl = document.getElementById('error');
+    const dotsEl = document.getElementById('dots');
+    const hwEl = document.getElementById('hw');
+
+    function tierText(t) {
+      if (t === 'ok') return '可用';
+      if (t === 'limited') return '可用（受限）';
+      return '不可用';
+    }
+
+    function showHardwareReport(report) {
+      if (!report) return;
+      const loc = report.local || {};
+      const tiers = report.tiers || {};
+      const mem = loc.memory_gb != null ? loc.memory_gb + ' GB' : '—';
+      const gpu = loc.gpu_name
+        ? loc.gpu_name + (loc.gpu_vram_gb ? ' (' + loc.gpu_vram_gb + ' GB)' : '')
+        : '未检测到 NVIDIA GPU';
+      hwEl.innerHTML =
+        '<strong>本机</strong> ' + (loc.os || '') + ' · 内存 ' + mem + ' · ' + gpu + '<br>' +
+        '<strong>基础功能</strong> ' + tierText(tiers.basic) + ' · ' +
+        '<strong>SDXL 生图</strong> ' + tierText(tiers.sdxl) + '<br>' +
+        (tiers.message || '');
+      hwEl.hidden = false;
+    }
+
+    async function checkHardware(tauri) {
+      try {
+        const report = await tauri.core.invoke('get_hardware_report');
+        showHardwareReport(report);
+      } catch (_) {}
+    }
+
+    async function boot() {
+      const tauri = window.__TAURI__;
+      if (!tauri) {
+        statusEl.textContent = '等待 Tauri 运行时…';
+        return;
+      }
+      try {
+        statusEl.textContent = '正在检测硬件…';
+        await checkHardware(tauri);
+        statusEl.textContent = '正在初始化本地组件…';
+        await tauri.core.invoke('seed_bundled_components');
+        let state = await tauri.core.invoke('get_install_state');
+        if (state.ready) {
+          statusEl.textContent = '正在启动服务…';
+          await tauri.core.invoke('start_services');
+          await checkHardware(tauri);
+          return;
+        }
+        if (!state.components.server) {
+          statusEl.textContent = '正在从 CDN 下载 server…';
+          await tauri.core.invoke('fetch_manifest');
+          await tauri.core.invoke('download_component', { component: 'server' });
+        }
+        statusEl.textContent = '正在启动服务…';
+        await tauri.core.invoke('start_services');
+        await checkHardware(tauri);
+      } catch (e) {
+        dotsEl.hidden = true;
+        errorEl.hidden = false;
+        errorEl.textContent = String(e);
+        statusEl.textContent = '启动失败，请检查网络后重试';
+      }
+    }
+    boot();
+  </script>
+</body>
+</html>
