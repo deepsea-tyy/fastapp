@@ -70,6 +70,7 @@ final class AttachmentService extends IService
         ?int $parentId = null,
         ?int $source = null,
         ?array $imageWh = null,
+        ?int $durationMs = null,
     ): Attachment {
         $path = realpath($absolutePath) ?: $absolutePath;
         $hash = md5_file($path) ?: '';
@@ -87,6 +88,9 @@ final class AttachmentService extends IService
             }
             if ($imageWh) {
                 $patch['image_wh'] = $imageWh;
+            }
+            if ($durationMs && !$existing->duration_ms) {
+                $patch['duration_ms'] = $durationMs;
             }
             if ($patch) {
                 $this->repository->updateById($existing->id, $patch);
@@ -110,6 +114,9 @@ final class AttachmentService extends IService
             if ($imageWh) {
                 $row['image_wh'] = $imageWh;
             }
+            if ($durationMs) {
+                $row['duration_ms'] = $durationMs;
+            }
 
             return $this->repository->create($row);
         } catch (\Throwable $e) {
@@ -122,11 +129,6 @@ final class AttachmentService extends IService
 
             throw $e;
         }
-    }
-
-    public function stagingPath(string $prefix, string $ext): string
-    {
-        return $this->storage->stagingPath($prefix, $ext);
     }
 
     public function getRepository(): AttachmentRepository

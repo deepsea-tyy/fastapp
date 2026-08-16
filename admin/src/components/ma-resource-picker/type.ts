@@ -14,6 +14,7 @@ export interface Resource {
   size_info?: string
   url?: string
   image_wh?: [number, number] | null
+  duration_ms?: number
   asset_type?: string
 }
 

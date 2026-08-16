@@ -26,6 +26,7 @@ use Hyperf\DbConnection\Model\Model;
  * @property Carbon $updated_at 更新时间
  * @property string $remark 备注
  * @property array|null $image_wh 图片宽高[w,h]，null=未标准化
+ * @property int|null $duration_ms 音频/视频时长(ms)；0=非音视频或未探测
  * @property int $source 来源:0=系统SDXL生成,1=用户上传
  * @property int|null $parent_id 来源附件ID
  */
@@ -39,12 +40,12 @@ final class Attachment extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['id', 'storage_mode', 'origin_name', 'object_name', 'hash', 'mime_type', 'suffix', 'size_byte', 'size_info', 'url', 'created_by', 'updated_by', 'created_at', 'updated_at', 'remark', 'image_wh', 'source', 'asset_type', 'parent_id'];
+    protected array $fillable = ['id', 'storage_mode', 'origin_name', 'object_name', 'hash', 'mime_type', 'suffix', 'size_byte', 'size_info', 'url', 'created_by', 'updated_by', 'created_at', 'updated_at', 'remark', 'image_wh', 'duration_ms', 'source', 'asset_type', 'parent_id'];
 
     /**
      * The attributes that should be cast to native types.
      */
-    protected array $casts = ['id' => 'integer', 'size_byte' => 'integer', 'created_by' => 'integer', 'updated_by' => 'integer', 'image_wh' => 'array', 'source' => 'integer', 'parent_id' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
+    protected array $casts = ['id' => 'integer', 'size_byte' => 'integer', 'created_by' => 'integer', 'updated_by' => 'integer', 'image_wh' => 'array', 'duration_ms' => 'integer', 'source' => 'integer', 'parent_id' => 'integer', 'created_at' => 'datetime', 'updated_at' => 'datetime'];
 
     public function absoluteStoragePath(): string
     {
