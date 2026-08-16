@@ -57,7 +57,7 @@ const useRouteStore = defineStore(
                             i18n: 'menu.index',
                             icon: 'icon-park-outline:jewelry',
                         },
-                        component: () => import(('~/base/views/dashboard/workbench.vue'))
+                        component: () => import(('~/base/views/uc/workbench.vue'))
                     },
                     {
                         name: 'uc:index',

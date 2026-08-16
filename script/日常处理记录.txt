@@ -2,16 +2,27 @@
 git
 git push --force origin main
 git remote set-url origin git@github.com:xx/yy.git
+git log --show-signature -1
+
+gpg 生成密钥
+gpg --full-generate-key
+
+取 Key ID + 导出公钥
+gpg --armor --export xxx
+git config --global user.signingkey xxx
+git config --global commit.gpgsign true
+git config --global gpg.program gpg
+# 指定该仓库用的 GPG 密钥
+git config --local user.signingkey xxx
+
+# 该仓库 commit 自动签名
+git config --local commit.gpgsign true
 
 空目录删除
 find "目录" -type d -empty -delete
 
 获取本地开发 ip
 ipconfig getifaddr en0
-
-启动模拟器
-flutter emulators --launch Pixel_9_Pro_XL
-flutter pub run build_runner build --delete-conflicting-outputs
 
 强制关闭服务
 ps -ef | grep -v grep | grep php | awk '{print $2}'|xargs -r kill -9

@@ -32,7 +32,7 @@ defineOptions({ name: 'dashboard:workbench' })
     <div class="mine-card w-auto !ml-3 lg:w-4/12 !lg:ml-0">
       <el-carousel height="230px" class="w-full rounded">
         <el-carousel-item v-for="(item, index) in Array.from({ length: 5 })" :key="item">
-          <img :src="`https://picsum.photos/600/240?random=${index + 1}`" :alt="index" class="h-full w-full rounded object-cover">
+          demo
         </el-carousel-item>
       </el-carousel>
     </div>

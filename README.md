@@ -13,6 +13,7 @@ fastapp/
 ├── tools/           # 本地 AI 推理服务（uv + Python）
 ├── cdn/             # 桌面端 manifest schema / 示例
 ├── script/          # 构建脚本（park.sh、desktop-publish.sh 等）
+├── code/            # 代码知识库（见 CODE_WIKI.md）
 └── docs/            # 项目文档
 ```
 
@@ -20,6 +21,14 @@ fastapp/
 
 - **admin**：目录 `admin/` 为管理后台**前端**；HTTP 前缀 `/admin/*` 为管理端 API。
 - **desktop**：桌面端**唯一工程**；安装包内含 ui、tools、cmd（7z）；仅 `fastapp.phar` 从 CDN 下载，详见 [desktop/README.md](desktop/README.md)。
+
+## 代码知识库
+
+项目全部开发文档已整理到 `code/` 目录，共 20 个主题。**CODE_WIKI.md 是总入口路由页**：
+
+- 👉 **[CODE_WIKI.md](CODE_WIKI.md)** — 所有技术文档的导航路由页
+
+涵盖内容：项目架构、后端/前端分层、Story Studio 核心插件、桌面客户端、数据库设计、依赖与运行、开发规范、WebSocket、代码生成器、插件系统、数据库迁移、监听器与异步、IP 定位、权限系统（RBAC + 数据权限）、企业官网、图标使用、前端开发完整指南。
 
 ## 各模块说明
 
@@ -36,13 +45,13 @@ fastapp/
 
 后台管理系统前端，Vue3 + TypeScript + Element Plus，代码位于 `admin/`。
 
-详细文档：[后台管理系统文档](docs/admin/开发指南.md)
+详细文档：见 [CODE_WIKI.md](CODE_WIKI.md) 中的前端架构与前端开发指南条目。
 
 ### server
 
 基于 Hyperf 3.1 + Swoole 的后端：API、WebSocket、权限、代码生成、插件等。
 
-详细文档：[server 文档](docs/server/getting-started/开发指南.md)
+详细文档：见 [CODE_WIKI.md](CODE_WIKI.md) 中的后端架构、后端开发规范、权限系统、插件系统、数据库迁移工具等条目。
 
 #### server 代码结构
 
@@ -61,13 +70,9 @@ server/
 Controller → Service → Repository → Model
 ```
 
-### server_go
-
-Go 版后端。见 [server_go/README.md](server_go/README.md)、[快速开始](server_go/docs/quick-start.md)。
-
 ### website
 
-企业官网（Nuxt.js 4.2）。见 [website 文档](docs/website/企业官网.md)。
+企业官网（Nuxt.js 4.2）。见 [CODE_WIKI.md](CODE_WIKI.md) 中的企业官网条目。
 
 ### tools
 
@@ -119,10 +124,9 @@ cd tools && cp .env.example .env && uv sync
 
 ## 相关文档
 
+- **[CODE_WIKI.md](CODE_WIKI.md)** — 项目全部技术文档导航路由（code/ 下 20 个主题）
 - [桌面客户端（desktop）](desktop/README.md) · [架构说明](desktop/ARCHITECTURE.md)
 - [本地 AI 工具（tools）](tools/README.md)
-- [后端服务](docs/server/getting-started/开发指南.md)
-- [管理后台](docs/admin/开发指南.md)
 - [Tauri 官方文档](https://tauri.app/)（框架文档；本仓库应用代码在 `desktop/`）
 
 ## 技术支持
@@ -136,5 +140,5 @@ cd tools && cp .env.example .env && uv sync
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
 <div align="center">
-  <img src="docs/assets/wechat_qr.png" alt="微信收款码" width="300" />
+  <img src="./wechat_qr.png" alt="微信收款码" width="300" />
 </div>

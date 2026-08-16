@@ -30,6 +30,10 @@ final class AttachmentRepository extends IRepository
 
     public function handleSearch(Builder $query, array $params): Builder
     {
+        if ($params['has_image_wh'] ?? null) {
+            $query->whereNotNull('image_wh');
+        }
+
         return parent::handleSearch($query, $params);
     }
 }

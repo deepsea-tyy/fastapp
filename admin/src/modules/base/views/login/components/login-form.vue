@@ -115,16 +115,19 @@ function handleLoginError() {
 }
 
 async function submit() {
-  if (!validateForm()) return
+  if (isFormSubmit.value || !validateForm())
+    return
 
   isFormSubmit.value = true
   try {
     const userData = await userStore.login(buildSubmitData())
-    isFormSubmit.value = false
     await handleLoginSuccess(userData)
-  } catch (error) {
-    isFormSubmit.value = false
+  }
+  catch {
     handleLoginError()
+  }
+  finally {
+    isFormSubmit.value = false
   }
 }
 
@@ -204,9 +207,12 @@ onMounted(() => {
       <m-button
         type="submit"
         class="!bg-[rgb(var(--ui-primary))] !text-gray-1 !active-bg-[rgb(var(--ui-primary))] !hover-bg-[rgb(var(--ui-primary)/.75)]"
-        :class="{ loading: isFormSubmit }"
+        :class="isFormSubmit ? 'loading' : ''"
       >
-        <ma-svg-icon name="formkit:submit" /> {{ t('loginForm.loginButton') }}
+        <ma-svg-icon
+          :name="isFormSubmit ? 'svg-spinners:ring-resize' : 'formkit:submit'"
+        />
+        {{ t('loginForm.loginButton') }}
       </m-button>
     </div>
   </form>

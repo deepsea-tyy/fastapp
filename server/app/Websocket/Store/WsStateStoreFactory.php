@@ -12,6 +12,7 @@ final class WsStateStoreFactory
     {
         $container = ApplicationContext::getContainer();
 
-        return $container->get(CacheWsStateStore::class);
+        return $container->get(CacheWsStateStore::class);//本地
+//        return $container->get(RedisWsStateStore::class);//平台
     }
 }

@@ -71,11 +71,16 @@ trait AttachmentControllerTrait
         }
 
         $originName = $this->getRequest()->input('origin_name');
-        $this->service->updateById($id, [
-            'origin_name' => $originName,
-            'updated_by' => $this->currentUser->id(),
-        ]);
-        return $this->success();
+        $assetType = $this->getRequest()->input('asset_type');
+        $update = ['updated_by' => $this->currentUser->id()];
+        if ($originName !== null) {
+            $update['origin_name'] = $originName;
+        }
+        if ($assetType !== null) {
+            $update['asset_type'] = $assetType;
+        }
+        $this->service->updateById($id, $update);
+        return $this->success($this->service->findById($id));
     }
 
     /**

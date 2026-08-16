@@ -69,6 +69,7 @@ final class AttachmentService extends IService
         string $assetType = null,
         ?int $parentId = null,
         ?int $source = null,
+        ?array $imageWh = null,
     ): Attachment {
         $path = realpath($absolutePath) ?: $absolutePath;
         $hash = md5_file($path) ?: '';
@@ -84,6 +85,9 @@ final class AttachmentService extends IService
             if ($parentId && !$existing->parent_id) {
                 $patch['parent_id'] = $parentId;
             }
+            if ($imageWh) {
+                $patch['image_wh'] = $imageWh;
+            }
             if ($patch) {
                 $this->repository->updateById($existing->id, $patch);
                 return $this->findById($existing->id);
@@ -95,15 +99,19 @@ final class AttachmentService extends IService
         try {
             $stored = $this->storage->putLocal($path, $objectName, $move);
 
-            return $this->repository->create(array_merge($stored->toArray(), [
+            $row = array_merge($stored->toArray(), [
                 'created_by' => $userId,
                 'updated_by' => $userId,
                 'origin_name' => $originName ?: basename($path),
-                'normalized' => 1,
                 'source' => $source,
                 'asset_type' => $assetType,
                 'parent_id' => $parentId,
-            ]));
+            ]);
+            if ($imageWh) {
+                $row['image_wh'] = $imageWh;
+            }
+
+            return $this->repository->create($row);
         } catch (\Throwable $e) {
             $existing = $this->findExistingByHash($hash);
             if ($existing) {
@@ -126,6 +134,26 @@ final class AttachmentService extends IService
         return $this->repository;
     }
 
+    public function findByAssetTypeAndObjectName(string $assetType, string $objectName): ?Attachment
+    {
+        $att = $this->repository->findByObjectName($objectName);
+        if (!$att || $att->asset_type != $assetType) {
+            return null;
+        }
+
+        return $att;
+    }
+
+    public function deleteByAssetTypeAndObjectName(string $assetType, string $objectName): int
+    {
+        $att = $this->findByAssetTypeAndObjectName($assetType, $objectName);
+        if (!$att) {
+            return 0;
+        }
+
+        return $this->deleteById($att->id);
+    }
+
     public function deleteById(mixed $id, array $where = []): int
     {
         $md = $this->findById($id);
@@ -145,33 +173,56 @@ final class AttachmentService extends IService
         ]));
     }
 
-    public function replaceInPlace(Attachment $att, string $absolutePath, int $userId, bool $move = false, string $assetType = null, ?int $source = null): Attachment
+    public function replaceInPlace(Attachment $att, string $absolutePath, int $userId, bool $move = false, string $assetType = null, ?int $source = null, ?array $imageWh = null): Attachment
     {
         $srcPath = realpath($absolutePath) ?: $absolutePath;
-        $target = $att->absoluteStoragePath();
+        $oldPath = $att->absoluteStoragePath();
+        $srcSuffix = strtolower(pathinfo($srcPath, PATHINFO_EXTENSION) ?: '');
+        $oldSuffix = strtolower(pathinfo($oldPath, PATHINFO_EXTENSION) ?: $att->suffix ?: '');
+
+        $target = $oldPath;
+        $objectName = $att->object_name;
+        $url = $att->url;
+        if ($srcSuffix && $srcSuffix != $oldSuffix) {
+            $target = preg_replace('/\.[^.]+$/', '.' . $srcSuffix, $oldPath) ?: ($oldPath . '.' . $srcSuffix);
+            $objectName = preg_replace('/\.[^.]+$/', '.' . $srcSuffix, $objectName ?: basename($oldPath));
+            $url = preg_replace('/\.[^.]+$/', '.' . $srcSuffix, $url ?: '');
+        }
+
         $targetDir = dirname($target);
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
         if ($srcPath != $target) {
             $ok = $move ? rename($srcPath, $target) : copy($srcPath, $target);
-            if (! $ok) {
+            if (!$ok) {
                 throw new \RuntimeException('ATTACHMENT_REPLACE_FAILED');
             }
+            if (!$move && is_file($srcPath)) {
+                @unlink($srcPath);
+            }
         }
+        if ($oldPath != $target && is_file($oldPath)) {
+            @unlink($oldPath);
+        }
+
         $sizeByte = filesize($target) ?: 0;
         $suffix = pathinfo($target, PATHINFO_EXTENSION) ?: $att->suffix;
         $mimeType = mime_content_type($target) ?: $att->mime_type;
         $update = [
             'hash' => md5_file($target) ?: $att->hash,
+            'object_name' => $objectName ?: $att->object_name,
+            'url' => $url ?: $att->url,
             'size_byte' => $sizeByte,
             'size_info' => StoredFile::formatSizeByte($sizeByte),
             'suffix' => $suffix,
             'mime_type' => $mimeType,
-            'normalized' => 1,
             'updated_by' => $userId,
         ];
-        if ($assetType && !$att->asset_type) {
+        if ($imageWh) {
+            $update['image_wh'] = $imageWh;
+        }
+        if ($assetType) {
             $update['asset_type'] = $assetType;
         }
         if ($source !== null) {

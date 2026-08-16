@@ -13,7 +13,7 @@ export interface Resource {
   size_byte?: number
   size_info?: string
   url?: string
-  normalized?: number
+  image_wh?: [number, number] | null
   asset_type?: string
 }
 
