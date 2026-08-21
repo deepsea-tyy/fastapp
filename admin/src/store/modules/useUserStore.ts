@@ -24,6 +24,7 @@ export interface UserInfo {
   phone: string
   email: string
   signed: string
+  lang?: string
   dashboard: string
 }
 
@@ -117,6 +118,9 @@ const useUserStore = defineStore(
         const routeStore = useRouteStore()
         const { data } = await getInfo()
         setUserInfo(data)
+        if (data?.lang) {
+          setLanguage(data.lang)
+        }
         await refreshMenu()
         await refreshRole()
         await routeStore.initRoutes(router, getMenu())

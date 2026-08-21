@@ -6,11 +6,13 @@ declare(strict_types=1);
 namespace App\Http\Admin\Service\Permission;
 
 use App\Common\IService;
+use App\Common\Tools;
 use App\Model\Enums\User\Status;
 use App\Model\Permission\Role;
 use App\Model\User;
 use App\Repository\Permission\RoleRepository;
 use App\Repository\Permission\UserRepository;
+use Hyperf\Collection\Arr;
 use Hyperf\Collection\Collection;
 use Hyperf\Context\RequestContext;
 use Hyperf\DbConnection\Db;
@@ -115,6 +117,9 @@ final class AdminUserService extends IService
                     ['user_id' => $id],
                     $userProfileData
                 );
+                if (Arr::has($userProfileData, 'lang')) {
+                    Tools::setUserCache((int)$id, Arr::only($userProfileData, ['lang']));
+                }
             }
 
             DataScopeTool::clearCurrentUserCache($id);
@@ -156,7 +161,7 @@ final class AdminUserService extends IService
 
     private function extractUserProfileData(array $data): array
     {
-        $profileFields = ['nickname', 'avatar', 'signed'];
+        $profileFields = ['nickname', 'avatar', 'signed', 'lang'];
         return array_intersect_key($data, array_flip($profileFields));
     }
 

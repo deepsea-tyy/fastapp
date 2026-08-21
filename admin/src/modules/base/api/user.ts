@@ -10,6 +10,7 @@ export interface UserVo {
   email?: string
   avatar?: string
   signed?: string
+  lang?: string
   dashboard?: string
   status?: 1 | 2
   login_ip?: string

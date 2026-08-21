@@ -1,5 +1,6 @@
 
 import { merge } from 'lodash-es'
+import { useI18n } from 'vue-i18n'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import zhTw from 'element-plus/dist/locale/zh-tw.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
@@ -16,11 +17,15 @@ export default defineComponent({
       en,
     }
     const userStore = useUserStore()
+    const { locale } = useI18n()
     useMenuStore().init()
     const attrsMerged: any = ref(merge({ locale: locales[userStore.getLanguage()], button: { autoInsertSpace: true } }, attrs))
 
     watch(() => userStore.getLanguage(), (lang: string) => {
       attrsMerged.value.locale = locales[lang]
+      if (lang) {
+        locale.value = lang
+      }
     }, { immediate: true })
 
     onMounted(async () => {

@@ -13,6 +13,7 @@ Story Studio 是项目的核心业务插件，提供从小说文本到短视频�
 | [编辑器时间线链路.md](../server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | Playhead/Seek/Reset/Playback → 画布同步 → shotFocus 完整链路 |
 | [剧情帧时间线.md](../server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | 帧时间语义、段时长计算、挂载时间规则、已移除字段清单 |
 | [翻译链路.md](../server/plugin/ds/storyStudio/docs/code/翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
+| [推理端链路.md](../server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 图片编辑（qwen_image_edit）8 Service + Builder + InferBody 分袋 + resolveWh 尺寸派生；生图（qwen_image_flash / Qwen-Image-Flash-8bit MLX 4 步蒸馏）调用端 + 推理端 + 信封示例 + 文件清单 |
 
 ---
 
@@ -224,18 +225,36 @@ type StoryFrame = {
 - `StorySceneRepository.formatSceneForApi` 为 material 类型 actor 补充 `attachment_url` 和 `duration_ms`
 - 对白使用 `audio_duration_ms`（speech 行字段），音频材质使用 `duration_ms`（attachment 字段），两者在挂载/播放/合成时统一处理
 
+### 语音重新生成的附件删除规则
+
+重新生成语音音频时，**附件删除统一走后端**，前端不再直接调用 HTTP DELETE 接口。
+
+**删除链路（`AssetAudioGenerateService::runVoice`，`regenerate=true` 时）**：
+
+1. **按对白 id 删除主附件**：若 `speech_id > 0`，查询 `StorySpeech.attachment_id`，通过 `AttachmentService::deleteById` 删除原有附件记录与物理文件
+2. **按 object_name 清理缓存**：调用 `AttachmentService::deleteByAssetTypeAndObjectName('voice', object_name)` 删除同名预览缓存
+
+**前端配合**：
+- `picker.ts` / `AssetVoicePicker.vue`：移除 `regenerate` 时的 `useHttp().delete('/attachment/{id}')` 调用，仅透传 `regenerate: 1` 标记
+- `AssetVoicePicker` 删除 `attachmentId` 输入 prop（不再需要前端知晓旧附件 id）
+- `SpeechLineForm.vue` 同步移除 `:attachment-id` 绑定
+
 ---
 
 ## AI 图像管线
 
 ### 模型分工
 
-| 资源类型（asset_type） | SDXL 模型 | 编辑画布 | 归一化输出 | 抠图 |
-|---|---|---|---|---|
-| scene | `sdxl_juggernaut` | **672×672** | **1216×832**（`normalize_scene_cover` 缩放+居中裁剪） | **跳过 BiRefNet** |
-| character / costume / creature / vehicle / prop | `sdxl_illustrious` | 默认 896×896 | 按各自标准尺寸 | BiRefNet 抠图 |
+调用端默认统一走 `qwen_image_flash`（Qwen-Image-Flash-8bit MLX，4 步蒸馏）；按 `asset_type` 仅在画布尺寸与归一化策略上分工。
 
-`SdxlJuggernautModel::normalizeMeta()` 定义 character / costume / creature / vehicle / prop 的画布尺寸，与 Illustrious 模型一致。
+| 资源类型（asset_type） | 生图模型 | 编辑画布 | 归一化输出 | 抠图 |
+|---|---|---|---|---|
+| scene | `qwen_image_flash` | **1344×768** | **1216×832**（`normalize_scene_cover` 缩放+居中裁剪） | **跳过 BiRefNet** |
+| character / costume / creature | `qwen_image_flash` | **768×1344** | 按各自标准尺寸 | BiRefNet 抠图 |
+| vehicle | `qwen_image_flash` | **1344×768** | 按各自标准尺寸 | BiRefNet 抠图 |
+| prop | `qwen_image_flash` | **1024×1024** | 按各自标准尺寸 | BiRefNet 抠图 |
+
+`ImagePresets::$models['qwen_image_flash']['type_meta']` 集中定义各 `asset_type` 的 `steps=4` / `cfg=1.0` / 画布尺寸（与 MLX 8bit 4 步蒸馏配置对齐）。`checkpointForAssetType()` 一律返回 `qwen_image_flash`，业务侧不再按风格分模型。
 
 ### 提示词约束
 
@@ -250,7 +269,7 @@ type StoryFrame = {
 ### 图像处理流程
 
 ```
-原始素材 (txt2img via SDXL)
+原始素材 (txt2img via Qwen-Image-Flash MLX)
     │
     ▼
 标准化
@@ -271,9 +290,23 @@ type StoryFrame = {
 
 ### outfitPrompt / posePrompt 结构约束
 
-- outfitPrompt：严格保留图 1 的风格/姿势/面部特征，**只取**图 2 的服装（剪裁/图案/颜色/层次/面料/装饰/配饰）；4 句正向 + 对齐反向
-- posePrompt：严格保留图 1 的风格/面部特征，**只取**图 2 的身体姿势（体位/四肢位置/头部倾斜/视线方向），**排除**相机角度/构图变化；4 句正向 + 对齐反向
+- outfitPrompt：严格保留图 1 的风格/姿势/面部特征/**体形**，**只取**图 2 的服装设计（剪裁/图案/颜色/层次/面料/装饰/配饰）；服装尺码/合身度/垂感必须按图 1 人物体形适配，自然穿着，禁止把人物体形拉伸去迁就图 2 服装轮廓
+- posePrompt：严格保留图 1 的风格/面部特征，**只取**图 2 的身体姿势（体位/四肢位置/头部倾斜/视线方向），**排除**相机角度/构图变化
 - `buildContentReplaceInfer`：优先保留图 1，图 2 只提供主体内容和位置，**不影响**图 1 的渲染风格/笔触/配色/光照/材质/透视
+
+### 双图 prompt 实际形态（`QwenImageEditPresets::buildDualImageInfer`）
+
+- 结构：`base_keep` + 维度句（clothing/pose/prop/...）= 2 句正向；negative 固定空格
+- `base_keep` 通用前置（所有双图维度共用，命中 outfit/pose/prop/... 全部路径）：
+  - 保留图 1 身份/面部/体形/身高/比例不变
+  - **构图硬约束**：保持与图 1 相同的全身构图与取景，禁止裁剪/截断/放大/拉近
+  - **头顶留白**：头顶上方必须留出清晰空间，头顶、脚、四肢完整可见在画框内
+- 各维度按 Image 2 含义分别约束适配关系，**不**用服装代表所有图二：
+  - `clothing`：服装尺码/合身度/垂感按图 1 体形适配，自然穿着；只从图 2 取设计元素
+  - `pose`：图 1 人物做图 2 姿势，但保持图 1 自身体形，不抄图 2 体形/比例
+  - `prop`：道具按图 1 手部与身体尺寸缩放
+  - `style` / `hairstyle` / `expression` / `background`：只取图 2 对应元素，主体保持图 1
+- `dims` 含 `pose` 时挂 AnyPose LoRA（lightning + anypose_base/helper @ 0.7）
 
 ---
 
@@ -369,6 +402,14 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 - 表情（emotion）编辑
 - 风格（style）转换
 - 视角（view）切换
+
+**素材选择标准化硬约束**：
+- 换装（outfit）、姿态（pose）、内容替换（content）三个 Tab 的素材选择器均强制 `onlyNormalized=true`
+- 标准化判定：`attachment.image_wh` 字段非空（通过 `/admin/ds/storyStudio/attachment/normalize` 接口完成尺寸规范后写入）
+- 选择器列表**全部显示**图片（不做后端过滤），未标准化图片也可正常点击选中
+- 未标准化时**确认按钮自动禁用**，弹框底部显示提示文字（警告色）引导用户操作
+- 每行行尾提供「裁剪（标准化）」按钮，用户可在弹框内直接对图片执行标准化操作，完成后即可确认选择
+- 标准化前置条件：图片需先通过行尾「编辑」按钮设置 `asset_type`（人物/服装/生物/道具/场景/载具），否则标准化按钮置灰禁用
 
 #### 5. 素材面板 (materialPanel.ts)
 

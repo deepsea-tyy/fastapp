@@ -405,7 +405,7 @@ export function useResourcePanel(
       else {
         clearSelected()
       }
-      await getResourceList()
+      await getResourceList(queryParams.value)
     }
     catch (error) {
       if (error != 'cancel') {
@@ -452,7 +452,7 @@ export function useResourcePanel(
         isUploading.value = false
         uploadProgress.value = 0
         uploadFileName.value = ''
-        getResourceList()
+        getResourceList(queryParams.value)
         msg.success(t('uploadSuccess'))
         return
       }
@@ -486,7 +486,7 @@ export function useResourcePanel(
           onDone()
         }
         else {
-          getResourceList()
+          getResourceList(queryParams.value)
           isUploading.value = false
           uploadProgress.value = 0
           uploadFileName.value = ''

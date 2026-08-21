@@ -67,7 +67,10 @@ final class AttachmentService extends IService
     {
         $md = $this->findById($id);
         if ($s = parent::deleteById($id)) {
-            @unlink(Tools::storage_path($md->url));
+            try {
+                unlink(Tools::storage_path($md->url));
+            } catch (\RuntimeException) {
+            }
         }
         return $s;
     }

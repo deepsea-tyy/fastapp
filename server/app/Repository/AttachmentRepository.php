@@ -34,6 +34,8 @@ final class AttachmentRepository extends IRepository
             $query->whereNotNull('image_wh');
         }
 
+        $query->with(['infer:attachment_id,appearance_selection']);
+
         return parent::handleSearch($query, $params);
     }
 }

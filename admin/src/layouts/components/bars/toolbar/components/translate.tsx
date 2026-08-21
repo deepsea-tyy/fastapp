@@ -1,5 +1,5 @@
-
 import { useI18n } from 'vue-i18n'
+import { updateInfo } from '~/base/api/user.ts'
 
 export default defineComponent({
   name: 'translate',
@@ -9,7 +9,8 @@ export default defineComponent({
     const settingStore = useSettingStore()
     const locales = userStore.getLocales()
     const { locale, t } = useI18n()
-    function changeLanguage(item: { label: string, value: string }) {
+    async function changeLanguage(item: { label: string, value: string }) {
+      await updateInfo({ lang: item.value })
       userStore.setLanguage(item.value)
       locale.value = item.value
       settingStore.setTitle(route.meta?.i18n ? t(route.meta?.i18n as string) : route.meta?.title as string)

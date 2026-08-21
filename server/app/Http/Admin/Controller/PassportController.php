@@ -92,6 +92,10 @@ final class PassportController extends AbstractController
     {
         $user = $this->currentUser->getInfo($this->currentUser->id());
         $user->is_google2fa = $user->google2fa ? 1 : 0;
+        $user->nickname = $user->profile?->nickname;
+        $user->avatar = $user->profile?->avatar;
+        $user->signed = $user->profile?->signed;
+        $user->lang = $user->profile?->lang;
         return $this->success($user);
     }
 

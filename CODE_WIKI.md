@@ -1,30 +1,56 @@
 # FastApp Code Wiki
 
-> 本文档为代码知识库导航路由页，详细内容请查阅 `code/` 目录下的对应子文档。
+> 代码知识库导航。全局架构文档位于 `code/`，Story Studio 插件的编码链路分析位于 `server/plugin/ds/storyStudio/docs/code/`。
 
 ---
 
-## 文档导航
+## 全局架构
 
-| 序号 | 文档 | 说明 |
-|------|------|------|
-| 01 | [01-项目概述与整体架构.md](code/01-项目概述与整体架构.md) | 项目概述、整体架构、技术栈 |
-| 02 | [02-后端架构.md](code/02-后端架构.md) | 后端架构（server/）：目录结构、核心分层、认证安全、WebSocket、插件系统、代码生成器、配置文件 |
-| 03 | [03-前端架构.md](code/03-前端架构.md) | 前端架构（admin/）：目录结构、状态管理、路由、组件库、Hooks、前端插件系统 |
-| 04 | [04-Story-Studio插件.md](code/04-Story-Studio插件.md) | Story Studio 核心插件：后端架构、业务模型、WebSocket AI 推理、AI 图像管线、前端核心模块 |
-| 05 | [05-桌面客户端.md](code/05-桌面客户端.md) | 桌面客户端（desktop/）：Tauri 2 胖包架构、目录结构、架构特点 |
-| 06 | [06-数据库设计.md](code/06-数据库设计.md) | 系统基础表、Story Studio 业务表、资产类型、资产挂载统一管线（单一 actor 流程）、遗留概念禁止清单 |
-| 07 | [07-依赖关系与运行方式.md](code/07-依赖关系与运行方式.md) | 前后端核心依赖、环境要求、开发环境启动、生产部署、常用 CLI 命令 |
-| 08 | [08-开发规范与文件索引.md](code/08-开发规范与文件索引.md) | 前后端开发规范、工程约束、关键文件索引、编码文档（代码链路分析） |
-| 09 | [09-后端开发规范.md](code/09-后端开发规范.md) | 代码分层架构、控制器/服务层/Repository/Model/请求验证规范、命名规范、代码风格、测试规范 |
-| 10 | [10-WebSocket系统.md](code/10-WebSocket系统.md) | WebSocket 系统架构设计：分层架构、事件驱动、插件化、统一推送接口、数据流转、Redis 存储设计、性能优化、水平扩展 |
-| 11 | [11-代码生成器.md](code/11-代码生成器.md) | 代码生成器使用指南：命令参数、Target 模式、生成文件结构、字段映射规则、组件自动识别、验证规则生成、自定义配置、模板定制 |
-| 12 | [12-插件系统.md](code/12-插件系统.md) | 插件使用指南：目录结构、config.json、插件类型、命令速查、开发要点 |
-| 13 | [13-数据库迁移工具.md](code/13-数据库迁移工具.md) | 数据库迁移工具：生成迁移文件、生成 Seeder、导入 SQL、参数说明、分片处理、备份恢复流程 |
-| 14 | [14-监听与异步操作.md](code/14-监听与异步操作.md) | Hyperf 监听器与异步操作：事件定义/监听/分发、Tools 封装方法、协程异步、组件异步速查表、最佳实践 |
-| 15 | [15-IP位置查询.md](code/15-IP位置查询.md) | IpLocationService：多 API 自动降级、多语言、24 小时缓存、内网识别、统一数据格式、错误处理 |
-| 16 | [16-权限系统.md](code/16-权限系统.md) | RBAC 权限系统：功能权限（用户→角色→菜单）、Permission 注解、数据权限（5 种 data_scope）、DataScopeTool、超级管理员 |
-| 17 | [17-数据权限详解.md](code/17-数据权限详解.md) | 数据权限配合详解：applyUserDataScope 流程、权限类型与数据源、多角色优先级策略、配合关系、性能优化 |
-| 18 | [18-企业官网.md](code/18-企业官网.md) | 企业官网（website/）：Nuxt.js 4.2、SSR/SSG、SEO 优化、项目结构、页面说明、部署方式 |
-| 19 | [19-图标使用指南.md](code/19-图标使用指南.md) | 图标组件（ma-svg-icon）、三种图标类型（Iconify/UnoCSS/自定义 SVG）、图标选择器、离线配置、工作原理 |
-| 20 | [20-前端开发指南.md](code/20-前端开发指南.md) | 前端开发完整指南：技术栈、项目结构、组件命名规范、响应式布局、文件上传、字典数据、表单组件（ma-form）、表格组件（MaProTable）、插件前端开发 |
+| 文档 | 覆盖内容 |
+|---|---|
+| [01-项目概述与整体架构](code/01-项目概述与整体架构.md) | 项目定位、五大子目录（server/admin/desktop/website/tools）、架构分层图、技术栈速查 |
+| [02-后端架构](code/02-后端架构.md) | 依赖与环境、启动命令、目录结构、HTTP 请求处理链路（Controller→Service→Repository→Model）、命名规范、JWT/中间件/RBAC 认证链、WebSocket 基类、插件安装链路、关键文件索引 |
+| [03-前端架构](code/03-前端架构.md) | 技术栈、启动命令、目录结构、应用启动链路、页面渲染链路、Pinia Store、ma-*/m-* 组件库、ma-form/MaProTable 开发、图标系统与离线配置、字典系统、响应式布局、文件上传、插件前端同步链路 |
+| [05-桌面客户端](code/05-桌面客户端.md) | Tauri 2 胖包架构、Rust 模块职责、热更新（仅 phar 从 CDN 下载） |
+| [13-企业官网](code/13-企业官网.md) | Nuxt.js 4.2 SSR/SSG、目录结构、页面路由、部署方式 |
+
+## 后端开发指南
+
+| 文档 | 覆盖内容 |
+|---|---|
+| [06-WebSocket系统](code/06-WebSocket系统.md) | WS 分层架构、事件驱动推送、插件化处理器注册、连接生命周期、Redis 存储设计、水平扩展、安全设计 |
+| [07-代码生成器](code/07-代码生成器.md) | CRUD 生成命令参数、admin/api 模式差异、字段映射规则（后缀/前缀/包含）、验证规则自动生成、模板定制 |
+| [08-插件系统](code/08-插件系统.md) | 插件目录结构、config.json、插件类型（mix/frond/backend）、命令速查、开发要点 |
+| [09-数据库迁移工具](code/09-数据库迁移工具.md) | 生成迁移/Seeder/导入 SQL 三大命令、分片处理、备份恢复流程 |
+| [10-监听与异步操作](code/10-监听与异步操作.md) | 事件定义/监听/分发、Tools 异步封装、组件异步速查表、协程使用 |
+| [11-IP位置查询](code/11-IP位置查询.md) | IpLocationService 多 API 降级、多语言、24h 缓存、内网识别、统一数据格式 |
+| [12-权限系统](code/12-权限系统.md) | RBAC 功能权限（用户→角色→菜单）、Permission 注解、5 种数据权限（data_scope）、优先级策略、DataScopeTool、超级管理员 |
+
+## Story Studio 插件
+
+| 文档 | 覆盖内容 |
+|---|---|
+| [04-Story-Studio插件](code/04-Story-Studio插件.md) | 后端架构、核心业务模型关系图、剧情帧时间模型、WebSocket 异步推理服务（14 种 action）、AI 图像管线（SDXL/Qwen-Image-Edit 模型分工）、前端核心模块（wsTasks/编辑器渲染/3D 姿势/资源包工作台/素材面板/音频轨道）、全局设置约束 |
+
+### 插件编码链路文档
+
+位于 `server/plugin/ds/storyStudio/docs/code/`，改代码时必看：
+
+| 文档 | 覆盖链路 |
+|---|---|
+| [WebSocket任务管线](server/plugin/ds/storyStudio/docs/code/WebSocket任务管线.md) | WS 任务统一管线、Bundle/源头写回分离、禁止踩坑清单 |
+| [推理端链路](server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 8 个 Service → Builder → runSlot → resolveWh 尺寸派生 → InferBody 分袋 → Python 推理，完整参数流转 |
+| [剧情帧时间线](server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | UI → composable → 持久化 → API → Repository → DB，帧时间语义与段时长计算 |
+| [编辑器时间线链路](server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | playheadMs ↔ eventTimeMs ↔ segmentIndex ↔ frameId 四态同步、paintTimelineAt 出图入口 |
+| [编辑器外壳与画布](server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Phaser 编辑器 Shell 布局、模式接线、数据挂载链路 |
+| [翻译链路](server/plugin/ds/storyStudio/docs/code/翻译链路.md) | 字典定义 → dictStore 注册 → MaDictSelect/useTrans 两条翻译链路 |
+| [数据库设计](server/plugin/ds/storyStudio/docs/code/数据库设计.md) | 11 张业务表结构、ER 图、资产挂载统一管线（单一 actor 流程）、遗留概念禁止清单 |
+
+### 插件编辑器交互约定
+
+| 类别 | 约定 | 说明 |
+|---|---|---|
+| UI | 剧情帧播放高亮 | 调试播放（debugPlayStoryFrames）期间，`debugPlayStoryFramesBusy=true`，DockFrameCol 当前剧情帧下全部挂载对象行（mount-row：素材/编辑动作）追加 `--playing` 类：蓝色背景 `light-7` + 边框 `light-5`；结束 Busy=false 自动还原。帧列、mount 容器不变。 |
+| 音频 | 手势批量解锁 | `debugPlayStoryFrames()` 用户手势栈内：建完 audioPool 立刻对全部 `hasAudio` 轨道做「静音 play()→then pause/还原 muted」一次性解锁。避免后续 Phaser 回调中非手势触发的 play() 被浏览器策略拦截（NotAllowedError）。 |
+| 音频 | 单次播放语义 + 循环预留 | 每次调试播放会话：`audioPlayedIndices` Set 记录已播放轨道下标，`syncAudioAt` 在 `!loopAudio` 时对已播轨道跳过。会话结束 `clearAudio()` 清空 Set，下次播放重新计数。预留 `audioLoopEnabled=false`（ContentScenePlayback 字段）与 `loopAudio` 参数，后续接 UI 开关只需改字段来源。 |
+

@@ -13,12 +13,12 @@ use App\Http\Admin\Controller\AbstractController;
 use App\Http\Admin\Middleware\PermissionMiddleware;
 use App\Http\Admin\Permission;
 use App\Http\Admin\Request\Permission\BatchGrantRolesForUserRequest;
+use App\Http\Admin\Request\Permission\UpdateInfoRequest;
 use App\Http\Admin\Request\Permission\UserRequest;
 use App\Http\Admin\Service\Permission\DataScopeTool;
 use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Http\CurrentUser;
 use App\Model\Permission\Role;
-use Hyperf\Collection\Arr;
 use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\DeleteMapping;
 use Hyperf\HttpServer\Annotation\GetMapping;
@@ -61,12 +61,12 @@ final class UserController extends AbstractController
         return $this->success();
     }
 
-    #[PutMapping(path: '/admin/user')]
+    #[PutMapping(path: '/admin/user/info')]
     #[Permission(code: 'permission:user:update')]
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
-    public function updateInfo(UserRequest $request): Result
+    public function updateInfo(UpdateInfoRequest $request): Result
     {
-        $this->userService->updateById($this->currentUser->id(), Arr::except($request->validated(), ['password']));
+        $this->userService->updateById($this->currentUser->id(), $request->validated());
         return $this->success();
     }
 

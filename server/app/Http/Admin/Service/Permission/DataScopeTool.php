@@ -92,6 +92,7 @@ final class DataScopeTool
         $user->nickname = $userProfile?->nickname;
         $user->avatar = $userProfile?->avatar;
         $user->signed = $userProfile?->signed;
+        $user->lang = $userProfile?->lang;
 
         self::getCache()->set((string)$userId, $user, self::CACHE_TTL);
         return $user;

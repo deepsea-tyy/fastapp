@@ -7,7 +7,9 @@ namespace App\Model;
 
 use App\Common\Tools;
 use Carbon\Carbon;
+use Hyperf\Database\Model\Relations\HasOne;
 use Hyperf\DbConnection\Model\Model;
+use Plugin\Ds\StoryStudio\Model\StoryAttachmentInfer;
 
 /**
  * @property int $id 主键
@@ -27,8 +29,9 @@ use Hyperf\DbConnection\Model\Model;
  * @property string $remark 备注
  * @property array|null $image_wh 图片宽高[w,h]，null=未标准化
  * @property int|null $duration_ms 音频/视频时长(ms)；0=非音视频或未探测
- * @property int $source 来源:0=系统SDXL生成,1=用户上传
+ * @property int $source 来源:0=系统AI生成,1=用户上传
  * @property int|null $parent_id 来源附件ID
+ * @property-read StoryAttachmentInfer|null $infer
  */
 final class Attachment extends Model
 {
@@ -50,5 +53,10 @@ final class Attachment extends Model
     public function absoluteStoragePath(): string
     {
         return Tools::storage_path(parse_url(($this->url ?? ''), PHP_URL_PATH));
+    }
+
+    public function infer(): HasOne
+    {
+        return $this->hasOne(StoryAttachmentInfer::class, 'attachment_id', 'id');
     }
 }
