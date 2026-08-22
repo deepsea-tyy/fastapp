@@ -6,13 +6,13 @@
 
 ## 全局架构
 
-| 文档 | 覆盖内容 |
-|---|---|
+| 文档                                   | 覆盖内容 |
+|--------------------------------------|---|
 | [01-项目概述与整体架构](code/01-项目概述与整体架构.md) | 项目定位、五大子目录（server/admin/desktop/website/tools）、架构分层图、技术栈速查 |
-| [02-后端架构](code/02-后端架构.md) | 依赖与环境、启动命令、目录结构、HTTP 请求处理链路（Controller→Service→Repository→Model）、命名规范、JWT/中间件/RBAC 认证链、WebSocket 基类、插件安装链路、关键文件索引 |
-| [03-前端架构](code/03-前端架构.md) | 技术栈、启动命令、目录结构、应用启动链路、页面渲染链路、Pinia Store、ma-*/m-* 组件库、ma-form/MaProTable 开发、图标系统与离线配置、字典系统、响应式布局、文件上传、插件前端同步链路 |
-| [05-桌面客户端](code/05-桌面客户端.md) | Tauri 2 胖包架构、Rust 模块职责、热更新（仅 phar 从 CDN 下载） |
-| [13-企业官网](code/13-企业官网.md) | Nuxt.js 4.2 SSR/SSG、目录结构、页面路由、部署方式 |
+| [02-后端架构](code/02-后端架构.md)           | 依赖与环境、启动命令、目录结构、HTTP 请求处理链路（Controller→Service→Repository→Model）、命名规范、JWT/中间件/RBAC 认证链、WebSocket 基类、插件安装链路、关键文件索引 |
+| [03-前端架构](code/03-前端架构.md)           | 技术栈、启动命令、目录结构、应用启动链路、页面渲染链路、Pinia Store、ma-*/m-* 组件库、ma-form/MaProTable 开发、图标系统与离线配置、字典系统、响应式布局、文件上传、插件前端同步链路 |
+| [05-桌面打包链路](code/05-桌面打包链路.md) | 单管线 phar→sfx→stage→tauri；tools 不进桌面包 |
+| [13-企业官网](code/13-企业官网.md)           | Nuxt.js 4.2 SSR/SSG、目录结构、页面路由、部署方式 |
 
 ## 后端开发指南
 

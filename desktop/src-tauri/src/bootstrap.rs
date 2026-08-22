@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use tauri::{AppHandle, Manager};
 
@@ -9,6 +8,8 @@ use crate::paths::{write_log, AppPaths};
 use crate::state::{self, AppState};
 
 const BUNDLED_PREFIX: &str = "bundled";
+const SEED_COMPONENTS: &[&str] = &["ui", "cmd", "server"];
+const STORAGE_SEED_DIRS: &[&str] = &["languages", "ttc"];
 
 pub fn seed_bundled_components(app: &AppHandle, paths: &AppPaths) -> Result<(), String> {
     let bundled = resolve_bundled_dir(app)?;
@@ -19,10 +20,12 @@ pub fn seed_bundled_components(app: &AppHandle, paths: &AppPaths) -> Result<(), 
         ));
     }
 
-    let extractor = resolve_extractor(&bundled)?;
-    seed_component(&bundled, paths, &extractor, "ui", &paths.ui)?;
-    seed_component(&bundled, paths, &extractor, "tools", &paths.tools)?;
-    seed_component(&bundled, paths, &extractor, "cmd", &paths.cmd)?;
+    for name in SEED_COMPONENTS {
+        let dest = paths.component_dir(name);
+        seed_component(&bundled, paths, name, &dest)?;
+    }
+
+    seed_storage_assets(&bundled, paths)?;
 
     make_cmd_executable(paths);
     let mut st = AppState::load(paths);
@@ -41,7 +44,7 @@ fn resolve_bundled_dir(app: &AppHandle) -> Result<PathBuf, String> {
     }
     let dev = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")
-        .join("bundle");
+        .join("build");
     if dev.is_dir() {
         return Ok(dev);
     }
@@ -51,30 +54,9 @@ fn resolve_bundled_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| e.to_string())
 }
 
-fn resolve_extractor(bundled: &Path) -> Result<PathBuf, String> {
-    #[cfg(windows)]
-    {
-        for name in ["7z2602-x64.exe", "7z2602-arm64.exe"] {
-            let p = bundled.join(name);
-            if p.is_file() {
-                return Ok(p);
-            }
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        let p = bundled.join("7zz");
-        if p.is_file() {
-            return Ok(p);
-        }
-    }
-    Err("bundled 内未找到 7z 解压器".into())
-}
-
 fn seed_component(
     bundled: &Path,
     paths: &AppPaths,
-    extractor: &Path,
     name: &str,
     dest: &Path,
 ) -> Result<(), String> {
@@ -82,31 +64,65 @@ fn seed_component(
         write_log(paths, &format!("seed skip {name} (already installed)"));
         return Ok(());
     }
-    let archive = bundled.join(format!("{name}.7z"));
-    if !archive.is_file() {
-        return Err(format!("bundled/{name}.7z 不存在"));
+    let src = bundled.join(name);
+    if !src.is_dir() {
+        return Err(format!("bundled/{name} 不存在"));
     }
     fs::create_dir_all(dest).map_err(|e| e.to_string())?;
-    extract_7z(extractor, &archive, dest)?;
+    copy_dir_all(&src, dest)?;
     write_log(paths, &format!("seed {name} -> {}", dest.display()));
     Ok(())
 }
 
-fn extract_7z(extractor: &Path, archive: &Path, dest: &Path) -> Result<(), String> {
-    let out = format!("{}/*", dest.to_string_lossy());
-    let status = Command::new(extractor)
-        .arg("x")
-        .arg(archive)
-        .arg(format!("-o{}", dest.to_string_lossy()))
-        .arg("-y")
-        .status()
-        .map_err(|e| e.to_string())?;
-    if !status.success() {
+fn seed_storage_assets(bundled: &Path, paths: &AppPaths) -> Result<(), String> {
+    let storage_root = paths.server.join("storage");
+    fs::create_dir_all(&storage_root).map_err(|e| e.to_string())?;
+    fs::create_dir_all(storage_root.join("uploads")).map_err(|e| e.to_string())?;
+
+    let bundled_storage = bundled.join("storage");
+    if !bundled_storage.is_dir() {
         return Err(format!(
-            "7z 解压失败: {} -> {}",
-            archive.display(),
-            out
+            "bundled/storage 不存在: {}",
+            bundled_storage.display()
         ));
+    }
+
+    for name in STORAGE_SEED_DIRS {
+        let dest = storage_root.join(name);
+        if dest.is_dir() {
+            write_log(paths, &format!("seed skip storage/{name} (already exists)"));
+            continue;
+        }
+        let src = bundled_storage.join(name);
+        if !src.is_dir() {
+            return Err(format!("bundled/storage/{name} 不存在"));
+        }
+        fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+        copy_dir_all(&src, &dest)?;
+        write_log(
+            paths,
+            &format!("seed storage/{name} -> {}", dest.display()),
+        );
+    }
+
+    Ok(())
+}
+
+fn copy_dir_all(src: &Path, dest: &Path) -> Result<(), String> {
+    for entry in fs::read_dir(src).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let ty = entry.file_type().map_err(|e| e.to_string())?;
+        let from = entry.path();
+        let to = dest.join(entry.file_name());
+        if ty.is_dir() {
+            fs::create_dir_all(&to).map_err(|e| e.to_string())?;
+            copy_dir_all(&from, &to)?;
+        } else {
+            if let Some(parent) = to.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            fs::copy(&from, &to).map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }

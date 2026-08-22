@@ -1,0 +1,6 @@
+{
+  "name": "FastApp",
+  "logo": "assets/logo.png",
+  "identifier": "com.fastapp.desktop",
+  "dataDir": "FastApp"
+}

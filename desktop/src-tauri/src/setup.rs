@@ -16,6 +16,7 @@ JWT_REFRESH_TTL=7200
 JWT_SECRET=fastapp-desktop-secret
 JWT_API_SECRET=fastapp-desktop-secret
 SCHEDULER_URL=http://127.0.0.1:8312
+ffmpeg='/../cmd'
 "#;
 
 pub fn write_server_env_if_missing(paths: &AppPaths) {

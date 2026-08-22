@@ -322,7 +322,7 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
      */
     private function registerPluginHandlers(): void
     {
-        $pluginDir = BASE_PATH . '/plugin';
+        $pluginDir = rtrim(Tools::plugin_path(), '/');
         if (!is_dir($pluginDir)) {
             return;
         }

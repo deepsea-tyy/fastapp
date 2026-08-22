@@ -45,6 +45,7 @@ import { useMessage } from '@/hooks/useMessage.ts'
 import { uploadLocal } from '@/utils/uploadLocal.ts'
 import { chunkUpload, shouldUseChunkUpload, type ChunkUploadOptions } from '@/utils/chunkUpload.ts'
 import { formatImagePath } from '@/utils/common.ts'
+import MaVideoPlayer from '@/components/ma-video-player/index.vue'
 
 defineOptions({ name: 'MaUploadVideo' })
 
@@ -251,14 +252,11 @@ watch(
     <!-- 已上传的视频显示 -->
     <div v-if="fileList.length > 0 && !isUploading" class="video-preview-container">
       <div class="video-info">
-        <video
+        <MaVideoPlayer
           v-if="displayVideoUrl"
           :src="displayVideoUrl"
-          controls
-          class="video-player"
-        >
-          您的浏览器不支持视频播放
-        </video>
+          height="400px"
+        />
         <div class="video-name">{{ fileList[0]?.name }}</div>
       </div>
       <div class="video-actions">
@@ -319,7 +317,7 @@ watch(
   .video-info {
     @apply mb-3;
 
-    .video-player {
+    :deep(.ma-video-player) {
       width: 100%;
       max-height: 400px;
       @apply rounded-md mb-2;

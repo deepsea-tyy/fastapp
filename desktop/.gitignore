@@ -2,10 +2,5 @@ dist/
 node_modules/
 target/
 *.log
+build/
 bundle/
-swoole-cli
-swoole-cli.exe
-php.exe
-uv
-uv.exe
-.bundle-stage

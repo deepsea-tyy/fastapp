@@ -221,7 +221,7 @@ pub fn navigate_ui(app: &AppHandle, paths: &AppPaths) {
     }
     if let Some(w) = app.get_webview_window("main") {
         if let Ok(url) = tauri::Url::from_file_path(&index) {
-            let _ = w.navigate(tauri::WebviewUrl::External(url));
+            let _ = w.navigate(url);
         }
     }
 }

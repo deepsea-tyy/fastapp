@@ -7,12 +7,12 @@ FastApp 是一个企业级全栈应用框架，包含 Web 端、后台管理系�
 ```
 fastapp/
 ├── server/          # 后端服务（Hyperf 3.1 + Swoole）
-├── desktop/         # 桌面客户端（Tauri 胖包 + CDN 仅 phar）
+├── desktop/         # 桌面客户端（Tauri + SFX）
 ├── admin/           # 后台管理系统前端（Vue3 + TypeScript + Element Plus）
 ├── website/         # 企业官网（Nuxt.js 4.2）
 ├── tools/           # 本地 AI 推理服务（uv + Python）
 ├── cdn/             # 桌面端 manifest schema / 示例
-├── script/          # 构建脚本（park.sh、desktop-publish.sh 等）
+├── script/          # 通用脚本（桌面构建见 desktop/scripts/）
 ├── code/            # 代码知识库（见 CODE_WIKI.md）
 └── docs/            # 项目文档
 ```
@@ -20,7 +20,7 @@ fastapp/
 说明：
 
 - **admin**：目录 `admin/` 为管理后台**前端**；HTTP 前缀 `/admin/*` 为管理端 API。
-- **desktop**：桌面端**唯一工程**；安装包内含 ui、tools、cmd（7z）；仅 `fastapp.phar` 从 CDN 下载，详见 [desktop/README.md](desktop/README.md)。
+- **desktop**：桌面端工程，安装包含 SFX `fastapp`、ui、ffmpeg，见 [desktop/README.md](desktop/README.md)。
 
 ## 代码知识库
 
@@ -34,12 +34,10 @@ fastapp/
 
 ### desktop（桌面客户端）
 
-基于 [Tauri 2](https://tauri.app) 的胖包：安装包含 ui、tools、cmd（7z 压缩）；**仅 server（phar）** 从 CDN 下载。
+基于 [Tauri 2](https://tauri.app)，server 为 SFX 整包（plugin 在 phar 内）。
 
-- 工程目录：**仅** [`desktop/`](desktop/)
-- 架构与分阶段说明：见 [desktop/ARCHITECTURE.md](desktop/ARCHITECTURE.md)
-- 打包：`cd admin && pnpm build` → 确认 [`cmd/`](cmd/) 平台二进制 → `cd desktop && pnpm tauri build`
-- CDN 发布（仅 phar）：`script/desktop-publish.sh`
+- 工程：[`desktop/`](desktop/)
+- 构建与运行时：[`desktop/README.md`](desktop/README.md)
 
 ### admin
 
@@ -125,7 +123,7 @@ cd tools && cp .env.example .env && uv sync
 ## 相关文档
 
 - **[CODE_WIKI.md](CODE_WIKI.md)** — 项目全部技术文档导航路由（code/ 下 20 个主题）
-- [桌面客户端（desktop）](desktop/README.md) · [架构说明](desktop/ARCHITECTURE.md)
+- [桌面客户端（desktop）](desktop/README.md)
 - [本地 AI 工具（tools）](tools/README.md)
 - [Tauri 官方文档](https://tauri.app/)（框架文档；本仓库应用代码在 `desktop/`）
 

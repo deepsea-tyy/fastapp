@@ -7,10 +7,10 @@ use crate::download::make_cmd_executable;
 use crate::paths::{write_log, AppPaths};
 
 pub fn start(paths: &AppPaths) -> Result<(), String> {
-    if !paths.phar_file().is_file() {
-        return Err("fastapp.phar 未安装".into());
+    let bin = paths.server_binary();
+    if !bin.is_file() {
+        return Err("fastapp 运行时未安装".into());
     }
-    let php = resolve_php(paths)?;
     make_cmd_executable(paths);
     if tcp_open(9501) {
         return Ok(());
@@ -21,10 +21,9 @@ pub fn start(paths: &AppPaths) -> Result<(), String> {
         .append(true)
         .open(&log)
         .map_err(|e| e.to_string())?;
-    let mut cmd = Command::new(&php);
+    let mut cmd = Command::new(&bin);
     cmd.arg("-d")
         .arg("swoole.use_shortname=Off")
-        .arg(&paths.phar_file())
         .arg("start")
         .current_dir(&paths.server)
         .stdout(Stdio::from(log_file.try_clone().map_err(|e| e.to_string())?))
@@ -34,14 +33,6 @@ pub fn start(paths: &AppPaths) -> Result<(), String> {
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        let swoole_dir = paths.cmd.join("swoole");
-        if swoole_dir.is_dir() {
-            let path = std::env::var("PATH").unwrap_or_default();
-            cmd.env(
-                "PATH",
-                format!("{};{}", swoole_dir.to_string_lossy(), path),
-            );
-        }
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
     cmd.spawn().map_err(|e| e.to_string())?;
@@ -79,11 +70,13 @@ pub fn migrate_if_needed(paths: &AppPaths) -> Result<(), String> {
     if db.is_file() {
         return Ok(());
     }
-    let php = resolve_php(paths)?;
-    let out = Command::new(&php)
+    let bin = paths.server_binary();
+    if !bin.is_file() {
+        return Err("fastapp 运行时未安装".into());
+    }
+    let out = Command::new(&bin)
         .arg("-d")
         .arg("swoole.use_shortname=Off")
-        .arg(&paths.phar_file())
         .arg("migrate")
         .current_dir(&paths.server)
         .output()
@@ -97,49 +90,6 @@ pub fn migrate_if_needed(paths: &AppPaths) -> Result<(), String> {
         ),
     );
     Ok(())
-}
-
-fn resolve_php(paths: &AppPaths) -> Result<std::path::PathBuf, String> {
-    if paths.php_binary().is_file() {
-        return Ok(paths.php_binary());
-    }
-    if let Ok(p) = which_swoole_cli() {
-        return Ok(p);
-    }
-    Err("未找到 PHP 运行时，请先安装 cmd 组件".into())
-}
-
-fn which_swoole_cli() -> Result<std::path::PathBuf, String> {
-    let names = ["swoole-cli", "php"];
-    for name in names {
-        if let Ok(o) = Command::new("which").arg(name).output() {
-            if o.status.success() {
-                let p = String::from_utf8_lossy(&o.stdout).trim().to_string();
-                if !p.is_empty() {
-                    return Ok(std::path::PathBuf::from(p));
-                }
-            }
-        }
-    }
-    #[cfg(windows)]
-    {
-        for name in ["swoole-cli.exe", "php.exe"] {
-            if let Ok(o) = Command::new("where").arg(name).output() {
-                if o.status.success() {
-                    let p = String::from_utf8_lossy(&o.stdout)
-                        .lines()
-                        .next()
-                        .unwrap_or("")
-                        .trim()
-                        .to_string();
-                    if !p.is_empty() {
-                        return Ok(std::path::PathBuf::from(p));
-                    }
-                }
-            }
-        }
-    }
-    Err("not found".into())
 }
 
 fn tcp_open(port: u16) -> bool {

@@ -1,75 +1,103 @@
 # FastApp Desktop
 
-Tauri **胖包** + CDN 仅下载 phar。安装包内含 ui、tools、cmd（7z 压缩）；首次启动 7z 解压到 AppData，仅 `fastapp.phar` 从 CDN 拉取。
+Tauri 桌面客户端：安装包含 admin UI、单文件 `fastapp`（Hyperf 业务）、ffmpeg、storage 静态资源（languages、ttc）。首次启动 seed 到 AppData，运行 `fastapp start`。
 
-> **唯一入口**：桌面相关代码只在本目录 `desktop/`。不要 clone Tauri 官方源码到仓库；使用 `pnpm tauri` / `@tauri-apps/*` 即可。
+工程入口：`desktop/`。支持 **macOS**、**Windows x64**。
 
 ## 目录
 
 ```
 desktop/
-├── splash/          # 内置启动页（seed + 下载 server）
-├── bundle/          # 构建 staging 产物（gitignore，由 script 生成）
-├── src-tauri/       # Rust：manifest、下载、seed、Hyperf/tools 启停、GPU 仲裁
-└── ARCHITECTURE.md  # 架构说明
+├── brand.json       # 应用名 / logo / identifier / dataDir（唯一配置）
+├── assets/          # logo 源图（brand.json 的 logo 字段指向此处）
+├── cmd/             # 构建输入：ffmpeg、swoole-cli（见 cmd/README.md）
+├── scripts/         # stage 编排（见 scripts/README.md）
+├── splash/          # 启动页（名称由 sync-brand 同步）
+├── build/           # 中间产物（gitignore）
+└── src-tauri/
 ```
 
-平台二进制统一放在仓库根目录 [`cmd/`](../cmd/)。
+## 品牌配置
 
-## 打包桌面安装包
+[`brand.json`](brand.json) 为桌面壳**唯一**配置源：
+
+| 字段 | 说明 |
+|------|------|
+| `name` | 显示名（窗口标题、安装包名、启动页） |
+| `logo` | 源 logo 路径（相对 `desktop/`，正方形 PNG） |
+| `identifier` | Tauri bundle id |
+| `dataDir` | AppData 子目录名 |
+
+打包前 [`sync-brand.sh`](scripts/sync-brand.sh) 自动同步到 `tauri.conf.json`、图标、`splash`、Rust `APP_DATA_DIR`。单独同步：`bash scripts/sync-brand.sh`。
+
+## 构建环境（手动安装）
+
+| 工具 | 验证 |
+|------|------|
+| Node.js + pnpm | `node -v`、`pnpm -v` |
+| Rust（cargo） | `cargo -V` |
+| Xcode CLT（macOS） | `xcode-select -p` |
+| PHP 8.1+（打 phar） | `php -v` |
+
+`ffmpeg` 由构建脚本在首次打包时自动下载到 `desktop/cmd/`。`swoole-cli` 使用 `desktop/cmd/` 下对应平台的预编译目录（见 [cmd/README.md](cmd/README.md)）。
+
+打包前需在 `server/storage/ttc/` 放置思源黑体字体（与开发环境相同；约 53MB，不进 git）。
+
+## 构建
 
 ```bash
-# 1. 构建 admin UI
-cd admin && pnpm build
-
-# 2. 确认 cmd/ 下有所需平台二进制（swoole、uv、ffmpeg、7zz）
-
-# 3. 打 Tauri 安装包（自动执行 desktop-bundle-stage.sh）
-cd desktop && pnpm install && pnpm tauri build
+cd desktop && pnpm install
+pnpm tauri build macArm     # macOS Apple Silicon → .app + .dmg
+pnpm tauri build macIntel   # macOS Intel → .app + .dmg
+pnpm tauri build win        # Windows x64 → NSIS（macOS 上需交叉编译工具链）
 ```
 
-可选：`DESKTOP_BUILD_ADMIN=1 pnpm tauri build` 会在 staging 前自动 `pnpm build` admin。
+**必须**指定平台参数；打包完成后**不会**自动打开或安装安装包。
 
-## 发布 CDN（仅 phar）
+中间产物按平台隔离：`desktop/build/<platform>/`（如 `build/macArm/`）。Tauri bundle 在 `src-tauri/target/<rust-triple>/release/bundle/`。
+
+### 交叉编译依赖
+
+| 打包 | `rustup target add` |
+|------|---------------------|
+| `macArm` | `aarch64-apple-darwin` |
+| `macIntel` | `x86_64-apple-darwin` |
+| `win` | `x86_64-pc-windows-msvc` |
 
 ```bash
-chmod +x script/desktop-publish.sh
-DESKTOP_CDN_BASE=https://your-cdn.example.com/fastapp script/desktop-publish.sh
+rustup target add aarch64-apple-darwin x86_64-apple-darwin x86_64-pc-windows-msvc
 ```
 
-产物在 `dist/desktop-cdn/`：`server-{version}.zip` + `manifest.json`，上传至 CDN。
+macOS 打 `win` 另装链接器（二选一）：
 
-默认 manifest URL 在 `src-tauri/src/manifest.rs` 的 `DEFAULT_MANIFEST_URL`，上线前请修改。
+```bash
+brew install mingw-w64
+# 或
+cargo install cargo-xwin   # 并配置 ~/.cargo/config.toml linker
+```
 
-## 组件来源
+管线与环境变量见 [code/05-桌面打包链路.md](../code/05-桌面打包链路.md)；脚本索引见 [scripts/README.md](scripts/README.md)。
 
-| 组件 | 来源 | 说明 |
-|------|------|------|
-| cmd | 安装包 | php/swoole、uv、ffmpeg → AppData `cmd/` |
-| ui | 安装包 | `admin/dist` → AppData `ui/`（扁平，无 dist 子目录） |
-| tools | 安装包 | `tools/` 源码；模型按需下载 |
-| server | CDN | `fastapp.phar` + `plugin/` |
+## 运行时
 
-用户数据：
+```
+bundled/ui + server/fastapp + cmd + storage(languages,ttc)
+  → seed → AppData
+  → fastapp migrate（若无 fastapp.sqlite）
+  → fastapp start :9501
+  → WebView → AppData/ui/index.html
+```
 
-- macOS：`~/Library/Application Support/FastApp/`
-- Windows：`%APPDATA%/FastApp/`
+AppData `server/storage/`：`languages/`、`ttc/` 由安装包 seed；`fastapp.sqlite` 首次 migrate 生成；`uploads/` 空目录可写。`server/runtime/` 空目录可写（日志、pid 等运行时写入）。
 
-## 硬件检查
+macOS：`~/Library/Application Support/<dataDir>/`；Windows：`%APPDATA%/<dataDir>/`（`<dataDir>` 见 `brand.json`）
 
-启动时 `get_hardware_report` 分层检测 **basic**（编辑器/音频）与 **sdxl**（资产生图），详见 [ARCHITECTURE.md](./ARCHITECTURE.md#硬件检查) 与 [模型选型](../server/plugin/ds/storyStudio/docs/模型选型.md#产品档位)。
+`tools/` 不进安装包。
 
 ## 开发
 
 ```bash
-# 需先 staging（tauri dev 会自动跑 beforeDevCommand）
-cd admin && pnpm build
-
 cd desktop && pnpm install && pnpm tauri dev
 ```
 
-## 相关
-
-- [架构说明](./ARCHITECTURE.md)
-- [manifest schema](../cdn/manifest.schema.json)
-- [根目录 README](../README.md)
+`tauri dev` 启动前同样自动执行 `stage.sh`（含 admin 重建）。

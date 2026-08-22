@@ -1,5 +1,6 @@
 import { h, createApp, ref } from 'vue'
 import ElementPlus, { ElDialog } from 'element-plus'
+import MaVideoPlayer from '@/components/ma-video-player/index.vue'
 
 type Options = {
   title?: string
@@ -51,19 +52,10 @@ export function useVideoViewer(videoUrl: string, options?: Options) {
           borderRadius: '4px',
         },
       }, [
-        h('video', {
+        h(MaVideoPlayer, {
           src: videoUrl,
-          controls: true,
+          height: '70vh',
           autoplay: false,
-          preload: 'metadata',
-          style: {
-            maxWidth: '100%',
-            maxHeight: '80vh',
-            width: 'auto',
-            height: 'auto',
-            outline: 'none',
-            borderRadius: '4px',
-          },
         }),
       ])
 

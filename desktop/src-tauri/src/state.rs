@@ -62,17 +62,23 @@ impl LockFile {
 
 pub fn component_installed(paths: &AppPaths, name: &str) -> bool {
     match name {
-        "cmd" => paths.php_binary().is_file(),
-        "server" => paths.phar_file().is_file() && paths.server.join("plugin").is_dir(),
+        "cmd" => paths.ffmpeg_binary().is_file(),
+        "server" => paths.server_binary().is_file(),
         "ui" => paths.ui_index().is_file(),
         "tools" => paths.tools.join("main.py").is_file(),
         _ => false,
     }
 }
 
+const REQUIRED_COMPONENTS: &[&str] = &["cmd", "server", "ui"];
+
 pub fn refresh_install_flags(paths: &AppPaths, state: &mut AppState) {
-    for c in ["cmd", "server", "ui", "tools"] {
-        state.components.insert(c.into(), component_installed(paths, c));
+    for c in REQUIRED_COMPONENTS {
+        state
+            .components
+            .insert((*c).into(), component_installed(paths, c));
     }
-    state.setup_done = state.components.values().all(|v| *v);
+    state.setup_done = REQUIRED_COMPONENTS
+        .iter()
+        .all(|c| state.components.get(*c).copied().unwrap_or(false));
 }

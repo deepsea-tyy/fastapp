@@ -223,26 +223,36 @@ class Tools
 
     public static function runtime_path(string $path = ''): string
     {
-        return self::phar_path('/runtime/' . ltrim($path, '/'));
+        return self::disk_root() . '/runtime/' . ltrim($path, '/');
     }
 
     public static function storage_path(string $path = ''): string
     {
-        return self::phar_path('/storage/' . ltrim($path, '/'));
+        return self::disk_root() . '/storage/' . ltrim($path, '/');
     }
 
     public static function plugin_path(string $path = ''): string
     {
-        return self::phar_path('/plugin/') . ltrim($path, '/');
+        if (\Phar::running(false)) {
+            return 'phar://' . \Phar::running(false) . '/plugin/' . ltrim($path, '/');
+        }
+
+        return BASE_PATH . '/plugin/' . ltrim($path, '/');
+    }
+
+    /** AppData/server 磁盘根（SFX 同级）；storage/runtime/.env 等可写路径 */
+    public static function disk_root(): string
+    {
+        if ($phar = \Phar::running(false)) {
+            return dirname($phar);
+        }
+
+        return BASE_PATH;
     }
 
     public static function phar_path(string $path = ''): string
     {
-        if ($phar = \Phar::running(false)) {
-            return dirname($phar) . '/' . ltrim($path, '/');
-        }
-
-        return BASE_PATH . '/' . ltrim($path, '/');
+        return self::disk_root() . '/' . ltrim($path, '/');
     }
 
     public static function getJwtKey(?string $secret): InMemory

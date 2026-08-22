@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{copy, Read, Write};
+use std::io::{copy, Read};
 use std::path::Path;
 
 use sha2::{Digest, Sha256};
@@ -31,7 +31,7 @@ pub fn download_and_install(component: &str, paths: &AppPaths) -> Result<(), Str
 
 fn download_file(entry: &PackageEntry, dest: &Path) -> Result<(), String> {
     let mut resp = reqwest::blocking::get(&entry.url).map_err(|e| e.to_string())?;
-    if !resp.status.is_success() {
+    if !resp.status().is_success() {
         return Err(format!("下载失败: {}", resp.status()));
     }
     let mut out = File::create(dest).map_err(|e| e.to_string())?;
@@ -83,11 +83,9 @@ pub fn make_cmd_executable(paths: &AppPaths) {
     {
         use std::os::unix::fs::PermissionsExt;
         for bin in [
-            paths.php_binary(),
-            paths.uv_binary(),
-            paths.cmd.join("ffmpeg"),
+            paths.server_binary(),
+            paths.ffmpeg_binary(),
             paths.cmd.join("ffprobe"),
-            paths.cmd.join("uvx"),
         ] {
             if bin.is_file() {
                 if let Ok(meta) = fs::metadata(&bin) {

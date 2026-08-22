@@ -17,7 +17,7 @@ impl AppPaths {
     pub fn resolve() -> Self {
         let root = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("FastApp");
+            .join(env!("APP_DATA_DIR"));
         Self {
             server: root.join("server"),
             ui: root.join("ui"),
@@ -32,13 +32,10 @@ impl AppPaths {
         for p in [
             &self.root,
             &self.server,
-            self.server.join("storage"),
-            self.server.join("runtime"),
-            self.server.join("plugin"),
+            &self.server.join("storage"),
+            &self.server.join("storage/uploads"),
+            &self.server.join("runtime"),
             &self.ui,
-            &self.tools,
-            self.tools.join("models"),
-            self.tools.join("runtime"),
             &self.cmd,
             &self.logs,
         ] {
@@ -58,23 +55,34 @@ impl AppPaths {
         self.root.join("manifest.json")
     }
 
-    pub fn php_binary(&self) -> PathBuf {
-        let php = self.cmd.join("php");
-        if php.is_file() {
-            return php;
+    pub fn server_binary(&self) -> PathBuf {
+        let bin = self.server.join("fastapp");
+        if bin.is_file() {
+            return bin;
         }
         #[cfg(windows)]
         {
-            let exe = self.cmd.join("php.exe");
+            let exe = self.server.join("fastapp.exe");
             if exe.is_file() {
                 return exe;
             }
         }
-        php
+        bin
     }
 
-    pub fn phar_file(&self) -> PathBuf {
-        self.server.join("fastapp.phar")
+    pub fn ffmpeg_binary(&self) -> PathBuf {
+        let bin = self.cmd.join("ffmpeg");
+        if bin.is_file() {
+            return bin;
+        }
+        #[cfg(windows)]
+        {
+            let exe = self.cmd.join("ffmpeg.exe");
+            if exe.is_file() {
+                return exe;
+            }
+        }
+        bin
     }
 
     pub fn ui_index(&self) -> PathBuf {

@@ -96,7 +96,10 @@ fn probe_nvidia_gpu() -> (Option<String>, Option<f64>) {
         return (None, None);
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    let line = text.lines().next()?.trim();
+    let Some(line) = text.lines().next() else {
+        return (None, None);
+    };
+    let line = line.trim();
     if line.is_empty() {
         return (None, None);
     }

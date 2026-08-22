@@ -136,6 +136,16 @@ final class AttachmentService extends IService
         return $this->repository;
     }
 
+    public function findByHash(string $hash): ?Attachment
+    {
+        $hash = strtolower(trim($hash));
+        if ($hash === '') {
+            return null;
+        }
+
+        return $this->repository->findByHash($hash);
+    }
+
     public function findByAssetTypeAndObjectName(string $assetType, string $objectName): ?Attachment
     {
         $att = $this->repository->findByObjectName($objectName);

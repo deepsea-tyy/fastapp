@@ -5,8 +5,8 @@
   "identifier": "com.fastapp.desktop",
   "build": {
     "frontendDist": "../splash",
-    "beforeBuildCommand": "bash ../../script/desktop-bundle-stage.sh",
-    "beforeDevCommand": "bash ../../script/desktop-bundle-stage.sh"
+    "beforeBuildCommand": "bash scripts/stage.sh",
+    "beforeDevCommand": "bash scripts/stage.sh"
   },
   "app": {
     "withGlobalTauri": true,
@@ -27,9 +27,15 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "app",
+      "dmg"
+    ],
     "resources": {
-      "../bundle/": "bundled/"
+      "../build/server/": "bundled/server/",
+      "../build/ui/": "bundled/ui/",
+      "../build/cmd/": "bundled/cmd/",
+      "../build/storage/": "bundled/storage/"
     },
     "icon": [
       "icons/32x32.png",

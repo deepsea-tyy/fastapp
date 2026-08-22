@@ -73,7 +73,8 @@
     "vue-m-message": "^4.0.2",
     "vue-router": "^4.5.1",
     "vue3-sfc-loader": "^0.9.5",
-    "web-storage-cache": "^1.1.1"
+    "web-storage-cache": "^1.1.1",
+    "xgplayer": "^3.0.26"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.19.0",

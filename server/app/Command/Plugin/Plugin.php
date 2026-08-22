@@ -52,10 +52,9 @@ class Plugin
 
         foreach ($configJsons as $config) {
             $info = self::read($config->getRelativePath());
-            $installLockFile = $config->getPath() . '/' . self::INSTALL_LOCK_FILE;
-            if (\Phar::running(false) && !file_exists($installLockFile)) {
-                $installLockFile = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $config->getRelativePath() . '/' . self::INSTALL_LOCK_FILE);
-            }
+            $installLockFile = Tools::plugin_path(
+                $config->getRelativePath() . '/' . self::INSTALL_LOCK_FILE
+            );
 
             if (file_exists($installLockFile)) {
                 self::loadPlugin($info, $config);
@@ -100,19 +99,13 @@ class Plugin
         $jsonPaths = self::getPluginJsonPaths();
         foreach ($jsonPaths as $jsonPath) {
             if ($jsonPath->getRelativePath() === $path) {
-                $jsonFilePath = $jsonPath->getRealPath();
-                if (\Phar::running(false) && !file_exists($jsonFilePath)) {
-                    $jsonFilePath = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $path . '/config.json');
-                }
+                $jsonFilePath = Tools::plugin_path($path . '/config.json');
                 $jsonContent = @file_get_contents($jsonFilePath);
                 if ($jsonContent === false) {
                     throw new \RuntimeException(\sprintf('Failed to read plugin config file: %s', $jsonFilePath));
                 }
                 $info = self::getPacker()->unpack($jsonContent);
-                $installLockPath = $jsonPath->getPath() . '/' . self::INSTALL_LOCK_FILE;
-                if (\Phar::running(false) && !file_exists($installLockPath)) {
-                    $installLockPath = Tools::phar_path(self::PLUGIN_PREFIX . '/' . $path . '/' . self::INSTALL_LOCK_FILE);
-                }
+                $installLockPath = Tools::plugin_path($path . '/' . self::INSTALL_LOCK_FILE);
                 $info['status'] = is_file($installLockPath);
                 return $info;
             }
