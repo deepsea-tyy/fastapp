@@ -551,7 +551,10 @@ class Plugin
             ->in($dir);
 
         foreach ($finder as $file) {
-            $filePath = $file->getRealPath();
+            $filePath = $file->getPathname();
+            if ($filePath === '') {
+                continue;
+            }
             $className = self::getClassNameFromFile($filePath);
             if (!$className || !class_exists($className)) {
                 continue;

@@ -19,3 +19,4 @@ __pycache__
 chromedriver
 /desktop/src-tauri/gen/
 /desktop/src-tauri/icons/
+/desktop/assets

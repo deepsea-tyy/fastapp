@@ -29,11 +29,11 @@ export default async ({ mode, command }) => {
       port: Number(env.VITE_APP_PORT ?? process.env.port),
     },
     esbuild: {
-      drop: isProduction() ? ['console', 'debugger'] : [],
+      drop: isProduction() && process.env.DESKTOP_STAGE_PROFILE !== 'dev' ? ['console', 'debugger'] : [],
     },
     // 构建选项 https://cn.vite.dev/config/#server-fsserve-root
     build: {
-      outDir: isProduction ? 'dist' : `dist-${mode}`,
+      outDir: isProduction() ? 'dist' : `dist-${mode}`,
       sourcemap: env.VITE_BUILD_SOURCEMAP === 'true',
       minify: 'esbuild',
       rollupOptions: {

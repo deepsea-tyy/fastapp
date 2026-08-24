@@ -24,6 +24,7 @@ import 'virtual:uno.css'
 import 'virtual:svg-icons-register'
 
 // 全局样式
+import '@/assets/styles/resources/fonts.scss'
 import '@/assets/styles/globals.scss'
 // vue-m-message样式
 import 'vue-m-message/dist/style.css'

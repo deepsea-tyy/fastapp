@@ -436,7 +436,7 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 2. **选场景** → `loadSceneDetail`（加载 presentation + speech 子树）
 3. **解析剧情**（可选）→ `chapterPipeline` 写入场景树与对白（**不自动创建** `story_asset`）
 4. **编辑** → `StructureDock`，持久化走 `story/scene/composables/useScenePersist.ts`
-5. **预览** → `WorkspacePane`
+5. **预览** → `EditorDesk`
 
 **公共出口**：外部模块从 `story/index.ts` 或 `story/model/types.ts` 导入 `StorySceneRow`、`ScenePresentationHost` 等类型。
 

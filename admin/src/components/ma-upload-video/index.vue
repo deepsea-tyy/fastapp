@@ -44,7 +44,7 @@ import { uid } from 'radash'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { uploadLocal } from '@/utils/uploadLocal.ts'
 import { chunkUpload, shouldUseChunkUpload, type ChunkUploadOptions } from '@/utils/chunkUpload.ts'
-import { formatImagePath } from '@/utils/common.ts'
+import { formatFileUrl } from '@/utils/common.ts'
 import MaVideoPlayer from '@/components/ma-video-player/index.vue'
 
 defineOptions({ name: 'MaUploadVideo' })
@@ -225,7 +225,7 @@ function handleRemove() {
 // 获取显示用的视频URL
 const displayVideoUrl = computed(() => {
   const url = fileList.value[0]?.url
-  return url ? formatImagePath(url) : null
+  return url ? formatFileUrl(url) : null
 })
 
 watch(

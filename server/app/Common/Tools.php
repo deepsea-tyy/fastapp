@@ -240,7 +240,7 @@ class Tools
         return BASE_PATH . '/plugin/' . ltrim($path, '/');
     }
 
-    /** AppData/server 磁盘根（SFX 同级）；storage/runtime/.env 等可写路径 */
+    /** AppData 根（SFX 同级）；storage/runtime/.env 等可写路径 */
     public static function disk_root(): string
     {
         if ($phar = \Phar::running(false)) {
@@ -248,6 +248,46 @@ class Tools
         }
 
         return BASE_PATH;
+    }
+
+    /** 桌面 SFX 运行时（fastapp phar） */
+    public static function is_desktop_runtime(): bool
+    {
+        return (bool) \Phar::running(false);
+    }
+
+    /** bundled admin UI：{disk_root}/ui/index.html */
+    public static function ui_index_path(): ?string
+    {
+        $path = self::disk_root() . '/ui/index.html';
+
+        return is_file($path) ? $path : null;
+    }
+
+    /** admin UI 字体：{disk_root}/ui/font/alibaba-pu-hui-ti-3/ */
+    public static function app_font_path(string $locale = 'sc'): ?string
+    {
+        $locale = in_array($locale, ['sc', 'tc', 'jp', 'kr'], true) ? $locale : 'sc';
+        $file = "{$locale}-regular.otf";
+        $ui = self::ui_index_path();
+        if (! $ui) {
+            return null;
+        }
+        $path = dirname($ui) . '/font/alibaba-pu-hui-ti-3/' . $file;
+
+        return is_file($path) ? $path : null;
+    }
+
+    public static function app_font_locale_for_user(int $userId): string
+    {
+        $lang = strtolower(str_replace('-', '_', self::lang($userId)));
+
+        return match (true) {
+            str_starts_with($lang, 'zh_tw'), str_starts_with($lang, 'zh_hk'), $lang === 'zh_hant' => 'tc',
+            str_starts_with($lang, 'ja') => 'jp',
+            str_starts_with($lang, 'ko') => 'kr',
+            default => 'sc',
+        };
     }
 
     public static function phar_path(string $path = ''): string

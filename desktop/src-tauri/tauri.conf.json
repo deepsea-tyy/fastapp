@@ -1,28 +1,27 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "FastApp",
+  "productName": "StoryStudio",
   "version": "1.0.0",
-  "identifier": "com.fastapp.desktop",
+  "identifier": "com.storyStudio.desktop",
   "build": {
-    "frontendDist": "../splash",
-    "beforeBuildCommand": "bash scripts/stage.sh",
-    "beforeDevCommand": "bash scripts/stage.sh"
+    "frontendDist": "../splash"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "FastApp",
+        "title": "StoryStudio",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
         "minHeight": 600,
         "resizable": true,
-        "backgroundColor": "#0f1117"
+        "backgroundColor": "#0f1117",
+        "dragDropEnabled": false
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:* ws://127.0.0.1:* asset: https://asset.localhost; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https: asset: https://asset.localhost ipc: http://ipc.localhost"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:* ws://127.0.0.1:*; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https: ipc: http://ipc.localhost"
     }
   },
   "bundle": {
@@ -32,17 +31,26 @@
       "dmg"
     ],
     "resources": {
-      "../build/server/": "bundled/server/",
-      "../build/ui/": "bundled/ui/",
-      "../build/cmd/": "bundled/cmd/",
-      "../build/storage/": "bundled/storage/"
+      "../build/macArm/fastapp": "bundled/fastapp",
+      "../build/macArm/ui/": "bundled/ui/",
+      "../build/macArm/cmd/": "bundled/cmd/",
+      "../build/macArm/storage/": "bundled/storage/"
     },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.png"
+      "icons/icon.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
     ]
   },
-  "plugins": {}
+  "plugins": {
+    "desktop": {
+      "dataDir": "StoryStudio",
+      "logo": "assets/logo.png",
+      "appPort": 8501,
+      "appWsPort": 8502
+    }
+  }
 }

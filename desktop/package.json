@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "tauri": "bash scripts/tauri.sh",
-    "tauri:dev": "tauri dev",
-    "build:server": "bash scripts/desktop.sh stage"
+    "dev": "bash scripts/tauri.sh dev",
+    "build": "bash scripts/tauri.sh build",
+    "tauri": "bash scripts/tauri.sh"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.2.7"

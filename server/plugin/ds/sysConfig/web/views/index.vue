@@ -30,7 +30,6 @@ const maDialog: UseDialogExpose = useDialog({
   width: '40%',
   // 保存数据
   ok: ({ formType }, okLoadingState: (state: boolean) => void) => {
-    console.log(formType)
     okLoadingState(true)
     if (['add', 'edit'].includes(formType)) {
       const elForm = formRef.value.maForm.getElFormRef()

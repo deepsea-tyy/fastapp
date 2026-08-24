@@ -14,7 +14,7 @@ import type { UploadUserFile } from 'element-plus'
 import { isArray, uid } from 'radash'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { uploadLocal } from '@/utils/uploadLocal.ts'
-import {formatImagePath} from "@/utils/common.ts";
+import {formatFileUrl} from "@/utils/common.ts";
 
 defineOptions({ name: 'MaUploadFile' })
 
@@ -54,7 +54,7 @@ function updateModelValue() {
 function handleSuccess(res: any) {
   const index = fileList.value.findIndex((item: any) => item.response?.data.id === res.data.id)
   fileList.value[index].name = res.data.origin_name
-  fileList.value[index].url = formatImagePath(res.data.url)
+  fileList.value[index].url = formatFileUrl(res.data.url)
 
   updateModelValue()
 }

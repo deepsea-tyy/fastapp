@@ -64,7 +64,7 @@ import UcContainer from './components/container.vue'
 import UcModifyInfo from './components/modify-info.vue'
 import UcTitle from './components/title.vue'
 import {useMessage} from '@/hooks/useMessage.ts'
-import {formatImagePath, processUrl} from "@/utils/common.ts";
+import {formatFileUrl, parseFilePath} from "@/utils/common.ts";
 
 const modalRef = ref()
 const selected = ref('profile')
@@ -81,7 +81,7 @@ const form = reactive({
   multiDeviceLogin: false,
 })
 
-const avatar = ref<string>(formatImagePath(userStore.getUserInfo().avatar))
+const avatar = ref<string>(formatFileUrl(userStore.getUserInfo().avatar))
 const globalTrans = useTrans().globalTrans
 
 const showFields = reactive({
@@ -95,7 +95,7 @@ const showFields = reactive({
 })
 
 watch(avatar, async (val: string | undefined) => {
-  const response: any = await useHttp().post('/admin/permission/update', {avatar: processUrl(val) ?? ''})
+  const response: any = await useHttp().post('/admin/permission/update', {avatar: parseFilePath(val) ?? ''})
   if (response.code === 200) {
     msg.success(globalTrans('crud.success'))
     userStore.getUserInfo().avatar = val ?? ''

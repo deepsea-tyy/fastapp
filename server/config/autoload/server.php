@@ -2,12 +2,39 @@
 
 declare(strict_types=1);
 
+use App\Common\Tools;
 use Hyperf\Framework\Bootstrap\PipeMessageCallback;
 use Hyperf\Framework\Bootstrap\WorkerExitCallback;
 use Hyperf\Framework\Bootstrap\WorkerStartCallback;
 use Hyperf\Server\Event;
 use Hyperf\Server\Server;
 use Swoole\Constant;
+
+$settings = [
+    // 开启外部可以访问
+    Constant::OPTION_ENABLE_STATIC_HANDLER => true,
+    Constant::OPTION_ENABLE_COROUTINE => true,
+    Constant::OPTION_WORKER_NUM => env('APP_DEBUG') ? 1 : swoole_cpu_num(),
+    Constant::OPTION_PID_FILE => \App\Common\Tools::runtime_path('hyperf.pid'),
+    Constant::OPTION_OPEN_TCP_NODELAY => true,
+    Constant::OPTION_MAX_COROUTINE => 100000,
+    Constant::OPTION_OPEN_HTTP2_PROTOCOL => true,
+    Constant::OPTION_MAX_REQUEST => 100000,
+    Constant::OPTION_UPLOAD_MAX_FILESIZE => 10 * 1024 * 1024,
+    Constant::OPTION_HTTP_INDEX_FILES => ['index.html'],
+    Constant::OPTION_SOCKET_BUFFER_SIZE => 3 * 1024 * 1024,
+    Constant::OPTION_PACKAGE_MAX_LENGTH => 16 * 1024 * 1024, // 上传最大为16M
+    Constant::OPTION_TASK_WORKER_NUM => env('APP_DEBUG') ? 1 : swoole_cpu_num(),
+    Constant::OPTION_TASK_ENABLE_COROUTINE => false,
+    // 禁用 HTTP 压缩,避免 Accept-Encoding 引起的 Content-Length 警告和卡顿
+    // API 响应通常为小数据量的 JSON,不需要压缩
+    Constant::OPTION_HTTP_COMPRESSION => false,
+    Constant::OPTION_HTTP_COMPRESSION_LEVEL => 0,
+];
+
+if ($uiIndex = Tools::ui_index_path()) {
+    $settings[Constant::OPTION_DOCUMENT_ROOT] = dirname($uiIndex);
+}
 
 return [
     'mode' => \SWOOLE_PROCESS,
@@ -16,7 +43,7 @@ return [
             'name' => 'http',
             'type' => Server::SERVER_HTTP,
             'host' => '0.0.0.0',
-            'port' => (int)env('APP_PORT'),
+            'port' => (int) env('APP_PORT'),
             'sock_type' => \SWOOLE_SOCK_TCP,
             'callbacks' => [
                 Event::ON_REQUEST => [Hyperf\HttpServer\Server::class, 'onRequest'],
@@ -26,7 +53,7 @@ return [
             'name' => 'ws',
             'type' => Server::SERVER_WEBSOCKET,
             'host' => '0.0.0.0',
-            'port' => (int)env('APP_WS_PORT', 9502),
+            'port' => (int) env('APP_WS_PORT', 9502),
             'sock_type' => \SWOOLE_SOCK_TCP,
             'callbacks' => [
                 Event::ON_HAND_SHAKE => [Hyperf\WebSocketServer\Server::class, 'onHandShake'],
@@ -39,27 +66,7 @@ return [
             ],
         ],
     ],
-    'settings' => [
-        // 开启外部可以访问
-        Constant::OPTION_ENABLE_STATIC_HANDLER => true,
-        Constant::OPTION_ENABLE_COROUTINE => true,
-        Constant::OPTION_WORKER_NUM => env('APP_DEBUG') ? 1 : swoole_cpu_num(),
-        Constant::OPTION_PID_FILE => \App\Common\Tools::runtime_path('hyperf.pid') ,
-        Constant::OPTION_OPEN_TCP_NODELAY => true,
-        Constant::OPTION_MAX_COROUTINE => 100000,
-        Constant::OPTION_OPEN_HTTP2_PROTOCOL => true,
-        Constant::OPTION_MAX_REQUEST => 100000,
-        Constant::OPTION_UPLOAD_MAX_FILESIZE => 10 * 1024 * 1024,
-        Constant::OPTION_HTTP_INDEX_FILES => ['index.html'],
-        Constant::OPTION_SOCKET_BUFFER_SIZE => 3 * 1024 * 1024,
-        Constant::OPTION_PACKAGE_MAX_LENGTH => 16 * 1024 * 1024,// 上传最大为16M
-        Constant::OPTION_TASK_WORKER_NUM => env('APP_DEBUG') ? 1 : swoole_cpu_num(),
-        Constant::OPTION_TASK_ENABLE_COROUTINE => false,
-        // 禁用 HTTP 压缩,避免 Accept-Encoding 引起的 Content-Length 警告和卡顿
-        // API 响应通常为小数据量的 JSON,不需要压缩
-        Constant::OPTION_HTTP_COMPRESSION => false,
-        Constant::OPTION_HTTP_COMPRESSION_LEVEL => 0,
-    ],
+    'settings' => $settings,
     'callbacks' => [
         Event::ON_WORKER_START => [WorkerStartCallback::class, 'onWorkerStart'],
         Event::ON_PIPE_MESSAGE => [PipeMessageCallback::class, 'onPipeMessage'],

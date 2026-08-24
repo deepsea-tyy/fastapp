@@ -11,7 +11,6 @@ fastapp/
 ├── admin/           # 后台管理系统前端（Vue3 + TypeScript + Element Plus）
 ├── website/         # 企业官网（Nuxt.js 4.2）
 ├── tools/           # 本地 AI 推理服务（uv + Python）
-├── cdn/             # 桌面端 manifest schema / 示例
 ├── script/          # 通用脚本（桌面构建见 desktop/scripts/）
 ├── code/            # 代码知识库（见 CODE_WIKI.md）
 └── docs/            # 项目文档
@@ -105,7 +104,7 @@ cd admin && pnpm install && pnpm dev
 需 [Tauri 系统依赖](https://tauri.app/start/prerequisites/)。
 
 ```bash
-cd desktop && pnpm install && pnpm tauri dev
+cd desktop && pnpm install && pnpm dev
 ```
 
 ### 官网

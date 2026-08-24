@@ -15,7 +15,7 @@ import 'tinymce/themes/silver'
 import 'tinymce/icons/default'
 
 import pluginList from './tinymce/pluginList.ts'
-import {formatImagePath} from "@/utils/common.ts";
+import {formatFileUrl} from "@/utils/common.ts";
 
 defineOptions({name: 'MaEditor'})
 const settingStore = useSettingStore()
@@ -83,7 +83,7 @@ const initConfig = reactive({
 
       if (!result || result.code !== 200) throw new Error('上传错误')
 
-      const url = formatImagePath(result.data?.url)
+      const url = formatFileUrl(result.data?.url)
       success(url)
       return url
     } catch (error) {
@@ -110,7 +110,7 @@ function handleResourceConfirm(resources: any[]) {
 
   let mediaContent = ''
   resources.forEach(resource => {
-    const url = formatImagePath(resource.url || resource)
+    const url = formatFileUrl(resource.url || resource)
     if (typeof url === 'string') {
       // 图片文件
       if (url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.bmp') ||

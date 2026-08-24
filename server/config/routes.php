@@ -2,10 +2,20 @@
 
 declare(strict_types=1);
 
+use App\Common\Tools;
+use Hyperf\HttpMessage\Stream\SwooleStream;
+use Hyperf\HttpServer\Response;
 use Hyperf\HttpServer\Router\Router;
 
 Router::get('/', static function () {
-    return 'welcome use fastapp';
+    $index = Tools::ui_index_path();
+    if ($index === null) {
+        return 'welcome use fastapp';
+    }
+
+    return (new Response())
+        ->withHeader('Content-Type', 'text/html; charset=utf-8')
+        ->withBody(new SwooleStream((string) file_get_contents($index)));
 });
 
 Router::get('/favicon.ico', static function () {

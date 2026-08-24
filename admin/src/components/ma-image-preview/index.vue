@@ -36,7 +36,7 @@ zh_TW:
       <slot name="trigger">
         <div class="default-trigger">
           <img
-            :src="formatImagePath(images[currentIndex])"
+            :src="formatFileUrl(images[currentIndex])"
             :key="currentIndex"
             class="trigger-image"
             @error="handleTriggerImageError"
@@ -140,7 +140,7 @@ zh_TW:
           @click="switchToImage(index)"
         >
           <img
-            :src="formatImagePath(image)"
+            :src="formatFileUrl(image)"
             class="thumbnail-image"
             @error="handleThumbnailError"
           />
@@ -182,7 +182,7 @@ zh_TW:
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
-import { formatImagePath } from "@/utils/common.ts"
+import { formatFileUrl } from "@/utils/common.ts"
 import {
   Picture,
   CopyDocument,
@@ -231,13 +231,13 @@ const images = computed(() => {
 
 // 可预览的图片URL列表
 const previewableImages = computed(() => {
-  return images.value.map(img => formatImagePath(img))
+  return images.value.map(img => formatFileUrl(img))
 })
 
 // 当前显示的图片URL
 const currentImageUrl = computed(() => {
   if (images.value.length === 0) return ''
-  return formatImagePath(images.value[currentIndex.value])
+  return formatFileUrl(images.value[currentIndex.value])
 })
 
 // 预览标题
@@ -382,7 +382,7 @@ watch(currentIndex, () => {
   // 强制更新触发区域的图片
   const triggerImage = document.querySelector('.trigger-image') as HTMLImageElement
   if (triggerImage && images.value.length > 0) {
-    triggerImage.src = formatImagePath(images.value[currentIndex.value])
+    triggerImage.src = formatFileUrl(images.value[currentIndex.value])
   }
 })
 
