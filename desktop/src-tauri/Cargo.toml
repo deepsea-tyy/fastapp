@@ -1,5 +1,5 @@
 [package]
-name = "fastapp-desktop"
+name = "storystudio"
 version = "1.0.0"
 description = "Tauri desktop shell"
 authors = ["deepsea"]
@@ -8,6 +8,10 @@ edition = "2021"
 [lib]
 name = "fastapp_desktop_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "StoryStudio"
+path = "src/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

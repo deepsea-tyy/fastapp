@@ -6,7 +6,7 @@ const buildRoot = process.env.DESKTOP_BUILD_REL;
 const platform = process.env.DESKTOP_PKG_PLATFORM;
 const appPort = parseInt(process.env.DESKTOP_APP_PORT, 10);
 const appWsPort = parseInt(process.env.DESKTOP_APP_WS_PORT, 10);
-const bundleTargetsRaw = process.env.DESKTOP_BUNDLE_TARGETS;
+const bundleTargetsRaw = process.env.DESKTOP_TAURI_BUNDLES;
 const iconPathsRaw = process.env.DESKTOP_ICON_PATHS;
 
 if (!Number.isFinite(appPort) || !Number.isFinite(appWsPort)) {
@@ -14,11 +14,14 @@ if (!Number.isFinite(appPort) || !Number.isFinite(appWsPort)) {
   process.exit(1);
 }
 
-let bundleTargets;
-try {
-  bundleTargets = JSON.parse(bundleTargetsRaw);
-} catch {
-  console.error('DESKTOP_BUNDLE_TARGETS 无效');
+if (!bundleTargetsRaw) {
+  console.error('DESKTOP_TAURI_BUNDLES 无效');
+  process.exit(1);
+}
+
+const bundleTargets = bundleTargetsRaw.split(',').map((s) => s.trim()).filter(Boolean);
+if (bundleTargets.length === 0) {
+  console.error('DESKTOP_TAURI_BUNDLES 无效');
   process.exit(1);
 }
 
@@ -58,6 +61,13 @@ tauriConf.plugins.desktop = {
 };
 
 const name = tauriConf.productName;
+const mainBinaryName = name.replace(/\s+/g, '');
+if (!mainBinaryName || /[/\\:*?"<>|]/.test(mainBinaryName)) {
+  console.error('productName 无法派生合法 mainBinaryName: ' + name);
+  process.exit(1);
+}
+tauriConf.mainBinaryName = mainBinaryName;
+
 if (tauriConf.app?.windows?.[0]) {
   tauriConf.app.windows[0].title = name;
 }
@@ -84,7 +94,15 @@ splash = splash.replace(/<title>[^<]*<\/title>/, `<title>${name}</title>`);
 splash = splash.replace(/<h1>[^<]*<\/h1>/, `<h1>${name}</h1>`);
 fs.writeFileSync(splashPath, splash);
 
+const brandingDir = path.join(desktopRoot, '.work');
+fs.mkdirSync(brandingDir, { recursive: true });
+const brandingPath = path.join(brandingDir, 'branding.env');
+fs.writeFileSync(
+  brandingPath,
+  [`PRODUCT_NAME=${name}`, `LOGO_REL=${desktop.logo}`].join('\n') + '\n',
+);
+
 console.error(
-  `tauri.conf synced: productName=${name} dataDir=${desktop.dataDir} appPort=${appPort} appWsPort=${appWsPort}`,
+  `tauri.conf synced: productName=${name} mainBinaryName=${mainBinaryName} dataDir=${desktop.dataDir} appPort=${appPort} appWsPort=${appWsPort}`,
 );
 console.log(desktop.logo);

@@ -20,7 +20,7 @@ desktop_sync_tauri_conf() {
 
   stage_lib_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   export DESKTOP_ROOT DESKTOP_PKG_PLATFORM DESKTOP_BUILD_REL \
-    DESKTOP_APP_PORT DESKTOP_APP_WS_PORT DESKTOP_BUNDLE_TARGETS DESKTOP_ICON_PATHS
+    DESKTOP_APP_PORT DESKTOP_APP_WS_PORT DESKTOP_TAURI_BUNDLES DESKTOP_ICON_PATHS
   node "$stage_lib_dir/sync-tauri-conf.mjs"
 }
 

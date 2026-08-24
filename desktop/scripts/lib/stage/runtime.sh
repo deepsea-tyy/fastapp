@@ -1,5 +1,13 @@
 # swoole-cli + phar → 单文件 fastapp（build 根目录）
 
+_runtime_lib_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=../vendor/ffmpeg.sh
+source "$_runtime_lib_dir/../vendor/ffmpeg.sh"
+# shellcheck source=../vendor/swoole-cli.sh
+source "$_runtime_lib_dir/../vendor/swoole-cli.sh"
+# shellcheck source=phar.sh
+source "$_runtime_lib_dir/phar.sh"
+
 desktop_build_sfx() {
   local bundle swoole_cli pack_sfx sfx_target
 

@@ -8,6 +8,7 @@
 
 namespace App\Websocket;
 
+use App\Command\Plugin\Plugin;
 use App\Common\Jwt\JwtFactory;
 use App\Common\Tools;
 use App\Websocket\Event\WsCloseEvent;
@@ -18,10 +19,9 @@ use Hyperf\Contract\OnMessageInterface;
 use Hyperf\Contract\OnOpenInterface;
 use Hyperf\WebSocketServer\Sender;
 use Lcobucci\JWT\Token\RegisteredClaims;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use ReflectionClass;
 use Swoole\Coroutine;
+use Symfony\Component\Finder\Finder;
 
 /**
  * WebSocket 控制器
@@ -52,12 +52,142 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
      */
     private static array $lockValues = [];
 
+    private static bool $handlersRegistered = false;
+
     public function __construct(
         protected Sender     $sender,
         protected JwtFactory $jwtFactory,
     )
     {
-        $this->registerPluginHandlers();
+        self::ensureHandlersRegistered();
+    }
+
+    // -------------------------------------------------------------------------
+    // Handler 加载与注册（构造时一次性执行）
+    // -------------------------------------------------------------------------
+
+    private static function ensureHandlersRegistered(): void
+    {
+        if (self::$handlersRegistered) {
+            return;
+        }
+
+        foreach (Plugin::getPluginJsonPaths() as $config) {
+            $relative = $config->getRelativePath();
+            $installLock = Tools::plugin_path($relative . '/' . Plugin::INSTALL_LOCK_FILE);
+            if (!is_file($installLock)) {
+                continue;
+            }
+
+            $websocketDir = Tools::plugin_path($relative . '/src/WebSocket');
+            if (!is_dir($websocketDir)) {
+                continue;
+            }
+
+            self::registerHandlersInDirectory($websocketDir);
+        }
+
+        self::$handlersRegistered = true;
+    }
+
+    private static function registerHandlersInDirectory(string $websocketDir): void
+    {
+        $finder = Finder::create()
+            ->files()
+            ->name('*.php')
+            ->depth('== 0')
+            ->in($websocketDir);
+
+        foreach ($finder as $file) {
+            self::registerHandlerFile($file->getPathname());
+        }
+    }
+
+    private static function registerHandlerFile(string $file): void
+    {
+        $className = self::resolveClassNameFromFile($file);
+        if ($className === null) {
+            return;
+        }
+
+        try {
+            $handler = self::resolveHandlerInstance($className);
+            if ($handler === null) {
+                return;
+            }
+
+            self::bindActionMap(self::$actionHandle, $handler->getActions(), $handler, $className, false);
+            self::bindActionMap(self::$visitorActionHandle, $handler->getVisitorActions(), $handler, $className, true);
+        } catch (\Throwable $e) {
+            Tools::console("[websocket] Failed to register handler from {$file}: {$e->getMessage()}");
+        }
+    }
+
+    private static function resolveHandlerInstance(string $className): ?WsMessageHandlerInterface
+    {
+        if (!class_exists($className)) {
+            return null;
+        }
+
+        $reflection = new ReflectionClass($className);
+        if (!$reflection->implementsInterface(WsMessageHandlerInterface::class)) {
+            return null;
+        }
+
+        $instance = \Hyperf\Support\make($className);
+
+        return $instance instanceof WsMessageHandlerInterface ? $instance : null;
+    }
+
+    /**
+     * @param array<string, array{callable: callable, class: string}> $registry
+     * @param array<string, string> $actions
+     */
+    private static function bindActionMap(
+        array &$registry,
+        array $actions,
+        WsMessageHandlerInterface $handler,
+        string $className,
+        bool $visitor,
+    ): void {
+        foreach ($actions as $actionName => $method) {
+            if (!method_exists($handler, $method)) {
+                continue;
+            }
+
+            if ($visitor && !str_starts_with($actionName, 'visitor.')) {
+                Tools::console("Visitor action {$actionName} in {$className} must start with 'visitor.', skipping");
+                continue;
+            }
+
+            if (isset($registry[$actionName])) {
+                $label = $visitor ? 'Visitor action' : 'Action';
+                Tools::console("{$label} {$actionName} is already registered by {$registry[$actionName]['class']}, will be overridden by {$className}");
+            }
+
+            $registry[$actionName] = [
+                'callable' => [$handler, $method],
+                'class' => $className,
+            ];
+        }
+    }
+
+    private static function resolveClassNameFromFile(string $file): ?string
+    {
+        $content = file_get_contents($file);
+        if (!$content) {
+            return null;
+        }
+
+        if (!preg_match('/namespace\s+([^;]+);/', $content, $namespaceMatch)) {
+            return null;
+        }
+
+        if (!preg_match('/class\s+(\w+)/', $content, $classMatch)) {
+            return null;
+        }
+
+        return trim($namespaceMatch[1]) . '\\' . $classMatch[1];
     }
 
     private function acquireLock(int $fd): bool
@@ -315,133 +445,6 @@ class WsController implements OnMessageInterface, OnOpenInterface, OnCloseInterf
             );
             return WsResponse::error('Internal error');
         }
-    }
-
-    /**
-     * 扫描并注册所有插件的WebSocket消息处理器
-     */
-    private function registerPluginHandlers(): void
-    {
-        $pluginDir = rtrim(Tools::plugin_path(), '/');
-        if (!is_dir($pluginDir)) {
-            return;
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($pluginDir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getFilename() === 'config.json') {
-                $pluginPath = $file->getPath();
-                $installLockFile = $pluginPath . '/install.lock';
-                if (!file_exists($installLockFile)) {
-                    continue;
-                }
-
-                $websocketDir = $pluginPath . '/src/WebSocket';
-                if (!is_dir($websocketDir)) {
-                    continue;
-                }
-
-                $this->scanWebSocketHandlers($websocketDir);
-            }
-        }
-    }
-
-    /**
-     * 扫描WebSocket目录下的处理器类
-     */
-    private function scanWebSocketHandlers(string $websocketDir): void
-    {
-        $files = glob($websocketDir . '/*.php');
-        foreach ($files as $file) {
-            $className = $this->getClassNameFromFile($file);
-            if (!$className) {
-                continue;
-            }
-
-            try {
-                if (!class_exists($className)) {
-                    continue;
-                }
-
-                $reflection = new ReflectionClass($className);
-                if (!$reflection->implementsInterface(WsMessageHandlerInterface::class)) {
-                    continue;
-                }
-
-                $instance = \Hyperf\Support\make($className);
-                if (!$instance instanceof WsMessageHandlerInterface) {
-                    continue;
-                }
-
-                // 注册需要认证的 actions
-                $actions = $instance->getActions();
-                foreach ($actions as $actionName => $method) {
-                    if (!method_exists($instance, $method)) {
-                        continue;
-                    }
-                    if (isset(self::$actionHandle[$actionName])) {
-                        Tools::console("Action {$actionName} is already registered by " . self::$actionHandle[$actionName]['class'] . ", will be overridden by {$className}");
-                    }
-
-                    self::$actionHandle[$actionName] = [
-                        'callable' => [$instance, $method],
-                        'class' => $className,
-                    ];
-                }
-
-                // 注册访客模式 actions
-                $visitorActions = $instance->getVisitorActions();
-                foreach ($visitorActions as $actionName => $method) {
-                    if (!method_exists($instance, $method)) {
-                        continue;
-                    }
-
-                    // 确保 action 以 'visitor.' 开头
-                    if (!str_starts_with($actionName, 'visitor.')) {
-                        Tools::console("Visitor action {$actionName} in {$className} must start with 'visitor.', skipping");
-                        continue;
-                    }
-
-                    if (isset(self::$visitorActionHandle[$actionName])) {
-                        Tools::console("Visitor action {$actionName} is already registered by " . self::$visitorActionHandle[$actionName]['class'] . ", will be overridden by {$className}");
-                    }
-
-                    self::$visitorActionHandle[$actionName] = [
-                        'callable' => [$instance, $method],
-                        'class' => $className,
-                    ];
-                }
-            } catch (\Throwable) {
-            }
-        }
-    }
-
-    /**
-     * 从PHP文件中提取类名
-     */
-    private function getClassNameFromFile(string $file): ?string
-    {
-        $content = file_get_contents($file);
-        if (!$content) {
-            return null;
-        }
-
-        if (!preg_match('/namespace\s+([^;]+);/', $content, $namespaceMatch)) {
-            return null;
-        }
-
-        if (!preg_match('/class\s+(\w+)/', $content, $classMatch)) {
-            return null;
-        }
-
-        $namespace = trim($namespaceMatch[1]);
-        $className = $classMatch[1];
-
-        return $namespace . '\\' . $className;
     }
 
     private function sendResponse(int $fd, WsResponse $response): void

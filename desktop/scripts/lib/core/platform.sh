@@ -61,21 +61,18 @@ desktop_init_stage() {
       DESKTOP_STAGE_ARCH=arm64
       DESKTOP_RUST_TARGET=aarch64-apple-darwin
       DESKTOP_TAURI_BUNDLES=app,dmg
-      DESKTOP_BUNDLE_TARGETS='["app","dmg"]'
       ;;
     macIntel)
       DESKTOP_STAGE_OS=Darwin
       DESKTOP_STAGE_ARCH=x86_64
       DESKTOP_RUST_TARGET=x86_64-apple-darwin
       DESKTOP_TAURI_BUNDLES=app,dmg
-      DESKTOP_BUNDLE_TARGETS='["app","dmg"]'
       ;;
     win)
       DESKTOP_STAGE_OS=Windows
       DESKTOP_STAGE_ARCH=x86_64
       DESKTOP_RUST_TARGET=x86_64-pc-windows-msvc
       DESKTOP_TAURI_BUNDLES=nsis
-      DESKTOP_BUNDLE_TARGETS='["nsis"]'
       ;;
   esac
 
@@ -84,7 +81,7 @@ desktop_init_stage() {
     icon_paths+=("icons/$f")
   done
   DESKTOP_ICON_PATHS=$(IFS=,; echo "${icon_paths[*]}")
-  export DESKTOP_TAURI_BUNDLES DESKTOP_BUNDLE_TARGETS DESKTOP_ICON_PATHS
+  export DESKTOP_TAURI_BUNDLES DESKTOP_ICON_PATHS
 }
 
 desktop_stage_is_windows() {

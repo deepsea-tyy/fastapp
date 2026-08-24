@@ -1,7 +1,8 @@
 
 import '@/layouts/style/logo.scss'
 import type { SystemSettings } from '#/global'
-import LogoSvg from '/logo.svg'
+
+const appLogo = import.meta.env.VITE_APP_LOGO ?? '/logo.svg'
 
 export default defineComponent({
   name: 'Logo',
@@ -17,7 +18,7 @@ export default defineComponent({
       return (
         <router-link to={settings.path} class={['mine-main-logo', 'cursor-pointer']} title={title}>
           {props.showLogo && (
-            <img src={LogoSvg} alt={title} class="mine-logo-img" />
+            <img src={appLogo} alt={title} class="mine-logo-img" />
           )}
           {props.showTitle && (
             <span class="mine-logo-title">{title}</span>

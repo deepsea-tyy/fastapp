@@ -1,12 +1,5 @@
 # dev/build profile + DESKTOP_FORCE 统一强制重建门控。
 
-desktop_stage_is_dev() {
-  case "${DESKTOP_STAGE_PROFILE:-build}" in
-    dev) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 desktop_force_stage() {
   desktop_env_truthy "${DESKTOP_FORCE:-0}"
 }

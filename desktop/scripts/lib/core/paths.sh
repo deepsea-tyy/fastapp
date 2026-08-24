@@ -21,6 +21,8 @@ desktop_init() {
   DESKTOP_BUILD_REL="../build/$DESKTOP_PKG_PLATFORM/"
 
   DESKTOP_WORK_DIR="$DESKTOP_BUILD_DIR/.work"
+  # 跨 stage clean 持久；与 build/<platform>/.work/（phar 等临时产物）分离
+  DESKTOP_BRANDING_ENV="$DESKTOP_ROOT/.work/branding.env"
   DESKTOP_PHAR="$DESKTOP_WORK_DIR/fastapp.phar"
   DESKTOP_PHAR_SRC="$DESKTOP_WORK_DIR/server-phar-src"
   DESKTOP_UI_DIR="$DESKTOP_BUILD_DIR/ui"
@@ -28,37 +30,8 @@ desktop_init() {
   DESKTOP_STORAGE_STAGE="$DESKTOP_BUILD_DIR/storage"
 }
 
-desktop_bundle_dir() {
+desktop_tauri_output_dir() {
   echo "$DESKTOP_ROOT/src-tauri/target/$DESKTOP_RUST_TARGET/release/bundle"
-}
-
-desktop_clean_build_artifacts() {
-  local scope="${1:-all}"
-  local build_root rust_target_root legacy_bundle
-
-  build_root="$DESKTOP_ROOT/build"
-  rust_target_root="$DESKTOP_ROOT/src-tauri/target"
-  legacy_bundle="$DESKTOP_ROOT/bundle"
-
-  echo "==> clean admin dist: $DESKTOP_ADMIN_DIST"
-  rm -rf "$DESKTOP_ADMIN_DIST"
-
-  if [ "$scope" = "stage" ]; then
-    echo "==> clean stage build: $DESKTOP_BUILD_DIR"
-    rm -rf "$DESKTOP_BUILD_DIR"
-    return 0
-  fi
-
-  if [ -d "$legacy_bundle" ]; then
-    echo "==> clean legacy bundle: $legacy_bundle"
-    rm -rf "$legacy_bundle"
-  fi
-
-  echo "==> clean build: $build_root"
-  rm -rf "$build_root"
-
-  echo "==> clean rust target + bundle: $rust_target_root"
-  rm -rf "$rust_target_root"
 }
 
 desktop_env_truthy() {
@@ -75,7 +48,7 @@ desktop_open_after_build() {
 desktop_open_bundle_artifact() {
   local bundle_dir artifact
 
-  bundle_dir=$(desktop_bundle_dir)
+  bundle_dir=$(desktop_tauri_output_dir)
   case "$DESKTOP_PKG_PLATFORM" in
     macArm | macIntel)
       shopt -s nullglob

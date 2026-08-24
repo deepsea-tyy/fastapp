@@ -2,6 +2,7 @@
 export default defineComponent({
   name: 'notification',
   setup() {
+    const appLogo = import.meta.env.VITE_APP_LOGO ?? '/logo.svg'
     const selected = ref<string>('message')
     return () => (
       <div class="hidden lg:block">
@@ -36,7 +37,7 @@ export default defineComponent({
                       {Array.from({ length: 10 }).map(_ => (
                         <li>
                           <div class="w-2/12 flex items-start justify-center">
-                            <img src="/logo.svg" class="h-8 w-8 rounded-full" />
+                            <img src={appLogo} class="h-8 w-8 rounded-full" />
                           </div>
                           <div class="w-10/12">
                             <div>

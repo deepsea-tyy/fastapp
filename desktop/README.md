@@ -7,7 +7,7 @@ Tauri 桌面壳 + admin UI + 单文件 `fastapp`（Hyperf SFX）。桌面壳配�
 ```bash
 cd desktop && pnpm install
 
-pnpm dev                  # stage dev → tauri dev DESKTOP_FORCE=1 pnpm dev
+pnpm dev                  # stage dev → tauri dev
 pnpm build macArm         # clean → stage build → tauri build（.app + .dmg）
 pnpm build macIntel
 pnpm build win            # NSIS
@@ -31,11 +31,12 @@ pnpm build win            # NSIS
 
 | 字段                        | 说明                                      |
 | ------------------------- | --------------------------------------- |
-| `productName`             | 产品名、窗口标题、splash                         |
+| `productName`             | 产品名；stage 同步到窗口标题、splash、admin `VITE_APP_TITLE` |
+| `mainBinaryName`          | 主二进制文件名（stage 由 `productName` 自动写入，勿手改） |
 | `identifier`              | Tauri bundle identifier                 |
 | `app.windows[].dragDropEnabled` | 须为 `false`：默认原生文件拖放会拦截 HTML5 DnD（资源库拖入画布） |
 | `plugins.desktop.dataDir` | AppData 目录名                             |
-| `plugins.desktop.logo`    | 图标源图（相对 `desktop/`，如 `assets/logo.png`） |
+| `plugins.desktop.logo`    | 图标源图（相对 `desktop/`）；stage 生成 Tauri icons 并同步 admin logo/favicon |
 
 
 stage 自动写入（来自 `server/.env`）：
@@ -46,9 +47,13 @@ stage 自动写入（来自 `server/.env`）：
 | `plugins.desktop.appPort`   | HTTP 端口（Tauri navigate） |
 | `plugins.desktop.appWsPort` | WebSocket 端口            |
 | `bundle.resources`          | 按平台重写                   |
+| `app.windows[].title`       | 与 `productName` 同步（stage 自动） |
+| admin `VITE_APP_TITLE` / `VITE_APP_LOGO` | 桌面构建时由 stage 从 `productName` / `logo` 注入 |
 
 
 改端口：改 `server/.env` 后 `pnpm dev`（stage 同步 tauri.conf）；若 fastapp 已存在需 `DESKTOP_FORCE=1` 重建 phar。
+
+改产品名或 logo：只改 `tauri.conf.json` 的 `productName` / `plugins.desktop.logo`，然后 `DESKTOP_FORCE=1 pnpm dev` 重建 icons 与 admin UI。内部 Hyperf 子进程仍名为 `fastapp`（SFX 实现细节，不在 Dock/Cmd+Tab 显示）。
 
 ## 运行时
 
@@ -98,19 +103,18 @@ flowchart LR
 
 
 
-**stage 四步**：`tauri-conf` → `ui` → `runtime`（`desktop:phar` → fastapp SFX）→ `data`
+**stage 四步**：`tauri-conf` → `ui` → `runtime`（mirror → `phar:build` → fastapp SFX）→ `data`
 
-在 `server/` 原地执行 `desktop:phar`（Finder 排除 `storage`/`runtime`/`tests` 及插件内 `web`/`docs`/`database`）；插件 PHP 只进 phar，不拷贝到 `bundle/server/plugin`。桌面 UI 只走 `admin` → `ui/`，不进 phar。`storage/uploads` 仅空目录，不打包上传内容。`pnpm build` 会清理旧版 `desktop/bundle/` 残留。
-
+`runtime` 在 `build/<platform>/.work/` 镜像 `server/`（排除 `storage`/`runtime`/`tests` 及插件内 `web`/`docs`/`database`），在镜像目录执行 `phar:build`，再经 swoole-cli 打成单文件 `fastapp`。桌面 UI 只走 `admin` → `ui/`，不进 phar。`storage/uploads` 仅空目录，不打包上传内容。
 
 | profile                  | 行为                                                           |
 | ------------------------ | ------------------------------------------------------------ |
-| `dev`                    | 产物缺失才构建/同步；tauri-conf 每次执行                                   |
-| `build`                  | 全量重建（`build/`、`desktop/bundle/`、`src-tauri/target/` 先 clean） |
+| `dev`                    | 产物缺失才构建/同步；tauri-conf 每次执行；重建 admin 仅清 `admin/dist` |
+| `build`                  | 全量重建（`desktop_clean_all`：`admin/dist`、`build/`、遗留 `bundle/`、`src-tauri/target/`） |
 | `DESKTOP_FORCE=1`（仅 dev） | 强制重建 admin、phar、data、icons                                   |
 
 
-门控函数与 lib 模块见 [scripts/README.md](scripts/README.md)。`scripts/lib/` 分三层：`core/`（路径、平台、bundle 常量、门控）、`stage/`（四步实现）、`vendor/`（ffmpeg、swoole、pack-sfx）。
+门控函数与 lib 模块见 [scripts/README.md](scripts/README.md)。`scripts/lib/` 分三层：`core/`（路径、平台、门控、clean、branding）、`stage/`（四步实现，按需加载）、`vendor/`（ffmpeg、swoole、pack-sfx）。
 
 `bundle.resources` 由 stage 写入，其余 `tauri.conf.json` 字段可手改。
 
@@ -141,9 +145,9 @@ flowchart LR
 ```bash
 bash scripts/stage.sh dev
 bash scripts/stage.sh build
-source scripts/lib/common.sh && desktop_init && desktop_build_phar
-# 或：cd ../server && php -d phar.readonly=Off bin/hyperf.php desktop:phar --name=/path/to/fastapp.phar
-desktop_build_sfx                    # 复用已有 phar 时需 DESKTOP_FORCE=1
+source scripts/lib/common.sh && desktop_init
+source scripts/lib/stage/phar.sh && desktop_build_phar
+source scripts/lib/stage/runtime.sh && desktop_build_sfx   # 复用已有 phar 时需 DESKTOP_FORCE=1
 ```
 
 

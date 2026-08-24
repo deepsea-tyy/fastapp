@@ -54,6 +54,7 @@ pub fn navigate_ui(app: &AppHandle, paths: &AppPaths) -> Result<(), String> {
     let url = Url::parse(&url_str).map_err(|e| e.to_string())?;
     w.navigate(url)
         .map_err(|e| format!("navigate http failed: {e}"))?;
+    let _ = w.set_title(&crate::desktop_conf::app_name());
     write_log(paths, &format!("navigate http ok: {url_str}"));
     Ok(())
 }
