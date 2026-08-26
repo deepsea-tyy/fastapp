@@ -13,13 +13,18 @@ desktop_stage_ui() {
     desktop_clean_admin_dist
     admin_built=1
     desktop_sync_admin_branding || return 1
+    desktop_read_server_env_port || return 1
     # console：DESKTOP_STAGE_PROFILE=dev 保留，否则剥离（见 admin/vite.config.ts）
-    echo "    build admin dist (profile=$DESKTOP_STAGE_PROFILE; VITE_APP_ROOT_BASE=/; VITE_APP_TITLE=$PRODUCT_NAME)"
+    echo "    build admin dist (profile=$DESKTOP_STAGE_PROFILE; VITE_APP_ROOT_BASE=/; VITE_APP_TITLE=$PRODUCT_NAME; API=http://127.0.0.1:${DESKTOP_APP_PORT})"
     (
       cd "$REPO_ROOT/admin" &&
         VITE_APP_ROOT_BASE=/ \
           VITE_APP_TITLE="$PRODUCT_NAME" \
           VITE_APP_LOGO=/logo.png \
+          VITE_APP_DESKTOP=1 \
+          VITE_APP_API_BASEURL="http://127.0.0.1:${DESKTOP_APP_PORT}" \
+          VITE_APP_FILE_BASEURL="http://127.0.0.1:${DESKTOP_APP_PORT}/api/file" \
+          VITE_APP_WS_URL="ws://127.0.0.1:${DESKTOP_APP_WS_PORT}/ws" \
           pnpm build
     ) || return 1
   else
