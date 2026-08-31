@@ -12,7 +12,7 @@ Story Studio 是项目的核心业务插件，提供从小说文本到短视频�
 | [编辑器外壳与画布.md](../server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Phaser 编辑器 Shell 布局、模式接线、数据挂载链路 |
 | [编辑器时间线链路.md](../server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | Playhead/Seek/Reset/Playback → 画布同步 → shotFocus 完整链路 |
 | [剧情帧时间线.md](../server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | 帧时间语义、段时长计算、挂载时间规则、已移除字段清单 |
-| [翻译链路.md](../server/plugin/ds/storyStudio/docs/code/翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
+| [翻译链路.md](./翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
 | [推理端链路.md](../server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 图片编辑（qwen_image_edit）8 Service + Builder + InferBody 分袋 + resolveWh 尺寸派生；生图（qwen_image_flash / Qwen-Image-Flash-8bit MLX 4 步蒸馏）调用端 + 推理端 + 信封示例 + 文件清单 |
 
 ---

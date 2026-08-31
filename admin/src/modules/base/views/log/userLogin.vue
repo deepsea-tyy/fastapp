@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import type { UserLoginVo } from '~/base/api/log.ts'
+import { useI18n } from 'vue-i18n'
 import { UserLoginLog } from '~/base/api/log.ts'
 import type { MaProTableExpose, MaProTableOptions, MaProTableSchema } from '@/components/ma-pro-table'
 import type { Ref } from 'vue'
@@ -11,7 +12,7 @@ import { useMessage } from '@/hooks/useMessage.ts'
 
 defineOptions({ name: 'log:userLogin' })
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const proTableRef = ref<MaProTableExpose>() as Ref<MaProTableExpose>
 const selections: Ref<UserLoginVo[]> = ref([])
 const msg = useMessage()

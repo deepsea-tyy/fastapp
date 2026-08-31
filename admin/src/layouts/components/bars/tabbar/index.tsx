@@ -191,13 +191,13 @@ export default defineComponent({
                   'cardPlan': getSettings('tabbar').mode === 'card',
                   'active': (route.fullPath === item.fullPath || route.path === item.path),
                 }}
-                title={item?.i18n ? useTrans(item.i18n) : item.title}
+                title={item?.i18n ? t(item.i18n) : item.title}
                 onClick={(e: MouseEvent) => redirect(e, item)}
                 onContextmenu={(e: MouseEvent) => executeContextmenu(e, item)}
               >
                 {item.icon && <ma-svg-icon name={item.icon} class="menu-icon" /> }
                 <span class="title">
-                  {item?.i18n ? useTrans(item.i18n) : item.title}
+                  {item?.i18n ? t(item.i18n) : item.title}
                 </span>
                 {item.affix && pressKeys.oneKey !== 'alt'
                 && (

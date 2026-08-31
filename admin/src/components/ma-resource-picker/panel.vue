@@ -108,6 +108,7 @@ zh_TW:
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
 import { useResourcePanel } from './panel.ts'
 import type { ResourcePanelProps } from './type.ts'
+import { useI18n } from 'vue-i18n'
 
 defineOptions({ name: 'MaResourcePanel' })
 
@@ -168,8 +169,9 @@ const {
   stopAudio,
   cancel,
   confirm,
-  t,
 } = useResourcePanel(props, emit, modelValue)
+
+const { t } = useI18n({ useScope: 'local' })
 
 const scrollOptions = { scrollbars: { autoHide: 'leave', autoHideDelay: 100 } }
 

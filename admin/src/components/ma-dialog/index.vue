@@ -3,6 +3,7 @@
 import type { Ref } from 'vue'
 import { useMagicKeys, useResizeObserver } from '@vueuse/core'
 import { ElDialog } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 defineOptions({ name: 'MaDialog' })
 
@@ -30,7 +31,7 @@ function cancelLoadingState(state: boolean) {
 }
 
 const attrs = useAttrs()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 
 const isOpen = defineModel<boolean>({ default: false })
 

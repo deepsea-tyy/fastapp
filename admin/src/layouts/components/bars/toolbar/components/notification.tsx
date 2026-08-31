@@ -1,7 +1,10 @@
 
+import { useI18n } from 'vue-i18n'
+
 export default defineComponent({
   name: 'notification',
   setup() {
+    const { t } = useI18n()
     const appLogo = import.meta.env.VITE_APP_LOGO ?? '/logo.svg'
     const selected = ref<string>('message')
     return () => (
@@ -26,9 +29,9 @@ export default defineComponent({
                 <m-tabs
                   v-model={selected.value}
                   options={[
-                    { icon: 'i-ph:chat-circle-text', label: useTrans('base.notification.message'), value: 'message' },
-                    { icon: 'i-ic:baseline-notifications-none', label: useTrans('base.notification.notice'), value: 'notice' },
-                    { icon: 'i-pajamas:todo-done', label: useTrans('base.notification.todo'), value: 'todo' },
+                    { icon: 'i-ph:chat-circle-text', label: t('base.notification.message'), value: 'message' },
+                    { icon: 'i-ic:baseline-notifications-none', label: t('base.notification.notice'), value: 'notice' },
+                    { icon: 'i-pajamas:todo-done', label: t('base.notification.todo'), value: 'todo' },
                   ]}
                 />
                 <div class="notification-box">
@@ -94,8 +97,8 @@ export default defineComponent({
                   )}
                 </div>
                 <div class="box-footer">
-                  <a class="link">{useTrans('base.notification.allRead')}</a>
-                  <a class="link">{useTrans('base.notification.gotoTheList')}</a>
+                  <a class="link">{t('base.notification.allRead')}</a>
+                  <a class="link">{t('base.notification.gotoTheList')}</a>
                 </div>
               </div>
             ),

@@ -14,17 +14,17 @@ zh_TW:
 </i18n>
 <script setup lang="ts">
 import jsonData from './lib/cn.json'
+import { useI18n } from 'vue-i18n'
 import type { Area, ModelType } from './type.ts'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 
 defineOptions({ name: 'MaCitySelect' })
+const { t } = useI18n({ useScope: 'local' })
 
 const { mode = 'name', showLevel = 3 } = defineProps<{
   mode: 'name' | 'code'
   showLevel: 1 | 2 | 3
 }>()
 
-const t = useLocalTrans()
 const model = defineModel<ModelType>({ province: undefined, city: undefined, area: undefined})
 const province = ref<Area>([])
 const city = ref<Area>([])

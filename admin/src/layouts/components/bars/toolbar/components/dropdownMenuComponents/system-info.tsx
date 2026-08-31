@@ -1,8 +1,10 @@
 import type { Plugin } from '#/global'
+import { useI18n } from 'vue-i18n'
 
 export default defineComponent({
   name: 'SystemInfo',
   setup() {
+    const { t } = useI18n()
     const { getDropdownMenu } = useUserStore()
     const dropdownMenuState = getDropdownMenu()
     const { pkg, lastBuildTime } = __MINE_SYSTEM_INFO__
@@ -13,25 +15,25 @@ export default defineComponent({
         <m-drawer
           contentClass="w-380px lg:w-[450px] overflow-hidden"
           v-model={dropdownMenuState.systemInfo}
-          title={useTrans('base.userBar.systemInfo')}
+          title={t('base.userBar.systemInfo')}
         >
           <div class="mb-5 mt-2 text-left text-lg">
-            {useTrans('base.runtime.coreInfo')}
+            {t('base.runtime.coreInfo')}
           </div>
           <div class="mine-desc-info">
-            <div class="mine-desc-label">{useTrans('base.runtime.lastBuildTime')}</div>
+            <div class="mine-desc-label">{t('base.runtime.lastBuildTime')}</div>
             <div class="mine-desc-value">{lastBuildTime}</div>
           </div>
           <div class="mine-desc-info">
-            <div class="mine-desc-label">{useTrans('base.runtime.systemVersion')}</div>
+            <div class="mine-desc-label">{t('base.runtime.systemVersion')}</div>
             <div class="mine-desc-value">{`v${pkg.version}`}</div>
           </div>
           <div class="mine-desc-info">
-            <div class="mine-desc-label">{useTrans('base.runtime.pluginCount')}</div>
+            <div class="mine-desc-label">{t('base.runtime.pluginCount')}</div>
             <div class="mine-desc-value">{Object.keys(plugins)?.length ?? 0}</div>
           </div>
           <div class="my-5 text-left text-lg">
-            {useTrans('base.runtime.pluginList')}
+            {t('base.runtime.pluginList')}
           </div>
           {
             Object.keys(plugins)?.map((key) => {
@@ -47,7 +49,7 @@ export default defineComponent({
                       </span>
                       <span> / </span>
                       <span>
-                        {useTrans(config?.enable ? 'base.plugin.enabled' : 'base.plugin.disabled')}
+                        {t(config?.enable ? 'base.plugin.enabled' : 'base.plugin.disabled')}
                       </span>
                       <span> / </span>
                       <span>
@@ -63,7 +65,7 @@ export default defineComponent({
             })
           }
           <div class="my-5 text-left text-lg">
-            {useTrans('base.runtime.dependencies')}
+            {t('base.runtime.dependencies')}
           </div>
           {
             Object.keys(pkg.dependencies)?.map((name: string) => (
@@ -76,7 +78,7 @@ export default defineComponent({
             ))
           }
           <div class="my-5 text-left text-lg">
-            {useTrans('base.runtime.devDependencies')}
+            {t('base.runtime.devDependencies')}
           </div>
           {
             Object.keys(pkg.devDependencies)?.map((name: string) => (

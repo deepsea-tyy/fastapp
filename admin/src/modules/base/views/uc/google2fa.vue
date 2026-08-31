@@ -57,16 +57,17 @@ zh_TW:
 
 <script setup lang="ts">
 import UcContainer from './components/container.vue'
+import { useI18n } from 'vue-i18n'
 import UcTitle from './components/title.vue'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { getGoogle2faSecret, enableGoogle2fa, disableGoogle2fa } from '~/base/api/passport.ts'
 import type { Google2faSecretVo } from '~/base/api/passport.ts'
 
 defineOptions({ name: 'UcGoogle2fa' })
+const { t } = useI18n({ useScope: 'local' })
 
 const userStore = useUserStore()
 const msg = useMessage()
-const t = useTrans().localTrans
 
 const isEnabled = computed(() => {
   const userInfo = userStore.getUserInfo()

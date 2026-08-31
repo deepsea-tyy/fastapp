@@ -2,6 +2,7 @@ import type { PropType } from 'vue'
 import type { SubMenuItemProps } from './types'
 import { rootMenuInjectionKey } from './types'
 import { isFunction } from 'radash'
+import { useI18n } from 'vue-i18n'
 import '@/layouts/style/menu.scss'
 
 import type { MineRoute } from '#/global'
@@ -16,7 +17,7 @@ export default defineComponent({
     expand: { type: Boolean, default: false },
   },
   setup(props, { expose }) {
-    const t = useTrans().globalTrans
+    const { t } = useI18n()
     const rootMenu = inject(rootMenuInjectionKey)!
     const itemRef = ref<HTMLElement>()
 

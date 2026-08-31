@@ -75,7 +75,7 @@ export default defineComponent({
                         type="default"
                         handle={item.handle}
                         v-slots={{
-                          'default': () => <span>{ useTrans(item.label) }</span>,
+                          'default': () => <span>{ t(item.label) }</span>,
                           'prefix-icon': () => <ma-svg-icon name={item.icon} size={18} />,
                         }}
                       />

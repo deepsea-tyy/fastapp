@@ -1,6 +1,7 @@
 
 <script setup lang="tsx">
 import type { MaFormExpose } from '@/components/ma-form'
+import { useI18n } from 'vue-i18n'
 import type { RoleVo } from '~/base/api/role.ts'
 import { getRolePermission, setRolePermission, getRoleDepartments, setRoleDepartments } from '~/base/api/role.ts'
 import { page } from '~/base/api/menu.ts'
@@ -15,7 +16,7 @@ const { data = null } = defineProps<{
   data?: RoleVo | null
 }>()
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const userRoleForm = ref<MaFormExpose>()
 const userModel = ref<{ id?: number; data_scope?: number }>({})
 const checkStrictly = ref<boolean>(false)

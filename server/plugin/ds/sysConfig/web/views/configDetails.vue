@@ -6,8 +6,10 @@ import Create from '$/ds/sysConfig/components/create.vue'
 import type { ConfigGroupListVo, ConfigVo } from '$/ds/sysConfig/api/configGroup.ts'
 import { batchUpdate, details } from '$/ds/sysConfig/api/config.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import {formatLang} from "../../../../utils/common.ts";
+import {useI18n} from 'vue-i18n'
+
+const {t} = useI18n()
 
 const { data = null } = defineProps<{
   data?: ConfigGroupListVo
@@ -15,8 +17,6 @@ const { data = null } = defineProps<{
 
 const model = ref<ConfigVo[]>([])
 const settingFormRef = ref()
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
 // 获取配信详情
 async function getDetail() {
   const res = await details(data!.code!)

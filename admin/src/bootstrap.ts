@@ -5,9 +5,8 @@ import type { App, Directive } from 'vue'
 import * as directives from '@/directives'
 import useTabStore from '@/store/modules/useTabStore.ts'
 import toolbars from '@/utils/toolbars.ts'
-import messages from '@intlify/unplugin-vue-i18n/messages'
+import { createI18nInstance } from '@/utils/i18n.ts'
 import ElementPlus from 'element-plus'
-import { createI18n } from 'vue-i18n'
 import router from './router'
 import pinia from './store'
 import './utils/copyright.ts'
@@ -38,23 +37,9 @@ async function createI18nService(app: App) {
     return { label, value }
   })
   useUserStore().setLocales(locales)
-  Object.keys(messages as any).map((name: string) => {
-    const matchValue = name.match(/(\w+)/) as RegExpMatchArray | null
-    if (messages && matchValue) {
-      messages[matchValue[1]] = messages[name]
-      delete messages[name]
-    }
-  })
 
-  app.use(createI18n({
-    legacy: false,
-    globalInjection: true,
-    fallbackLocale: 'zh_CN',
-    locale: useUserStore().getLanguage(),
-    silentTranslationWarn: true,
-    silentFallbackWarn: true,
-    messages,
-  }))
+  const i18n = createI18nInstance(useUserStore().getLanguage())
+  app.use(i18n)
 }
 
 async function initProvider(app: App) {

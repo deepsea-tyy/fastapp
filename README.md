@@ -2,6 +2,8 @@
 
 FastApp 是一个企业级全栈应用框架，包含 Web 端、后台管理系统、桌面客户端、企业官网和后端服务。
 
+许可：[LICENSE.zh.md](LICENSE.zh.md) / [LICENSE.en.md](LICENSE.en.md)。个人与开源（含个人商用）不受限制；以组织或公司形式的商用须授权。
+
 ## 项目结构
 
 ```
@@ -18,8 +20,10 @@ fastapp/
 
 说明：
 
-- **admin**：目录 `admin/` 为管理后台**前端**；HTTP 前缀 `/admin/*` 为管理端 API。
+- **admin**：目录 `admin/` 为管理后台**前端**；HTTP 前缀 `/admin/`* 为管理端 API。
 - **desktop**：桌面端工程，安装包含 SFX `fastapp`、ui、ffmpeg，见 [desktop/README.md](desktop/README.md)。
+
+
 
 ## 代码知识库
 
@@ -31,12 +35,16 @@ fastapp/
 
 ## 各模块说明
 
+
+
 ### desktop（桌面客户端）
 
 基于 [Tauri 2](https://tauri.app)，server 为 SFX 整包（plugin 在 phar 内）。
 
-- 工程：[`desktop/`](desktop/)
-- 构建与运行时：[`desktop/README.md`](desktop/README.md)
+- 工程：`[desktop/](desktop/)`
+- 构建与运行时：`[desktop/README.md](desktop/README.md)`
+
+
 
 ### admin
 
@@ -61,11 +69,15 @@ server/
 └── storage/
 ```
 
+
+
 #### 分层
 
 ```
 Controller → Service → Repository → Model
 ```
+
+
 
 ### website
 
@@ -77,15 +89,21 @@ Controller → Service → Repository → Model
 
 ## 技术栈
 
-| 模块 | 技术 |
-|------|------|
-| 后端 | Hyperf 3.1 + Swoole + PHP 8.1+ |
-| 管理前端 | Vue3 + Element Plus（`admin/`） |
-| **桌面客户端** | **Tauri 2 + Rust（`desktop/`，非框架源码）** |
-| 官网 | Nuxt.js 4.2 |
-| AI 服务 | Python + uv（`tools/`） |
+
+| 模块        | 技术                                       |
+| --------- | ---------------------------------------- |
+| 后端        | Hyperf 3.1 + Swoole + PHP 8.1+           |
+| 管理前端      | Vue3 + Element Plus（`admin/`）            |
+| **桌面客户端** | **Tauri 2 + Rust（**`desktop/`**，非框架源码）** |
+| 官网        | Nuxt.js 4.2                              |
+| AI 服务     | Python + uv（`tools/`）                    |
+
+
+
 
 ## 快速开始
+
+
 
 ### 后端
 
@@ -93,11 +111,15 @@ Controller → Service → Repository → Model
 cd server && composer install && cp .env.example .env && php bin/hyperf.php start
 ```
 
+
+
 ### 管理后台（admin）
 
 ```bash
 cd admin && pnpm install && pnpm dev
 ```
+
+
 
 ### 桌面客户端（desktop）
 
@@ -107,17 +129,23 @@ cd admin && pnpm install && pnpm dev
 cd desktop && pnpm install && pnpm dev
 ```
 
+
+
 ### 官网
 
 ```bash
 cd website && pnpm install && pnpm dev
 ```
 
+
+
 ### tools（可选）
 
 ```bash
 cd tools && cp .env.example .env && uv sync
 ```
+
+
 
 ## 相关文档
 
@@ -126,16 +154,18 @@ cd tools && cp .env.example .env && uv sync
 - [本地 AI 工具（tools）](tools/README.md)
 - [Tauri 官方文档](https://tauri.app/)（框架文档；本仓库应用代码在 `desktop/`）
 
+
+
 ## 技术支持
 
 - **作者**：deepsea
-- **联系方式**：https://t.me/deepsea159
+- **联系方式**：[https://t.me/deepsea159](https://t.me/deepsea159)
 - **框架版本**：Hyperf 3.1
+
+
 
 ## ☕ 给我一杯咖啡
 
 如果这个项目对你有帮助，欢迎请我喝一杯咖啡！
 
-<div align="center">
-  <img src="./wechat_qr.png" alt="微信收款码" width="300" />
-</div>
+![微信收款码](./wechat_qr.png)

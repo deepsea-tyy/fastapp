@@ -2,7 +2,7 @@
 import {reactive, ref, watch, computed} from 'vue'
 import useSettingStore from '@/store/modules/useSettingStore'
 import {uploadLocal} from '@/utils/uploadLocal'
-import type {TransType} from '@/hooks/auto-imports/useTrans.ts'
+import { useI18n } from 'vue-i18n'
 
 import Editor from '@tinymce/tinymce-vue'
 import tinymce from 'tinymce/tinymce'
@@ -21,8 +21,7 @@ defineOptions({name: 'MaEditor'})
 const settingStore = useSettingStore()
 
 
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
+const { t } = useI18n()
 
 const props = defineProps({
   menubar: {type: Boolean, default: true},

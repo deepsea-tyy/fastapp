@@ -1,8 +1,8 @@
 import type { Ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 import type { Resources } from '#/global'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import type { FileType, Resource, ResourcePanelProps } from './type.ts'
 
 import { deleteById } from '~/base/api/attachment.ts'
@@ -33,8 +33,7 @@ export function useResourcePanel(
   },
   modelValue: Ref<string | string[] | undefined>,
 ) {
-  const i18n = useTrans() as TransType
-  const t = i18n.localTrans
+  const { t } = useI18n({ useScope: 'local' })
   const msg = useMessage()
   const resourceStore = useResourceStore()
 
@@ -621,6 +620,5 @@ export function useResourcePanel(
     stopAudio,
     cancel,
     confirm,
-    t,
   }
 }

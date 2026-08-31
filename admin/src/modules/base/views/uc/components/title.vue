@@ -1,10 +1,12 @@
 
 <script setup lang="ts">
 import type { MineRoute } from '#/global'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute() as MineRoute.routeRecord
+const { t } = useI18n()
 const title = computed(() => {
-  return route.meta?.i18n ? useTrans(route.meta?.i18n) : route?.meta?.title ?? '未知'
+  return route.meta?.i18n ? t(route.meta?.i18n) : route?.meta?.title ?? '未知'
 })
 </script>
 

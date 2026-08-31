@@ -38,8 +38,8 @@ zh_TW:
  * />
  */
 
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 import type { UploadUserFile } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { uid } from 'radash'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { uploadLocal } from '@/utils/uploadLocal.ts'
@@ -48,6 +48,7 @@ import { formatFileUrl } from '@/utils/common.ts'
 import MaVideoPlayer from '@/components/ma-video-player/index.vue'
 
 defineOptions({ name: 'MaUploadVideo' })
+const { t } = useI18n({ useScope: 'local' })
 
 const {
   modelValue = null,
@@ -72,7 +73,6 @@ const emit = defineEmits<{
 }>()
 
 const msg = useMessage()
-const t = useLocalTrans()
 
 const fileList = ref<UploadUserFile[]>([])
 const uploadProgress = ref(0) // 上传进度

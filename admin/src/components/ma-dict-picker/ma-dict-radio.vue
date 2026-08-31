@@ -1,7 +1,7 @@
 
 <script setup lang="ts">
 import type { Dictionary } from '#/global'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
+import { useI18n } from 'vue-i18n'
 import { isFunction } from 'radash'
 
 defineOptions({ name: 'MaDictRadio' })
@@ -26,8 +26,7 @@ const dictionaryData = computed<Dictionary[] | null>(() => {
   return dictName === '' ? (isFunction(data) ? data() : data) : dictStore.find(dictName)
 })
 
-const i18n = useTrans() as TransType
-const t = transScope === 'global' ? i18n.globalTrans : i18n.localTrans
+const { t } = useI18n()
 
 const modelValue = defineModel<any>()
 

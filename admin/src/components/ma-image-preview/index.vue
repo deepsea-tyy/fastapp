@@ -180,8 +180,8 @@ zh_TW:
  */
 
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/hooks/useMessage.ts'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 import { formatFileUrl } from "@/utils/common.ts"
 import {
   Picture,
@@ -193,8 +193,8 @@ import {
 } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'MaImagePreview' })
+const { t } = useI18n({ useScope: 'local' })
 
-const t = useLocalTrans()
 
 interface ImagePreviewProps {
   // 图片数据，支持字符串数组或逗号分隔的字符串

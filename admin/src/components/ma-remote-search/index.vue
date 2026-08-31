@@ -51,14 +51,14 @@ zh_TW:
 
 <script setup lang="ts">
 import { ElSelectV2, ElInput, ElButton, ElIcon } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { Search, Loading } from '@element-plus/icons-vue'
 import { useMessage } from '@/hooks/useMessage.ts'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 import useHttp from '@/hooks/auto-imports/useHttp.ts'
 
 defineOptions({ name: 'MaRemoteSearch' })
+const { t } = useI18n({ useScope: 'local' })
 
-const t = useLocalTrans()
 
 const props = defineProps<{
   api?: <T>(...args: T[]) => Promise<T>

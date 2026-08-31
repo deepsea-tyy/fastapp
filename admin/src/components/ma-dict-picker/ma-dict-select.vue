@@ -1,7 +1,7 @@
 
 <script setup lang="ts">
 import type { Dictionary } from '#/global'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
+import { useI18nGlobal } from '@/utils/i18n.ts'
 import { isFunction } from 'radash'
 
 defineOptions({ name: 'MaDictSelect' })
@@ -20,12 +20,32 @@ const {
 }>()
 
 const dictStore = useDictStore()
-const dictionaryData = computed<Dictionary[] | null>(() => {
+const { t } = useI18nGlobal()
+
+// 源数据
+const sourceData = computed<Dictionary[] | null>(() => {
   return dictName === '' ? (isFunction(data) ? data() : data) : dictStore.find(dictName)
 })
 
-const i18n = useTrans() as TransType
-const t = transScope === 'global' ? i18n.globalTrans : i18n.localTrans
+// 翻译后的选项列表（依赖 locale，语言切换时自动重新计算）
+const translatedOptions = computed(() => {
+  const list = sourceData.value
+  if (!list) return []
+  return list.map(item => {
+    const label = item.i18n ? t(item.i18n) : item.label
+    if (item.options) {
+      return {
+        ...item,
+        _label: label,
+        options: item.options.map(sub => ({
+          ...sub,
+          _label: sub.i18n ? t(sub.i18n) : sub.label,
+        })),
+      }
+    }
+    return { ...item, _label: label }
+  })
+})
 
 const model = defineModel<any>()
 </script>
@@ -34,19 +54,19 @@ const model = defineModel<any>()
   <el-select v-model="model" v-bind="$attrs">
     <!-- 默认插槽 -->
     <slot name="default">
-      <template v-if="dictionaryData">
-        <template v-for="item in dictionaryData" :key="item.label || item.value">
+      <template v-if="translatedOptions.length">
+        <template v-for="item in translatedOptions" :key="item.value ?? item.label">
           <!-- 分组选项 -->
           <el-option-group
             v-if="item.options"
-            :label="item.i18n ? t(item.i18n) : item.label"
+            :label="item._label"
             :disabled="item.disabled"
           >
             <el-option
               v-for="sub in item.options"
               :key="sub.value"
               :value="sub.value"
-              :label="sub.i18n ? t(sub.i18n) : sub.label"
+              :label="sub._label"
               :disabled="sub.disabled"
             >
               <!-- option 插槽 -->
@@ -60,7 +80,7 @@ const model = defineModel<any>()
           <el-option
             v-else
             :value="item.value"
-            :label="item.i18n ? t(item.i18n) : item.label"
+            :label="item._label"
             :disabled="item.disabled"
           >
             <!-- option 插槽 -->
@@ -84,5 +104,4 @@ const model = defineModel<any>()
 </template>
 
 <style scoped lang="scss">
-
 </style>

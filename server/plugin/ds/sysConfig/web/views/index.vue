@@ -5,7 +5,6 @@ import emptyImage from '$/ds/sysConfig/assets/empty.svg'
 import detail from './configDetails.vue'
 import type { ConfigGroupListVo } from '$/ds/sysConfig/api/configGroup.ts'
 import { deleteByIds, page } from '$/ds/sysConfig/api/configGroup.ts'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import type { UseDialogExpose } from '@/hooks/useDialog.ts'
 import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
 
@@ -16,12 +15,13 @@ import { ResultCode } from '@/utils/ResultCode.ts'
 import ConfigForm from '$/ds/sysConfig/views/groupForm.vue'
 import Create from '$/ds/sysConfig/components/create.vue'
 import {formatLang} from "../../../../utils/common.ts";
+import {useI18n} from 'vue-i18n'
+
+const {t} = useI18n()
 
 const formRef = ref()
 const drawerRef = ref()
 const defaultList: Ref<ConfigGroupListVo[]> = ref([])
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
 const msg = useMessage()
 
 // 弹窗配置

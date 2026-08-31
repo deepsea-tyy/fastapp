@@ -43,3 +43,29 @@ rm -rf ~/Library/Application\ Support/Cursor/logs \
        ~/Library/Application\ Support/Cursor/GPUCache \
        ~/Library/Application\ Support/Cursor/DawnWebGPUCache \
        ~/Library/Application\ Support/Cursor/DawnGraphiteCache
+
+
+
+
+traework 清理
+
+#!/usr/bin/env bash
+# TraeWork 一键卸载（应用 + 用户数据）
+
+osascript -e 'quit app "TRAE SOLO CN"' 2>/dev/null || true
+pkill -f "TRAE SOLO CN" 2>/dev/null || true
+pkill -f "cn.trae.solo" 2>/dev/null || true
+sleep 1
+
+rm -rf "/Applications/TRAE SOLO CN.app"
+rm -rf "$HOME/Library/Application Support/TRAE SOLO CN"
+rm -rf "$HOME/Library/Caches/TRAE SOLO CN"
+rm -rf "$HOME/Library/Caches/cn.trae.solo.app"
+rm -rf "$HOME/Library/Caches/cn.trae.solo.app.ShipIt"
+rm -rf "$HOME/Library/Preferences/cn.trae.solo.app.plist"
+rm -rf "$HOME/Library/Saved Application State/cn.trae.solo.app.savedState"
+rm -rf "$HOME/Library/HTTPStorages/cn.trae.solo.app"
+rm -rf "$HOME/.trae-cn"
+rm -rf "$HOME/.marscode"
+
+echo "TraeWork 已删除"

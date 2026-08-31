@@ -1,12 +1,14 @@
 
 import '@/layouts/style/search-panel.scss'
 import { useMagicKeys } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import menuGotoHandle from '@/utils/menuGotoHandle.ts'
 import type { MineRoute } from '#/global'
 
 export default defineComponent({
   name: 'searchPanel',
   setup() {
+    const { t } = useI18n()
     const searchInputEl = ref<HTMLElement>()
     const { setSearchPanelEnable, getSearchPanelEnable } = useSettingStore()
     const routeKey = ref<string>('')
@@ -50,7 +52,7 @@ export default defineComponent({
         <div class="mine-search-panel-container">
           <div class="mine-search-input-container">
             <ma-svg-icon name="heroicons:magnifying-glass-solid" size={20} class="text-gray-4 dark-text-gray-4" />
-            <input v-model={routeKey.value} class="mine-search-input" placeholder={useTrans('base.search.placeholder')} ref={searchInputEl} />
+            <input v-model={routeKey.value} class="mine-search-input" placeholder={t('base.search.placeholder')} ref={searchInputEl} />
             <ma-svg-icon name="material-symbols:close-rounded" size={20} class="cursor-pointer dark-text-stone-2" onClick={() => setSearchPanelEnable(false)} />
           </div>
 
@@ -65,7 +67,7 @@ export default defineComponent({
                       size={20}
                     />
                     <div class="mine-search-text">
-                      <span class="w-6/12">{(item.meta?.i18n ? useTrans(item.meta?.i18n) : item.meta?.title) ?? useTrans('base.search.noNameMenu') }</span>
+                      <span class="w-6/12">{(item.meta?.i18n ? t(item.meta?.i18n) : item.meta?.title) ?? t('base.search.noNameMenu') }</span>
                       <m-tooltip text={item.meta?.type === 'L' ? item.meta?.link : item.path}>
                         <span class="mine-search-route-path">{item.meta?.type === 'L' ? item.meta?.link : item.path}</span>
                       </m-tooltip>
@@ -78,7 +80,7 @@ export default defineComponent({
           {routes.value.length === 0 && (
             <div class="mt-35 w-full flex flex-col justify-center text-center text-gray-4">
               <ma-svg-icon name="tabler:hourglass-empty" size={50} class="mx-auto" />
-              <span class="mt-3 text-sm">{useTrans('base.search.notResult')}</span>
+              <span class="mt-3 text-sm">{t('base.search.notResult')}</span>
             </div>
           )}
         </div>

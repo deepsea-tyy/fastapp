@@ -12,8 +12,8 @@ zh_TW:
 </i18n>
 
 <script setup lang="tsx">
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 import type { UploadUserFile } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { isArray, uid } from 'radash'
 import { useDebounceFn } from '@vueuse/core'
 import { useMessage } from '@/hooks/useMessage.ts'
@@ -21,6 +21,7 @@ import { uploadLocal } from '@/utils/uploadLocal.ts'
 import {formatFileUrl} from "@/utils/common.ts";
 
 defineOptions({ name: 'MaUploadImage' })
+const { t } = useI18n({ useScope: 'local' })
 
 const {
   modelValue = null,
@@ -46,7 +47,6 @@ const emit = defineEmits<{
 
 const id = uid(5)
 const msg = useMessage()
-const t = useLocalTrans()
 
 const uploadBtnRef = ref<HTMLElement>()
 const isOpenResource = ref<boolean>(false)

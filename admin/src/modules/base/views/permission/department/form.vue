@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DepartmentVo } from '~/base/api/department.ts'
+import { useI18n } from 'vue-i18n'
 import { create, save } from '~/base/api/department.ts'
 import getFormItems from './data/getFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
@@ -11,7 +12,7 @@ const { formType = 'add', data = null } = defineProps<{
   data?: DepartmentVo | null
 }>()
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const maFormRef = ref<MaFormExpose>()
 const formModel = ref<DepartmentVo>({})
 

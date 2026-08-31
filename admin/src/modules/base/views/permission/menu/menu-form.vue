@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { cloneDeep } from 'lodash-es'
 
 const { locale } = useI18n()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const state = ref<boolean>(true)
 const menuList = inject('menuList') as Ref<MenuVo[]>
 const newMenu = inject('newMenu') as Ref<MenuVo>

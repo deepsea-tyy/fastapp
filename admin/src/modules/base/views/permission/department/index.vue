@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import type { MaProTableExpose, MaProTableOptions, MaProTableSchema } from '@/components/ma-pro-table'
+import { useI18n } from 'vue-i18n'
 import type { Ref } from 'vue'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import type { UseDrawerExpose } from '@/hooks/useDrawer.ts'
 
 import { deleteByIds, page } from '~/base/api/department.ts'
@@ -19,9 +19,7 @@ const proTableRef = ref<MaProTableExpose>() as Ref<MaProTableExpose>
 const formRef = ref()
 const setFormRef = ref()
 const selections = ref<any[]>([])
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
-const local = i18n.localTrans
+const { t } = useI18n()
 const msg = useMessage()
 
 // 弹窗配置

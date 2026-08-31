@@ -23,6 +23,7 @@ import useDialog from '@/hooks/useDialog.ts'
 import KeyValueForm from './components/form.vue'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import { useMessage } from '@/hooks/useMessage.ts'
+import { useI18n } from 'vue-i18n'
 
 defineOptions({ 
   name: 'MaKeyValue',
@@ -30,7 +31,7 @@ defineOptions({
 })
 
 const model = defineModel<any>()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const formRef = ref()
 const msg = useMessage()
 
