@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
+import {useI18n} from 'vue-i18n'
+
+const {t} = useI18n()
 
 const props = defineProps<{
   copyable?: boolean // 是否可复制
@@ -7,8 +9,6 @@ const props = defineProps<{
 }>()
 
 const copyStatus = ref('') // 用于复制状态的反馈
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
 // 复制文本方法
 async function copyText(text: string) {
   try {

@@ -9,10 +9,10 @@ Story Studio 是项目的核心业务插件，提供从小说文本到短视频�
 | 文档 | 内容 |
 |---|---|
 | [WebSocket任务管线.md](../server/plugin/ds/storyStudio/docs/code/WebSocket任务管线.md) | WS 任务统一管线、Bundle/源头写回分离、禁止踩坑清单 |
-| [编辑器外壳与画布.md](../server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Phaser 编辑器 Shell 布局、模式接线、数据挂载链路 |
+| [编辑器外壳与画布.md](../server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Three 编辑器 Shell 布局、模式接线、数据挂载链路 |
 | [编辑器时间线链路.md](../server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | Playhead/Seek/Reset/Playback → 画布同步 → shotFocus 完整链路 |
 | [剧情帧时间线.md](../server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | 帧时间语义、段时长计算、挂载时间规则、已移除字段清单 |
-| [翻译链路.md](../server/plugin/ds/storyStudio/docs/code/翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
+| [翻译链路.md](./翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
 | [推理端链路.md](../server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 图片编辑（qwen_image_edit）8 Service + Builder + InferBody 分袋 + resolveWh 尺寸派生；生图（qwen_image_flash / Qwen-Image-Flash-8bit MLX 4 步蒸馏）调用端 + 推理端 + 信封示例 + 文件清单 |
 
 ---
@@ -340,10 +340,8 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 │   ├── schedule/                   # 时间线（timeline.ts / mountTiming.ts / action.ts）
 │   └── schema/                     # 数据模型定义
 ├── renderer/                       # 渲染引擎
-│   ├── adapter/                    # 渲染适配器（Phaser/Video）
-│   ├── editor/                     # 编辑器渲染
-│   │   └── phaserEditor/           # Phaser 画布（scene 复用 actorLayer，backgroundMode 全屏）
-│   └── runtime/                    # 运行时渲染
+│   ├── editor/                     # 剧情编辑器（单一 Three WebGL + editorLensRig）
+│   └── runtime/                    # 动作 / window 取景 / RuntimeState
 ├── workspace/                      # 工作台布局
 │   ├── state/                      # 工作区状态
 │   │   ├── wsTasks/                # 任务进度管理（kinds / scope / bridge / runtime）
@@ -370,11 +368,12 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 | `bridge.ts` | patch WS；多 runtime 按 `job_id` 分发进度（无业务 applier） |
 | `runtime.ts` | `createWsTaskRuntime`：busy / persist / `runWsTask` / `destroy` |
 
-#### 2. 编辑器渲染管线（Phaser）
+#### 2. 编辑器渲染管线（Three）
 
-- scene 资产**复用** `actorLayer` 管线（不再走独立 backgroundLayer），通过 `backgroundMode: true` 控制 `fullViewport` 全屏渲染
-- `buildSceneSnapshotAtTime` 包含 scene-type actor，`resolveSceneAsset` 取背景
-- 出图唯一入口：`paintTimelineAt(ms)` → `buildSceneSnapshotAtTime` → `syncRuntimeToPhaser`
+- 入口：`createStoryEditorPreview` → `StoryContentHost` + `editorDisplayGlue.renderFrame`
+- 2D 立绘/背景：`layer2d`；vrm3d / 3D 场景背景 / particle：ThreeStack / SceneBackgroundStack / EffectStack
+- 镜头：`frame.lens` + `editorLensRig`；时间轴 window 段播放时临时覆盖视口
+- 出图：`captureFrameBlob` / `captureStoryFrameExport`（`contentSceneExport.ts`）
 
 #### 3. 3D 姿势编辑器 (PoseEditorCanvas.vue)
 
@@ -390,7 +389,7 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 | `usePoseModel.ts` | VRM 模型加载与管理 |
 | `usePoseScene.ts` | 场景控制（相机/灯光/视图） |
 | `usePoseEditorCanvas.ts` | Canvas 初始化与事件绑定 |
-| `poseMorph.ts` | 变形目标管理 |
+| `vrm/protocol/vrm1.ts` | VRM 1.0 表情组 |
 | `poseHumanoid.ts` | 人形骨骼定义 |
 
 #### 4. 资源包工作台 (useBundleWorkbench.ts)
@@ -436,7 +435,7 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 2. **选场景** → `loadSceneDetail`（加载 presentation + speech 子树）
 3. **解析剧情**（可选）→ `chapterPipeline` 写入场景树与对白（**不自动创建** `story_asset`）
 4. **编辑** → `StructureDock`，持久化走 `story/scene/composables/useScenePersist.ts`
-5. **预览** → `WorkspacePane`
+5. **预览** → `EditorDesk`
 
 **公共出口**：外部模块从 `story/index.ts` 或 `story/model/types.ts` 导入 `StorySceneRow`、`ScenePresentationHost` 等类型。
 

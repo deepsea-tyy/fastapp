@@ -1,7 +1,8 @@
 
 import { useSorted } from '@vueuse/core'
-import type { MineRoute, MineTabbar, SystemSettings } from '#/global'
+import type { MineTabbar } from '#/global'
 import useCache from '@/hooks/useCache.ts'
+import { NOT_FOUND_PATH, type HomeRoute } from '@/router/routes.ts'
 
 const useTabStore = defineStore(
   'useTabStore',
@@ -12,37 +13,41 @@ const useTabStore = defineStore(
     const settingStore = useSettingStore()
     const keepAliveStore = useKeepAliveStore()
     const iframeKeepLiveStore = useIframeKeepAliveStore()
-    const welcomePage = settingStore.getSettings('welcomePage') as SystemSettings.welcomePage
     const tabList = ref<MineTabbar[]>([])
     const defaultTab = ref<MineTabbar>({
-      name: welcomePage.name,
-      path: welcomePage.path,
-      fullPath: welcomePage.path,
-      i18n: 'menu.welcome',
-      icon: welcomePage.icon,
-      title: welcomePage.title,
+      name: '',
+      path: '/',
+      fullPath: '/',
+      title: '',
       affix: true,
-    } as MineTabbar)
+    })
+
+    function ensureHomeTab(home: HomeRoute | null) {
+      defaultTab.value = home
+        ? {
+            name: home.name,
+            path: home.path,
+            fullPath: home.path,
+            title: home.title,
+            icon: home.icon,
+            i18n: home.i18n,
+            affix: true,
+          }
+        : {
+            name: 'MineSystemError',
+            path: NOT_FOUND_PATH,
+            fullPath: NOT_FOUND_PATH,
+            title: '',
+            i18n: 'menu.pageError',
+            affix: true,
+          }
+      if (home && tabList.value.length === 0) {
+        addTab(defaultTab.value)
+      }
+    }
 
     function initTab() {
       tabList.value = get('tabList', [])
-      if (tabList.value?.length === 0) {
-        addTab(defaultTab.value)
-
-        const temp = router.getRoutes().filter(item => keepAliveStore.list.includes(item.name as string)) as MineRoute.routeRecord[]
-        temp?.map((item: any) => {
-          addTab({
-            name: item.name,
-            path: item.path,
-            fullPath: item.fullPath,
-            i18n: item.meta?.i18n,
-            icon: item.meta?.icon,
-            title: item.meta?.title,
-            affix: item.meta?.affix === true,
-          } as MineTabbar)
-        })
-      }
-
       watch(() => tabList.value, () => storage(), { immediate: true, deep: true })
     }
 
@@ -209,7 +214,7 @@ const useTabStore = defineStore(
     }
 
     function clearTab() {
-      tabList.value = [defaultTab.value]
+      tabList.value = []
       keepAliveStore.clean()
       iframeKeepLiveStore.clean()
     }
@@ -227,6 +232,7 @@ const useTabStore = defineStore(
       defaultTab,
       go,
       initTab,
+      ensureHomeTab,
       changeTabTitle,
       affixTab,
       cancelAffixTab,

@@ -5,10 +5,8 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import createArchiver from './archiver'
 import createAutoImport from './auto-import'
-import createChunkSplit from './chunk'
 import createComponents from './components'
 import createCompression from './compression'
-import createDevtools from './devtools'
 import createI18nMessage from './i18n-message'
 import startInfo from './start-info'
 import createSvgIcon from './svg-icon'
@@ -27,7 +25,6 @@ export default function createVitePlugins(viteEnv: any, isBuild = false) {
       ],
     }),
   ]
-  vitePlugins.push(createDevtools(viteEnv))
   vitePlugins.push(createAutoImport())
   vitePlugins.push(createComponents())
   vitePlugins.push(createUnocss())
@@ -35,6 +32,5 @@ export default function createVitePlugins(viteEnv: any, isBuild = false) {
   vitePlugins.push(...createCompression(viteEnv, isBuild))
   vitePlugins.push(createArchiver(viteEnv))
   vitePlugins.push(createI18nMessage())
-  vitePlugins.push(createChunkSplit())
   return vitePlugins
 }

@@ -7,7 +7,7 @@ use Hyperf\Contract\ApplicationInterface;
 use Hyperf\Di\ClassLoader;
 use Hyperf\Engine\DefaultOption;
 use Psr\Container\ContainerInterface;
-use  App\Command\Plugin\Plugin;
+use App\Command\Plugin\Plugin;
 
 ini_set('display_errors', 'on');
 ini_set('display_startup_errors', 'on');
@@ -20,7 +20,6 @@ date_default_timezone_set('Asia/Shanghai');
 
 require BASE_PATH . '/vendor/autoload.php';
 
-//!defined('SWOOLE_HOOK_FLAGS') && define('SWOOLE_HOOK_FLAGS', SWOOLE_HOOK_ALL & ~SWOOLE_HOOK_FILE);
 ! defined('SWOOLE_HOOK_FLAGS') && define('SWOOLE_HOOK_FLAGS', DefaultOption::hookFlags());
 // Self-called anonymous function that creates its own scope and keep the global namespace clean.
 (function () {

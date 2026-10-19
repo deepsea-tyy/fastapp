@@ -1,206 +1,218 @@
 <i18n lang="yaml">
 en:
-  profile: Profile
-  setting: Account setting
-  changeAvatar: Change avatar
-  removeAvatar: Remove avatar
-  changeProfileOrPassword: Modify profile or password
-  explain: Explain
-  action: Action
-  whetherReceiveMsg: Whether receive message
-  whetherMultiDeviceLogin: Whether multi-device login
-  userinfo:
-    nickname: Nick name
-    username: Account
-    avatar: Avatar
-    signed: Signed
-    email: Email
-    phone: Phone
-    loginIp: Login ip
-    loginTime: Login Datetime
+  change:
+    info: Modify info
+    password: Modify password
+  changeInfo:
+    nicknameLabel: Nick name
+    signedLabel: Signed
+    nicknamePlaceholder: please input nickname
+    signedPlaceholder: please input signed
+    avatarLabel: Avatar
+    old_passwordLabel: Old password
+    new_passwordLabel: New password
+    new_password_confirmationLabel: Confirm password
+    old_passwordPlaceholder: please input old password
+    new_passwordPlaceholder: please input new password
+    new_password_confirmationPlaceholder: please input confirm password
 zh_CN:
-  profile: 个人资料
-  setting: 账号设置
-  changeAvatar: 修改头像
-  removeAvatar: 移除头像
-  changeProfileOrPassword: 修改个人信息或密码
-  explain: 说明
-  action: 动作
-  whetherReceiveMsg: 是否接收消息
-  whetherMultiDeviceLogin: 是否多设备登录
-  userinfo:
-    nickname: 昵称
-    username: 账号
-    avatar: 头像
-    signed: 个人签名
-    email: 邮箱
-    phone: 手机
-    loginIp: 登录IP
-    loginTime: 登录时间
+  change:
+    info: 修改信息
+    password: 修改密码
+  changeInfo:
+    nicknameLabel: 昵称
+    signedLabel: 个人签名
+    nicknamePlaceholder: 请输入昵称
+    signedPlaceholder: 请输入个人签名
+    avatarLabel: 头像
+    old_passwordLabel: 旧密码
+    new_passwordLabel: 新密码
+    new_password_confirmationLabel: 确认密码
+    old_passwordPlaceholder: 请输入旧密码
+    new_passwordPlaceholder: 请输入新密码
+    new_password_confirmationPlaceholder: 请输入确认密码
 zh_TW:
-  profile: 個人資料
-  setting: 賬號設置
-  changeAvatar: 修改頭像
-  removeAvatar: 移除頭像
-  changeProfileOrPassword: 修改個人資料或密碼
-  explain: 説明
-  action: 動作
-  whetherReceiveMsg: 是否接受消息
-  whetherMultiDeviceLogin: 是否多設備登錄
-  userinfo:
-    nickname: 昵稱
-    username: 賬號
-    avatar: 頭像
-    signed: 個人簽名
-    email: 郵箱
-    phone: 手機
-    loginIp: 登錄IP
-    loginTime: 登錄時間
+  change:
+    info: 修改資料
+    password: 修改密碼
+  changeInfo:
+    nicknameLabel: 昵稱
+    signedLabel: 個人簽名
+    nicknamePlaceholder: 請輸入昵稱
+    signedPlaceholder: 請輸入個人簽名
+    avatarLabel: 頭像
+    old_passwordLabel: 舊密碼
+    new_passwordLabel: 新密碼
+    new_password_confirmationLabel: 確認密碼
+    old_passwordPlaceholder: 請輸入舊密碼
+    new_passwordPlaceholder: 請輸入新密碼
+    new_password_confirmationPlaceholder: 請輸入確認密碼
 </i18n>
 
 <script setup lang="ts">
-import {useLocalTrans} from '@/hooks/useLocalTrans'
-import UcContainer from './components/container.vue'
-import UcModifyInfo from './components/modify-info.vue'
-import UcTitle from './components/title.vue'
-import {useMessage} from '@/hooks/useMessage.ts'
-import {formatImagePath, processUrl} from "@/utils/common.ts";
+import type { MineRoute } from '#/global'
+import { useI18n } from 'vue-i18n'
+import { useMessage } from '@/hooks/useMessage.ts'
+import { formatFileUrl, parseFilePath } from '@/utils/common.ts'
 
-const modalRef = ref()
-const selected = ref('profile')
-const userStore = useUserStore()
-const tabOptions = reactive([
-  {label: useLocalTrans('profile'), value: 'profile'},
-  // {label: useLocalTrans('setting'), value: 'setting'},
-])
+const route = useRoute() as MineRoute.routeRecord
+const { t } = useI18n({ useScope: 'local' })
+const { t: gt } = useI18n()
 
 const msg = useMessage()
+const userStore = useUserStore()
+const selected = ref('userinfo')
+const isSubmitting = ref(false)
 
-const form = reactive({
-  isReceiveMsg: true,
-  multiDeviceLogin: false,
+const tabOptions = reactive([
+  { label: t('change.info'), value: 'userinfo' },
+  { label: t('change.password'), value: 'password' },
+])
+
+const profileForm = reactive({
+  nickname: userStore.getUserInfo().nickname,
+  signed: userStore.getUserInfo().signed,
 })
 
-const avatar = ref<string>(formatImagePath(userStore.getUserInfo().avatar))
-const globalTrans = useTrans().globalTrans
+const avatar = ref<string>(formatFileUrl(userStore.getUserInfo().avatar))
 
-const showFields = reactive({
-  nickname: useLocalTrans('userinfo.nickname'),
-  username: useLocalTrans('userinfo.username'),
-  signed: useLocalTrans('userinfo.signed'),
-  email: useLocalTrans('userinfo.email'),
-  phone: useLocalTrans('userinfo.phone'),
-  login_ip: useLocalTrans('userinfo.loginIp'),
-  login_time: useLocalTrans('userinfo.loginTime'),
+const passwordForm = reactive({
+  old_password: '',
+  new_password: '',
+  new_password_confirmation: '',
 })
 
-watch(avatar, async (val: string | undefined) => {
-  const response: any = await useHttp().post('/admin/permission/update', {avatar: processUrl(val) ?? ''})
+function update(data: Record<string, any>) {
+  return useHttp().post('/admin/permission/update', data)
+}
+
+async function submitProfile() {
+  isSubmitting.value = true
+  const response: any = await update({
+    nickname: profileForm.nickname,
+    signed: profileForm.signed,
+    avatar: parseFilePath(avatar.value) ?? '',
+  })
   if (response.code === 200) {
-    msg.success(globalTrans('crud.success'))
-    userStore.getUserInfo().avatar = val ?? ''
+    msg.success(gt('crud.updateSuccess'))
+    userStore.getUserInfo().nickname = profileForm.nickname
+    userStore.getUserInfo().signed = profileForm.signed
+    userStore.getUserInfo().avatar = avatar.value ?? ''
   }
-})
+  isSubmitting.value = false
+}
+
+async function submitPassword() {
+  isSubmitting.value = true
+  const response: any = await update(passwordForm)
+  if (response.code === 200) {
+    msg.success(gt('crud.updateSuccess'))
+    passwordForm.old_password = ''
+    passwordForm.new_password = ''
+    passwordForm.new_password_confirmation = ''
+  }
+  isSubmitting.value = false
+}
 </script>
 
 <template>
-  <UcContainer>
-    <UcTitle>
-      <template #extra>
-        <m-button class="h-8" @click="() => modalRef.openModal() ">
-          {{ useLocalTrans('changeProfileOrPassword') }}
-        </m-button>
-      </template>
-    </UcTitle>
-    <div class="mine-uc-layout-content">
-      <div class="w-full">
-        <m-tabs
-            v-model="selected"
-            class="text-sm lg:w-6/12"
-            :options="tabOptions"
-        />
-        <ul v-if="selected === 'profile'" class="info-list">
-          <li class="!b-none">
-            <div class="desc-item">
-              <div class="desc-label">
-                {{ useLocalTrans('userinfo.avatar') }}
-              </div>
-              <div class="desc-value">
-                <ma-upload-image v-model="avatar"/>
-              </div>
-            </div>
-          </li>
-          <template v-for="(value, key) in userStore.getUserInfo()">
-            <li v-if="showFields[key]">
-              <div class="desc-item">
-                <div class="desc-label">
-                  {{ showFields[key] }}
-                </div>
-                <div class="desc-value">
-                  {{ value ?? '-' }}
-                </div>
-              </div>
-            </li>
-          </template>
-        </ul>
-
-        <ul v-if="selected === 'setting'" class="info-list b-1 b-gray-2 rounded b-solid dark-b-dark-4">
-          <li class="bg-gray-1 !b-none dark-bg-dark-5">
-            <div class="desc-item">
-              <div class="desc-label font-bold">
-                {{ useLocalTrans('explain') }}
-              </div>
-              <div class="desc-value font-bold">
-                {{ useLocalTrans('action') }}
-              </div>
-            </div>
-          </li>
-          <li>
-            <div class="desc-item">
-              <div class="desc-label">
-                {{ useLocalTrans('whetherReceiveMsg') }}
-              </div>
-              <div class="desc-value">
-                <m-switch v-model="form.isReceiveMsg"/>
-              </div>
-            </div>
-          </li>
-          <li>
-            <div class="desc-item">
-              <div class="desc-label">
-                {{ useLocalTrans('whetherMultiDeviceLogin') }}
-              </div>
-              <div class="desc-value">
-                <m-switch v-model="form.multiDeviceLogin"/>
-              </div>
-            </div>
-          </li>
-        </ul>
+  <div class="h-full bg-gray-1 dark-bg-dark-6">
+    <div
+      class="h-[55px] flex items-center bg-white px-3 dark-bg-dark-8 dark-b-b-dark-4 b-b-1 b-b-solid b-b-gray-2"
+    >
+      <div class="flex items-center gap-x-2">
+        <ma-svg-icon v-if="route.meta?.icon" :name="route.meta?.icon ?? ''" size="20" />
+        {{ route.meta?.title ?? '未知' }}
       </div>
     </div>
+    <div class="mine-uc-layout-content">
+      <div class="mine-card w-full lg:w-6/12">
+        <m-tabs v-model="selected" :options="tabOptions" class="text-sm" />
 
-    <UcModifyInfo ref="modalRef"/>
-  </UcContainer>
+        <form v-show="selected === 'userinfo'" class="mine-form" @submit.prevent="submitProfile">
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.avatarLabel') }}
+            </div>
+            <ma-upload-image v-model="avatar" />
+          </div>
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.nicknameLabel') }}
+            </div>
+            <m-input
+              v-model="profileForm.nickname"
+              name="nickname"
+              :placeholder="t('changeInfo.nicknamePlaceholder')"
+            />
+          </div>
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.signedLabel') }}
+            </div>
+            <m-textarea
+              v-model="profileForm.signed"
+              :placeholder="t('changeInfo.signedPlaceholder')"
+            />
+          </div>
+          <m-button
+            type="submit"
+            class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
+            :class="{ loading: isSubmitting }"
+          >
+            {{ t('change.info') }}
+          </m-button>
+        </form>
+
+        <form v-show="selected === 'password'" class="mine-form" @submit.prevent="submitPassword">
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.old_passwordLabel') }}
+            </div>
+            <m-input
+              v-model="passwordForm.old_password"
+              type="password"
+              name="old_password"
+              :placeholder="t('changeInfo.old_passwordPlaceholder')"
+            />
+          </div>
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.new_passwordLabel') }}
+            </div>
+            <m-input
+              v-model="passwordForm.new_password"
+              type="password"
+              name="new_password"
+              :placeholder="t('changeInfo.new_passwordPlaceholder')"
+            />
+          </div>
+          <div class="mine-form-item">
+            <div class="mine-form-item-title">
+              {{ t('changeInfo.new_password_confirmationLabel') }}
+            </div>
+            <m-input
+              v-model="passwordForm.new_password_confirmation"
+              type="password"
+              name="new_password_confirmation"
+              :placeholder="t('changeInfo.new_password_confirmationPlaceholder')"
+            />
+          </div>
+          <m-button
+            type="submit"
+            class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
+            :class="{ loading: isSubmitting }"
+          >
+            {{ t('change.password') }}
+          </m-button>
+        </form>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.info-list {
-  @apply w-full mt-3;
-
-  & li {
-    @apply b-t-1 b-t-gray-2 b-t-solid pr-2.5 dark-b-t-dark-4 py-4 text-sm hover-bg-gray-50 dark-hover-bg-dark-5;
-
-    .desc-item {
-      @apply w-full lg:w-6/12 flex items-center justify-between text-stone-8 dark-text-stone-3;
-
-      .desc-label {
-        @apply w-6/12 lg:w-5/12 pl-2 lg:pl-3 truncate;
-      }
-
-      .desc-value {
-        @apply w-6/12 lg:w-7/12 text-left truncate;
-      }
-    }
-  }
+.mine-form-item-title {
+  @apply text-left text-sm mt-3 mb-1.5;
 }
 </style>

@@ -6,7 +6,7 @@ import MaEditor from '@/components/ma-editor/index.vue'
 import MaUploadImage from '@/components/ma-upload-image/index.vue'
 import MaUploadFile from '@/components/ma-upload-file/index.vue'
 import MaUploadVideo from '@/components/ma-upload-video/index.vue'
-import {formatImagePath} from "@/utils/common.ts";
+import {formatFileUrl} from "@/utils/common.ts";
 
 defineOptions({ name: 'MaChildrenForm' })
 
@@ -399,7 +399,7 @@ const RenderConfigFields = defineComponent({
           })
         } else if (component === 'ma-upload-image') {
           // 渲染图片上传组件
-          const imagePath = formatImagePath(currentValue)
+          const imagePath = formatFileUrl(currentValue)
           content = h(MaUploadImage, {
             ...controlPropsBase,
             modelValue: Array.isArray(imagePath) ? imagePath[0] : imagePath,
@@ -409,7 +409,7 @@ const RenderConfigFields = defineComponent({
           })
         } else if (component === 'ma-upload-file') {
           // 渲染文件上传组件
-          const filePath = formatImagePath(currentValue)
+          const filePath = formatFileUrl(currentValue)
           content = h(MaUploadFile, {
             ...controlPropsBase,
             modelValue: Array.isArray(filePath) ? filePath[0] : filePath,
@@ -419,7 +419,7 @@ const RenderConfigFields = defineComponent({
           })
         } else if (component === 'ma-upload-video') {
           // 渲染视频上传组件
-          const videoPath = formatImagePath(currentValue)
+          const videoPath = formatFileUrl(currentValue)
           content = h(MaUploadVideo, {
             ...controlPropsBase,
             modelValue: Array.isArray(videoPath) ? videoPath[0] : videoPath,

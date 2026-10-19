@@ -10,19 +10,10 @@ const router = createRouter({
         {
             name: 'login',
             path: '/login',
-            component: () => import(('~/base/views/login/index.vue')),
+            component: () => import('~/base/views/login/index.vue'),
             meta: {
                 title: '登录',
                 i18n: 'menu.login',
-            },
-        },
-        {
-            path: '/:pathMatch(.*)*',
-            name: 'MineSystemError',
-            component: () => import(('@/layouts/[...all].tsx')),
-            meta: {
-                hidden: true,
-                i18n: 'menu.pageError',
             },
         },
     ],
@@ -34,9 +25,10 @@ router.beforeEach(async (to, from, next) => {
     if (userStore.isLogin) {
         if (to.name === 'login') {
             next({
-                path: settingStore.getSettings('welcomePage').path,
+                path: '/',
                 replace: true,
             })
+            return
         }
         if (userStore.getUserInfo() === null) {
             await userStore.requestUserInfo()

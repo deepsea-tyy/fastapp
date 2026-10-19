@@ -1,0 +1,48 @@
+// Web 普惠体：4 语种 × 3 字重（regular / medium / bold）
+// 文件命名：{locale}-{weight}.woff2；见 admin/public/font/alibaba-pu-hui-ti-3/README.md
+
+@use 'sass:list';
+@use 'sass:string';
+
+$app-font-dir: '/font/alibaba-pu-hui-ti-3';
+$app-font-locales: sc, tc, jp, kr;
+$app-font-weights: (
+  400: regular,
+  500: medium,
+  700: bold,
+);
+
+@function app-font-family($locale) {
+  @return 'AlibabaPuHuiTi-3-55-Regular-#{$locale}';
+}
+
+@each $locale in $app-font-locales {
+  @each $w, $weight in $app-font-weights {
+    @font-face {
+      font-family: app-font-family($locale);
+      src: url('#{$app-font-dir}/#{$locale}-#{$weight}.woff2') format('woff2');
+      font-weight: $w;
+      font-style: normal;
+      font-display: swap;
+    }
+  }
+}
+
+$app-font-family-stack: ();
+@each $locale in $app-font-locales {
+  $app-font-family-stack: list.append($app-font-family-stack, string.unquote("'#{app-font-family($locale)}'"), comma);
+}
+
+:root {
+  --app-font-family: #{$app-font-family-stack}, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--app-font-family);
+}

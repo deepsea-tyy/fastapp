@@ -10,11 +10,12 @@ zh_TW:
 
 <script setup lang="ts">
 import { omit } from 'lodash-es'
+import { useI18n } from 'vue-i18n'
 import MaResourcePanel from './panel.vue'
 import type { Resource } from './type.ts'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 
 defineOptions({ name: 'MaResourcePicker' })
+const { t } = useI18n({ useScope: 'local' })
 
 const emit = defineEmits<{
   cancel: []
@@ -23,7 +24,6 @@ const emit = defineEmits<{
 const dialogVisible = defineModel<boolean>('visible', { default: false })
 
 const attrs = omit(useAttrs(), ['onConfirm', 'onCancel'])
-const t = useLocalTrans() as (key: string) => string
 
 function close() {
   dialogVisible.value = false

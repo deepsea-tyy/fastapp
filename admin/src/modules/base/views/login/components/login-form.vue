@@ -3,14 +3,12 @@
 import Message from 'vue-m-message'
 import { useI18n } from 'vue-i18n'
 import useUserStore from '@/store/modules/useUserStore.ts'
-import useSettingStore from '@/store/modules/useSettingStore.ts'
 import useHttp from '@/hooks/auto-imports/useHttp.ts'
 import type { ResponseStruct } from '#/global'
 
 const { t } = useI18n()
 const isProduction: boolean = import.meta.env.MODE === 'production'
 const userStore = useUserStore()
-const settingStore = useSettingStore()
 const router = useRouter()
 const isFormSubmit = ref(false)
 const needGoogle2fa = ref(false)
@@ -94,9 +92,8 @@ async function handleLoginSuccess(userData: any) {
   }
 
   if (userData && !userData.verify_again) {
-    const welcomePath = settingStore.getSettings('welcomePage').path ?? null
-    const redirect = router.currentRoute.value.query?.redirect ?? undefined
-    await router.push({ path: redirect ?? welcomePath ?? '/' })
+    const redirect = router.currentRoute.value.query?.redirect
+    await router.push({ path: typeof redirect === 'string' && redirect ? redirect : '/' })
   }
 
   needGoogle2fa.value = false

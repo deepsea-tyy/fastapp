@@ -15,12 +15,6 @@ const defaultGlobalConfigSettings: RecursiveRequired<SystemSettings.all> = {
     showBars: true,
     watermarkText: import.meta.env.VITE_APP_TITLE,
   },
-  welcomePage: {
-    name: 'welcome',
-    path: '/welcome',
-    title: '欢迎页',
-    icon: 'icon-park-outline:jewelry',
-  },
   subAside: {
     showIcon: true,
     showTitle: true,

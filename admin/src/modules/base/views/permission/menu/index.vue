@@ -1,6 +1,7 @@
 
 <script setup lang="tsx">
 import type { ElForm } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/hooks/useMessage.ts'
 import getOnlyWorkAreaHeight from '@/utils/getOnlyWorkAreaHeight.ts'
 import { create, type MenuVo, page, save } from '~/base/api/menu.ts'
@@ -43,7 +44,7 @@ const newMenu = ref<MenuVo>({
 })
 
 const loading = ref<boolean>(false)
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const msg = useMessage()
 
 async function getMenu() {

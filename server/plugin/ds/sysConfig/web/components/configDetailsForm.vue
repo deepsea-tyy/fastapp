@@ -3,12 +3,14 @@ import MaKeyValue from '@/components/ma-key-value/index.vue'
 import useDialog from '@/hooks/useDialog.ts'
 import type { UseDialogExpose } from '@/hooks/useDialog.ts'
 import { useMessage } from '@/hooks/useMessage.ts'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import type { ConfigItem } from '$/ds/sysConfig/utils/type.ts'
 import { buildRenderProps, renderInputTypeComponent, shouldShowDataButton } from '$/ds/sysConfig/utils/tools.tsx'
 import { deleteByKey } from '$/ds/sysConfig/api/config.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import {formatLang} from "@/utils/common.ts";
+import {useI18n} from 'vue-i18n'
+
+const {t} = useI18n()
 // 引入抽离的方法
 const emit = defineEmits<{
   (e: 'onDelete'): void
@@ -18,8 +20,6 @@ const formRef = ref()
 const maKeyValueRef = ref()
 const defaultModel = reactive<Record<string, any>>({})
 const items = reactive<any[]>([])
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
 const msg = useMessage()
 
 const maDialog: UseDialogExpose = useDialog({

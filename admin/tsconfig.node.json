@@ -12,7 +12,6 @@
   "include": [
     "package.json",
     "vite.config.ts",
-    "vite/**/*.ts",
-    "playwright.config.ts"
+    "vite/**/*.ts"
   ]
 }

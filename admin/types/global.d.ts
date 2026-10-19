@@ -117,7 +117,7 @@ declare namespace Plugin {
 }
 
 declare namespace SystemSettings {
-  type settingType = 'app' | 'welcomePage' | 'mainAside' | 'subAside' | 'tabbar' | 'toolBars' | 'copyright'
+  type settingType = 'app' | 'mainAside' | 'subAside' | 'tabbar' | 'toolBars' | 'copyright'
   // 应用属性
   interface app {
     /**
@@ -159,27 +159,6 @@ declare namespace SystemSettings {
      * @默认值 `'fasapp'`
      */
     watermarkText?: string | string[]
-  }
-  interface welcomePage {
-    /**
-     * 欢迎页默认地址
-     * @默认值 `'/welcome'`
-     */
-    path?: string
-    /**
-     * 欢迎页路由名称
-     * @默认值 `'welcome'`
-     */
-    name?: string
-    /**
-     * 欢迎页默认名称
-     * @默认值 `'欢迎页'`
-     */
-    title?: string
-    /**
-     * 欢迎页图标
-     */
-    icon?: string
   }
   // 主菜单
   interface mainAside {
@@ -279,8 +258,6 @@ declare namespace SystemSettings {
   interface all {
     /** 应用设置 */
     app: app
-    /** 欢迎页设置 */
-    welcomePage: welcomePage
     /** 主菜单设置 */
     mainAside: mainAside
     /** 子菜单设置 */

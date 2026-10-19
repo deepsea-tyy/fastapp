@@ -25,18 +25,6 @@ const globalConfigSettings: SystemSettings.all = {
     watermarkText: '',
   },
 
-  // 欢迎页（默认首页标签）
-  welcomePage: {
-    // 路由 name，需与路由表一致
-    name: 'menu:index',
-    // 路由 path
-    path: '/index',
-    // 显示标题
-    title: '创作中枢',
-    // 菜单/标签图标（iconify 名称）
-    icon: 'icon-park-outline:jewelry',
-  },
-
   // 子侧栏（经典/混合布局菜单栏）
   subAside: {
     // 是否显示菜单图标

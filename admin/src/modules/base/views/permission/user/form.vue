@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import type { UserVo } from '~/base/api/user'
+import { useI18n } from 'vue-i18n'
 import { create, save } from '~/base/api/user'
 import getFormItems from './data/getFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
@@ -14,7 +15,7 @@ const { formType = 'add', data = null } = defineProps<{
   data?: UserVo | null
 }>()
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const userForm = ref<MaFormExpose>()
 const userModel = ref<UserVo>({})
 

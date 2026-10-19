@@ -41,6 +41,7 @@
   "include": [
     "mock/*.ts",
     "types/*.ts",
+    "types/*.d.ts",
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",

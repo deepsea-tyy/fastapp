@@ -3,10 +3,12 @@ import type { UseDialogExpose } from '@/hooks/useDialog.ts'
 import ConfigForm from '$/ds/sysConfig/views/configForm.vue'
 
 import useDialog from '@/hooks/useDialog.ts'
-import type { TransType } from '@/hooks/auto-imports/useTrans.ts'
 import { ResultCode } from '@/utils/ResultCode.ts'
 import { useMessage } from '@/hooks/useMessage.ts'
 import type { ConfigVo } from '$/ds/sysConfig/api/config.ts'
+import {useI18n} from 'vue-i18n'
+
+const {t} = useI18n()
 
 const { formType = 'add', data = null } = defineProps<{
   formType?: 'add' | 'edit'
@@ -15,8 +17,6 @@ const { formType = 'add', data = null } = defineProps<{
 // 定义事件用于通知父组件
 const emit = defineEmits(['createSuccess', 'createError'])
 const formRef = ref()
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
 const msg = useMessage()
 // 弹窗配置
 const maDialog: UseDialogExpose = useDialog({

@@ -1,14 +1,10 @@
 pub mod bootstrap;
 pub mod commands;
-pub mod download;
-pub mod gpu;
-pub mod hardware;
-pub mod health;
-pub mod manifest;
+pub mod desktop_conf;
+pub mod exec;
 pub mod paths;
+pub mod platform;
 pub mod process;
-pub mod setup;
-pub mod state;
 
 use tauri::{AppHandle, Manager};
 
@@ -16,33 +12,22 @@ use crate::paths::AppPaths;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    setup_ctrlc_handler();
+
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_app_paths,
-            commands::get_install_state,
-            commands::seed_bundled_components,
-            commands::fetch_manifest,
-            commands::download_component,
+            commands::install_bundled,
             commands::start_services,
-            commands::stop_services,
-            commands::health_check,
-            commands::gpu_is_locked,
-            commands::gpu_slots,
-            commands::get_capabilities,
-            commands::get_hardware_report,
-            commands::write_tools_env,
-            commands::download_model,
-            commands::check_updates,
-            commands::repair_component,
-            commands::read_log_tail,
-            commands::default_manifest_url,
         ])
         .setup(|app| {
+            desktop_conf::init();
             let paths = AppPaths::resolve();
             paths.ensure_dirs();
-            setup::write_server_env_if_missing(&paths);
-            gpu::spawn_poller(app.handle().clone());
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.set_title(&desktop_conf::app_name());
+            }
             setup_tray(app.handle());
             Ok(())
         });
@@ -61,24 +46,36 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
-            if let tauri::RunEvent::Exit = event {
-                let paths = paths::AppPaths::resolve();
-                process::stop_all(&paths);
-            }
-            if let tauri::RunEvent::WindowEvent {
-                label,
-                event: tauri::WindowEvent::CloseRequested { .. },
-                ..
-            } = event
-            {
-                if label == "main" {
+            match event {
+                tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. } => {
                     let paths = paths::AppPaths::resolve();
                     process::stop_all(&paths);
                 }
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::CloseRequested { .. },
+                    ..
+                } if label == "main" => {
+                    let paths = paths::AppPaths::resolve();
+                    process::stop_all(&paths);
+                }
+                _ => {}
             }
             let _ = app_handle;
         });
 }
+
+#[cfg(unix)]
+fn setup_ctrlc_handler() {
+    let _ = ctrlc::set_handler(|| {
+        let paths = AppPaths::resolve();
+        process::stop_all(&paths);
+        std::process::exit(0);
+    });
+}
+
+#[cfg(not(unix))]
+fn setup_ctrlc_handler() {}
 
 fn setup_tray(app: &AppHandle) {
     use tauri::menu::{Menu, MenuItem};

@@ -10,11 +10,12 @@ zh_TW:
 
 <script setup lang="ts">
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
+import { useI18n } from 'vue-i18n'
 import type { TabPaneName } from 'element-plus'
 import data from '@/iconify/data.json'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 
 defineOptions({ name: 'MaIconPanel' })
+const { t } = useI18n({ useScope: 'local' })
 
 const { pageSize = 70, className = 'w-full' } = defineProps<{
   pageSize?: number
@@ -57,7 +58,6 @@ function appendCustomIcons() {
 // 将处理后的数据赋值回 data
 const updatedData = appendCustomIcons()
 
-const t = useLocalTrans()
 
 function getIcons() {
   currentIconList.value = updatedData.filter((item: any) => item.prefix === currentName.value)[0].icons

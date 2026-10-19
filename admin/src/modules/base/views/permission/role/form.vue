@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import type { RoleVo } from '~/base/api/role'
+import { useI18n } from 'vue-i18n'
 import { create, save } from '~/base/api/role'
 import getFormItems from './data/getFormItems.tsx'
 import type { MaFormExpose } from '@/components/ma-form'
@@ -14,7 +15,7 @@ const { formType = 'add', data = null } = defineProps<{
   data?: RoleVo | null
 }>()
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const userForm = ref<MaFormExpose>()
 const userModel = ref<RoleVo>({})
 

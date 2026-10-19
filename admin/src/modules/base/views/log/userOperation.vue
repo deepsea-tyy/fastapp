@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import type { MaProTableExpose, MaProTableOptions, MaProTableSchema } from '@/components/ma-pro-table'
+import { useI18n } from 'vue-i18n'
 import type { Ref } from 'vue'
 import getSearchItems from './userOperationLogData/UserOperationLogSearch.tsx'
 import getColumns from './userOperationLogData/UserOperationLogColumn.tsx'
@@ -11,7 +12,7 @@ import { useMessage } from '@/hooks/useMessage.ts'
 
 defineOptions({ name: 'log:userOperation' })
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const proTableRef = ref<MaProTableExpose>() as Ref<MaProTableExpose>
 const selections: Ref<RequestLogInfoVo[]> = ref([])
 const msg = useMessage()

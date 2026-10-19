@@ -1,9 +1,9 @@
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
+import { t } from '@/utils/i18n.ts'
 import type { MessageBoxInputValidator } from 'element-plus/es/components/message-box/src/message-box.type'
 
 export function useMessage() {
-  const t = useTrans().globalTrans
-  return {
+    return {
     // 消息提示
     info(content: string) {
       ElMessage.info(content)

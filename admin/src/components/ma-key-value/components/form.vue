@@ -5,11 +5,12 @@ import 'ace-builds/src-noconflict/mode-json'
 import 'ace-builds/src-noconflict/theme-dawn'
 import 'ace-builds/src-noconflict/theme-github_dark'
 import { useColorMode } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 
 defineOptions({ name: 'system:group:form' })
 
 const color = useColorMode()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const convertArray = ref()
 const content = ref();
 

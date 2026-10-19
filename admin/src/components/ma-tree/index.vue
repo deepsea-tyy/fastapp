@@ -28,16 +28,16 @@ zh_TW:
 
 <script setup lang="ts">
 import { ElTree } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { get } from 'lodash-es'
-import { useLocalTrans } from '@/hooks/useLocalTrans.ts'
 
 defineOptions({ name: 'MaTree' })
+const { t } = useI18n({ useScope: 'local' })
 
 const { treeKey = 'label' } = defineProps<{
   treeKey: string
 }>()
 
-const t = useLocalTrans()
 
 const filterText = ref<string>('')
 const treeRef = ref<InstanceType<typeof ElTree>>()

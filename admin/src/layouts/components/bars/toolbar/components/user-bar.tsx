@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import Message from 'vue-m-message'
 import MineShortcutsDesc from './dropdownMenuComponents/shortcuts-desc.tsx'
 import MineSystemInfo from './dropdownMenuComponents/system-info.tsx'
-import {formatImagePath} from "@/utils/common.ts";
+import {formatFileUrl} from "@/utils/common.ts";
 
 export default defineComponent({
   name: 'UserBar',
@@ -58,7 +58,7 @@ export default defineComponent({
           v-slots={{
             default: () => (
               <div class="mine-userinfo">
-                {userInfo.avatar && <img src={formatImagePath(userInfo.avatar)} alt={userInfo.username} class="mine-img-avatar" />}
+                {userInfo.avatar && <img src={formatFileUrl(userInfo.avatar)} alt={userInfo.username} class="mine-img-avatar" />}
                 {!userInfo.avatar && <div class="mine-text-avatar">{userInfo.username[0].toUpperCase()}</div>}
                 <a class="username hidden lg:flex">
                   {userInfo.username}
@@ -75,7 +75,7 @@ export default defineComponent({
                         type="default"
                         handle={item.handle}
                         v-slots={{
-                          'default': () => <span>{ useTrans(item.label) }</span>,
+                          'default': () => <span>{ t(item.label) }</span>,
                           'prefix-icon': () => <ma-svg-icon name={item.icon} size={18} />,
                         }}
                       />

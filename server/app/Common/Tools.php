@@ -221,38 +221,109 @@ class Tools
         return $prefix . $dateStr . $formattedSequence;
     }
 
-    public static function runtime_path(string $path = ''): string
+    /** 当前 fastapp.phar 路径；非 phar 运行时为 null */
+    public static function phar_file(): ?string
     {
-        return self::disk_root() . '/runtime/' . ltrim($path, '/');
+        $phar = \Phar::running(false);
+
+        return $phar ?: null;
     }
 
-    public static function storage_path(string $path = ''): string
+    /** 桌面 SFX 运行时（fastapp phar） */
+    public static function is_desktop_runtime(): bool
     {
-        return self::disk_root() . '/storage/' . ltrim($path, '/');
+        return self::phar_file() !== null;
     }
 
-    public static function plugin_path(string $path = ''): string
-    {
-        if (\Phar::running(false)) {
-            return 'phar://' . \Phar::running(false) . '/plugin/' . ltrim($path, '/');
-        }
-
-        return BASE_PATH . '/plugin/' . ltrim($path, '/');
-    }
-
-    /** AppData/server 磁盘根（SFX 同级）；storage/runtime/.env 等可写路径 */
+    /**
+     * 可写数据根：桌面为 phar 同级 AppData；开发为 BASE_PATH（server/）。
+     * storage、runtime、ui、cmd 等均在其下。
+     */
     public static function disk_root(): string
     {
-        if ($phar = \Phar::running(false)) {
+        if ($phar = self::phar_file()) {
             return dirname($phar);
         }
 
         return BASE_PATH;
     }
 
-    public static function phar_path(string $path = ''): string
+    /** disk_root 下相对路径 */
+    public static function disk_path(string $path = ''): string
     {
+        if ($path === '') {
+            return self::disk_root();
+        }
+
         return self::disk_root() . '/' . ltrim($path, '/');
+    }
+
+    /** 仓库根（开发为 fastapp/；桌面与 disk_root 父级一致，一般勿放业务数据） */
+    public static function project_root(): string
+    {
+        return dirname(self::disk_root());
+    }
+
+    /**
+     * 应用代码根：phar 内为 phar://…；开发为 BASE_PATH。
+     * 只读 bundle（plugin 源码等）相对此根。
+     */
+    public static function app_root(): string
+    {
+        if ($phar = self::phar_file()) {
+            return 'phar://' . $phar;
+        }
+
+        return BASE_PATH;
+    }
+
+    public static function runtime_path(string $path = ''): string
+    {
+        return self::disk_path('runtime/' . ltrim($path, '/'));
+    }
+
+    public static function storage_path(string $path = ''): string
+    {
+        return self::disk_path('storage/' . ltrim($path, '/'));
+    }
+
+    public static function plugin_path(string $path = ''): string
+    {
+        return self::app_root() . '/plugin/' . ltrim($path, '/');
+    }
+
+    /** bundled admin UI：{disk_root}/ui/index.html */
+    public static function ui_index_path(): ?string
+    {
+        $path = self::disk_path('ui/index.html');
+
+        return is_file($path) ? $path : null;
+    }
+
+    /** admin UI 字体：{disk_root}/ui/font/alibaba-pu-hui-ti-3/ */
+    public static function app_font_path(string $locale = 'sc'): ?string
+    {
+        $locale = in_array($locale, ['sc', 'tc', 'jp', 'kr'], true) ? $locale : 'sc';
+        $file = "{$locale}-regular.otf";
+        $ui = self::ui_index_path();
+        if (! $ui) {
+            return null;
+        }
+        $path = dirname($ui) . '/font/alibaba-pu-hui-ti-3/' . $file;
+
+        return is_file($path) ? $path : null;
+    }
+
+    public static function app_font_locale_for_user(int $userId): string
+    {
+        $lang = strtolower(str_replace('-', '_', self::lang($userId)));
+
+        return match (true) {
+            str_starts_with($lang, 'zh_tw'), str_starts_with($lang, 'zh_hk'), $lang === 'zh_hant' => 'tc',
+            str_starts_with($lang, 'ja') => 'jp',
+            str_starts_with($lang, 'ko') => 'kr',
+            default => 'sc',
+        };
     }
 
     public static function getJwtKey(?string $secret): InMemory

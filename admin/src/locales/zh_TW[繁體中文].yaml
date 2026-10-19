@@ -58,12 +58,6 @@ base:
   sys:
     notComponent: 沒有找到頁面，無法跳轉
     unknown: 未知
-  uc:
-    shortBackControl: 返回
-    backControl: 返回控制面板
-    title: 用戶中心
-    google2faNotEnabled: 您尚未啟用 Google 2FA 雙重驗證，為了賬戶安全，建議您前往設置頁面啟用。
-    goToSettings: 前往設置
   notification:
     todo: 待辦
     allRead: 全部已讀
@@ -106,8 +100,6 @@ base:
     translate: 國際化
 menu:
   index: 首頁
-  uc:index: 个人中心
-  uc:google2fa: Google 2FA 設置
   dashboard:analysis: 分析頁
   pageError: 頁面出現了錯誤
   appstore: 應用商店

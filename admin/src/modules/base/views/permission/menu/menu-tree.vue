@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import type { MenuVo } from '~/base/api/menu.ts'
+import { useI18n } from 'vue-i18n'
 import { deleteByIds } from '~/base/api/menu.ts'
 import { useResizeObserver } from '@vueuse/core'
 import getOnlyWorkAreaHeight from '@/utils/getOnlyWorkAreaHeight.ts'
@@ -16,7 +17,7 @@ const msg = useMessage()
 const newMenu = inject('newMenu') as Ref<MenuVo>
 const setNodeExpand = inject('setNodeExpand') as (id: number, state: boolean) => void
 
-const t = useTrans().globalTrans
+const { t } = useI18n()
 
 const menuType = ref<{ [key: string]: Record<string, string> }>({
   M: { color: 'primary', label: '菜单' },

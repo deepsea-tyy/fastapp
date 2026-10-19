@@ -3,6 +3,7 @@
 import type { Ref } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import type { ElDrawer } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 defineOptions({ name: 'MaDrawer' })
 
@@ -24,7 +25,7 @@ function cancelLoadingState(state: boolean) {
 }
 
 const attrs = useAttrs()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 
 const isOpen = defineModel<boolean>({ default: false })
 

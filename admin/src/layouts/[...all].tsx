@@ -1,10 +1,12 @@
 
 import image403 from '/403.svg'
+import { useI18n } from 'vue-i18n'
 import image404 from '/404.svg'
 
 export default defineComponent({
   name: 'MineSystemError',
   setup() {
+    const { t } = useI18n()
     const route = useRoute()
     const router = useRouter()
     return () => (
@@ -17,7 +19,7 @@ export default defineComponent({
             onClick={() => router.replace('/')}
           >
             <ma-svg-icon name="i-material-symbols:home-outline-rounded" size={20} />
-            {useTrans('base.goHome')}
+            {t('base.goHome')}
           </m-button>
         </div>
       </div>

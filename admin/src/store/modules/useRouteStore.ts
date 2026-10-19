@@ -1,181 +1,50 @@
-import type {Plugin, SystemSettings} from '#/global'
-
-import type {Router, RouteRecordRaw} from 'vue-router'
+import type { Plugin } from '#/global'
+import type { Router, RouteRecordRaw } from 'vue-router'
 import usePluginStore from '@/store/modules/usePluginStore.ts'
+import useTabStore from '@/store/modules/useTabStore.ts'
+import { firstMenuRoute, flattenRoutes, menuToRoutes, normalizeRoute, NOT_FOUND_PATH, rootLayout } from '@/router/routes.ts'
 
 const useRouteStore = defineStore(
     'useRouteStore',
     () => {
-        const defaultSetting = ref<SystemSettings.all>(useDefaultSetting())
-        // 原始路由
         const routesRaw = ref<RouteRecordRaw[]>([])
-        const flatteningRoutesList = ref<RouteRecordRaw[]>([])
 
-        async function initRoutes(router: Router, routes: any[]) {
-            const MineRootLayoutRoute = getMineRootLayoutRoute()
+        async function initRoutes(router: Router, menus: any[]) {
+            const menuRoutes = menuToRoutes(menus)
+            const home = firstMenuRoute(menuRoutes)
+            const layout = rootLayout(home?.path ?? NOT_FOUND_PATH)
 
-            router.hasRoute('MineRootLayoutRoute') && router.removeRoute('MineRootLayoutRoute')
-            router.addRoute(MineRootLayoutRoute)
-            routesRaw.value = router.getRoutes()
-            routes = menuToRoutes(routes)
-
-            router.getRoutes().find((route, key) => {
-                if (route.name === 'MineRootLayoutRoute') {
-                    // @ts-expect-error eslint-disable-next-line ts/ban-ts-comment
-                    routesRaw.value[key].children.push(...routes)
-                }
-            })
-            flatteningRoutesList.value = flatteningRoutes(routes)
-            flatteningRoutesList.value.map((routeItem: RouteRecordRaw) => router.addRoute('MineRootLayoutRoute', routeItem))
-            const plugins = usePluginStore().getPluginConfig() as { [key: string]: Plugin.PluginConfig }
-            Object.keys(plugins).map((name: string) => {
-                const plugin = plugins[name] as Plugin.PluginConfig
-                if (plugin.config?.enable === true && plugin?.views) {
-                    plugin.views.map((item: Plugin.Views) => {
-                        const route = toRecordRawRoute(item)
-                        MineRootLayoutRoute.children?.push(route)
-                        router.addRoute('MineRootLayoutRoute', route)
-                    })
-                }
-            })
-            await usePluginStore().callHooks('registerRoute', router, routesRaw.value)
-        }
-
-        function getMineRootLayoutRoute(): RouteRecordRaw {
-            const welcomePage: SystemSettings.welcomePage = defaultSetting.value.welcomePage
-            return {
-                name: 'MineRootLayoutRoute',
-                path: '/',
-                component: () => import('@/layouts'),
-                redirect: welcomePage.path,
-                children: [
-                    {
-                        name: 'index',
-                        path: '/index',
-                        meta: {
-                            title: '首页',
-                            i18n: 'menu.index',
-                            icon: 'icon-park-outline:jewelry',
-                        },
-                        component: () => import(('~/base/views/uc/workbench.vue'))
-                    },
-                    {
-                        name: 'uc:index',
-                        path: '/uc/index',
-                        component: () => import(('~/base/views/uc/index.vue')),
-                        meta: {
-                            title: '个人中心',
-                            icon: 'heroicons:user-circle',
-                            i18n: 'menu.uc:index',
-                            type: 'M',
-                            hidden: true
-                        },
-                    },
-                    {
-                        name: 'uc:google2fa',
-                        path: '/uc/google2fa',
-                        component: () => import(('~/base/views/uc/google2fa.vue')),
-                        meta: {
-                            title: 'Google 2FA 设置',
-                            icon: 'heroicons:shield-check',
-                            i18n: 'menu.uc:google2fa',
-                            type: 'M',
-                            hidden: true
-                        },
-                    },
-                    toRecordRawRoute({
-                        path: '/:pathMatch(.*)*',
-                        name: 'MineSystemError',
-                        component: () => import(('@/layouts/[...all].tsx')),
-                        meta: {
-                            hidden: true,
-                            i18n: 'menu.pageError',
-                        },
-                    }),
-                ],
+            if (router.hasRoute('MineRootLayoutRoute')) {
+                router.removeRoute('MineRootLayoutRoute')
             }
-        }
+            router.addRoute(layout)
+            routesRaw.value = router.getRoutes()
+            routesRaw.value.find(route => route.name === 'MineRootLayoutRoute')?.children?.push(...menuRoutes)
 
-        /**
-         * 扁平化为一层路由
-         */
-        function flatteningRoutes(routes: any[] = [], breadcrumb: any[] = []) {
-            const res: any = []
-            routes.forEach((route) => {
-                const tmp = {...route}
-                if (tmp.children) {
-                    const childrenBreadcrumb = [...breadcrumb]
-                    childrenBreadcrumb.push(route)
-                    const tmpRoute = {...route}
-                    tmpRoute.meta = tmpRoute?.meta ?? {}
-                    tmpRoute.meta.breadcrumb = childrenBreadcrumb
-                    delete tmpRoute.children
-                    res.push(tmpRoute)
-                    const childrenRoutes = flatteningRoutes(tmp.children, childrenBreadcrumb)
-                    childrenRoutes.map((item: any) => res.push(item))
-                } else {
-                    const tmpBreadcrumb = [...breadcrumb]
-                    tmpBreadcrumb.push(tmp)
-                    tmp.meta = tmp?.meta ?? {}
-                    tmp.meta.breadcrumb = tmpBreadcrumb
-                    res.push(tmp)
-                }
+            flattenRoutes(menuRoutes).forEach((route) => {
+                router.addRoute('MineRootLayoutRoute', route)
             })
-            return res
-        }
 
-        function toRecordRawRoute(route: any) {
-            return flatteningRoutes([route])[0].meta.breadcrumb[0]
-        }
-
-        const moduleViews = import.meta.glob('../../modules/**/views/**/**.{vue,jsx,tsx}')
-        const pluginViews = import.meta.glob('../../plugins/*/**/views/**/**.{vue,jsx,tsx}')
-
-        /**
-         * 菜单转路由
-         * @param routerMap
-         */
-        function menuToRoutes(routerMap: any[]) {
-            const accessedRouters: any = []
-            routerMap.forEach((item: any) => {
-                if (item.meta?.type !== 'B') {
-                    if (item.meta.type === 'I') {
-                        item.path = `/MineIframe/${item.name}`
-                        item.component = () => import(('@/layouts/components/iframe/index.tsx'))
-                    }
-
-                    const suffix: string = item.meta?.componentSuffix ?? '.vue'
-
-                    let component: any | null = null
-                    if (item.component && item.meta?.type !== 'I') {
-                        if (moduleViews[`../../modules/${item.component}${suffix}`]) {
-                            component = moduleViews[`../../modules/${item.component}${suffix}`]
-                        } else if (pluginViews[`../../plugins/${item.component}${suffix}`]) {
-                            component = pluginViews[`../../plugins/${item.component}${suffix}`]
-                        } else {
-                            console.warn(`路由 [${item.meta.title}] 找不到 ${item.component}${suffix} 页面`)
-                        }
-                    }
-
-                    const route = {
-                        path: item.path,
-                        name: item.name,
-                        meta: item.meta,
-                        children: item.children ? menuToRoutes(item.children) : null,
-                        component: item.meta?.type === 'I' ? item.component : component,
-                    }
-                    accessedRouters.push(route)
+            const plugins = usePluginStore().getPluginConfig() as Record<string, Plugin.PluginConfig>
+            Object.keys(plugins).forEach((name) => {
+                const plugin = plugins[name]
+                if (plugin.config?.enable !== true || !plugin.views) {
+                    return
                 }
+                plugin.views.forEach((item: Plugin.Views) => {
+                    const route = normalizeRoute(item)
+                    layout.children?.push(route)
+                    router.addRoute('MineRootLayoutRoute', route)
+                })
             })
-            return accessedRouters
+
+            await usePluginStore().callHooks('registerRoute', router, routesRaw.value)
+            useTabStore().ensureHomeTab(home)
         }
 
         return {
             initRoutes,
-            toRecordRawRoute,
-            flatteningRoutes,
             routesRaw,
-            flatteningRoutesList,
         }
     },
 )

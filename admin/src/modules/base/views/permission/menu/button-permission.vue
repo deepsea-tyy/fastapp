@@ -1,6 +1,7 @@
 
 <script setup lang="tsx">
 import type { MaTableExpose } from '@/components/ma-table'
+import { useI18n } from 'vue-i18n'
 import useTable from '@/hooks/useTable.ts'
 import type { MenuVo } from '~/base/api/menu.ts'
 
@@ -15,7 +16,7 @@ const emit = defineEmits<{
   (event: 'add-btn', value: MenuVo): void
   (event: 'update:modelValue', value: MenuVo[]): void
 }>()
-const t = useTrans().globalTrans
+const { t } = useI18n()
 const data = ref<any[]>([])
 const buttonFormTable = ref()
 

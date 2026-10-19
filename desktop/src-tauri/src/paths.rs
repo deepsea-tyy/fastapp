@@ -1,14 +1,16 @@
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use crate::desktop_conf;
+use crate::platform;
+
 #[derive(Clone, Debug, Serialize)]
 pub struct AppPaths {
     pub root: PathBuf,
-    pub server: PathBuf,
     pub ui: PathBuf,
-    pub tools: PathBuf,
     pub cmd: PathBuf,
     pub logs: PathBuf,
 }
@@ -17,11 +19,9 @@ impl AppPaths {
     pub fn resolve() -> Self {
         let root = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(env!("APP_DATA_DIR"));
+            .join(desktop_conf::data_dir_name());
         Self {
-            server: root.join("server"),
             ui: root.join("ui"),
-            tools: root.join("tools"),
             cmd: root.join("cmd"),
             logs: root.join("logs"),
             root,
@@ -31,10 +31,9 @@ impl AppPaths {
     pub fn ensure_dirs(&self) {
         for p in [
             &self.root,
-            &self.server,
-            &self.server.join("storage"),
-            &self.server.join("storage/uploads"),
-            &self.server.join("runtime"),
+            &self.storage_dir(),
+            &self.storage_dir().join("uploads"),
+            &self.runtime_dir(),
             &self.ui,
             &self.cmd,
             &self.logs,
@@ -43,31 +42,27 @@ impl AppPaths {
         }
     }
 
-    pub fn state_file(&self) -> PathBuf {
-        self.root.join("state.json")
-    }
-
-    pub fn lock_file(&self) -> PathBuf {
-        self.root.join("manifest.lock.json")
-    }
-
-    pub fn manifest_cache(&self) -> PathBuf {
-        self.root.join("manifest.json")
-    }
-
-    pub fn server_binary(&self) -> PathBuf {
-        let bin = self.server.join("fastapp");
+    pub fn fastapp_binary(&self) -> PathBuf {
+        let bin = self.root.join("fastapp");
         if bin.is_file() {
             return bin;
         }
         #[cfg(windows)]
         {
-            let exe = self.server.join("fastapp.exe");
+            let exe = self.root.join("fastapp.exe");
             if exe.is_file() {
                 return exe;
             }
         }
         bin
+    }
+
+    pub fn storage_dir(&self) -> PathBuf {
+        self.root.join("storage")
+    }
+
+    pub fn runtime_dir(&self) -> PathBuf {
+        self.root.join("runtime")
     }
 
     pub fn ffmpeg_binary(&self) -> PathBuf {
@@ -89,62 +84,41 @@ impl AppPaths {
         self.ui.join("index.html")
     }
 
-    pub fn server_env(&self) -> PathBuf {
-        self.server.join(".env")
+    pub fn app_port(&self) -> u16 {
+        desktop_conf::app_port()
     }
 
-    pub fn tools_env(&self) -> PathBuf {
-        self.tools.join(".env")
+    pub fn app_ws_port(&self) -> u16 {
+        desktop_conf::app_ws_port()
     }
 
-    pub fn uv_binary(&self) -> PathBuf {
-        let uv = self.cmd.join("uv");
-        if uv.is_file() {
-            return uv;
-        }
-        #[cfg(windows)]
-        {
-            let exe = self.cmd.join("uv.exe");
-            if exe.is_file() {
-                return exe;
-            }
-        }
-        uv
-    }
-
-    pub fn component_dir(&self, name: &str) -> PathBuf {
-        match name {
-            "cmd" => self.cmd.clone(),
-            "server" => self.server.clone(),
-            "ui" => self.ui.clone(),
-            "tools" => self.tools.clone(),
-            _ => self.root.join(name),
-        }
-    }
-
-    pub fn extract_root_for(&self, name: &str) -> PathBuf {
-        match name {
-            "cmd" | "server" | "ui" | "tools" => self.component_dir(name),
-            _ => self.root.clone(),
-        }
+    pub fn app_ports(&self) -> [u16; 2] {
+        [self.app_port(), self.app_ws_port()]
     }
 }
 
-pub fn platform_triple() -> String {
-    let os = std::env::consts::OS;
-    let arch = std::env::consts::ARCH;
-    let arch_key = match arch {
-        "aarch64" => "aarch64",
-        "x86_64" => "x86_64",
-        _ => arch,
+pub fn read_log_tail(paths: &AppPaths, name: &str, lines: usize) -> String {
+    let file = match name {
+        "hyperf" => paths.runtime_dir().join("hyperf.log"),
+        _ => paths.logs.join("desktop.log"),
     };
-    let os_key = match os {
-        "macos" => "darwin",
-        "windows" => "windows",
-        "linux" => "linux",
-        _ => os,
-    };
-    format!("{os_key}-{arch_key}")
+    if !file.is_file() {
+        return String::new();
+    }
+    tail_file(&file, lines).unwrap_or_default()
+}
+
+fn tail_file(path: &Path, max_lines: usize) -> Result<String, std::io::Error> {
+    let mut f = fs::File::open(path)?;
+    let len = f.metadata()?.len();
+    let chunk = 4096u64.min(len);
+    f.seek(SeekFrom::End(-(chunk as i64)))?;
+    let mut buf = vec![0u8; chunk as usize];
+    f.read_exact(&mut buf)?;
+    let text = String::from_utf8_lossy(&buf);
+    let lines: Vec<&str> = text.lines().collect();
+    let start = lines.len().saturating_sub(max_lines);
+    Ok(lines[start..].join("\n"))
 }
 
 pub fn write_log(paths: &AppPaths, line: &str) {
@@ -161,4 +135,10 @@ pub fn write_log(paths: &AppPaths, line: &str) {
 
 pub fn path_to_string(p: &Path) -> String {
     p.to_string_lossy().into_owned()
+}
+
+pub fn dev_build_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../build")
+        .join(platform::dev_pkg_platform())
 }

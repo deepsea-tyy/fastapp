@@ -2,7 +2,7 @@
 import {reactive, ref, watch, computed} from 'vue'
 import useSettingStore from '@/store/modules/useSettingStore'
 import {uploadLocal} from '@/utils/uploadLocal'
-import type {TransType} from '@/hooks/auto-imports/useTrans.ts'
+import { useI18n } from 'vue-i18n'
 
 import Editor from '@tinymce/tinymce-vue'
 import tinymce from 'tinymce/tinymce'
@@ -15,14 +15,13 @@ import 'tinymce/themes/silver'
 import 'tinymce/icons/default'
 
 import pluginList from './tinymce/pluginList.ts'
-import {formatImagePath} from "@/utils/common.ts";
+import {formatFileUrl} from "@/utils/common.ts";
 
 defineOptions({name: 'MaEditor'})
 const settingStore = useSettingStore()
 
 
-const i18n = useTrans() as TransType
-const t = i18n.globalTrans
+const { t } = useI18n()
 
 const props = defineProps({
   menubar: {type: Boolean, default: true},
@@ -83,7 +82,7 @@ const initConfig = reactive({
 
       if (!result || result.code !== 200) throw new Error('上传错误')
 
-      const url = formatImagePath(result.data?.url)
+      const url = formatFileUrl(result.data?.url)
       success(url)
       return url
     } catch (error) {
@@ -110,7 +109,7 @@ function handleResourceConfirm(resources: any[]) {
 
   let mediaContent = ''
   resources.forEach(resource => {
-    const url = formatImagePath(resource.url || resource)
+    const url = formatFileUrl(resource.url || resource)
     if (typeof url === 'string') {
       // 图片文件
       if (url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.bmp') ||
