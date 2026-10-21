@@ -1,7 +1,6 @@
 
 import { useI18n } from 'vue-i18n'
 import Message from 'vue-m-message'
-import MineShortcutsDesc from './dropdownMenuComponents/shortcuts-desc.tsx'
 import MineSystemInfo from './dropdownMenuComponents/system-info.tsx'
 import {formatFileUrl} from "@/utils/common.ts";
 
@@ -17,12 +16,7 @@ export default defineComponent({
       {
         label: 'base.userBar.uc',
         icon: 'material-symbols:account-circle-outline',
-        handle: () => router.push({ path: '/uc/index' }),
-      },
-      {
-        label: 'base.userBar.google2fa',
-        icon: 'heroicons:shield-check',
-        handle: () => router.push({ path: '/uc/google2fa' }),
+        handle: () => router.push({ path: '/uc' }),
       },
       {
         label: 'base.userBar.clearCache',
@@ -33,11 +27,6 @@ export default defineComponent({
         },
       },
       { label: 'divider' },
-      {
-        label: 'base.userBar.shortcuts',
-        icon: 'i-material-symbols:keyboard-keys',
-        handle: () => userStore.setDropdownMenuState('shortcuts', true),
-      },
       {
         label: 'base.userBar.systemInfo',
         icon: 'i-bi:info-circle',
@@ -90,7 +79,6 @@ export default defineComponent({
         />
 
         <MineSystemInfo />
-        <MineShortcutsDesc />
       </div>
     )
   },

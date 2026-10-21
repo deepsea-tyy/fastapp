@@ -22,3 +22,4 @@ chromedriver
 /desktop/src-tauri/icons/
 /desktop/assets
 *.vrm
+/composer.phar

@@ -3,6 +3,7 @@ en:
   change:
     info: Modify info
     password: Modify password
+    google2fa: Google 2FA
   changeInfo:
     nicknameLabel: Nick name
     signedLabel: Signed
@@ -19,6 +20,7 @@ zh_CN:
   change:
     info: 修改信息
     password: 修改密码
+    google2fa: Google 2FA
   changeInfo:
     nicknameLabel: 昵称
     signedLabel: 个人签名
@@ -35,6 +37,7 @@ zh_TW:
   change:
     info: 修改資料
     password: 修改密碼
+    google2fa: Google 2FA
   changeInfo:
     nicknameLabel: 昵稱
     signedLabel: 個人簽名
@@ -50,24 +53,22 @@ zh_TW:
 </i18n>
 
 <script setup lang="ts">
-import type { MineRoute } from '#/global'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/hooks/useMessage.ts'
 import { formatFileUrl, parseFilePath } from '@/utils/common.ts'
+import { ucTabRegistry } from '@/config/uc.config.ts'
+import UcGoogle2faPane from './UcGoogle2faPane.vue'
 
-const route = useRoute() as MineRoute.routeRecord
+defineOptions({ name: 'UcIndex' })
+
 const { t } = useI18n({ useScope: 'local' })
 const { t: gt } = useI18n()
 
 const msg = useMessage()
 const userStore = useUserStore()
-const selected = ref('userinfo')
+const pluginTabs = ucTabRegistry.getTabs()
+const selected = ref(pluginTabs[0]?.name ?? 'google2fa')
 const isSubmitting = ref(false)
-
-const tabOptions = reactive([
-  { label: t('change.info'), value: 'userinfo' },
-  { label: t('change.password'), value: 'password' },
-])
 
 const profileForm = reactive({
   nickname: userStore.getUserInfo().nickname,
@@ -117,101 +118,129 @@ async function submitPassword() {
 
 <template>
   <div class="h-full bg-gray-1 dark-bg-dark-6">
-    <div
-      class="h-[55px] flex items-center bg-white px-3 dark-bg-dark-8 dark-b-b-dark-4 b-b-1 b-b-solid b-b-gray-2"
-    >
-      <div class="flex items-center gap-x-2">
-        <ma-svg-icon v-if="route.meta?.icon" :name="route.meta?.icon ?? ''" size="20" />
-        {{ route.meta?.title ?? '未知' }}
-      </div>
-    </div>
-    <div class="mine-uc-layout-content">
-      <div class="mine-card w-full lg:w-6/12">
-        <m-tabs v-model="selected" :options="tabOptions" class="text-sm" />
+    <div class="mine-card uc-page-card">
+      <el-tabs v-model="selected" tab-position="left" class="uc-tabs">
+        <el-tab-pane
+          v-for="tab in pluginTabs"
+          :key="tab.name"
+          :label="gt(tab.i18n)"
+          :name="tab.name"
+          lazy
+        >
+          <component :is="tab.component" />
+        </el-tab-pane>
 
-        <form v-show="selected === 'userinfo'" class="mine-form" @submit.prevent="submitProfile">
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.avatarLabel') }}
-            </div>
-            <ma-upload-image v-model="avatar" />
-          </div>
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.nicknameLabel') }}
-            </div>
-            <m-input
-              v-model="profileForm.nickname"
-              name="nickname"
-              :placeholder="t('changeInfo.nicknamePlaceholder')"
-            />
-          </div>
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.signedLabel') }}
-            </div>
-            <m-textarea
-              v-model="profileForm.signed"
-              :placeholder="t('changeInfo.signedPlaceholder')"
-            />
-          </div>
-          <m-button
-            type="submit"
-            class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
-            :class="{ loading: isSubmitting }"
-          >
-            {{ t('change.info') }}
-          </m-button>
-        </form>
+        <el-tab-pane :label="t('change.google2fa')" name="google2fa" lazy>
+          <UcGoogle2faPane />
+        </el-tab-pane>
 
-        <form v-show="selected === 'password'" class="mine-form" @submit.prevent="submitPassword">
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.old_passwordLabel') }}
+        <el-tab-pane :label="t('change.info')" name="userinfo" lazy>
+          <form class="mine-form uc-form" @submit.prevent="submitProfile">
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.avatarLabel') }}
+              </div>
+              <ma-upload-image v-model="avatar" />
             </div>
-            <m-input
-              v-model="passwordForm.old_password"
-              type="password"
-              name="old_password"
-              :placeholder="t('changeInfo.old_passwordPlaceholder')"
-            />
-          </div>
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.new_passwordLabel') }}
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.nicknameLabel') }}
+              </div>
+              <m-input
+                v-model="profileForm.nickname"
+                name="nickname"
+                :placeholder="t('changeInfo.nicknamePlaceholder')"
+              />
             </div>
-            <m-input
-              v-model="passwordForm.new_password"
-              type="password"
-              name="new_password"
-              :placeholder="t('changeInfo.new_passwordPlaceholder')"
-            />
-          </div>
-          <div class="mine-form-item">
-            <div class="mine-form-item-title">
-              {{ t('changeInfo.new_password_confirmationLabel') }}
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.signedLabel') }}
+              </div>
+              <m-textarea
+                v-model="profileForm.signed"
+                :placeholder="t('changeInfo.signedPlaceholder')"
+              />
             </div>
-            <m-input
-              v-model="passwordForm.new_password_confirmation"
-              type="password"
-              name="new_password_confirmation"
-              :placeholder="t('changeInfo.new_password_confirmationPlaceholder')"
-            />
-          </div>
-          <m-button
-            type="submit"
-            class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
-            :class="{ loading: isSubmitting }"
-          >
-            {{ t('change.password') }}
-          </m-button>
-        </form>
-      </div>
+            <m-button
+              type="submit"
+              class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
+              :class="{ loading: isSubmitting }"
+            >
+              {{ t('change.info') }}
+            </m-button>
+          </form>
+        </el-tab-pane>
+
+        <el-tab-pane :label="t('change.password')" name="password" lazy>
+          <form class="mine-form uc-form" @submit.prevent="submitPassword">
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.old_passwordLabel') }}
+              </div>
+              <m-input
+                v-model="passwordForm.old_password"
+                type="password"
+                name="old_password"
+                :placeholder="t('changeInfo.old_passwordPlaceholder')"
+              />
+            </div>
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.new_passwordLabel') }}
+              </div>
+              <m-input
+                v-model="passwordForm.new_password"
+                type="password"
+                name="new_password"
+                :placeholder="t('changeInfo.new_passwordPlaceholder')"
+              />
+            </div>
+            <div class="mine-form-item">
+              <div class="mine-form-item-title">
+                {{ t('changeInfo.new_password_confirmationLabel') }}
+              </div>
+              <m-input
+                v-model="passwordForm.new_password_confirmation"
+                type="password"
+                name="new_password_confirmation"
+                :placeholder="t('changeInfo.new_password_confirmationPlaceholder')"
+              />
+            </div>
+            <m-button
+              type="submit"
+              class="mt-5 !bg-[rgb(var(--ui-primary))] !text-gray-1"
+              :class="{ loading: isSubmitting }"
+            >
+              {{ t('change.password') }}
+            </m-button>
+          </form>
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+.uc-page-card {
+  @apply h-[calc(100%-12px)] min-h-0 m-3 mb-0;
+}
+
+.uc-tabs {
+  @apply h-full min-h-0;
+}
+
+.uc-tabs :deep(.el-tabs__content) {
+  @apply h-full min-h-0 overflow-y-auto;
+}
+
+.uc-tabs :deep(.el-tab-pane) {
+  @apply h-full;
+}
+
+.uc-form {
+  @apply w-full max-w-xl py-1;
+}
+
 .mine-form-item-title {
   @apply text-left text-sm mt-3 mb-1.5;
 }
