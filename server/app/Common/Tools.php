@@ -258,12 +258,6 @@ class Tools
         return self::disk_root() . '/' . ltrim($path, '/');
     }
 
-    /** 仓库根（开发为 fastapp/；桌面与 disk_root 父级一致，一般勿放业务数据） */
-    public static function project_root(): string
-    {
-        return dirname(self::disk_root());
-    }
-
     /**
      * 应用代码根：phar 内为 phar://…；开发为 BASE_PATH。
      * 只读 bundle（plugin 源码等）相对此根。

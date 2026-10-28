@@ -14,6 +14,7 @@ Story Studio 是项目的核心业务插件，提供从小说文本到短视频�
 | [剧情帧时间线.md](../server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | 帧时间语义、段时长计算、挂载时间规则、已移除字段清单 |
 | [翻译链路.md](./翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
 | [推理端链路.md](../server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 图片编辑（qwen_image_edit）8 Service + Builder + InferBody 分袋 + resolveWh 尺寸派生；生图（qwen_image_flash / Qwen-Image-Flash-8bit MLX 4 步蒸馏）调用端 + 推理端 + 信封示例 + 文件清单 |
+| [千问图片提示词.md](../server/plugin/ds/storyStudio/docs/code/千问图片提示词.md) | 生图/编辑模型闭集、全身构图词表、禁止猜 SD 标签 |
 
 ---
 
@@ -55,7 +56,6 @@ plugin/ds/storyStudio/src/
 | StoryPresentationFrame | `Model/StoryPresentationFrame.php` | 剧情帧（时间线节点） |
 | StoryPresentationActor | `Model/StoryPresentationActor.php` | 演员状态（帧内元素，含 scene 全屏背景） |
 | StoryPresentationAction | `Model/StoryPresentationAction.php` | 演员动作（动画） |
-| StoryAttachmentInfer | `Model/StoryAttachmentInfer.php` | 附件推理快照（参数记录） |
 | StoryRenderOutput | `Model/StoryRenderOutput.php` | 渲染输出 |
 
 ## 业务关系图
@@ -71,8 +71,8 @@ StoryProject (1)
                                 └── StoryPresentationAction (N)  ─── 动作
 
 StoryAsset（项目全局，asset_type 区分）
-  ├── character / costume / creature / vehicle / prop  ─── 按 896×896 编辑，走 BiRefNet 抠图
-  └── scene  ─── 按 672×672 编辑，跳过抠图，输出归一化 1216×832
+  ├── character / costume / creature / vehicle / prop  ─── 调用方编排：生成 → 可选 matting → layout
+  └── scene  ─── 调用方编排：生成 → layout(scene_cover)，不打 matting
   ├── bundle (JSON: 资源包，含 portrait/pose/emotion/outfit/style/view)
   └── StoryAssetPose (N)  ─── 姿势存档
 ```
@@ -174,10 +174,8 @@ type StoryFrame = {
 | WS Action | 服务类 | 功能 |
 |---|---|---|
 | `story_studio_chapter_extract_scenes` | `WebSocket/Service/ChapterExtractService.php` | 章节解析（切分场景+提取对白） |
-| `story_studio_asset_image_generate` | `WebSocket/Service/AssetImageGenerateService.php` | AI 生图（txt2img） |
-| `story_studio_asset_image_standardize` | AssetImageGenerateService::standardize | 图像标准化（尺寸规范） |
-| `story_studio_asset_image_matting` | `WebSocket/Service/AssetImageMattingService.php` | 图像抠图（scene 类型跳过） |
-| `story_studio_asset_pose_save` | `WebSocket/Service/AssetPoseSaveService.php` | 3D 定姿存档 |
+| `story_studio_asset_image_generate` | `WebSocket/Service/AssetImageGenerateService.php` | 生图 txt2img，再由调用方可选 matting + layout |
+| `story_studio_asset_image_matting` | `WebSocket/Service/AssetImageMattingService.php` | 选框抠图 matting，再由调用方 layout |
 | `story_studio_asset_bundle_anatomy_fix` | `WebSocket/Service/AssetBundleAnatomyFixService.php` | 局部解剖修复 |
 | `story_studio_asset_bundle_outfit` | `WebSocket/Service/AssetBundleOutfitService.php` | 换装合成 |
 | `story_studio_asset_bundle_emotion` | `WebSocket/Service/AssetBundleEmotionService.php` | 表情生成 |
@@ -243,18 +241,20 @@ type StoryFrame = {
 
 ## AI 图像管线
 
-### 模型分工
+**钉死**：推理端只收参数执行；是否抠图、用哪种 `fit`，由 PHP 调用方编排。禁止混端点。
 
-调用端默认统一走 `qwen_image_flash`（Qwen-Image-Flash-8bit MLX，4 步蒸馏）；按 `asset_type` 仅在画布尺寸与归一化策略上分工。
+### 模型与画布（调用方）
 
-| 资源类型（asset_type） | 生图模型 | 编辑画布 | 归一化输出 | 抠图 |
-|---|---|---|---|---|
-| scene | `qwen_image_flash` | **1344×768** | **1216×832**（`normalize_scene_cover` 缩放+居中裁剪） | **跳过 BiRefNet** |
-| character / costume / creature | `qwen_image_flash` | **768×1344** | 按各自标准尺寸 | BiRefNet 抠图 |
-| vehicle | `qwen_image_flash` | **1344×768** | 按各自标准尺寸 | BiRefNet 抠图 |
-| prop | `qwen_image_flash` | **1024×1024** | 按各自标准尺寸 | BiRefNet 抠图 |
+生图一律 `qwen_image_flash`。成品画布权威：`ImagePresets::$canvas` / `canvasWh`。
 
-`ImagePresets::$models['qwen_image_flash']['type_meta']` 集中定义各 `asset_type` 的 `steps=4` / `cfg=1.0` / 画布尺寸（与 MLX 8bit 4 步蒸馏配置对齐）。`checkpointForAssetType()` 一律返回 `qwen_image_flash`，业务侧不再按风格分模型。
+| asset_type | 生图画布（type_meta） | 成品 canvas | 调用方编排 |
+|---|---|---|---|
+| scene | 1344×784 | 1280×720 | txt2img → layout(`scene_cover`) |
+| character / costume / creature | 784×1344 | 720×1280 | txt2img → 可选 matting → layout(`isolated_center`) |
+| vehicle | 1344×784 | 1280×720 | 同上（matting 用 `matting-hr`） |
+| prop | 1008×1008 | 1024×1024 | 同上 |
+
+`checkpointForAssetType()` 一律返回 `qwen_image_flash`。资源库「标准化」走 HTTP `attachment/normalize`：非 scene 为 matting+layout，scene 只 layout。
 
 ### 提示词约束
 
@@ -266,27 +266,21 @@ type StoryFrame = {
 
 **style 维度的预设按 asset_type 作用域隔离**，防止跨模型风格冲突。
 
+词表与全身构图只认 [千问图片提示词.md](../server/plugin/ds/storyStudio/docs/code/千问图片提示词.md)。
+
 ### 图像处理流程
 
 ```
-原始素材 (txt2img via Qwen-Image-Flash MLX)
-    │
-    ▼
-标准化
-    ├── scene: 672×672，跳过 BiRefNet → normalize_scene_cover 缩放到 1216×832
-    ├── person/creature: 704×1024 + BiRefNet
-    ├── vehicle: 1024×704 + BiRefNet
-    └── prop: 1024×1024 + BiRefNet
-    │
-    ▼
-资源包 (Bundle) 生成
-    ├── portrait (标准立绘)
-    ├── pose (姿势变体)
-    ├── outfit (换装)
-    ├── emotion (表情)
-    ├── style (风格)
-    └── view (视角)
+txt2img / qwen_image_edit     ← 推理端只出 raw
+        │
+        ├─ 调用方可选 POST /v1/birefnet/matting
+        └─ 调用方 POST /v1/birefnet/layout（canvas + fit）
+        │
+        ▼
+attachLocal 入库
 ```
+
+Bundle 编辑（outfit / pose / emotion / style / view / anatomy_fix / content）在 `AssetBundlePersist::runSlot` 里同样编排：outpaint 跳过；scene 只 layout；其余 matting + layout。
 
 ### outfitPrompt / posePrompt 结构约束
 
@@ -313,22 +307,13 @@ type StoryFrame = {
 ## 前端 Story Studio
 
 ```
-admin/src/plugins/ds/storyStudio/views/storyStudio/
+server/plugin/ds/storyStudio/web/views/storyStudio/
 ├── asset/                          # 资产管理
-│   ├── registry/
-│   │   ├── composables/           # 组合式函数
-│   │   │   ├── materialPanel.ts   # 素材面板逻辑
-│   │   │   ├── useAsset.ts        # 资产 CRUD
-│   │   │   ├── useAssetInfer.ts   # 推理任务触发 + commitAssetBundleResult
-│   │   │   ├── useAssetLibrary.ts # 资产库面板
-│   │   │   ├── useBundleWorkbench.ts  # 资源包工作台
-│   │   │   └── useMaterialLibrary.ts   # 素材库
-│   │   ├── ui/                     # UI 组件
-│   │   │   ├── material/           # 素材生成（图像/音乐）
-│   │   │   ├── pose/               # 3D 姿势编辑器
-│   │   │   └── resource/           # 资源包工作台
-│   │   └── bundle.ts               # Bundle 数据结构
+│   ├── library/composables/       # useAsset / useAssetInfer / useBundleWorkbench
+│   ├── material/                  # 素材生成（MaterialGenImage + materialPreset）
+│   ├── registry/                  # bundle 数据结构、选择器
 │   └── voice/                      # 音色管理
+├── character/                      # 人物页 / 3D 定姿（PoseEditorCanvas）
 ├── story/                          # 剧情编辑
 │   ├── chapter/                    # 章节管理
 │   ├── scene/                      # 场景管理 + useScenePersist 持久化
@@ -377,20 +362,7 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 
 #### 3. 3D 姿势编辑器 (PoseEditorCanvas.vue)
 
-位于 `asset/registry/ui/pose/`，基于 Three.js + @pixiv/three-vrm。
-
-**核心 composables：**
-| 文件 | 职责 |
-|---|---|
-| `usePoseEditor.ts` | 编辑器主逻辑（选中、重置、保存） |
-| `usePoseBones.ts` | 骨骼节点选择与操作 |
-| `usePoseBody.ts` | 体型参数（厚度/长度） |
-| `usePoseFace.ts` | 面部表情（BlendShape） |
-| `usePoseModel.ts` | VRM 模型加载与管理 |
-| `usePoseScene.ts` | 场景控制（相机/灯光/视图） |
-| `usePoseEditorCanvas.ts` | Canvas 初始化与事件绑定 |
-| `vrm/protocol/vrm1.ts` | VRM 1.0 表情组 |
-| `poseHumanoid.ts` | 人形骨骼定义 |
+入口 `character/ui/PoseEditorCanvas.vue`。定姿存档走 HTTP `asset3dCreate`（`story_asset_3d` type=2），不走 WebSocket。文件清单见 [3d创作.md](../server/plugin/ds/storyStudio/docs/code/3d创作.md)。
 
 #### 4. 资源包工作台 (useBundleWorkbench.ts)
 
@@ -410,13 +382,9 @@ admin/src/plugins/ds/storyStudio/views/storyStudio/
 - 每行行尾提供「裁剪（标准化）」按钮，用户可在弹框内直接对图片执行标准化操作，完成后即可确认选择
 - 标准化前置条件：图片需先通过行尾「编辑」按钮设置 `asset_type`（人物/服装/生物/道具/场景/载具），否则标准化按钮置灰禁用
 
-#### 5. 素材面板 (materialPanel.ts)
+#### 5. 素材生图 (MaterialGenImage.vue)
 
-管理素材生成：
-- 维度选择（主题/时代/环境/建筑/风格等）
-- 主题联动过滤（era_lock / environment_pool / architecture_pool，时代与主题风格不冲突）
-- AI 图像生成触发
-- 音乐生成触发（music asset_type 同时保存用户选项和生成歌词，歌词用 `lyrics` key 存入 JSON 数组）
+入口 `material/MaterialGenImage.vue`，预设组装 `asset/material/composables/materialPreset.ts`。WS `story_studio_asset_image_generate`：txt2img → 可选 matting → layout。抠图勾选默认关，由 PHP 编排；scene 不抠图。
 
 #### 6. 叙事内容编辑 (story/)
 

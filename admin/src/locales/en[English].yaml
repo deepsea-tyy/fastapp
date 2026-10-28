@@ -38,15 +38,6 @@ base:
       modeCard: Card
       enable: Enable the tab bar
       modeDefault: Default
-  shortcuts:
-    switchN: Switch to N
-    switchLast: Toggle the last
-    searchOpen: Breathe out
-    searchBar: Search bar
-    tabs: Tabs
-    close: Close
-    exitMax: Exit max
-    toMax: Enter max
   runtime:
     devDependencies: Development dependencies
     pluginList: Plugins list
@@ -73,10 +64,8 @@ base:
     hideState: Hidden User bar
     systemInfo: System information
     logout: Logout
-    shortcuts: Introduction to shortcuts
     clearCache: Clear cache
     uc: User center
-    google2fa: Google 2FA Settings
   common:
     saveSuccess: The save was successful
     clearCache: The cache has been emptied

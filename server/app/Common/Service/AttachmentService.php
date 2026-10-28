@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Common\Service;
 
 use App\Common\IService;
-use App\Common\Tools;
 use App\Common\Upload\FileStorage;
 use App\Common\Upload\StoredFile;
 use App\Model\Attachment;
@@ -71,11 +70,13 @@ final class AttachmentService extends IService
         ?int $source = null,
         ?array $imageWh = null,
         ?int $durationMs = null,
+        ?array $infer = null,
     ): Attachment {
         $path = realpath($absolutePath) ?: $absolutePath;
         $hash = md5_file($path) ?: '';
         $parent = $parentId ? $this->findById($parentId) : null;
         $source = $source ?? ($parent ? (int) ($parent->source ?? 0) : 0);
+        $inferPayload = $infer ? Attachment::compactInfer($infer) : null;
         $existing = $this->findExistingByHash($hash);
         if ($existing) {
             $this->unlinkStagingIfDifferent($path, $existing);
@@ -91,6 +92,9 @@ final class AttachmentService extends IService
             }
             if ($durationMs && !$existing->duration_ms) {
                 $patch['duration_ms'] = $durationMs;
+            }
+            if ($inferPayload) {
+                $patch['infer'] = $inferPayload;
             }
             if ($patch) {
                 $this->repository->updateById($existing->id, $patch);
@@ -116,6 +120,9 @@ final class AttachmentService extends IService
             }
             if ($durationMs) {
                 $row['duration_ms'] = $durationMs;
+            }
+            if ($inferPayload) {
+                $row['infer'] = $inferPayload;
             }
 
             return $this->repository->create($row);
@@ -164,16 +171,6 @@ final class AttachmentService extends IService
         }
 
         return $this->deleteById($att->id);
-    }
-
-    public function deleteById(mixed $id, array $where = []): int
-    {
-        $md = $this->findById($id);
-        if ($s = parent::deleteById($id)) {
-            @unlink(Tools::storage_path($md->url));
-        }
-
-        return $s;
     }
 
     private function createFromStoredFile(StoredFile $file, int $userId, string $originName): Attachment

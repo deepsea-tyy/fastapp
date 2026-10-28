@@ -1,60 +1,48 @@
 <?php
 /**
  * FastApp.
- * 导入 SQL 文件命令
- * 从 SQL 文件导入数据到数据库
- * @Author deepsea
- * @Contact (telegram:deepsea159)
+ * 从备份 SQL 导入数据
  */
 
 declare(strict_types=1);
 
-namespace App\Command\Generator;
+namespace App\Command;
 
 use Hyperf\Command\Annotation\AsCommand;
-use Hyperf\Command\Command;
 use Hyperf\DbConnection\Db;
 
 #[AsCommand(
-    signature: 'ds:import-sql {file} {--skip-errors=false} {--transaction=true} {--batch-size=100}',
-    description: '导入 SQL 文件到数据库（支持分片文件，自动识别）',
-    aliases: ['ds:import'],
+    signature: 'ds:backup-import {file} {--skip-errors=false} {--transaction=true} {--batch-size=100}',
+    description: '导入备份 SQL 到数据库（支持分片文件）',
 )]
-class ImportSqlCommand extends Command
+class BackupImportCommand extends AbstractBackupCommand
 {
-    /**
-     * 命令执行
-     */
     public function handle(): int
     {
         $filePath = $this->input->getArgument('file');
-        $skipErrors = filter_var($this->input->getOption('skip-errors'), FILTER_VALIDATE_BOOLEAN);
-        $useTransaction = filter_var($this->input->getOption('transaction'), FILTER_VALIDATE_BOOLEAN);
-        $batchSize = (int)($this->input->getOption('batch-size') ?? 100);
+        $skipErrors = $this->boolOption('skip-errors');
+        $useTransaction = $this->boolOption('transaction');
+        $batchSize = (int) ($this->input->getOption('batch-size') ?? 100);
 
-        // 处理相对路径（相对于 seeders 目录）
-        if (!str_starts_with($filePath, '/')) {
+        if (! str_starts_with($filePath, '/')) {
             $filePath = BASE_PATH . '/databases/seeders/' . ltrim($filePath, '/');
         }
 
-        // 检查文件是否存在
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             $this->error("文件不存在: {$filePath}");
             return self::FAILURE;
         }
 
-        $this->info("开始导入 SQL 文件: {$filePath}");
+        $this->info("开始导入备份 SQL: {$filePath}");
 
         try {
-            // 检查是否为分片文件
             $files = $this->getSqlFiles($filePath);
-            
-            if (empty($files)) {
+            if ($files === []) {
                 $this->warn('未找到任何 SQL 文件');
                 return self::FAILURE;
             }
 
-            $this->info("找到 " . count($files) . " 个 SQL 文件");
+            $this->info('找到 ' . count($files) . ' 个 SQL 文件');
 
             $totalFiles = count($files);
             $totalStatements = 0;
@@ -62,26 +50,26 @@ class ImportSqlCommand extends Command
             $errorStatements = 0;
 
             foreach ($files as $index => $file) {
-                $this->info("正在导入文件 [" . ($index + 1) . "/{$totalFiles}]: " . basename($file));
-                
+                $this->info('正在导入文件 [' . ($index + 1) . "/{$totalFiles}]: " . basename($file));
+
                 $result = $this->importSqlFile($file, $skipErrors, $useTransaction, $batchSize);
-                
+
                 $totalStatements += $result['total'];
                 $successStatements += $result['success'];
                 $errorStatements += $result['errors'];
             }
 
-            $this->info("✓ 导入完成");
+            $this->info('✓ 导入完成');
             $this->info("总计: {$totalStatements} 条 SQL 语句");
             $this->info("成功: {$successStatements} 条");
-            
+
             if ($errorStatements > 0) {
                 $this->warn("失败: {$errorStatements} 条");
             }
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error("导入失败: " . $e->getMessage());
+            $this->error('导入失败: ' . $e->getMessage());
             $this->error($e->getTraceAsString());
             return self::FAILURE;
         }

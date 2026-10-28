@@ -38,15 +38,6 @@ base:
       modeCard: 卡片
       enable: 啟用標籤列
       modeDefault: 預設
-  shortcuts:
-    switchN: 切換到N頁
-    switchLast: 切換最後一個
-    searchOpen: 叫出
-    searchBar: 搜尋欄
-    tabs: 標籤頁
-    close: 關閉
-    exitMax: 退出最大化
-    toMax: 進入最大化
   runtime:
     devDependencies: 開發依賴
     pluginList: 插件列表
@@ -73,10 +64,8 @@ base:
     hideState: 隱藏用戶欄
     systemInfo: 系統信息
     logout: 退出系統
-    shortcuts: 快捷鍵介紹
     clearCache: 清除緩存
     uc: 用戶中心
-    google2fa: Google 2FA 設置
   common:
     saveSuccess: 儲存成功
     clearCache: 緩存已清空

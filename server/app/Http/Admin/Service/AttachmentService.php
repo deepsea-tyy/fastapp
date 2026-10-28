@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Admin\Service;
 
 use App\Common\IService;
-use App\Common\Tools;
 use App\Common\Upload\FileStorage;
 use App\Common\Upload\StoredFile;
 use App\Model\Attachment;
@@ -61,18 +60,6 @@ final class AttachmentService extends IService
             $userId,
             $filename,
         );
-    }
-
-    public function deleteById(mixed $id, array $where = []): int
-    {
-        $md = $this->findById($id);
-        if ($s = parent::deleteById($id)) {
-            try {
-                unlink(Tools::storage_path($md->url));
-            } catch (\RuntimeException) {
-            }
-        }
-        return $s;
     }
 
     private function createFromStoredFile(StoredFile $file, int $userId, string $originName): Attachment

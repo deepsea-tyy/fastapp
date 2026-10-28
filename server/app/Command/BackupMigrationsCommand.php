@@ -1,207 +1,67 @@
 <?php
 /**
  * FastApp.
- * 批量生成数据库迁移文件命令
- * 从现有数据库表结构生成所有迁移文件
- * @Author deepsea
- * @Contact (telegram:deepsea159)
+ * 备份数据库表结构为迁移文件
  */
 
 declare(strict_types=1);
 
-namespace App\Command\Generator;
+namespace App\Command;
 
 use Hyperf\Command\Annotation\AsCommand;
-use Hyperf\Command\Command;
 use Hyperf\DbConnection\Db;
 
 #[AsCommand(
-    signature: 'ds:generate-migrations {--force=false} {--prefix=} {--filename=} {--table=} {--with-data=false} {--data-limit=1000}',
-    description: '从现有数据库表批量生成迁移文件（过滤插件表，合并到一个文件）',
-    aliases: ['ds:gen-migrations'],
+    signature: 'ds:backup-migrations {--force=false} {--prefix=} {--filename=} {--table=} {--with-data=false} {--data-limit=1000}',
+    description: '备份非插件表结构为迁移文件（可合并数据）',
 )]
-class GenerateMigrationsCommand extends Command
+class BackupMigrationsCommand extends AbstractBackupCommand
 {
-    /**
-     * 命令执行
-     */
     public function handle(): int
     {
-        $force = filter_var($this->input->getOption('force'), FILTER_VALIDATE_BOOLEAN);
+        $force = $this->boolOption('force');
         $prefix = $this->input->getOption('prefix') ?? env('DB_PREFIX', '');
         $filename = $this->input->getOption('filename') ?? 'all_tables';
         $tableOption = trim((string) ($this->input->getOption('table') ?? ''));
-        $withData = filter_var($this->input->getOption('with-data'), FILTER_VALIDATE_BOOLEAN);
-        $dataLimit = max(1, (int)($this->input->getOption('data-limit') ?? 1000));
+        $withData = $this->boolOption('with-data');
+        $dataLimit = max(1, (int) ($this->input->getOption('data-limit') ?? 1000));
 
-        $this->info('开始生成迁移文件...');
+        $this->info('开始备份迁移结构...');
 
         try {
-            // 获取插件表名列表
-            $pluginTables = $this->getPluginTables($prefix);
-            $this->info("识别到 " . count($pluginTables) . " 个插件表，将自动过滤");
-
-            // 获取所有表名
-            $allTables = $this->getAllTables($prefix);
-            
-            // 过滤插件表（使用关联数组提高性能）
-            $pluginTablesMap = array_flip($pluginTables);
-            $tables = array_filter($allTables, function($table) use ($pluginTablesMap, $prefix) {
-                $tableName = str_replace($prefix, '', $table);
-                return !isset($pluginTablesMap[$tableName]) && !isset($pluginTablesMap[$table]);
-            });
-
-            // 指定表名（支持逗号分隔）
-            if ($tableOption !== '') {
-                $tables = $this->filterTablesByOption($tables, $tableOption, $prefix);
-            }
-            
-            if (empty($tables)) {
+            $tables = $this->resolveNonPluginTables($prefix, $tableOption);
+            if ($tables === []) {
                 $this->warn('未找到任何非插件数据库表');
                 return self::FAILURE;
             }
 
-            $this->info("找到 " . count($tables) . " 个非插件表");
+            $this->info('找到 ' . count($tables) . ' 个非插件表');
 
             $migrationsPath = BASE_PATH . '/databases/migrations';
-            if (!is_dir($migrationsPath)) {
-                mkdir($migrationsPath, 0755, true);
-            }
+            $this->ensureDirectory($migrationsPath);
 
-            // 生成单个合并的迁移文件
             $fileName = date('Y_m_d_His') . '_' . $filename . '.php';
             $filePath = $migrationsPath . '/' . $fileName;
 
-            // 检查文件是否已存在
-            if (!$force && file_exists($filePath)) {
+            if (! $force && file_exists($filePath)) {
                 $this->warn("迁移文件已存在: {$fileName}");
-                $this->info("提示: 使用 --force=true 可以强制覆盖已存在的文件");
+                $this->info('提示: 使用 --force=true 可以强制覆盖已存在的文件');
                 return self::FAILURE;
             }
 
-            // 生成合并的迁移文件
             $this->generateCombinedMigrationFile($tables, $filePath, $prefix, $withData, $dataLimit);
-            $this->info("✓ 已生成合并迁移文件: {$fileName}");
-            $this->info("包含 " . count($tables) . " 个表的迁移定义");
+            $this->info("✓ 已备份合并迁移文件: {$fileName}");
+            $this->info('包含 ' . count($tables) . ' 个表的迁移定义');
             if ($withData) {
                 $this->info("已包含表数据 INSERT 语句（每表最多 {$dataLimit} 条）");
             }
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error("生成失败: " . $e->getMessage());
+            $this->error('备份失败: ' . $e->getMessage());
             $this->error($e->getTraceAsString());
             return self::FAILURE;
         }
-    }
-
-    /**
-     * 获取插件表名列表
-     */
-    protected function getPluginTables(string $prefix): array
-    {
-        $pluginTables = [];
-        $pluginPath = BASE_PATH . '/plugin';
-
-        if (!is_dir($pluginPath)) {
-            return $pluginTables;
-        }
-
-        // 扫描所有插件的迁移文件
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($pluginPath)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $filePath = $file->getRealPath();
-                
-                // 只处理迁移文件
-                if (strpos($filePath, '/Database/Migrations/') === false) {
-                    continue;
-                }
-
-                // 读取文件内容，提取表名
-                $content = file_get_contents($filePath);
-                
-                // 匹配 Schema::create 或 Schema::table 中的表名
-                if (preg_match_all("/Schema::(create|table)\s*\(\s*['\"]([^'\"]+)['\"]/", $content, $matches)) {
-                    foreach ($matches[2] as $table) {
-                        $tableName = str_replace($prefix, '', $table);
-                        if (!in_array($tableName, $pluginTables)) {
-                            $pluginTables[] = $tableName;
-                            // 也添加带前缀的完整表名
-                            if ($prefix && !in_array($table, $pluginTables)) {
-                                $pluginTables[] = $table;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return $pluginTables;
-    }
-
-    /**
-     * 获取所有表名
-     */
-    protected function getAllTables(string $prefix): array
-    {
-        $database = env('DB_DATABASE');
-        $sql = "SELECT TABLE_NAME FROM information_schema.TABLES 
-                WHERE TABLE_SCHEMA = ? 
-                AND TABLE_TYPE = 'BASE TABLE'";
-
-        if ($prefix) {
-            $sql .= " AND TABLE_NAME LIKE '{$prefix}%'";
-        }
-
-        $tables = Db::select($sql, [$database]);
-        return array_map(fn($row) => $row->TABLE_NAME, $tables);
-    }
-
-    /**
-     * 根据 --table 参数过滤表名
-     */
-    protected function filterTablesByOption(array $tables, string $tableOption, string $prefix): array
-    {
-        $requestedTables = array_values(array_unique(array_filter(array_map(
-            static fn($name) => trim($name),
-            explode(',', $tableOption)
-        ))));
-
-        if (empty($requestedTables)) {
-            $this->warn('参数 --table 未提供有效表名，已回退为全量非插件表');
-            return array_values($tables);
-        }
-
-        $candidateMap = [];
-        foreach ($tables as $table) {
-            $candidateMap[$table] = $table;
-            if ($prefix !== '' && str_starts_with($table, $prefix)) {
-                $withoutPrefix = substr($table, strlen($prefix));
-                if ($withoutPrefix !== false && $withoutPrefix !== '') {
-                    $candidateMap[$withoutPrefix] = $table;
-                }
-            }
-        }
-
-        $missingTables = [];
-        $selectedTables = [];
-        foreach ($requestedTables as $requestedTable) {
-            if (!isset($candidateMap[$requestedTable])) {
-                $missingTables[] = $requestedTable;
-                continue;
-            }
-            $selectedTables[$candidateMap[$requestedTable]] = true;
-        }
-
-        if (!empty($missingTables)) {
-            $this->warn('以下表未找到或属于插件表，已忽略: ' . implode(', ', $missingTables));
-        }
-
-        return array_keys($selectedTables);
     }
 
     /**
@@ -388,22 +248,6 @@ class GenerateMigrationsCommand extends Command
     }
 
     /**
-     * 转义字符串中的单引号
-     */
-    protected function escapeString(string $str): string
-    {
-        return str_replace("'", "\\'", $str);
-    }
-
-    /**
-     * 标识符反引号转义
-     */
-    protected function escapeBacktickIdentifier(string $name): string
-    {
-        return '`' . str_replace('`', '``', $name) . '`';
-    }
-
-    /**
      * 获取表注释
      */
     protected function getTableComment(string $table): string
@@ -535,35 +379,5 @@ class GenerateMigrationsCommand extends Command
         return "->default('{$escapedDefault}')";
     }
 
-    /**
-     * 格式化 SQL 值
-     */
-    protected function formatSqlValue($value): string
-    {
-        if ($value === null) {
-            return 'NULL';
-        }
-
-        if (is_bool($value)) {
-            return $value ? '1' : '0';
-        }
-
-        if (is_int($value) || is_float($value)) {
-            return (string) $value;
-        }
-
-        if (is_array($value) || is_object($value)) {
-            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if ($json === false) {
-                return 'NULL';
-            }
-            $value = $json;
-        }
-
-        $value = (string) $value;
-        $value = str_replace(['\\', "'", "\r\n", "\n", "\r", "\0"], ['\\\\', "''", '\\n', '\\n', '\\n', ''], $value);
-
-        return "'{$value}'";
-    }
 }
 

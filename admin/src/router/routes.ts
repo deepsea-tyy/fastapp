@@ -91,23 +91,12 @@ export function rootLayout(redirect: string): RouteRecordRaw {
         redirect,
         children: [
             {
-                name: 'uc:index',
-                path: '/uc/index',
+                name: 'uc',
+                path: '/uc',
                 component: () => import('~/base/views/uc/index.vue'),
                 meta: {
                     title: '个人中心',
                     icon: 'heroicons:user-circle',
-                    type: 'M',
-                    hidden: true,
-                },
-            },
-            {
-                name: 'uc:google2fa',
-                path: '/uc/google2fa',
-                component: () => import('~/base/views/uc/google2fa.vue'),
-                meta: {
-                    title: 'Google 2FA 设置',
-                    icon: 'heroicons:shield-check',
                     type: 'M',
                     hidden: true,
                 },

@@ -2,5 +2,6 @@
 
 declare(strict_types=1);
 
-return [
-];
+use Hyperf\Database\Commands\CommandCollector;
+
+return CommandCollector::getAllCommands();

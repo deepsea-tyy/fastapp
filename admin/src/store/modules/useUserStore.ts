@@ -58,10 +58,8 @@ const useUserStore = defineStore(
     const permissions = ref<string[]>([])
     const roles = ref<string[]>([])
     const dropdownMenuState = ref<{
-      shortcuts: boolean
       systemInfo: boolean
     }>({
-      shortcuts: false,
       systemInfo: false,
     })
 
@@ -81,10 +79,6 @@ const useUserStore = defineStore(
 
     function setMenu(list: MenuVo[]) {
       menu.value = list
-    }
-
-    function getDropdownMenuState(key: string) {
-      return dropdownMenuState.value[key] !== undefined ? dropdownMenuState.value[key] : undefined
     }
 
     async function refreshRole() {
@@ -227,7 +221,6 @@ const useUserStore = defineStore(
       login,
       logout,
       getDropdownMenu,
-      getDropdownMenuState,
       setDropdownMenuState,
       clearCache,
       setLanguage,

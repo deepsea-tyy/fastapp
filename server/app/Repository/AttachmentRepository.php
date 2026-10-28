@@ -6,7 +6,6 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Model\Attachment;
-use Hyperf\Collection\Arr;
 use Hyperf\Database\Model\Builder;
 
 /**
@@ -32,10 +31,8 @@ final class AttachmentRepository extends IRepository
     {
         if ($params['has_image_wh'] ?? null) {
             $query->whereNotNull('image_wh');
+            unset($params['has_image_wh']);
         }
-
-        $query->with(['infer:attachment_id,appearance_selection']);
-
         return parent::handleSearch($query, $params);
     }
 }
