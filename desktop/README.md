@@ -138,7 +138,7 @@ flowchart LR
 
 - 日志：`~/Library/Application Support/StoryStudio/logs/desktop.log`、`runtime/hyperf.log`
 - Inspect 过滤 `[bridge]`、`[editor:`；改前端后 `DESKTOP_FORCE=1 pnpm dev`
-- 画布穿透 / 拖入约定：[`编辑器数据双向穿透链路.md`](../../server/plugin/ds/storyStudio/docs/code/编辑器数据双向穿透链路.md)（§6.2）
+- 画布穿透 / 拖入约定：[`数据穿透.md`](../../server/plugin/ds/storyStudio/docs/视频创作/数据穿透.md)（§6.2）
 
 **stage 单步**
 

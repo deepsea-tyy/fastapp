@@ -1,6 +1,6 @@
 # FastApp Code Wiki
 
-> 代码知识库导航。全局架构文档位于 `code/`，Story Studio 插件的编码链路分析位于 `server/plugin/ds/storyStudio/docs/code/`。
+> 代码知识库导航。全局架构文档位于 `code/`，Story Studio 插件文档按五入口位于 `server/plugin/ds/storyStudio/docs/`。
 
 ---
 
@@ -32,19 +32,9 @@
 |---|---|
 | [04-Story-Studio插件](code/04-Story-Studio插件.md) | 后端架构、核心业务模型关系图、剧情帧时间模型、WebSocket 异步推理服务（14 种 action）、AI 图像管线（Qwen-Image-Edit 模型分工）、前端核心模块（wsTasks/编辑器渲染/3D 姿势/资源包工作台/素材面板/音频轨道）、全局设置约束 |
 
-### 插件编码链路文档
+### 插件文档
 
-位于 `server/plugin/ds/storyStudio/docs/code/`，改代码时必看：
-
-| 文档 | 覆盖链路 |
-|---|---|
-| [WebSocket任务管线](server/plugin/ds/storyStudio/docs/code/WebSocket任务管线.md) | WS 任务统一管线、Bundle/源头写回分离、禁止踩坑清单 |
-| [推理端链路](server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 8 个 Service → Builder → runSlot → resolveWh 尺寸派生 → InferBody 分袋 → Python 推理，完整参数流转 |
-| [剧情帧时间线](server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | UI → composable → 持久化 → API → Repository → DB，帧时间语义与段时长计算 |
-| [编辑器时间线链路](server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | playheadMs ↔ eventTimeMs ↔ segmentIndex ↔ frameId 四态同步、paintTimelineAt 出图入口 |
-| [编辑器外壳与画布](server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Three 编辑器 Shell 布局、模式接线、数据挂载链路 |
-| [翻译链路](server/plugin/ds/storyStudio/docs/code/翻译链路.md) | 字典定义 → dictStore 注册 → MaDictSelect/useTrans 两条翻译链路 |
-| [数据库设计](server/plugin/ds/storyStudio/docs/code/数据库设计.md) | 11 张业务表结构、ER 图、资产挂载统一管线（单一 actor 流程）、遗留概念禁止清单 |
+总表：[docs/README.md](server/plugin/ds/storyStudio/docs/README.md)。按入口：剧本创作 / 视频创作 / 视频合成 / 3D 创作 / 素材创作。字典翻译：[翻译链路](code/翻译链路.md)。
 
 ### 插件编辑器交互约定
 

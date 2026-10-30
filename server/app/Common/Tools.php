@@ -286,24 +286,29 @@ class Tools
         return self::app_root() . '/plugin/' . ltrim($path, '/');
     }
 
-    /** bundled admin UI：{disk_root}/ui/index.html */
+    /** bundled admin UI：仅桌面 SFX。{disk_root}/ui/index.html */
     public static function ui_index_path(): ?string
     {
+        if (!self::is_desktop_runtime()) {
+            return null;
+        }
         $path = self::disk_path('ui/index.html');
 
         return is_file($path) ? $path : null;
     }
 
-    /** admin UI 字体：{disk_root}/ui/font/alibaba-pu-hui-ti-3/ */
+    /**
+     * 普惠体 otf（水印 / 画布测量同源）。
+     * 桌面：{disk_root}/ui/font/alibaba-pu-hui-ti-3/
+     * 非桌面：{repo}/admin/public/font/alibaba-pu-hui-ti-3/
+     */
     public static function app_font_path(string $locale = 'sc'): ?string
     {
         $locale = in_array($locale, ['sc', 'tc', 'jp', 'kr'], true) ? $locale : 'sc';
         $file = "{$locale}-regular.otf";
-        $ui = self::ui_index_path();
-        if (! $ui) {
-            return null;
-        }
-        $path = dirname($ui) . '/font/alibaba-pu-hui-ti-3/' . $file;
+        $path = self::is_desktop_runtime()
+            ? self::disk_path('ui/font/alibaba-pu-hui-ti-3/' . $file)
+            : dirname(self::app_root()) . '/admin/public/font/alibaba-pu-hui-ti-3/' . $file;
 
         return is_file($path) ? $path : null;
     }

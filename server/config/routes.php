@@ -9,7 +9,7 @@ use Hyperf\HttpServer\Router\Router;
 
 Router::get('/', static function () {
     $index = Tools::ui_index_path();
-    if ($index === null) {
+    if (!$index) {
         return 'welcome use fastapp';
     }
 

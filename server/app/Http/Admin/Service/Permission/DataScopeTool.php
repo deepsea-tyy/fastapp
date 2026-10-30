@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace App\Http\Admin\Service\Permission;
 
+use App\Common\Event\UserCacheClearEvent;
+use App\Common\Tools;
 use App\Model\Enums\User\Status;
 use App\Model\Permission\AdminSetting;
 use App\Model\User;
@@ -58,6 +60,7 @@ final class DataScopeTool
     public static function clearCurrentUserCache(int|string $userId): void
     {
         self::getCache()->delete((string)$userId);
+        Tools::eventDispatcher(new UserCacheClearEvent($userId));
     }
 
     /**

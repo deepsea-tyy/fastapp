@@ -4,17 +4,7 @@ Story Studio 是项目的核心业务插件，提供从小说文本到短视频�
 
 ## 开发文档索引
 
-详细编码链路文档位于插件目录 `docs/code/`：
-
-| 文档 | 内容 |
-|---|---|
-| [WebSocket任务管线.md](../server/plugin/ds/storyStudio/docs/code/WebSocket任务管线.md) | WS 任务统一管线、Bundle/源头写回分离、禁止踩坑清单 |
-| [编辑器外壳与画布.md](../server/plugin/ds/storyStudio/docs/code/编辑器外壳与画布.md) | Three 编辑器 Shell 布局、模式接线、数据挂载链路 |
-| [编辑器时间线链路.md](../server/plugin/ds/storyStudio/docs/code/编辑器时间线链路.md) | Playhead/Seek/Reset/Playback → 画布同步 → shotFocus 完整链路 |
-| [剧情帧时间线.md](../server/plugin/ds/storyStudio/docs/code/剧情帧时间线.md) | 帧时间语义、段时长计算、挂载时间规则、已移除字段清单 |
-| [翻译链路.md](./翻译链路.md) | 字典定义 → 运行时注册 → MaDictSelect → locale YAML 完整链路 |
-| [推理端链路.md](../server/plugin/ds/storyStudio/docs/code/推理端链路.md) | 图片编辑（qwen_image_edit）8 Service + Builder + InferBody 分袋 + resolveWh 尺寸派生；生图（qwen_image_flash / Qwen-Image-Flash-8bit MLX 4 步蒸馏）调用端 + 推理端 + 信封示例 + 文件清单 |
-| [千问图片提示词.md](../server/plugin/ds/storyStudio/docs/code/千问图片提示词.md) | 生图/编辑模型闭集、全身构图词表、禁止猜 SD 标签 |
+插件文档按五个入口划分，总表：[docs/README.md](../server/plugin/ds/storyStudio/docs/README.md)。字典翻译仍在 [翻译链路.md](./翻译链路.md)。
 
 ---
 
@@ -266,7 +256,7 @@ type StoryFrame = {
 
 **style 维度的预设按 asset_type 作用域隔离**，防止跨模型风格冲突。
 
-词表与全身构图只认 [千问图片提示词.md](../server/plugin/ds/storyStudio/docs/code/千问图片提示词.md)。
+词表与全身构图只认 [千问图片提示词.md](../server/plugin/ds/storyStudio/docs/素材创作/千问图片提示词.md)。
 
 ### 图像处理流程
 
@@ -362,7 +352,7 @@ server/plugin/ds/storyStudio/web/views/storyStudio/
 
 #### 3. 3D 姿势编辑器 (PoseEditorCanvas.vue)
 
-入口 `character/ui/PoseEditorCanvas.vue`。定姿存档走 HTTP `asset3dCreate`（`story_asset_3d` type=2），不走 WebSocket。文件清单见 [3d创作.md](../server/plugin/ds/storyStudio/docs/code/3d创作.md)。
+入口 `character/ui/PoseEditorCanvas.vue`。定姿存档走 HTTP `asset3dCreate`（`story_asset_3d` type=2），不走 WebSocket。文件清单见 [3D创作.md](../server/plugin/ds/storyStudio/docs/3D创作.md)。
 
 #### 4. 资源包工作台 (useBundleWorkbench.ts)
 
@@ -430,7 +420,6 @@ server/plugin/ds/storyStudio/web/views/storyStudio/
 
 ## 全局设置硬约束
 
-- 主题、世界观、角色卡为**必填**字段
-- 角色卡的**姓名**和**关系**字段不能为空
-- 新增角色**不设默认姓名**
+- 生成卷只需题材；设定圣经可空，各环节内嵌补条目后再生成
+- 圣经 `[{kind,name,info}]`，`kind` 为 `character` | `location` | `faction` | `item` | `rule`
 - WS 请求**不显示**任何 prompt 消息
