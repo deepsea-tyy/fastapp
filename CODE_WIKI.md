@@ -30,7 +30,7 @@
 
 | 文档 | 覆盖内容 |
 |---|---|
-| [04-Story-Studio插件](code/04-Story-Studio插件.md) | 后端架构、核心业务模型关系图、剧情帧时间模型、WebSocket 异步推理服务（14 种 action）、AI 图像管线（Qwen-Image-Edit 模型分工）、前端核心模块（wsTasks/编辑器渲染/3D 姿势/资源包工作台/素材面板/音频轨道）、全局设置约束 |
+| [08-插件系统](code/08-插件系统.md) | 当前插件列表（storyStudio / sysConfig）、插件目录结构、config.json、插件类型、命令速查 |
 
 ### 插件文档
 

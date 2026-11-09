@@ -5,7 +5,6 @@ declare(strict_types=1);
 
 use Hyperf\Contract\ApplicationInterface;
 use Hyperf\Di\ClassLoader;
-use Hyperf\Engine\DefaultOption;
 use Psr\Container\ContainerInterface;
 use App\Command\Plugin\Plugin;
 
@@ -20,7 +19,6 @@ date_default_timezone_set('Asia/Shanghai');
 
 require BASE_PATH . '/vendor/autoload.php';
 
-! defined('SWOOLE_HOOK_FLAGS') && define('SWOOLE_HOOK_FLAGS', DefaultOption::hookFlags());
 // Self-called anonymous function that creates its own scope and keep the global namespace clean.
 (function () {
     Plugin::init();
