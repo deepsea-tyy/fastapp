@@ -13,7 +13,7 @@ use App\Common\Service\IpLocationService;
 use App\Common\Tools;
 use App\Http\Admin\Service\Logstash\UserAdminLoginLogService;
 use App\Http\Admin\Service\Logstash\UserAdminOperationLogService;
-use App\Http\Admin\Service\Permission\AdminUserService;
+use App\Http\CurrentUser;
 use App\Model\UserAccountLog;
 use Hyperf\Engine\Coroutine;
 use Hyperf\Event\Annotation\Listener;
@@ -25,7 +25,7 @@ class UserSubscriber implements ListenerInterface
     public function __construct(
         private readonly UserAdminLoginLogService     $adminLoginLogService,
         private readonly UserAdminOperationLogService $logService,
-        private readonly AdminUserService             $userService,
+        private readonly CurrentUser                  $currentUser,
         private readonly IpLocationService            $ipLocationService
     )
     {
@@ -56,7 +56,7 @@ class UserSubscriber implements ListenerInterface
                     UserAccountLog::create($res);
                 } else if ($event instanceof RequestOperationEvent) {
                     $userId = $event->getUserId();
-                    $user = $this->userService->findById($userId);
+                    $user = $this->currentUser->user($userId);
                     if (empty($user)) {
                         return;
                     }

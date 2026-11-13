@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace App\Http\Admin\Controller\Permission;
 
-use App\Common\Middleware\AccessTokenMiddleware;
+use App\Common\Middleware\AdminTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
 use App\Common\Request\Request;
 use App\Common\Result;
@@ -15,8 +15,6 @@ use App\Http\Admin\Permission;
 use App\Http\Admin\Request\Permission\BatchGrantRolesForUserRequest;
 use App\Http\Admin\Request\Permission\UpdateInfoRequest;
 use App\Http\Admin\Request\Permission\UserRequest;
-use App\Http\Admin\Service\Permission\DataScopeTool;
-use App\Http\Admin\Service\Permission\AdminUserService;
 use App\Http\CurrentUser;
 use App\Model\Permission\Role;
 use Hyperf\HttpServer\Annotation\Controller;
@@ -26,13 +24,12 @@ use Hyperf\HttpServer\Annotation\Middleware;
 use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
 #[Controller]
-#[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
+#[Middleware(middleware: AdminTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 final class UserController extends AbstractController
 {
     public function __construct(
-        private readonly AdminUserService $userService,
-        private readonly CurrentUser      $currentUser
+        private readonly CurrentUser $currentUser
     )
     {
     }
@@ -42,7 +39,7 @@ final class UserController extends AbstractController
     public function pageList(): Result
     {
         return $this->success(
-            $this->userService->page(
+            $this->currentUser->page(
                 array_merge($this->getRequestData(), ['created_by' => $this->currentUser->id()]),
                 $this->getPage(),
                 $this->getPageSize()
@@ -52,12 +49,12 @@ final class UserController extends AbstractController
     #[GetMapping(path: '/admin/user/selectUser')]
     public function selectUser(Request $request): Result
     {
-        return $this->success($this->userService->selectUser($request->input('keyword', '')));
+        return $this->success($this->currentUser->selectUser($request->input('keyword', '')));
     }
     #[GetMapping(path: '/admin/user/clearCache')]
     public function clearCache(): Result
     {
-        DataScopeTool::clearCurrentUserCache($this->currentUser->id());
+        $this->currentUser->clearCache($this->currentUser->id());
         return $this->success();
     }
 
@@ -66,7 +63,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function updateInfo(UpdateInfoRequest $request): Result
     {
-        $this->userService->updateById($this->currentUser->id(), $request->validated());
+        $this->currentUser->updateUser($this->currentUser->id(), $request->validated());
         return $this->success();
     }
 
@@ -75,7 +72,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function resetPassword(): Result
     {
-        return $this->userService->resetPassword($this->getRequest()->input('id'))
+        return $this->currentUser->resetPassword((int)$this->getRequest()->input('id'))
             ? $this->success()
             : $this->error();
     }
@@ -85,7 +82,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function create(UserRequest $request): Result
     {
-        $this->userService->create(array_merge($request->validated(), [
+        $this->currentUser->createUser(array_merge($request->validated(), [
             'created_by' => $this->currentUser->id(),
         ]));
         return $this->success();
@@ -96,7 +93,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function delete(): Result
     {
-        $this->userService->deleteById($this->getRequestData());
+        $this->currentUser->deleteUsers($this->getRequestData());
         return $this->success();
     }
 
@@ -105,7 +102,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function save(int $userId, UserRequest $request): Result
     {
-        $this->userService->updateById($userId, array_merge($request->validated(), [
+        $this->currentUser->updateUser($userId, array_merge($request->validated(), [
             'updated_by' => $this->currentUser->id(),
         ]));
         return $this->success();
@@ -115,7 +112,7 @@ final class UserController extends AbstractController
     #[Permission(code: 'permission:user:getRole')]
     public function getUserRole(int $userId): Result
     {
-        return $this->success($this->userService->getUserRole($userId)->map(static fn(Role $role) => $role->only([
+        return $this->success($this->currentUser->getUserRoles($userId)->map(static fn(Role $role) => $role->only([
             'id',
             'code',
             'name',
@@ -127,7 +124,7 @@ final class UserController extends AbstractController
     #[Middleware(middleware: OperationMiddleware::class, priority: 98)]
     public function batchGrantRolesForUser(int $userId, BatchGrantRolesForUserRequest $request): Result
     {
-        $this->userService->batchGrantRoleForUser($userId, $request->input('role_codes'));
+        $this->currentUser->grantRoles($userId, $request->input('role_codes'));
         return $this->success();
     }
 }

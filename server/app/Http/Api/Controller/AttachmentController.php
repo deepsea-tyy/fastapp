@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Api\Controller;
 
 use App\Common\AbstractController;
-use App\Common\Middleware\TokenMiddleware;
+use App\Common\Middleware\ApiTokenMiddleware;
 use App\Common\Result;
 use App\Http\Admin\Service\AttachmentService;
 use App\Http\Common\Request\UploadRequest;
@@ -19,7 +19,7 @@ use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
 
 #[Controller]
-#[Middleware(middleware: TokenMiddleware::class)]
+#[Middleware(middleware: ApiTokenMiddleware::class)]
 class AttachmentController extends AbstractController
 {
     use AttachmentControllerTrait;

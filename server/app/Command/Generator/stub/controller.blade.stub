@@ -91,12 +91,12 @@
         $useStatements = array_merge($useStatements, [
             'App\\Http\\Admin\\Permission',
             'App\\Http\\Admin\\Middleware\\PermissionMiddleware',
-            'App\\Common\\Middleware\\AccessTokenMiddleware',
+            'App\\Common\\Middleware\\AdminTokenMiddleware',
             'App\\Common\\Middleware\\OperationMiddleware',
         ]);
     } else {
         $useStatements = array_merge($useStatements, [
-            'App\\Common\\Middleware\\TokenMiddleware',
+            'App\\Common\\Middleware\\ApiTokenMiddleware',
         ]);
     }
         $useStatements = array_merge($useStatements, [
@@ -122,11 +122,11 @@
  */
 @if($isAdminTarget)
 #[Controller]
-#[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
+#[Middleware(middleware: AdminTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 @else
 #[Controller]
-#[Middleware(middleware: TokenMiddleware::class)]
+#[Middleware(middleware: ApiTokenMiddleware::class)]
 @endif
 class {{$controllerName}}Controller extends AbstractController
 {

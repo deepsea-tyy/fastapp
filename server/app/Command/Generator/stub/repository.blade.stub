@@ -48,19 +48,26 @@
     echo 'use App\Repository\IRepository;' . PHP_EOL;
     echo 'use Hyperf\Database\Model\Builder;' . PHP_EOL;
     if ($hasCreatedBy) {
-        echo 'use App\Http\Admin\Service\Permission\DataScopeTool;' . PHP_EOL;
+        echo 'use App\Http\CurrentUser;' . PHP_EOL;
     }
 @endphp
 
 class {{$repositoryName}}Repository extends IRepository
 {
+@if($hasCreatedBy)
+    public function __construct(
+        protected readonly Model $model,
+        protected readonly CurrentUser $currentUser,
+    ) {}
+@else
     public function __construct(protected readonly Model $model) {}
+@endif
 
     public function handleSearch(Builder $query, array $params): Builder
     {
 @if($hasCreatedBy)
         // 应用数据权限过滤
-        DataScopeTool::applyUserDataScope($params['created_by'], $query);
+        $this->currentUser->applyUserDataScope($query, $params['created_by']);
         unset($params['created_by']);
 @endif
         return parent::handleSearch($query, $params);

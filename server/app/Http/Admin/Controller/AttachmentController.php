@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace App\Http\Admin\Controller;
 
-use App\Common\Middleware\AccessTokenMiddleware;
+use App\Common\Middleware\AdminTokenMiddleware;
 use App\Common\Middleware\OperationMiddleware;
 use App\Common\Result;
 use App\Http\Admin\Middleware\PermissionMiddleware;
@@ -22,7 +22,7 @@ use Hyperf\HttpServer\Annotation\PostMapping;
 use Hyperf\HttpServer\Annotation\PutMapping;
 
 #[Controller]
-#[Middleware(middleware: AccessTokenMiddleware::class, priority: 100)]
+#[Middleware(middleware: AdminTokenMiddleware::class, priority: 100)]
 #[Middleware(middleware: PermissionMiddleware::class, priority: 99)]
 class AttachmentController extends AbstractController
 {

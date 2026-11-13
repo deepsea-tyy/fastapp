@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-
 namespace App\Repository\Permission;
 
-use App\Http\Admin\Service\Permission\DataScopeTool;
+use App\Http\CurrentUser;
 use App\Model\User;
 use App\Repository\IRepository;
 use Hyperf\Collection\Arr;
 use Hyperf\Collection\Collection;
+use Hyperf\Context\ApplicationContext;
 use Hyperf\Database\Model\Builder;
 
 /**
@@ -25,7 +25,7 @@ final class UserRepository extends IRepository
     public function handleSearch(Builder $query, array $params): Builder
     {
         if (Arr::has($params, 'created_by')) {
-            DataScopeTool::applyUserDataScope($params['created_by'], $query);
+            $this->currentUser()->applyUserDataScope($query, $params['created_by']);
             unset($params['created_by']);
         }
 
@@ -61,5 +61,10 @@ final class UserRepository extends IRepository
             }
         }
         return $items;
+    }
+
+    private function currentUser(): CurrentUser
+    {
+        return ApplicationContext::getContainer()->get(CurrentUser::class);
     }
 }

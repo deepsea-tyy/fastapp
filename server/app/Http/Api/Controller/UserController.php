@@ -10,7 +10,7 @@ namespace App\Http\Api\Controller;
 
 use App\Common\AbstractController;
 use App\Common\Event\UserAccountEvent;
-use App\Common\Middleware\TokenMiddleware;
+use App\Common\Middleware\ApiTokenMiddleware;
 use App\Common\Result;
 use App\Common\Service\TwoFactorAuthService;
 use App\Common\Service\VerifyCodeService;
@@ -206,7 +206,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/logout')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function logout(): Result
     {
         $this->currentUser->setScene('api')->logout($this->currentUser->getToken());
@@ -226,7 +226,7 @@ class UserController extends AbstractController
     }
 
     #[GetMapping(path: '/api/user/info')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function info(): Result
     {
         $info = $this->currentUser->getInfo();
@@ -241,7 +241,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/password/change')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function changePassword(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -270,7 +270,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/account/disable')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function disableAccount(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -287,7 +287,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/account/delete')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function deleteAccount(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -310,7 +310,7 @@ class UserController extends AbstractController
     }
 
     #[GetMapping(path: '/api/user/google2fa/qrcode')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function google2faQrcode(): Result
     {
         $user = $this->currentUser->user();
@@ -329,7 +329,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/google2fa/bind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function google2faBind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -350,7 +350,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/google2fa/unbind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function google2faUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -369,7 +369,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/email/bind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function emailBind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -410,7 +410,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/email/unbind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function emailUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -445,7 +445,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/mobile/bind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function mobileBind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -488,7 +488,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/mobile/unbind')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function mobileUnbind(UserRequest $request): Result
     {
         $validated = $request->validated();
@@ -525,7 +525,7 @@ class UserController extends AbstractController
     }
 
     #[GetMapping(path: '/api/user/accountLogs')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function accountLogs(UserRequest $request): Result
     {
         $map['user_id'] = $this->currentUser->id();
@@ -543,7 +543,7 @@ class UserController extends AbstractController
     }
 
     #[PostMapping(path: '/api/user/profile/update')]
-    #[Middleware(TokenMiddleware::class)]
+    #[Middleware(ApiTokenMiddleware::class)]
     public function profileUpdate(UserRequest $request): Result
     {
         $validated = $request->validated();

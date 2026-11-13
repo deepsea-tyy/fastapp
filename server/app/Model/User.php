@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Model;
 
-use App\Http\Admin\Service\Permission\DataScopeTool;
 use App\Model\Enums\User\Status;
 use App\Model\Permission\AdminSetting;
 use App\Model\Permission\Menu;
@@ -124,7 +123,7 @@ final class User extends Model
 
     public function getRoles(): ?Collection
     {
-        return DataScopeTool::getCurrentUser($this->id)?->roles;
+        return $this->roles()->get();
     }
 
     /**

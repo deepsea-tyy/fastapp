@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace App\Http\Admin\Controller;
 
 use App\Common\AbstractController;
-use App\Common\Middleware\AccessTokenMiddleware;
+use App\Common\Middleware\AdminTokenMiddleware;
 use App\Common\Result;
 use App\Common\Tools;
 use App\Common\Service\TwoFactorAuthService;
@@ -79,7 +79,7 @@ final class PassportController extends AbstractController
     }
 
     #[PostMapping(path: '/admin/passport/logout')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(AdminTokenMiddleware::class)]
     public function logout(): Result
     {
         $this->currentUser->logout(RequestContext::get()->getAttribute('token'));
@@ -87,7 +87,7 @@ final class PassportController extends AbstractController
     }
 
     #[GetMapping(path: '/admin/passport/getInfo')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(AdminTokenMiddleware::class)]
     public function getInfo(): Result
     {
         $user = $this->currentUser->getInfo($this->currentUser->id());
@@ -130,7 +130,7 @@ final class PassportController extends AbstractController
     }
 
     #[GetMapping(path: '/admin/passport/google2fa/qrcode')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(AdminTokenMiddleware::class)]
     public function google2faQrcode(): Result
     {
         $user = $this->currentUser->user();
@@ -149,7 +149,7 @@ final class PassportController extends AbstractController
     }
 
     #[PostMapping(path: '/admin/passport/google2fa/bind')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(AdminTokenMiddleware::class)]
     public function google2faBind(PassportRequest $request): Result
     {
         $validated = $request->validated();
@@ -169,7 +169,7 @@ final class PassportController extends AbstractController
     }
 
     #[PostMapping(path: '/admin/passport/google2fa/unbind')]
-    #[Middleware(AccessTokenMiddleware::class)]
+    #[Middleware(AdminTokenMiddleware::class)]
     public function google2faUnbind(PassportRequest $request): Result
     {
         $validated = $request->validated();
